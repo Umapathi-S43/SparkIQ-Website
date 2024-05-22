@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	font-family: "Nunito Sans", Inter, system-ui, Avenir, Helvetica, Arial,
+		sans-serif;
+	line-height: 1.5;
+	color: #082a66;
+
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+
+	max-width: 1536px;
+	margin: 0 auto;
+}
+
+main {
+	margin: 0;
+	padding: 0 6rem;
+}
+
+/* Gradients */
+
+.gradient-bg {
+	background-image: linear-gradient(to bottom, #d9d9d900 0%, #c8e8f9 100%);
+}
+
+.gradient-button-primary {
+	background: linear-gradient(to right, #ff3067 0%, #ff618b 100%);
+}
+
+.gradient-button-primary:hover {
+	background: linear-gradient(to left, #ff3067 0%, #ff618b 100%);
+}
+
+/* Floating Divs on Hero */
+
+.image-container {
+	position: relative;
+	width: 585px;
+	margin-top: 90px;
+}
+
+.floating-div {
+	width: 200px; /* Adjust as needed */
+	background-color: white;
+	border: 2px solid #fff;
+	box-shadow: 10px 10px 20px inset rgba(0, 0, 0, 0.2);
+	border-radius: 16px;
+}
+
+.top-left {
+	top: 10px;
+	left: -20px;
+}
+
+.top-right {
+	top: 10px;
+	right: -20px;
+}
+
+.bottom-left {
+	bottom: 0;
+	left: 0;
+}
+
+.bottom-right {
+	bottom: 0;
+	right: 0;
+}
+
+.top-center {
+	top: 0;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+/* Info Section */
+.growth-div {
+	background-color: white;
+	box-shadow: 10px 10px 20px inset rgba(0, 0, 0, 0.2);
+}
+.circular-progress {
+	width: 50px;
+	height: 50px;
+	position: relative;
+	display: inline-block;
+}
+
+.circle-bg {
+	fill: none;
+	stroke: #e6e6e6;
+	stroke-width: 5;
+}
+
+.circle {
+	fill: none;
+	stroke: #00c853;
+	stroke-width: 5;
+	stroke-linecap: round;
+	transition: stroke-dashoffset 0.35s;
+	transform: rotate(-90deg);
+	transform-origin: 50% 50%;
+}
+
+/* About section */
+#about {
+	margin: 0 -6rem;
+	padding: 0 6rem;
+}
+
+.about-bg {
+	background: url("/src/assets/bg-shapes/bg-about.png");
+	background-size: contain;
+	background-repeat: no-repeat;
+	z-index: -1;
+	/* opacity: 0.5; */
+}
+
+.about-card-bg {
+	background: url("/src/assets/bg-shapes/bg-about-card.png");
+	background-size: contain;
+	background-repeat: no-repeat;
+	z-index: -1;
+}
+
+/* Pricing Section */
+#pricing {
+	margin: 0 -6rem;
+	padding: 0 6rem;
+}
+.pricing-bg {
+	background: url("/src/assets/bg-shapes/bg-about.png");
+	background-size: cover;
+	background-repeat: no-repeat;
+	z-index: -60;
+	opacity: 0.5;
+}
+.pricing-card {
+	transition: all 0.3s;
+}
+.main-price {
+	backdrop-filter: blur(5px);
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); /* Optional: Add shadow to the content */
+}
+.pricing-card:hover {
+	background-color: rgba(
+		255,
+		255,
+		255,
+		0.3
+	); /* Adjust the opacity of the background */
+	box-shadow: 0 0 20px rgba(0, 0, 0, 0.2); /* Optional: Add shadow to the content */
+	backdrop-filter: blur(10px); /* Adjust the blur radius as needed */
+}
+
+/* Footer */
+.footer-bg {
+	background: url("/src/assets/bg-shapes/bg-footer.jpg");
+	background-size: cover;
+	z-index: -1;
+	opacity: 0.5;
+}
+
+/* HR */
+/* Add this CSS to your global CSS file or component styles */
+hr {
+	border: none;
+	height: 1px;
+	background: linear-gradient(to right, transparent, #4b5563, transparent);
+	margin: 1rem 0;
+}
+
+/* Vertical dashed line */
+.vertical-line {
+	position: absolute;
+	left: 52.7%; /* Adjust this according to your design */
+	top: 10%;
+	transform: translateX(-50%);
+	width: 2px; /* Width of the line */
+	height: 0; /* Initial height */
+	border-left: 6px dashed #0086cd4d; /* Dashed line style */
+	transition: height 1s ease; /* Animation duration and easing */
+}
