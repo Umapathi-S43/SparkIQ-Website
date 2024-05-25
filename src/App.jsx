@@ -1,26 +1,18 @@
-import Navbar from "./components/Navbar";
-import Hero from "./components/HeroSection/Hero";
-import InfoSection from "./components/InfoSection/InfoSection";
-import AboutSection from "./components/AboutSection/AboutSection";
-import Features from "./components/FeaturesSection/Features";
-import Pricing from "./components/PricingSection/Pricing";
-import Faqs from "./components/Faqs/Faqs";
-import Footer from "./components/Footer";
-
+import Home from "../src/pages/Home";
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import PrivacyPolicy from "./pages/Privacy-Policy";
+import TermsOfService from "./pages/Terms";
 function App() {
-	return (
-		<div className="overflow-hidden">
-			<Navbar />
-			<Hero />
-			<div className="px-[6rem]">
-				<InfoSection />
-				<AboutSection />
-				<Features />
-				<Pricing />
-				<Faqs />
-			</div>
-			<Footer />
-		</div>
+    return (
+        <Router>
+            <div>
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
+                </Routes>
+                    </div>
+        </Router>
 	);
 }
 
