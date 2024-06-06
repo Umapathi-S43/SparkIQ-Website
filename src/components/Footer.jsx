@@ -22,7 +22,7 @@ const Footer = () => {
 					<Link to="#" className="font-bold">
 						Resources
 					</Link>
-					<Link to="#" className="text-sm">
+					<Link to="mailto:hello@sparkiq.ai" className="text-sm">
 						Contact Us
 					</Link>
 				</div>
