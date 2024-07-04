@@ -1,0 +1,111 @@
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #B3D4E5;
+  border-radius: 10px;
+  border: 3px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A0C1D1;
+}
+
+/* Custom scrollbar for Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #B3D4E5 #f1f1f1;
+}
+
+.btn-bg {
+  background: radial-gradient(156.73% 166.53% at -50.24% -35.81%, #1547DB 30%, #1547DB 80%) ;
+}
+
+.btn-bg:disabled {
+  background: radial-gradient(156.73% 166.53% at -50.24% -35.81%, rgba(21, 71, 219, 0.5) 30%, rgba(21, 71, 219, 0.5) 80%);
+}
+
+.btn-bg:hover {
+  background: #001861;
+}
+
+.slider_btn {
+  background: linear-gradient(201.07deg, #00A7FF 0.53%, #004367 98.24%);
+}
+
+.targetBg {
+	background: linear-gradient(72.46deg, #B3D4E6 0.87%, #D9E9F2 100.95%);
+}
+
+.adCustomizationBg {
+  background: linear-gradient(315.4deg, rgba(76, 161, 175, 0.2) 0.35%, rgba(196, 224, 229, 0.2) 99.65%);
+}
+
+@keyframes progress {
+  0% {
+    transform: scale(1);
+    background-color: #d1d5db;
+  }
+  100% {
+    transform: scale(1.5);
+    background-color: #4f46e5;
+  }
+}
+
+.animated-step {
+  animation: progress 1s forwards;
+}
+
+.slider_btn {
+  background-color: #4f46e5;
+}
+
+/* Loader animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loader {
+  border: 4px solid #f3f3f3; /* Light grey background */
+  border-top: 4px solid #3498db; /* Blue foreground */
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 2s linear infinite; /* Adjust the animation speed */
+}
+
+/* Custom scrollbar for WebKit browsers */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #b3d4e5;
+  border-radius: 10px;
+  border: 3px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0c1d1;
+}
+
+/* Custom scrollbar for Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #b3d4e5 #f1f1f1;
+}

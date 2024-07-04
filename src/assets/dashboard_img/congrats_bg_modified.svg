@@ -1,0 +1,15 @@
+
+<svg width="1917" height="1080" viewBox="0 0 1917 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:rgb(255,200,200);stop-opacity:1" />
+            <stop offset="100%" style="stop-color:rgb(200,255,255);stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <rect width="1917" height="1080" fill="url(#grad1)" />
+    <circle cx="300" cy="200" r="10" fill="blue" />
+    <circle cx="500" cy="400" r="15" fill="red" />
+    <rect x="700" y="500" width="10" height="30" fill="green" />
+    <rect x="1000" y="600" width="15" height="20" fill="purple" />
+    <!-- Additional confetti shapes can be added similarly -->
+</svg>

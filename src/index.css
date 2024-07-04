@@ -185,3 +185,51 @@ hr {
 	border-left: 6px dashed #0086cd4d; /* Dashed line style */
 	transition: height 1s ease; /* Animation duration and easing */
 }
+
+.hide-scrollbar {
+  /* Hide scrollbar for webkit browsers */
+  -webkit-overflow-scrolling: touch;
+  overflow: auto;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.line-clamp-3 {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+  }
+
+
+  .truncate-line-clamp {
+	display: -webkit-box;
+	-webkit-line-clamp: 2; /* Limit to 2.5 lines */
+	-webkit-box-orient: vertical;  
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: 1.2em; /* Adjust line height to fit the text as needed */
+	max-height: 3em; /* Adjust max-height for 2.5 lines */
+	padding: 0 10px; /* Add padding for left and right spacing */
+	margin-right: 6px;
+  }
+  
+  
+  
+/* Hide scrollbar for Firefox */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE 10+ */
+}
+
+@media (max-width: 1024px) {
+    .bg-mobile-gradient {
+        background: linear-gradient(to bottom, #B3D4E5, #D9E9F2);
+		height:90%;
+		overflow: hidden;
+		padding-right: 36px;
+		margin-top: 10%;
+		
+    }
+}

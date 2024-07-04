@@ -1,0 +1,24 @@
+.custom-button {
+    background: linear-gradient(to left, #00a7ff, #006499);
+    transition: background 0.3s ease;
+  }
+  
+  .custom-button:hover {
+    background: #1E1154;
+  }
+  .glass-gradient-hover {
+    transition: background 0.3s ease-in-out;
+  }
+  
+  .glass-gradient-hover:hover {
+    background: linear-gradient(to top right, rgba(34, 59, 161, 1), rgba(255, 255, 255, 0.25));
+    backdrop-filter: blur(10px);
+  }
+  
+  .brand-card1:hover{
+    backdrop-filter: blur(1px);
+  }
+  .brand-card1:hover .svg-background {
+    fill: url(#bg_gradient_hover);
+  }
+  

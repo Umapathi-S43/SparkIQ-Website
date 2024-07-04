@@ -1,0 +1,16 @@
+
+.brand-card-svg:hover {
+    /* Change the gradient color stops */
+    --new-color-start: #1E1154;
+    --new-color-end: #1E1154;
+  }
+  
+  .brand-card-svg:hover #bg_gradient stop:first-child,
+  .brand-card-svg:hover #paint0_linear_1_11743 stop:first-child {
+    stop-color: var(--new-color-start);
+  }
+  
+  .brand-card-svg:hover #bg_gradient stop:last-child,
+  .brand-card-svg:hover #paint0_linear_1_11743 stop:last-child {
+    stop-color: var(--new-color-end);
+  }
