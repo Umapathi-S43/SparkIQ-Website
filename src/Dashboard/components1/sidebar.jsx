@@ -33,12 +33,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   }, [location.pathname]);
 
   const handleNavigation = (item) => {
-    if (location.pathname !== item.path) {
-      navigate(item.path, { replace: true });
-      setSelectedItem(item.name);
-      if (window.innerWidth < 1024) {
-        toggleSidebar(); // Close sidebar after navigation on small screens
-      }
+    setSelectedItem(item.name);
+    navigate(item.path, { replace: true });
+    if (window.innerWidth < 1024) {
+      toggleSidebar(); // Close sidebar after navigation on small screens
     }
   };
 
