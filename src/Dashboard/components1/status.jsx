@@ -37,7 +37,7 @@ const HomePage = () => {
     } else {
       setSelectedTask(1);
     }
-  }, [location.state]);
+  }, []);
 
   const handleTaskCompletion = (taskNumber) => {
     if (taskNumber === 1 && !task1Completed) {
@@ -58,15 +58,21 @@ const HomePage = () => {
   };
 
   const handleNavigateToBrandSetup = () => {
-    navigate('/brandsetup', { state: { taskNumber: 1 } });
+    setTimeout(() => {
+      navigate('/brandsetup', { state: { taskNumber: 1 } });
+    }, 100); // Adding a slight delay for smoother transition
   };
 
   const handleSocialMediaConnect = () => {
-    navigate('/socialmedia', { state: { taskNumber: 2 } });
+    setTimeout(() => {
+      navigate('/socialmedia', { state: { taskNumber: 2 } });
+    }, 100); // Adding a slight delay for smoother transition
   };
 
   const handleCreateCampaign = () => {
-    navigate('/campaigns', { state: { taskNumber: 3 } });
+    setTimeout(() => {
+      navigate('/campaigns', { state: { taskNumber: 3 } });
+    }, 100); // Adding a slight delay for smoother transition
   };
 
   const canAccessTask = (taskNumber) => {

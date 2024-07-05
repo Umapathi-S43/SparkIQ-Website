@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaUsers } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom'; // Import the useNavigate hook
 
 const suggestions = [
   "Sum Repairs",
@@ -16,6 +17,8 @@ export default function Targetting({ setPage }) {
 
   const [tags, setTags] = useState([]);
   const [input, setInput] = useState("");
+  
+  const navigate = useNavigate(); // Initialize navigate
 
   const updateEstimatedAudience = (duration) => {
     let audience;
@@ -64,6 +67,11 @@ export default function Targetting({ setPage }) {
 
   const handleSuggestionClick = (suggestion) => {
     addTag(suggestion);
+  };
+
+  const handleLaunch_Campaign = () => {
+    localStorage.setItem('task3Completed', 'true');
+    navigate('/Congrats', { state: { task3Completed: true } });
   };
 
   return (
@@ -175,6 +183,7 @@ export default function Targetting({ setPage }) {
         <button
           type="button"
           className="w-full sm:w-auto custom-button rounded-[10px] text-white py-2 px-4 sm:px-6 whitespace-pre font-medium"
+          onClick={handleLaunch_Campaign}
         >
           Launch Campaign
         </button>
