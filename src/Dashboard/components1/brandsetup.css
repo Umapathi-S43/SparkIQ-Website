@@ -21,4 +21,53 @@
   .brand-card1:hover .svg-background {
     fill: url(#bg_gradient_hover);
   }
+
+
   
+  .picker-container {
+  width: 430px;
+}
+
+.picker-content {
+  width: 420px;
+}
+
+.color-canvas, .hue-canvas {
+  width: 380px;
+}
+
+.color-indicator, .hue-indicator {
+  --hue: 0;
+}
+
+@media (max-width: 768px) {
+  .picker-container {
+    max-width: 380px;
+  }
+  .picker-content {
+    max-width: 95%;
+  }
+  .color-canvas, .hue-canvas {
+    width: 320px;
+  }
+  .color-indicator, .hue-indicator {
+    top: -0.25rem;
+    left: calc((var(--hue) / 360) * 320 - 0.875rem);
+  }
+}
+
+@media (max-width: 576px) {
+  .picker-container {
+    max-width: 80%;
+  }
+  .picker-content {
+    max-width: 100%;
+  }
+  .color-canvas, .hue-canvas {
+    width: 280px;
+  }
+  .color-indicator, .hue-indicator {
+    top: -0.25rem;
+    left: calc((var(--hue) / 360) * 280 - 0.875rem);
+  }
+}

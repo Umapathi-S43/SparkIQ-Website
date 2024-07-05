@@ -62,7 +62,7 @@ const Profile = () => {
       <div className="lg:max-w-6xl w-full mx-auto flex flex-col gap-4 border border-[#FCFCFC] rounded-3xl pb-4">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] lg:p-6 p-4 relative">
           <span className="flex items-center lg:gap-4 gap-2">
-            <img src="/icon1.svg" alt="Icon" className="lg:w-14 w-8" />
+            <img src="/icon1.svg" alt="Icon" className="lg:w-14 w-12" />
             <span className="flex flex-col">
               <h4 className="text-[#082A66] font-bold lg:text-xl text-lg">Profile</h4>
               <p className="text-[#374151] text-xs lg:text-base">Modify or create your personal profile</p>
@@ -111,16 +111,16 @@ const Profile = () => {
                 <div className="flex gap-4 lg:gap-6 flex-wrap">
                   <div className="w-full sm:w-1/3 lg:w-1/3">
                     <label className="block text-gray-400">First Name</label>
-                    <input type="text" className="w-full px-4 py-2 border rounded-2xl outline-[#D9E9F2]" placeholder="Enter your first name" />
+                    <input type="text" className="w-full px-4 py-2 border rounded-2xl focus:ring-2 focus-within:ring-blue-400 focus:outline-none" placeholder="Enter your first name" />
                   </div>
                   <div className="w-full sm:w-1/3 lg:w-1/3">
                     <label className="block text-gray-400">Last Name</label>
-                    <input type="text" className="w-full px-4 py-2 border rounded-2xl outline-[#D9E9F2]" placeholder="Enter your last name" />
+                    <input type="text" className="w-full px-4 py-2 border rounded-2xl focus:ring-2 focus-within:ring-blue-400 focus:outline-none" placeholder="Enter your last name" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-gray-400">Account ID</label>
-                  <input type="text" className="w-full sm:w-1/3 lg:w-1/3 px-4 py-2 border rounded-2xl font-bold text-gray-400 outline-[#D9E9F2]" value="2423124124214214124" readOnly />
+                  <input type="text" className="w-full sm:w-1/3 lg:w-1/3 px-4 py-2 border rounded-2xl font-bold text-gray-400 outline-none" value="2423124124214214124" readOnly />
                 </div>
                 <button className="custom-button p-2 pl-6 pr-6 text-white rounded-2xl shadow-2xl flex justify-center w-fit">Update</button>
               </div>
@@ -143,7 +143,7 @@ const Profile = () => {
                 <select
                   value={selectedBrand}
                   onChange={handleBrandChange}
-                  className="w-full px-4 py-2 border rounded-2xl mt-2 outline-[#D9E9F2]"
+                  className="w-full px-4 py-2 border rounded-2xl mt-2 focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 >
                   {userBrands.map((brand) => (
                     <option key={brand.name} value={brand.name}>
@@ -156,7 +156,7 @@ const Profile = () => {
                 <div>
                   <label className="block text-[#1E1154] font-semibold">Brand Description</label>
                   <textarea
-                    className="w-full px-4 py-2 border rounded-2xl h-32 lg:h-40 mt-2 outline-[#D9E9F2]"
+                    className="w-full px-4 py-2 border rounded-2xl h-32 lg:h-40 mt-2 focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     value={brandDescription}
                     onChange={(e) => setBrandDescription(e.target.value)}
                   />

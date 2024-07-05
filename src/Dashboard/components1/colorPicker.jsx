@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { FaEyeDropper, FaChevronDown, FaTint } from 'react-icons/fa';
+import drop from '../../assets/dashboard_img/drop.svg';
+import pen from '../../assets/dashboard_img/pen.svg';
+import { FaChevronDown } from 'react-icons/fa';
 
 const Picker = ({ color, onChangeComplete }) => {
   const [hue, setHue] = useState(0);
@@ -8,7 +10,6 @@ const Picker = ({ color, onChangeComplete }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
   const canvasRef = useRef(null);
   const hueCanvasRef = useRef(null);
-  const hueDiskRef = useRef(null);
 
   const drawPalette = () => {
     const canvas = canvasRef.current;
@@ -95,18 +96,16 @@ const Picker = ({ color, onChangeComplete }) => {
   };
 
   return (
-    <div className="rounded-2xl flex justify-center shadow-lg" style={{ backgroundColor: 'rgba(252, 252, 252, 0.50)', borderColor: '#FFFFFF', width: '430px' }}>
-      <div className="flex flex-col items-center m-2 bg-white shadow-md rounded-xl p-4" style={{ borderColor: '#CFCBDC', width: '420px' }}>
+    <div className="picker-container rounded-2xl flex justify-center shadow-lg" style={{ backgroundColor: 'rgba(252, 252, 252, 0.50)', borderColor: '#FFFFFF' }}>
+      <div className="picker-content flex flex-col items-center m-2 bg-white shadow-md rounded-xl p-4" style={{ borderColor: '#CFCBDC' }}>
         <div className="flex items-center mb-4 w-full">
-          <div className="flex items-center justify-center bg-[#1E1154] rounded-full mr-2" style={{ width: '24px', height: '24px', backgroundColor: 'rgba(30, 17, 84, 0.15)' }}>
-            <FaTint className="text-[#082A66]" />
-          </div>
+          <img src={drop} alt="picker" className='w-10 mr-2'/>
           <h2 className="text-xl font-normal text-[#082A66]">Select Color</h2>
         </div>
         <div className="border p-2 rounded-lg bg-white" style={{ borderColor: '#CFCBDC' }}>
           <div className="relative w-full mb-4">
             <div className="flex items-center mb-2 cursor-pointer" onClick={toggleDropdown}>
-              <FaEyeDropper className="text-black mr-2" />
+              <img src={pen} alt="droper" className='w-5 m-2'/>
               <h3 className="text-lg font-normal text-[#082A66]">Select Custom Color</h3>
               <FaChevronDown className="text-blue-800 ml-auto" />
             </div>
@@ -117,15 +116,14 @@ const Picker = ({ color, onChangeComplete }) => {
                   width={380}
                   height={110}
                   onClick={handleCanvasClick}
-                  className="border p-1 rounded-xl cursor-pointer mb-2"
+                  className="color-canvas border p-1 rounded-xl cursor-pointer mb-2"
                   style={{ borderColor: '#CFCBDC' }}
                 ></canvas>
                 <div
-                  className="absolute"
+                  className="color-indicator absolute"
                   style={{
-                     // Adjusted to center circle on cursor
-                    top:colorPosition.y,
-                     left: colorPosition.x, // Adjusted to center circle on cursor
+                    top: colorPosition.y - 5, // Adjusted to center circle on cursor
+                    left: colorPosition.x - 5, // Adjusted to center circle on cursor
                     width: '10px',
                     height: '10px',
                     borderRadius: '50%',
@@ -139,12 +137,11 @@ const Picker = ({ color, onChangeComplete }) => {
                     width={380}
                     height={12}
                     onMouseDown={handleHueMouseDown}
-                    className="border rounded-lg cursor-pointer mb-2"
+                    className="hue-canvas border rounded-lg cursor-pointer mb-2"
                     style={{ borderColor: '#CFCBDC' }}
                   ></canvas>
                   <div
-                    ref={hueDiskRef}
-                    className="absolute"
+                    className="hue-indicator absolute"
                     style={{
                       top: -1, // Adjusted to better align with the hue bar
                       left: (hue / 360) * 380 - 7,
@@ -172,7 +169,9 @@ const Picker = ({ color, onChangeComplete }) => {
           </div>
         </div>
       </div>
+      
     </div>
+    
   );
 };
 

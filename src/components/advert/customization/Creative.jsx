@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { images, initialPhrases } from "./Data";
 import Picker from "../../../Dashboard/components1/colorPicker";
 
@@ -19,6 +19,20 @@ export default function Creative({
   const [showDropdown, setShowDropdown] = useState(false);
   const [phrases, setPhrases] = useState(initialPhrases);
   const dropdownRef = useRef(null);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth <= 540);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Call on mount
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -119,7 +133,7 @@ export default function Creative({
   };
 
   return (
-    <div className="flex flex-col gap-4 pt-4 px-6">
+    <div className="flex flex-col gap-4 pt-4 px-4 sm:px-6 md:px-8 lg:px-10">
       <div className="flex flex-col items-center justify-center bg-white shadow-md rounded-[20px] p-2">
         {uploadedImage ? (
           <div className="border border-[#605880] border-dotted rounded-[20px] w-full flex gap-4 p-6 items-center justify-between">
@@ -127,7 +141,7 @@ export default function Creative({
               <img
                 src={uploadedImage}
                 alt=""
-                className="w-32 h-32 rounded-lg object-cover"
+                className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover"
               />
             </div>
             <button
@@ -139,7 +153,7 @@ export default function Creative({
           </div>
         ) : (
           <div
-            className={`border border-[#605880] border-dotted rounded-[20px] w-full flex flex-col items-center justify-center py-6 ${
+            className={`border border-[#605880] border-dashed rounded-[20px] w-full flex flex-col items-center justify-center py-3 ${
               isDragging ? "bg-blue-100" : ""
             }`}
             onDragOver={handleDragOver}
@@ -147,9 +161,9 @@ export default function Creative({
             onDrop={handleDrop}
           >
             <img src="/icon3.svg" alt="" width={24} />
-            <div className="flex gap-2">
+            <div className="flex gap-1 m-2">
               <div>
-                <label className="cursor-pointer">
+                <label className="cursor-pointer text-xs sm:text-sm lg:text-md">
                   Drop your own ad creative here or select file
                   <input
                     type="file"
@@ -163,17 +177,17 @@ export default function Creative({
           </div>
         )}
       </div>
-      <div className="flex items-center justify-center my-5">
+      <div className="flex items-center justify-center my-3">
         <div className="flex-1 h-[1px] bg-[#ccc] mx-3"></div>
-        <span className="text-sm">or edit these details</span>
+        <span className="text-xs sm:text-sm">or edit these details</span>
         <div className="flex-1 h-[1px] bg-[#ccc] mx-3"></div>
       </div>
-      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-xl py-4 px-5 flex items-center justify-between shadow">
+      <div className="border border-[#FCFCFC] rounded-xl py-4 px-5 flex flex-col sm:flex-row items-start justify-between shadow">
         <span className="flex flex-col gap-3 w-full">
-          <p className="text-[#9CA3AF] text-sm">Ad Content</p>
-          <div className="relative flex items-center gap-4 bg-white shadow-lg rounded-2xl">
+          <p className="text-[#9CA3AF] text-xs sm:text-sm">Ad Content</p>
+          <div className="relative flex flex-col gap-2 w-full">
             <textarea
-              className="bg-transparent border border-white  text-[#020817] text-sm w-full p-4 outline-none rounded-2xl"
+              className="bg-white border border-white text-[#020817] text-xs sm:text-sm w-full p-2 sm:p-4 focus:ring-2 focus:ring-blue-400 focus:outline-none rounded-2xl shadow-lg"
               rows={1}
               id="content"
               onChange={handleOnchange}
@@ -182,18 +196,18 @@ export default function Creative({
               }
             />
             <span
-              className="flex items-center gap-2 absolute right-0 z-10 h-full cursor-pointer shadow-sm px-2 rounded-lg"
+              className={`flex items-center gap-2 bg-white h-full cursor-pointer shadow-sm px-2 py-1 rounded-2xl sm:absolute sm:right-0 z-10 ${isSmallScreen ? 'mt-2' : ''}`}
               onClick={toggleDropdown}
             >
               <img src="/icon7.svg" alt="" onClick={refreshPhrases} />
-              <p className="text-[#000000B2] text-sm whitespace-pre">
+              <p className="text-[#000000B2] text-xs sm:text-sm whitespace-pre">
                 AI Assist
               </p>
             </span>
             {showDropdown && (
               <div
                 ref={dropdownRef}
-                className="absolute top-full right-0 mt-2 w-80 bg-white shadow-md rounded-lg z-20 max-h-64 overflow-y-auto"
+                className="absolute top-full right-0 mt-2 w-64 sm:w-80 bg-white shadow-md rounded-lg z-20 max-h-64 overflow-y-auto"
               >
                 {phrases.map((phrase, index) => (
                   <div
@@ -210,20 +224,20 @@ export default function Creative({
         </span>
       </div>
       <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-xl py-4 px-5 flex items-center justify-between shadow">
-        <span className="flex flex-col gap-3 w-full ">
-          <p className="text-[#9CA3AF] text-sm">CTA</p>
+        <span className="flex flex-col gap-3 w-full">
+          <p className="text-[#9CA3AF] text-xs sm:text-sm">CTA</p>
           <input
             type="text"
             defaultValue="Discover More"
-            className="bg-transparent border border-white text-[#020817] text-sm w-full p-4 outline-none bg-white rounded-2xl shadow-lg"
+            className="bg-transparent border border-white text-[#020817] text-xs sm:text-sm w-full p-2 sm:p-4 focus:ring-2 focus-within:ring-blue-400 focus:outline-none bg-white rounded-2xl shadow-lg"
             id="cta"
             onChange={handleOnchange}
             value={captionDetails.cta}
           />
         </span>
       </div>
-      <div className="p-6">
-        <p className="text-sm text-[#989BA0]">Choose your color</p>
+      <div className="p-4 sm:p-6">
+        <p className="text-xs sm:text-sm text-[#989BA0]">Choose your color</p>
         <div className="flex gap-2 py-2 relative">
           {colors.map((color, index) => (
             <div key={index} className="relative">
@@ -291,7 +305,7 @@ export default function Creative({
             </div>
           )}
         </div>
-        <p className="text-sm text-[#989BA0] pb-2">Ad templates</p>
+        <p className="text-xs sm:text-sm text-[#989BA0] pb-2">Ad templates</p>
         <div className="grid lg:grid-cols-3 grid-cols-1 gap-4">
           {images.map((image) => (
             <img
@@ -305,8 +319,11 @@ export default function Creative({
         </div>
         <div className="flex justify-center mt-6">
           <button
-            className="w-fit custom-button rounded-[20px] text-white py-3 px-10 whitespace-pre font-medium"
-            onClick={() => setPage("adPreview")}
+            className="w-fit custom-button rounded-[20px] text-white py-2 sm:py-3 px-6 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm lg:text-lg" 
+            onClick={() => {
+              console.log("Save Template clicked");
+              setPage("adPreview");
+            }}
           >
             Save Template
           </button>

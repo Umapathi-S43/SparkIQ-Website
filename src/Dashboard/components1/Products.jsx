@@ -40,7 +40,7 @@ const Products = () => {
 
   return (
     <div className="flex-grow overflow-y-auto hide-scrollbar" style={{maxHeight:'90vh'}}>
-      <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] border-t-0 rounded-3xl pb-4">
+      <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl pb-4">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-7 relative">
           <span className="flex items-center gap-4">
             <div className="relative flex items-center justify-center ml-1">

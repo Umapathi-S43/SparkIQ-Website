@@ -85,7 +85,7 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
   return (
     <div className="flex-grow rounded-3xl p-2 overflow-auto hide-scrollbar" style={{ maxHeight: '80vh' }}>
       <div className="w-full max-w-6xl mx-auto border border-[#fcfcfc] rounded-2xl lg:rounded-3xl flex flex-col items-center">
-        <div className="w-full bg-[rgba(252,252,252,0.40)] lg:h-auto h-40px lg:rounded-t-3xl rounded-t-2xl p-2 mb-4">
+        <div className="w-full bg-[rgba(252,252,252,0.40)] lg:h-auto h-40px lg:rounded-t-3xl rounded-t-2xl lg:p-2 mb-4 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="bg-[rgba(0,39,153,0.15)] lg:ml-4 ml-1 lg:w-12 lg:h-12 w-10 h-10 rounded-xl lg:rounded-xl flex items-center justify-center">

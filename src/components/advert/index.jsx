@@ -1,17 +1,21 @@
-import { useState } from "react";
-import Header from "../../Dashboard/components1/header";
-import Sidebar from "../../Dashboard/components1/sidebar";
-import GenerateAd from "./GenerateAd";
-import AdPreview from "./AdPreview";
-import LauchCampaign from "./launchCampaign";
-import "./index.css";
+import React, { useState, useEffect } from 'react';
+import Header from '../../Dashboard/components1/header1';
+import Sidebar from '../../Dashboard/components1/sidebar1';
+import GenerateAd from '../../components/advert/GenerateAd';
+import AdPreview from '../../components/advert/AdPreview';
+import LauchCampaign from '../../components/advert/launchCampaign';
 
 export default function AdCampaign() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
   const [pages, setPages] = useState({
     generateAd: true,
     adPreview: false,
     lauchCampaign: false,
   });
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   const setPage = (page) => {
     setPages({
@@ -22,20 +26,40 @@ export default function AdCampaign() {
     });
   };
 
-  return (
-    <div className="bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col min-h-screen">
-        <div className='m-4 mb-0 p-4 border-2 border-[#FCFCFC] rounded-3xl'>
-      <Header />
-      <div className="flex flex-grow">
-        <Sidebar />
-        <div className="flex-grow">
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    };
 
-      {pages.generateAd && <GenerateAd setPage={setPage} pages={pages} />}
-      {pages.adPreview && <AdPreview setPage={setPage} />}
-      {pages.lauchCampaign && <LauchCampaign setPage={setPage} />}
-    </div>
-    </div>
-    </div>
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex items-center justify-center pl-4 pr-4 overflow-hidden">
+      <div className="border-2 border-[#FCFCFC] rounded-3xl w-full overflow-hidden" style={{ height: 'calc(100vh - 1rem)' }}>
+        <div className="flex flex-col min-h-screen">
+          <Header toggleSidebar={toggleSidebar} />
+          <div className="flex flex-grow">
+            <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+            <div className={`flex-grow transition-transform duration-300 ${isSidebarOpen ? '-ml-6' : 'ml-0'}`}>
+              <div className='m-2'>
+                {pages.generateAd && <GenerateAd setPage={setPage} pages={pages} />}
+                {pages.adPreview && <AdPreview setPage={setPage} />}
+                {pages.lauchCampaign && <LauchCampaign setPage={setPage} />}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

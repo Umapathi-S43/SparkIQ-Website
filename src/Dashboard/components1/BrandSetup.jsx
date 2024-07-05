@@ -117,16 +117,16 @@ const BrandSetup = () => {
 
   return (
     <div className="flex-grow">
-      <div className="max-w-6xl mx-auto border border-[#fcfcfc] rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-3xl flex flex-col items-center">
-        <div className="w-full bg-[rgba(252,252,252,0.40)] rounded-t-lg sm:rounded-t-xl md:rounded-t-2xl lg:rounded-t-3xl p-1">
+      <div className="max-w-6xl mx-auto border border-[#fcfcfc] rounded-3xl flex flex-col items-center">
+        <div className="w-full bg-[rgba(252,252,252,0.40)] rounded-t-3xl lg:p-1 p-4">
             <div className="flex items-center ml-4">
             <div className="flex items-center justify-center w-12 h-12 bg-[rgba(0,39,153,0.15)] rounded-2xl">
               <div className="relative w-8 h-8 bg-[#082A66] rounded-xl flex items-center justify-center">
                 <img src={brandIcon} className="w-4 h-4" />
               </div>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#082a66] ml-4 md:mr-auto text-nowrap">Brand Setup</h1>
-            <img src={brandImage} alt="Brand Banner" className="w-24 h-12 sm:w-32 sm:h-16 md:w-[180px] md:h-[90px] lg:mr-20 sm:ml-4 md:m-auto lg:block" />
+            <h1 className="text-2xl md:text-3xl font-bold text-[#082a66] ml-4 md:mr-auto text-nowrap">Brand Setup</h1>
+            <img src={brandImage} alt="Brand Banner" className="w-24 h-12 sm:w-32 sm:h-16 md:w-[180px] md:h-[90px] lg:mr-20 sm:ml-4 md:m-auto hidden lg:block" />
           </div>
         </div>
         <div className="flex flex-col lg:flex-row p-8 w-full mb-2 overflow-y-auto hide-scrollbar" style={{ maxHeight: '64vh' }}>

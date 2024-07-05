@@ -57,13 +57,13 @@ const LoginPage = () => {
             <h2 className="text-3xl text-[#082A66] font-bold mb-2 text-center">Login</h2>
             <p className="text-xl text-[#0A3580] mb-6 text-center font-medium">to the future of marketing.</p>
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
-              <button type="button" className="w-full sm:w-1/2 py-2 bg-white text-[#082A66] font-bold rounded-lg flex items-center justify-center shadow-sm outline-[#D9E9F2]">
+              <button type="button" className="w-full sm:w-1/2 py-2 bg-white text-[#082A66] font-bold rounded-lg flex items-center justify-center shadow-sm focus-within:ring-blue-400 focus:outline-none">
                 <div className="flex items-center">
                   <span className='pl-2'>Login with Google</span>
                   <img src={googleLogo} alt="Google" className="w-3 h-3 ml-1 mr-1 " style={{ backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} />
                 </div>
               </button>
-              <button type="button" className="w-full sm:w-1/2 py-2 bg-white text-[#082A66] font-bold rounded-lg flex items-center justify-center shadow-sm outline-[#D9E9F2]">
+              <button type="button" className="w-full sm:w-1/2 py-2 bg-white text-[#082A66] font-bold rounded-lg flex items-center justify-center shadow-sm focus-within:ring-blue-400 focus:outline-none">
                 <div className="flex items-center">
                   <span>Login with Meta</span>
                   <img src={metaLogo} alt="Meta" className="w-3 h-3 ml-2" style={{ backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} />
@@ -84,7 +84,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={handleEmailChange}
                 required
-                className="w-full p-2 rounded-lg outline-[#D9E9F2]"
+                className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
               />
               <div className="relative">
                 <input
@@ -93,7 +93,7 @@ const LoginPage = () => {
                   value={password}
                   onChange={handlePasswordChange}
                   required
-                  className="w-full p-2 rounded-lg outline-[#D9E9F2]"
+                  className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
                 <span
                   className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"

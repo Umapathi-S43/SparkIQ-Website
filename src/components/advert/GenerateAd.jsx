@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import ProductDetails from "./productDetails";
 import CreativeSize from "./creativeSize";
-import { useState } from "react";
 import Customization from "./customization";
 
 export default function GenerateAd({ setPage, pages }) {
@@ -26,8 +25,8 @@ export default function GenerateAd({ setPage, pages }) {
 
   return (
     <div className="flex-grow">
-      <div className="max-w-6xl w-full mx-auto mt-4 flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-180px)]">
-        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-6 relative pb-4">
+      <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-180px)]">
+        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-6 relative ">
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon1.svg" alt="" className="w-10 lg:w-14" />
             <span className="flex flex-col">

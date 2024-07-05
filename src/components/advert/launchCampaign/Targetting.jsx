@@ -67,16 +67,16 @@ export default function Targetting({ setPage }) {
   };
 
   return (
-    <form className="w-full flex flex-col gap-4">
-      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-[30px] p-6 pb-2">
-        <h6 className="font-bold pb-4">Gender</h6>
-        <div className="border border-[#FCFCFC] rounded-[20px] shadow-sm px-2 py-2 bg-white w-full mx-auto flex justify-between">
+    <form className="w-full flex flex-col gap-4 p-4">
+      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-[30px] p-6 pb-2 overflow-hidden">
+        <h6 className="font-bold pb-4 text-lg md:text-base">Gender</h6>
+        <div className="border border-[#FCFCFC] rounded-[20px] shadow-sm px-2 py-2 bg-white w-full mx-auto flex flex-wrap justify-between">
           {["Male", "Female", "All"].map((item) => (
             <button
               type="button"
               key={item}
-              className={`cursor-pointer flex items-center py-2 px-8 font-bold text-sm rounded-2xl ${
-                item === gender ? "targetBg" : ""
+              className={`cursor-pointer flex items-center py-2 px-4 sm:px-8 font-bold text-sm md:text-xs rounded-2xl ${
+                item === gender ? "bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2]" : ""
               }`}
               onClick={() => {
                 setGender(item);
@@ -86,19 +86,19 @@ export default function Targetting({ setPage }) {
             </button>
           ))}
         </div>
-        <span className="flex gap-3 py-4">
+        <span className="flex gap-3 py-4 text-lg md:text-base">
           Suggested: <h6 className="font-bold">{gender}</h6>
         </span>
       </div>
-      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-[30px] p-6">
-        <h6 className="font-bold pb-4">Target Audience Interests</h6>
+      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-[30px] p-6 overflow-hidden">
+        <h6 className="font-bold pb-4 text-lg md:text-base">Target Audience Interests</h6>
         <div className="flex flex-col w-full mx-auto rounded-lg">
           <div className="flex flex-col p-2 rounded-lg bg-white border border-[#FCFCFC]">
-            <div className="flex flex-wrap items-center ">
+            <div className="flex flex-wrap items-center w-full">
               {tags.map((tag, index) => (
                 <span
                   key={index}
-                  className="targetBg px-2 py-1 m-1 rounded flex items-center w-fit"
+                  className="bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-2 py-1 m-1 rounded flex items-center w-fit"
                 >
                   {tag}
                   <button
@@ -111,22 +111,19 @@ export default function Targetting({ setPage }) {
                 </span>
               ))}
               <input
-                className="flex-1 border-none rounded-2xl outline-none p-1 "
+                className="flex-1 border-none rounded-2xl outline-none p-1 m-1 min-w-[100px]"
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Interests"
-                style={{ minWidth: '100px', flex: '1' }}
               />
             </div>
           </div>
-          <h4 className="flex items-center gap-2 pb-4 mt-2">
+          <h4 className="flex items-center gap-2 pb-4 mt-2 text-lg md:text-base">
             Suggestions{" "}
             <span className="flex items-center gap-2 h-full cursor-pointer px-2 rounded-lg">
               <img src="/icon7.svg" alt="" />
-              <p className="text-[#000000B2] text-sm whitespace-pre">
-                AI Assist
-              </p>
+              <p className="text-[#000000B2] text-sm whitespace-pre">AI Assist</p>
             </span>
           </h4>
           <div className="flex flex-wrap gap-2">
@@ -134,7 +131,7 @@ export default function Targetting({ setPage }) {
               <button
                 type="button"
                 key={index}
-                className="targetBg p-2 rounded-lg hover:bg-blue-200 outline-none"
+                className="bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] p-2 rounded-lg hover:bg-blue-200 outline-none"
                 onClick={() => handleSuggestionClick(suggestion)}
               >
                 {suggestion} +
@@ -143,16 +140,16 @@ export default function Targetting({ setPage }) {
           </div>
         </div>
       </div>
-      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-[30px]">
+      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-[30px] overflow-hidden">
         <div className="flex items-center justify-between w-full bg-[#FCFCFC66] rounded-t-[30px] p-4">
           <FaUsers className="bg-[#00279926] rounded-[10px] w-12 h-10 px-3" />
-          <div className=" rounded-[20px] px-2 py-2 gap-4 bg-[#FCFCFC40] w-full mx-auto flex justify-end">
+          <div className="rounded-[20px] px-2 py-2 gap-4 bg-[#FCFCFC40] w-full mx-auto flex justify-end flex-wrap">
             {["Daily", "Weekly", "Monthly"].map((item) => (
               <button
                 type="button"
                 key={item}
-                className={`cursor-pointer flex items-center px-4 py-2 font-bold text-sm gap-2 rounded-xl ${
-                  duration === item ? "targetBg" : "bg-white"
+                className={`cursor-pointer flex items-center px-4 py-2 font-bold text-sm md:text-xs gap-2 rounded-xl ${
+                  duration === item ? "bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2]" : "bg-white"
                 }`}
                 onClick={() => handleDurationChange(item)}
               >
@@ -162,26 +159,22 @@ export default function Targetting({ setPage }) {
           </div>
         </div>
         <div className="relative flex flex-col items-center justify-center gap-4 py-8">
-          <p className="text-xl font-bold">Estimated Audience</p>
-          <p className="font-bold text-4xl">{estimatedAudience}</p>
-          <img
-            src="/figure-3.png"
-            alt=""
-            className="absolute bottom-0 right-0"
-          />
+          <p className="text-xl md:text-lg font-bold">Estimated Audience</p>
+          <p className="font-bold text-4xl md:text-3xl">{estimatedAudience}</p>
+          <img src="/figure-3.png" alt="" className="absolute bottom-0 right-0 hidden sm:block max-w-full w-auto" />
         </div>
       </div>
-      <div className="flex justify-end mt-6 gap-4">
+      <div className="flex flex-col sm:flex-row justify-end mt-6 gap-4">
         <button
           type="button"
-          className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-6 whitespace-pre font-medium border border-[#0086CD80]"
+          className="w-full sm:w-auto bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-4 sm:px-6 whitespace-pre font-medium border border-[#0086CD80] hover:opacity-70"
           onClick={() => setPage("adPreview")}
         >
           Go Back
         </button>
         <button
           type="button"
-          className="w-fit custom-button rounded-[10px] text-white py-2 px-6 whitespace-pre font-medium"
+          className="w-full sm:w-auto custom-button rounded-[10px] text-white py-2 px-4 sm:px-6 whitespace-pre font-medium"
         >
           Launch Campaign
         </button>
