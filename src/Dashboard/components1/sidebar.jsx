@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
 import logo from '../../assets/dashboard_img/logo.png';
@@ -11,31 +11,9 @@ import profileIcon from '../../assets/dashboard_img/user.svg';
 import signoutIcon from '../../assets/dashboard_img/signout.svg';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const [selectedItem, setSelectedItem] = React.useState('Home');
+  const [selectedItem, setSelectedItem] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-
-  React.useEffect(() => {
-    const path = location.pathname;
-    const currentItem = navItems.find(item => path.includes(item.path));
-    if (currentItem) {
-      setSelectedItem(currentItem.name);
-    } else {
-      setSelectedItem('Home');
-    }
-  }, [location.pathname]);
-
-  const handleNavigation = (item) => {
-    setSelectedItem(item.name);
-    navigate(item.path);
-    if (window.innerWidth < 1024) {
-      toggleSidebar(); // Close sidebar after navigation on small screens
-    }
-  };
-
-  const handleSignOut = () => {
-    navigate('/login');
-  };
 
   const navItems = [
     { name: 'Home', icon: homeIcon, path: '/homepage' },
@@ -45,6 +23,28 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'View Plan', icon: viewPlanIcon, path: '/view-plan' },
     { name: 'Profile', icon: profileIcon, path: '/profile' }
   ];
+
+  useEffect(() => {
+    const path = location.pathname;
+    const currentItem = navItems.find(item => path.includes(item.path));
+    if (currentItem) {
+      setSelectedItem(currentItem.name);
+    }
+  }, [location.pathname]);
+
+  const handleNavigation = (item) => {
+    if (location.pathname !== item.path) {
+      navigate(item.path, { replace: true });
+      setSelectedItem(item.name);
+      if (window.innerWidth < 1024) {
+        toggleSidebar(); // Close sidebar after navigation on small screens
+      }
+    }
+  };
+
+  const handleSignOut = () => {
+    navigate('/login');
+  };
 
   return (
     <div className={`fixed inset-0 z-50 lg:relative lg:inset-auto lg:h-auto lg:w-64 transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
