@@ -8,12 +8,12 @@ const TermsOfService = () => {
       <div className="min-h-screen bg-gray-100 flex flex-col items-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-1/10 h-full bg-gradient-to-r from-blue-200 to-transparent"></div>
         <header className="w-full py-4 relative z-10" style={{ background: 'linear-gradient(90deg, white, #cfe9ff)' }}>
-          <div className="container mx-auto flex items-center py-4 px-4">
-            <img src={sparkLogo} alt="spark logo" className="w-[158px]" />
-            <h1 className="text-3xl font-semibold text-blue-700 text-center absolute w-full top-12">Terms of Service</h1>
+          <div className="container mx-auto flex items-center justify-center flex-col sm:flex-row py-4 px-4">
+            <img src={sparkLogo} alt="spark logo" className="w-[158px] mb-4 sm:mb-0 sm:mr-4" />
+            <h1 className="text-3xl font-semibold text-blue-700 text-center">Terms of Service</h1>
           </div>
         </header>
-        <main className="container mx-auto p-12 bg-white bg-opacity-70 shadow-md mt-[-1%] rounded-lg max-w-4xl relative z-10 backdrop-filter backdrop-blur-lg border border-gray-200 mb-12">
+        <main className="container mx-auto p-6 lg:mt-4 sm:p-12 bg-white bg-opacity-70 shadow-md mt-[-1%] rounded-lg max-w-4xl relative z-10 backdrop-filter backdrop-blur-lg border border-gray-200 mb-12 text-justify">
           <section>
             <h2 className="text-2xl font-bold mb-4">SPARK IQ'S PROMISE</h2>
             <p className="mb-6">

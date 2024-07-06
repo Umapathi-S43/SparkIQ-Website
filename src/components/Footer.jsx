@@ -1,13 +1,17 @@
+import React from 'react';
 import logo from "../assets/logo.png";
 import { Link } from "react-router-dom";
+import '../index.css'; // Import the CSS file with the background image
+import '../../src/index.css'
+
 const Footer = () => {
 	return (
-		<footer className="flex h-[230px] p-12 relative items-center px-[6rem]">
-			<div className="w-1/2">
-				<img src={logo} alt="" className="w-[158px]" />
+		<footer className="relative flex flex-col md:flex-row h-auto md:h-[230px] p-6 md:p-12 items-center md:px-[6rem]">
+			<div className="w-full md:w-1/2 mb-4 md:mb-0 flex justify-center md:justify-start">
+				<img src={logo} alt="" className="w-[120px] md:w-[158px]" />
 			</div>
-			<div className="w-1/2 flex justify-between">
-				<div className="flex flex-col gap-6">
+			<div className="w-full md:w-1/2 flex flex-col md:flex-row justify-between text-center md:text-left">
+				<div className="flex flex-col gap-3 md:gap-6 mb-4 md:mb-0">
 					<Link to="#" className="font-bold">
 						About
 					</Link>
@@ -18,7 +22,7 @@ const Footer = () => {
 						Success Story
 					</Link>
 				</div>
-				<div className="flex flex-col gap-6">
+				<div className="flex flex-col gap-3 md:gap-6 mb-4 md:mb-0 sm:mr-4">
 					<Link to="#" className="font-bold">
 						Resources
 					</Link>
@@ -26,7 +30,7 @@ const Footer = () => {
 						Contact Us
 					</Link>
 				</div>
-				<div className="flex flex-col gap-6">
+				<div className="flex flex-col gap-3 md:gap-6 mb-4 md:mb-0">
 					<Link to="#" className="font-bold">
 						Terms and Security
 					</Link>
