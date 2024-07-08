@@ -31,7 +31,7 @@ const Hero = () => {
 		<div>
 			<main
 				id="home"
-				className="min-h-screen lg:h-[800px] flex justify-center items-center gradient-bg relative"
+				className="min-h-screen lg:h-[800px] flex justify-center items-center gradient-bg relative lg:mt-14"
 			>
 				<div className="w-1/2">
 					<h1 className="text-6xl py-4 w-3/4 font-bold">
