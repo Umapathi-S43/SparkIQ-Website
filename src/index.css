@@ -16,7 +16,31 @@
 	max-width: 1536px;
 	margin: 0 auto;
 }
-
+::-webkit-scrollbar {
+	width: 12px;
+  }
+  
+  ::-webkit-scrollbar-track {
+	background: #f1f1f1;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+	background-color: #B3D4E5;
+	border-radius: 10px;
+	border: 3px solid #f1f1f1;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+	background: #A0C1D1;
+  }
+  
+  /* Custom scrollbar for Firefox */
+  html {
+	scrollbar-width: thin;
+	scrollbar-color: #B3D4E5 #f1f1f1;
+  }
+  
+  
 main {
 	margin: 0;
 	padding: 0 6rem;
