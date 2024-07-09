@@ -20,11 +20,11 @@ const BrandSetup = () => {
   const [brandName, setBrandName] = useState("");
   const [brandDescription, setBrandDescription] = useState("");
   const [brandLogo, setBrandLogo] = useState(null);
-  // const [brandColor1, setBrandColor1] = useState("#283048");
-  // const [brandColor2, setBrandColor2] = useState("#859398");
+  const [imageFile, setImageFile] = useState(null);
+
   const [logoURL, setLogoURL] = useState("");
   const [isDisable, setIsDisable] = useState(true);
-  const [domColors, setDomColors] = useState([]);
+  const [domColors, setDomColors] = useState(null);
 
   const [customColor, setCustomColor] = useState("#000000");
   const [additionalColors, setAdditionalColors] = useState([]);
@@ -41,8 +41,8 @@ const BrandSetup = () => {
   const handleLogoUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const objectURL = URL.createObjectURL(file);
-      setBrandLogo(objectURL);
+      setBrandLogo(URL.createObjectURL(file));
+      setImageFile(file);
     }
   };
 
@@ -71,36 +71,38 @@ const BrandSetup = () => {
     setCompletedSections(newCompletedSections);
     setExpandedSection(section + 1); // Automatically open the next section
   };
-  const baseUrl = "http://48.217.215.157:8083/swagger-ui/index.html#";
+  const baseUrl = "http://48.217.251.157:8083";
 
   const uploadImage = async () => {
-    const uploadData = {
-      customerId: "123",
-      file: brandLogo,
-    };
+    const uploadData = new FormData();
+    uploadData.append("file", imageFile);
+    uploadData.append("customerId", "123");
+
     try {
-      await axios
-        .post(`${baseUrl}/sparkiq/image/upload`, uploadData)
-        .then((res) => {
-          setLogoURL(res.data.data.url);
-          alert("success upload");
-          dominantColor();
-          console.log(res);
-        });
+      const res = await axios.post(
+        `${baseUrl}/sparkiq/image/upload`,
+        uploadData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      setLogoURL(res.data.data.url);
+      alert("success upload");
+      dominantColor(res.data.data.url);
+      console.log(res);
     } catch (error) {
       console.log(error);
     }
   };
 
-  const dominantColor = async () => {
-    const url = {
-      url: logoURL,
-    };
+  const dominantColor = async (url) => {
     try {
       await axios
-        .post(`${baseUrl}/sparkiq/ai/product/dominant-colors`, url)
+        .post(`${baseUrl}/sparkiq/ai/product/dominant-colors`, { url: url })
         .then((res) => {
-          setDomColors(res.data.data.dominant_color);
+          setDomColors(res.data.data.background_colors);
           alert("success dominant color");
           console.log(res);
         });
@@ -415,27 +417,30 @@ const BrandSetup = () => {
               {expandedSection === 3 && (
                 <div className="p-2" onClick={handlePickerClick}>
                   <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
-                    {domColors?.map((colors, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center bg-white p-2 rounded-xl"
-                      >
-                        <label className="text-sm pl-4 font-semibold lg:pr-14 pr-10 text-nowrap">
-                          Brand Color {index}
-                        </label>
-                        <button
-                          className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
-                          style={{ background: rgb(colors) }}
-                          onClick={() => {
-                            setCustomColor(rgb(colors));
-                            setColorPickerTarget(null);
-                            setColorPickerOpen(true);
-                          }}
+                    {domColors?.map((colors, index) => {
+                      const rgbColor = `rgb(${colors[0]}, ${colors[1]}, ${colors[2]})`;
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-2 rounded-xl"
                         >
-                          rgb{colors}
-                        </button>
-                      </div>
-                    ))}
+                          <label className="text-sm pl-4 font-semibold lg:pr-14 pr-10 text-nowrap">
+                            Brand Color {index}
+                          </label>
+                          <button
+                            className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
+                            style={{ background: rgbColor }}
+                            onClick={() => {
+                              setCustomColor(rgbColor);
+                              setColorPickerTarget(null);
+                              setColorPickerOpen(true);
+                            }}
+                          >
+                            {rgbColor}
+                          </button>
+                        </div>
+                      );
+                    })}
                     {additionalColors.map((color, index) => (
                       <div
                         key={index}
