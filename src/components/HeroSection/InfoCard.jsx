@@ -1,9 +1,11 @@
 import "animate.css";
 import Xarrow from "react-xarrows";
-
 import PropTypes from "prop-types";
+import { useMediaQuery } from "react-responsive";
 
 const InfoCard = ({ image, title, position, reveal, component, index }) => {
+	const isLargeScreen = useMediaQuery({ query: "(min-width: 1024px)" });
+
 	const positionClass =
 		position === "top-right"
 			? "-top-10 -right-14"
@@ -40,7 +42,7 @@ const InfoCard = ({ image, title, position, reveal, component, index }) => {
 					/>
 				)}
 			</div>
-			{reveal && (
+			{reveal && isLargeScreen && (
 				<Xarrow
 					start="hero-img"
 					end={position}

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-
 import chartLineUp from "../../assets/icons/chart-line-up.svg";
 
 const InfoGrowth = () => {
@@ -33,17 +32,18 @@ const InfoGrowth = () => {
 			}
 		};
 	}, []);
+
 	return (
 		<div className="relative" ref={growthRef}>
 			<div
 				data-aos="zoom-in"
-				className=" w-20 h-20 rounded-[32px] growth-div flex items-center justify-center shadow-lg"
+				className="w-16 h-16 lg:w-20 lg:h-20 rounded-[32px] growth-div flex items-center justify-center shadow-lg"
 			>
-				<img src={chartLineUp} alt="" />
+				<img src={chartLineUp} alt="" className="w-8 h-8 sm:w-10 sm:h-10" />
 			</div>
 			<div
 				data-aos="fade-left"
-				className="absolute bg-[#10b981] w-20 h-[34px] rounded-xl flex items-center justify-center text-white font-bold -top-5 -right-10 shadow-md"
+				className="absolute bg-[#10b981] w-16 h-[28px] sm:w-20 sm:h-[34px] rounded-xl flex items-center justify-center text-white font-bold text-xs sm:text-base -top-4 sm:-top-5 -right-8 sm:-right-10 shadow-md"
 			>
 				<p>+{growth}%</p>
 			</div>
