@@ -32,35 +32,65 @@ const Leads = () => {
 		};
 	}, []);
 
-	const radius = 20;
-	const circumference = 2 * Math.PI * radius;
-	const offset = circumference - (leads / 100) * circumference;
+	const radiusSmall = 15; // Increased radius for smaller screens
+	const circumferenceSmall = 2 * Math.PI * radiusSmall;
+	const offsetSmall = circumferenceSmall - (leads / 100) * circumferenceSmall;
+
+	const radiusLarge = 20;
+	const circumferenceLarge = 2 * Math.PI * radiusLarge;
+	const offsetLarge = circumferenceLarge - (leads / 100) * circumferenceLarge;
 
 	return (
 		<div
 			ref={leadsRef}
 			data-aos="fade-right"
-			className="w-[220px] h-[70px] growth-div rounded-[32px] shadow-lg flex items-center justify-between px-4 gap-4"
+			className="lg:w-[220px] md:w-[160px] w-[136px] h-[60px] lg:h-[70px] growth-div rounded-[32px] shadow-lg flex items-center justify-between px-4 gap-4"
 		>
-			<div className="circular-progress">
-				<svg width="50" height="50">
-					<circle className="circle-bg" cx="25" cy="25" r={radius} />
+			<div className="circular-progress relative">
+				<svg width="35" height="35" className="block lg:hidden">
+					<circle className="circle-bg" cx="17.5" cy="17.5" r={radiusSmall} />
+					<circle
+						className="circle"
+						cx="17.5"
+						cy="17.5"
+						r={radiusSmall}
+						strokeDasharray={circumferenceSmall}
+						strokeDashoffset={offsetSmall}
+					/>
+					<text
+						x="50%"
+						y="50%"
+						dominantBaseline="middle"
+						textAnchor="middle"
+						className="text-[8px] font-bold"
+					>
+						+{leads}%
+					</text>
+				</svg>
+				<svg width="50" height="50" className="hidden lg:block">
+					<circle className="circle-bg" cx="25" cy="25" r={radiusLarge} />
 					<circle
 						className="circle"
 						cx="25"
 						cy="25"
-						r={radius}
-						strokeDasharray={circumference}
-						strokeDashoffset={offset}
+						r={radiusLarge}
+						strokeDasharray={circumferenceLarge}
+						strokeDashoffset={offsetLarge}
 					/>
+					<text
+						x="50%"
+						y="50%"
+						dominantBaseline="middle"
+						textAnchor="middle"
+						className="text-[10px] font-bold"
+					>
+						+{leads}%
+					</text>
 				</svg>
-				<span className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[10px] font-bold">
-					+{leads}%
-				</span>
 			</div>
 
 			<div>
-				<p className="text-[18px] font-[700] text-wrap">New Leads Per Month</p>
+				<p className="lg:text-[18px] text-[10px] font-[700] text-wrap">New Leads Per Month</p>
 			</div>
 		</div>
 	);
