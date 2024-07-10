@@ -23,9 +23,10 @@ const BrandSetup = () => {
     brandDescription: "",
     brandLogo: null,
     imageFile: null,
-    logoURL: '',
+    logoURL: "",
     showSubmitButton: false,
     domColors: null,
+    isLoadingColor: true,
   });
 
   const [customColor, setCustomColor] = useState("#000000");
@@ -88,19 +89,17 @@ const BrandSetup = () => {
     uploadData.append("customerId", "123");
 
     try {
-      const res = await axios.post(
-        `${baseUrl}/sparkiq/image/upload`,
-        uploadData,
-        {
+      await axios
+        .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
-      );
-      setFormInputs({ ...formInputs, logoURL: res.data.data.url });
-      toast.success("image upload successful");
-      dominantColor(res.data.data.url);
-      console.log(res);
+        })
+        .then((res) => {
+          setFormInputs({ ...formInputs, isLoadingColor: true });
+          toast.success("image upload successful");
+          dominantColor(res.data.data.url);
+        });
     } catch (error) {
       console.log(error);
     }
@@ -114,8 +113,9 @@ const BrandSetup = () => {
           setFormInputs({
             ...formInputs,
             domColors: res.data.data.background_colors,
+            logoURL: url,
+            isLoadingColor: false,
           });
-          console.log(res);
         });
     } catch (error) {
       console.log(error);
@@ -137,32 +137,30 @@ const BrandSetup = () => {
     }
     return text.substring(0, maxLength) + "...";
   };
-console.log(formInputs,'formInputs');
-const handleCreateBrand = async () => {
-  const newBrand = {
-    id: "123",
-    name: formInputs.brandName,
-    description: formInputs.brandDescription,
-    logoURL: formInputs.logoURL,
-    brandColours: JSON.stringify(formInputs.domColors), 
+
+  const handleCreateBrand = async () => {
+    const newBrand = {
+      id: "123",
+      name: formInputs.brandName,
+      description: formInputs.brandDescription,
+      logoURL: formInputs.logoURL,
+      brandColours: JSON.stringify(formInputs.domColors),
+    };
+    try {
+      await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
+        toast.success("Brand created successfully");
+        const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
+        storedBrands.push(newBrand);
+        localStorage.setItem("brands", JSON.stringify(storedBrands));
+        localStorage.setItem("task1Completed", "true");
+
+        navigate("/homepage");
+        console.log(res);
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
-  console.log(newBrand);
-  try {
-    await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
-      toast.success("Brand created successfully");
-      const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
-      storedBrands.push(newBrand);
-      localStorage.setItem("brands", JSON.stringify(storedBrands));
-      localStorage.setItem("task1Completed", "true");
-
-      navigate("/homepage");
-      console.log(res);
-    });
-  } catch (error) {
-    console.log(error);
-  }
-};
-
 
   const getDisplayText = (name, description) => {
     const upperCaseName = name.toUpperCase();
@@ -436,9 +434,8 @@ const handleCreateBrand = async () => {
               </div>
               {expandedSection === 3 && (
                 <div className="p-2" onClick={handlePickerClick}>
-                  {!formInputs.domColors ? (
+                  {formInputs.isLoadingColor ? (
                     <div className="flex flex-wrap gap-4 p-2 rounded-xl">
-                      {/* Skeleton Loader */}
                       <div className="animate-pulse flex space-x-4">
                         <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
                         <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
