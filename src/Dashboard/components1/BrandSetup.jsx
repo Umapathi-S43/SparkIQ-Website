@@ -15,16 +15,18 @@ import sound from "../../assets/dashboard_img/sound.png";
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
 import "./brandsetup.css"; // Import the CSS file
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const BrandSetup = () => {
-  const [brandName, setBrandName] = useState("");
-  const [brandDescription, setBrandDescription] = useState("");
-  const [brandLogo, setBrandLogo] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-
-  const [logoURL, setLogoURL] = useState("");
-  const [isDisable, setIsDisable] = useState(true);
-  const [domColors, setDomColors] = useState(null);
+  const [formInputs, setFormInputs] = useState({
+    brandName: "",
+    brandDescription: "",
+    brandLogo: null,
+    imageFile: null,
+    logoURL: '',
+    showSubmitButton: false,
+    domColors: null,
+  });
 
   const [customColor, setCustomColor] = useState("#000000");
   const [additionalColors, setAdditionalColors] = useState([]);
@@ -34,6 +36,10 @@ const BrandSetup = () => {
   const [expandedSection, setExpandedSection] = useState(1); // Open first section by default
   const navigate = useNavigate();
 
+  const handleOnChange = (e) => {
+    setFormInputs({ ...formInputs, [e.target.name]: e.target.value });
+  };
+
   useEffect(() => {
     setExpandedSection(1); // Open first section by default
   }, []);
@@ -41,8 +47,11 @@ const BrandSetup = () => {
   const handleLogoUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      setBrandLogo(URL.createObjectURL(file));
-      setImageFile(file);
+      setFormInputs({
+        ...formInputs,
+        brandLogo: URL.createObjectURL(file),
+        imageFile: file,
+      });
     }
   };
 
@@ -75,7 +84,7 @@ const BrandSetup = () => {
 
   const uploadImage = async () => {
     const uploadData = new FormData();
-    uploadData.append("file", imageFile);
+    uploadData.append("file", formInputs.imageFile);
     uploadData.append("customerId", "123");
 
     try {
@@ -88,8 +97,8 @@ const BrandSetup = () => {
           },
         }
       );
-      setLogoURL(res.data.data.url);
-      alert("success upload");
+      setFormInputs({ ...formInputs, logoURL: res.data.data.url });
+      toast.success("image upload successful");
       dominantColor(res.data.data.url);
       console.log(res);
     } catch (error) {
@@ -102,8 +111,10 @@ const BrandSetup = () => {
       await axios
         .post(`${baseUrl}/sparkiq/ai/product/dominant-colors`, { url: url })
         .then((res) => {
-          setDomColors(res.data.data.background_colors);
-          alert("success dominant color");
+          setFormInputs({
+            ...formInputs,
+            domColors: res.data.data.background_colors,
+          });
           console.log(res);
         });
     } catch (error) {
@@ -126,32 +137,32 @@ const BrandSetup = () => {
     }
     return text.substring(0, maxLength) + "...";
   };
-
-  const handleCreateBrand = async () => {
-    const newBrand = {
-      id: "123",
-      name: brandName,
-      description: brandDescription,
-      logoURL: logoURL,
-      // productsCreated: 0,
-    };
-    try {
-      await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
-        alert("success brand");
-        const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
-        storedBrands.push(newBrand);
-        localStorage.setItem("brands", JSON.stringify(storedBrands));
-        localStorage.setItem("task1Completed", "true");
-
-        navigate("/homepage");
-        console.log(res);
-      });
-    } catch (error) {
-      console.log(error);
-    }
-
-    // Update task progress in localStorage
+console.log(formInputs,'formInputs');
+const handleCreateBrand = async () => {
+  const newBrand = {
+    id: "123",
+    name: formInputs.brandName,
+    description: formInputs.brandDescription,
+    logoURL: formInputs.logoURL,
+    brandColours: JSON.stringify(formInputs.domColors), 
   };
+  console.log(newBrand);
+  try {
+    await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
+      toast.success("Brand created successfully");
+      const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
+      storedBrands.push(newBrand);
+      localStorage.setItem("brands", JSON.stringify(storedBrands));
+      localStorage.setItem("task1Completed", "true");
+
+      navigate("/homepage");
+      console.log(res);
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 
   const getDisplayText = (name, description) => {
     const upperCaseName = name.toUpperCase();
@@ -208,7 +219,7 @@ const BrandSetup = () => {
               <div className="absolute w-48 h-48 sm:w-64 sm:h-64 md:w-[21rem] md:h-[20rem] bg-[#859398] rounded-3xl flex items-center justify-center">
                 <div className="absolute w-36 h-28 sm:w-48 sm:h-40 bg-[rgba(255,255,255,0.24)] rounded-2xl flex items-center justify-center">
                   <img
-                    src={brandLogo || gallery}
+                    src={formInputs.brandLogo || gallery}
                     alt="Brand"
                     className="w-32 h-24 sm:w-36 sm:h-28 object-cover rounded-xl"
                   />
@@ -216,10 +227,10 @@ const BrandSetup = () => {
               </div>
               <div className="absolute top-0 w-full flex flex-col items-center justify-center p-4 text-white">
                 <h2 className="text-md sm:text-xl md:text-2xl font-bold capitalize md:pt-8 sm:pt-1">
-                  {brandName}
+                  {formInputs.brandName}
                 </h2>
                 <p className="text-xs sm:text-base md:text-lg text-center">
-                  {truncateText(brandDescription, 35)}
+                  {truncateText(formInputs.brandDescription, 35)}
                 </p>
               </div>
               <img
@@ -258,7 +269,10 @@ const BrandSetup = () => {
                 {completedSections[1] && (
                   <div className="flex items-end bg-white rounded-2xl p-1 pl-2 pr-2 ml-2">
                     <p className="m-0 text-sm sm:text-base md:text-lg">
-                      {getDisplayText(brandName, brandDescription)}
+                      {getDisplayText(
+                        formInputs.brandName,
+                        formInputs.brandDescription
+                      )}
                     </p>
                   </div>
                 )}
@@ -275,21 +289,26 @@ const BrandSetup = () => {
                   <input
                     type="text"
                     placeholder="Brand Name"
-                    value={brandName}
-                    onChange={(e) => setBrandName(e.target.value)}
+                    value={formInputs.brandName}
+                    name="brandName"
+                    onChange={handleOnChange}
                     className="w-full p-2 rounded-lg shadow-xl border border-[#fcfcfc] mb-2 bg-[#FCFCFC] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     onClick={(e) => e.stopPropagation()}
                   />
                   <textarea
                     placeholder="Brand Description"
                     rows="3"
-                    value={brandDescription}
-                    onChange={(e) => setBrandDescription(e.target.value)}
+                    value={formInputs.brandDescription}
+                    name="brandDescription"
+                    onChange={handleOnChange}
                     className="w-full p-2 rounded-lg shadow-xl border border-[#fcfcfc] mb-2 bg-[#FCFCFC] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     onClick={(e) => e.stopPropagation()}
                   />
                   <button
-                    className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
+                    disabled={
+                      !formInputs.brandDescription || !formInputs.brandName
+                    }
+                    className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl disabled:opacity-50"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(1);
@@ -325,10 +344,10 @@ const BrandSetup = () => {
                     Select Brand Logo
                   </p>
                 </div>
-                {completedSections[2] && brandLogo && (
+                {completedSections[2] && formInputs.brandLogo && (
                   <div className="flex items-center ml-auto bg-white rounded-lg p-1">
                     <img
-                      src={brandLogo}
+                      src={formInputs.brandLogo}
                       alt="Brand Logo"
                       className="w-12 h-7 object-cover rounded-md"
                     />
@@ -371,11 +390,12 @@ const BrandSetup = () => {
                     </div>
                   </div>
                   <button
-                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
+                    disabled={!formInputs.brandLogo}
+                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl disabled:opacity-50"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(2);
-                      brandLogo && uploadImage();
+                      uploadImage();
                     }}
                   >
                     Save and Continue
@@ -416,99 +436,111 @@ const BrandSetup = () => {
               </div>
               {expandedSection === 3 && (
                 <div className="p-2" onClick={handlePickerClick}>
-                  <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
-                    {domColors?.map((colors, index) => {
-                      const rgbColor = `rgb(${colors[0]}, ${colors[1]}, ${colors[2]})`;
-                      return (
+                  {!formInputs.domColors ? (
+                    <div className="flex flex-wrap gap-4 p-2 rounded-xl">
+                      {/* Skeleton Loader */}
+                      <div className="animate-pulse flex space-x-4">
+                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
+                      {formInputs.domColors?.map((colors, index) => {
+                        const rgbColor = `rgb(${colors[0]}, ${colors[1]}, ${colors[2]})`;
+                        return (
+                          <div
+                            key={index}
+                            className="flex items-center bg-white p-2 rounded-xl"
+                          >
+                            <label className="text-sm pl-4 font-semibold lg:pr-14 pr-10 text-nowrap">
+                              Brand Color {index}
+                            </label>
+                            <button
+                              className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
+                              style={{ background: rgbColor }}
+                              onClick={() => {
+                                setCustomColor(rgbColor);
+                                setColorPickerTarget(null);
+                                setColorPickerOpen(true);
+                              }}
+                            >
+                              {rgbColor}
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {additionalColors.map((color, index) => (
                         <div
                           key={index}
                           className="flex items-center bg-white p-2 rounded-xl"
                         >
-                          <label className="text-sm pl-4 font-semibold lg:pr-14 pr-10 text-nowrap">
-                            Brand Color {index}
+                          <label className="text-sm pl-3 font-semibold lg:pr-9 pr-4 text-nowrap">
+                            Additional Color {index + 1}
                           </label>
                           <button
                             className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
-                            style={{ background: rgbColor }}
+                            style={{ background: color }}
                             onClick={() => {
-                              setCustomColor(rgbColor);
-                              setColorPickerTarget(null);
+                              setCustomColor(color);
+                              setColorPickerTarget(index);
                               setColorPickerOpen(true);
                             }}
                           >
-                            {rgbColor}
+                            {color}
                           </button>
                         </div>
-                      );
-                    })}
-                    {additionalColors.map((color, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center bg-white p-2 rounded-xl"
-                      >
-                        <label className="text-sm pl-3 font-semibold lg:pr-9 pr-4 text-nowrap">
-                          Additional Color {index + 1}
-                        </label>
+                      ))}
+                      {additionalColors.length < 10 && (
                         <button
-                          className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
-                          style={{ background: color }}
-                          onClick={() => {
-                            setCustomColor(color);
-                            setColorPickerTarget(index);
+                          className="custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setColorPickerTarget(null);
                             setColorPickerOpen(true);
                           }}
                         >
-                          {color}
+                          <FaPlus className="text-white" />
                         </button>
-                      </div>
-                    ))}
-                    {additionalColors.length < 10 && (
-                      <button
-                        className=" custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setColorPickerTarget(null);
-                          setColorPickerOpen(true);
-                        }}
-                      >
-                        <FaPlus className="text-white" />
-                      </button>
-                    )}
-                    {colorPickerOpen && (
-                      <div className="absolute z-10 lg:w-full md:w-full sm:w-1/2">
-                        <div className="flex justify-start">
-                          <Picker
-                            color={customColor}
-                            onChangeComplete={handleColorSelect}
-                          />
+                      )}
+                      {colorPickerOpen && (
+                        <div className="absolute z-10 lg:w-full md:w-full sm:w-1/2">
+                          <div className="flex justify-start">
+                            <Picker
+                              color={customColor}
+                              onChangeComplete={handleColorSelect}
+                            />
+                          </div>
+                          <button
+                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-4 mr-2 text-white rounded-2xl shadow-2xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveAdditionalColor();
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-64 text-white rounded-2xl shadow-2xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setColorPickerOpen(false);
+                            }}
+                          >
+                            Close
+                          </button>
                         </div>
-                        <button
-                          className="custom-button p-2 pl-4 pr-4 mt-2 ml-4 mr-2 text-white rounded-2xl shadow-2xl"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSaveAdditionalColor();
-                          }}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="custom-button p-2 pl-4 pr-4 mt-2 ml-64 text-white rounded-2xl shadow-2xl"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setColorPickerOpen(false);
-                          }}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                   <button
-                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
+                    disabled={!formInputs.domColors}
+                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl disabled:opacity-50"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(3);
-                      setIsDisable(false);
+                      setFormInputs({ ...formInputs, showSubmitButton: true });
                     }}
                   >
                     Save and Continue
@@ -516,15 +548,16 @@ const BrandSetup = () => {
                 </div>
               )}
             </div>
-            <div className="flex justify-start mt-4">
-              <button
-                disabled={isDisable}
-                className="custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg disabled:opacity-50"
-                onClick={handleCreateBrand}
-              >
-                Create Brand
-              </button>
-            </div>
+            {formInputs.showSubmitButton && (
+              <div className="flex justify-start mt-4">
+                <button
+                  className="custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg"
+                  onClick={handleCreateBrand}
+                >
+                  Create Brand
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
