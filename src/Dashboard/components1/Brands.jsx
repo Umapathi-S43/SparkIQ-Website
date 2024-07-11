@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { TbTargetArrow } from 'react-icons/tb';
 import brandImage from '../../assets/dashboard_img/brand_img.png';
 import picon from '../../assets/dashboard_img/picon.svg';
 import SvgBackground from '../../components/Dashboard/SvgBackground';
@@ -14,7 +13,7 @@ const Brands = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedBrands = JSON.parse(localStorage.getItem('brands')) || [];
+    const storedBrands = JSON.parse(localStorage.getItem('brands') || '[]');
     setBrands(storedBrands);
   }, []);
 
@@ -26,9 +25,10 @@ const Brands = () => {
     setSearchQuery(event.target.value);
   };
 
-  const filteredBrands = brands.filter(brand =>
-    brand.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    brand.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBrands = brands.filter(
+    brand =>
+      brand.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      brand.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const truncateText = (text, maxLength) => {
@@ -44,12 +44,12 @@ const Brands = () => {
         <div className="w-full bg-[rgba(252,252,252,0.40)] rounded-t-3xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-            <div className="relative flex items-center justify-center lg:ml-4">
-              <div className="absolute flex items-center justify-center lg:w-12 lg:h-12 w-10 h-10 bg-[rgba(0,39,153,0.15)] rounded-2xl"></div>
-              <div className="relative lg:w-8 lg:h-8  w-7 h-7 bg-[#082A66] rounded-xl flex items-center justify-center">
-                <img src={brandIcon} className="w-4 h-4" />
+              <div className="relative flex items-center justify-center lg:ml-4">
+                <div className="absolute flex items-center justify-center lg:w-12 lg:h-12 w-10 h-10 bg-[rgba(0,39,153,0.15)] rounded-2xl"></div>
+                <div className="relative lg:w-8 lg:h-8  w-7 h-7 bg-[#082A66] rounded-xl flex items-center justify-center">
+                  <img src={brandIcon} className="w-4 h-4" />
+                </div>
               </div>
-            </div>
               <div className="ml-4">
                 <h1 className="lg:text-3xl text-xl font-bold text-[#082a66] lg:ml-4">Brands</h1>
                 <p className="lg:text-sm text-xs text-[#082a66] lg:ml-4">Explore existing products or add new ones effortlessly</p>
@@ -73,7 +73,7 @@ const Brands = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-between w-full ml-4 p-4 items-center overflow-auto hide-scrollbar" style={{maxHeight:'46vh'}}>
+        <div className="flex flex-wrap justify-between w-full ml-4 p-4 items-center overflow-auto hide-scrollbar" style={{ maxHeight: '46vh' }}>
           <div className="w-full flex flex-wrap justify-start gap-4 ml-4 pl-2">
             <div className='flex items-center justify-center bg-[rgba(252,252,252,0.70)] border border-white rounded-3xl p-1 w-60 h-72 mr-3 hover:bg-[rgba(252,252,252,0.15)]'>
               <div
@@ -91,6 +91,7 @@ const Brands = () => {
               <div
                 key={index}
                 className="group brand-card1 flex items-center justify-center w-64 h-80"
+                onClick={() => navigate(`/brandsetup?name=${encodeURIComponent(brand.name)}`)}
               >
                 <div className="relative flex flex-col items-center justify-center text-white w-full h-full overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-full">
@@ -110,7 +111,7 @@ const Brands = () => {
                 </div>
               </div>
             ))}
-           </div> 
+          </div>
         </div>
       </div>
     </div>

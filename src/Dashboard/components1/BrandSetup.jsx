@@ -16,10 +16,15 @@ import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path
 import "./brandsetup.css"; // Import the CSS file
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useLocation } from "react-router-dom";
 
 const BrandSetup = () => {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const brandName = params.get("name");
+
   const [formInputs, setFormInputs] = useState({
-    brandName: "",
+    brandName: brandName || "",
     brandDescription: "",
     brandLogo: null,
     imageFile: null,
@@ -27,6 +32,7 @@ const BrandSetup = () => {
     showSubmitButton: false,
     domColors: null,
     isLoadingColor: true,
+    isEdit: false,
   });
 
   const [customColor, setCustomColor] = useState("#000000");
@@ -37,9 +43,27 @@ const BrandSetup = () => {
   const [expandedSection, setExpandedSection] = useState(1); // Open first section by default
   const navigate = useNavigate();
 
-  const handleOnChange = (e) => {
-    setFormInputs({ ...formInputs, [e.target.name]: e.target.value });
+  const handleOnChange = (event) => {
+    const { name, value } = event.target;
+    setFormInputs((prevInputs) => ({
+      ...prevInputs,
+      [name]: value,
+    }));
   };
+
+  useEffect(() => {
+    const storedBrands = JSON.parse(localStorage.getItem("brands") || "[]");
+    const foundBrand = storedBrands.find((brand) => brand.name === brandName);
+
+    if (foundBrand) {
+      setFormInputs({
+        brandName: foundBrand.name,
+        brandDescription: foundBrand.description,
+        brandLogo: foundBrand.logoURL,
+        isEdit: true,
+      });
+    }
+  }, [brandName]);
 
   useEffect(() => {
     setExpandedSection(1); // Open first section by default
@@ -199,7 +223,7 @@ const BrandSetup = () => {
               </div>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-[#082a66] ml-4 md:mr-auto text-nowrap">
-              Brand Setup
+              {formInputs.isEdit ? "Edit Brand" : "              Brand Setup"}
             </h1>
             <img
               src={brandImage}
