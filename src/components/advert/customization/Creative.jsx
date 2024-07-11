@@ -182,7 +182,7 @@ export default function Creative({
         <span className="text-xs sm:text-sm">or edit these details</span>
         <div className="flex-1 h-[1px] bg-[#ccc] mx-3"></div>
       </div>
-      <div className="border border-[#FCFCFC] rounded-xl py-4 px-5 flex flex-col sm:flex-row items-start justify-between shadow">
+      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-xl py-4 px-5 flex flex-col sm:flex-row items-start justify-between shadow">
         <span className="flex flex-col gap-3 w-full">
           <p className="text-[#9CA3AF] text-xs sm:text-sm">Ad Content</p>
           <div className="relative flex flex-col gap-2 w-full">

@@ -15,6 +15,10 @@ import ProfilePage from './Dashboard/pages1/ProfilePage';
 import SvgTest from './components/Dashboard/svgtest';
 import Congrats from './Dashboard/components1/congrats';
 import Samplepage from './Dashboard/components1/samplehs';
+import SavedProducts from './Dashboard/components1/SavedProducts';
+import SavedProductsPage from './Dashboard/pages1/SavedProductsPage';
+import GeneratedCreativesPage from './Dashboard/pages1/GeneratedCreativesPage';
+import CustomizationAdsPage from './Dashboard/pages1/CustomizationAdsPage';
 
 
 function App() {
@@ -36,6 +40,9 @@ function App() {
           <Route path="/profile" element={<ProfilePage/>} />
           <Route path="/congrats" element={<Congrats/>}/>          
           <Route path="/samplepage" element={<Samplepage />}/>
+          <Route path="/savedproductspage" element={<SavedProductsPage />}/>
+          <Route path="/generatedcreativespage" element={<GeneratedCreativesPage />}/>
+          <Route path="/customizationadspage" element={< CustomizationAdsPage/>}/>
         </Routes>
       </div>
     </Router>
