@@ -78,7 +78,7 @@ const Products = () => {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap lg:ml-12 sm:mx-auto justify-center pb-2 w-90% gap-8 overflow-auto hide-scrollbar" style={{maxHeight:'45vh'}}>
+        <div className="flex flex-wrap lg:ml-1 sm:mx-auto justify-center pb-2 w-90% gap-8 overflow-auto hide-scrollbar" style={{maxHeight:'45vh'}}>
           <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
             <div
               onClick={handleCreateProduct}
