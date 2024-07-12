@@ -17,6 +17,7 @@ import "./brandsetup.css"; // Import the CSS file
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
+import { baseUrl } from "../../components/utils/Constant";
 
 const BrandSetup = () => {
   const location = useLocation();
@@ -52,16 +53,27 @@ const BrandSetup = () => {
   };
 
   useEffect(() => {
-    const storedBrands = JSON.parse(localStorage.getItem("brands") || "[]");
-    const foundBrand = storedBrands.find((brand) => brand.name === brandName);
+    const fetchBrands = async (name) => {
+      try {
+        const response = await axios.get(`${baseUrl}/brand/company/123`);
+        const foundBrand = response.data.data;
 
-    if (foundBrand) {
-      setFormInputs({
-        brandName: foundBrand.name,
-        brandDescription: foundBrand.description,
-        brandLogo: foundBrand.logoURL,
-        isEdit: true,
-      });
+        if (foundBrand) {
+          setFormInputs({
+            brandName: foundBrand.name,
+            brandDescription: foundBrand.description,
+            brandLogo: foundBrand.logoURL,
+            isEdit: true,
+          });
+        }
+      } catch (error) {
+        console.log(error);
+        setError("Failed to fetch brands.");
+      }
+    };
+
+    if (brandName) {
+      fetchBrands(brandName);
     }
   }, [brandName]);
 
@@ -105,7 +117,6 @@ const BrandSetup = () => {
     setCompletedSections(newCompletedSections);
     setExpandedSection(section + 1); // Automatically open the next section
   };
-  const baseUrl = "http://48.217.251.157:8083";
 
   const uploadImage = async () => {
     const uploadData = new FormData();
@@ -156,10 +167,10 @@ const BrandSetup = () => {
   };
 
   const truncateText = (text, maxLength) => {
-    if (text.length <= maxLength) {
+    if (text?.length <= maxLength) {
       return text;
     }
-    return text.substring(0, maxLength) + "...";
+    return text?.substring(0, maxLength) + "...";
   };
 
   const handleCreateBrand = async () => {
@@ -252,7 +263,7 @@ const BrandSetup = () => {
                   {formInputs.brandName}
                 </h2>
                 <p className="text-xs sm:text-base md:text-lg text-center">
-                  {truncateText(formInputs.brandDescription, 35)}
+                  {truncateText(formInputs?.brandDescription, 35)}
                 </p>
               </div>
               <img
