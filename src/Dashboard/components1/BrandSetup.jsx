@@ -36,6 +36,8 @@ const BrandSetup = () => {
     isEdit: false,
   });
 
+  console.log(formInputs,'formInputs');
+
   const [customColor, setCustomColor] = useState("#000000");
   const [additionalColors, setAdditionalColors] = useState([]);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -56,7 +58,7 @@ const BrandSetup = () => {
     const fetchBrands = async (name) => {
       try {
         const response = await axios.get(`${baseUrl}/brand/company/123`);
-        const foundBrand = response.data.data;
+        const foundBrand = response.data.data.find((brand) => brand.name === name);
 
         if (foundBrand) {
           setFormInputs({
