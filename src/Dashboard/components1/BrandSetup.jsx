@@ -36,7 +36,6 @@ const BrandSetup = () => {
     isEdit: false,
   });
 
-  console.log(formInputs,'formInputs');
 
   const [customColor, setCustomColor] = useState("#000000");
   const [additionalColors, setAdditionalColors] = useState([]);
