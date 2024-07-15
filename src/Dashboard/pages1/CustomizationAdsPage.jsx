@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../../Dashboard/components1/header1';
-import Sidebar from '../../Dashboard/components1/sidebar';
-import GenerateAd from '../../components/advert/GenerateAd';
-import AdPreview from '../../components/advert/AdPreview';
+import Sidebar from '../components1/sidebar';
+import Header from '../components1/header';
+import CustomizationAd from '../components1/CustomizationAds';
+import Loader from '../../components/advert/Loader'; // Assuming the Loader component is in the correct path
+import AdPreview from '../../components/advert/AdPreview'; // Assuming the AdPreview component is in the correct path
 import LauchCampaign from '../../components/advert/launchCampaign';
-import CustomizationAd from '../../Dashboard/components1/CustomizationAds';
 
-export default function AdCampaign() {
+const CustomizationAdsPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [isLoading, setIsLoading] = useState(true); // State for loading
   const [pages, setPages] = useState({
-    generateAd: true,
+    customizationAd: true,
     adPreview: false,
-    lauchCampaign: false,
   });
 
   const toggleSidebar = () => {
@@ -20,10 +20,9 @@ export default function AdCampaign() {
 
   const setPage = (page) => {
     setPages({
-      generateAd: false,
+      customizationAd: false,
       adPreview: false,
       lauchCampaign: false,
-      customizationAd:false,
       [page]: true,
     });
   };
@@ -45,6 +44,14 @@ export default function AdCampaign() {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000); // Simulate loading for 5 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex items-center justify-center pl-4 pr-4 overflow-hidden">
       <div className="border-2 border-[#FCFCFC] rounded-3xl w-full overflow-hidden" style={{ height: 'calc(100vh - 1rem)' }}>
@@ -54,9 +61,9 @@ export default function AdCampaign() {
             <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
             <div className={`flex-grow transition-transform duration-300 ${isSidebarOpen ? '-ml-6' : 'ml-0'}`}>
               <div className='m-2'>
-                {pages.generateAd && <GenerateAd setPage={setPage} pages={pages} />}
+                {/* Always render CustomizationAd */}
                 {pages.customizationAd && <CustomizationAd setPage={setPage} />} {/* Pass setPage to CustomizationAd */}
-                {pages.adPreview && <AdPreview setPage={setPage} />}
+                {pages.adPreview && <AdPreview setPage={setPage} />} {/* Pass setPage to AdPreview */}                
                 {pages.lauchCampaign && <LauchCampaign setPage={setPage} />}
               </div>
             </div>
@@ -66,3 +73,5 @@ export default function AdCampaign() {
     </div>
   );
 }
+
+export default CustomizationAdsPage;
