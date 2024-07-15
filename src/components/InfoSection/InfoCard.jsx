@@ -2,10 +2,10 @@ import PropTypes from "prop-types";
 
 const InfoCard = ({ title, icon }) => {
 	return (
-		<div data-aos="fade-up" className="w-full">
-			<div className="flex gap-4 bg-[#DEEEF7] p-4 sm:p-6 rounded-xl w-full items-center">
-				<img src={icon} alt="icon" className="w-12 h-12 sm:w-16 sm:h-16" />
-				<h3 className="text-lg sm:text-xl lg:text-3xl flex-1">{title}</h3>
+		<div data-aos="fade-up">
+			<div className="flex gap-4 bg-[#DEEEF7] p-9 rounded-xl">
+				<img src={icon} alt="icon" />
+				<h3 className="text-3xl ml-4">{title}</h3>
 			</div>
 		</div>
 	);
