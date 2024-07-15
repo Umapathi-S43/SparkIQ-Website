@@ -24,6 +24,7 @@ import CustomizationAdsPage from './Dashboard/pages1/CustomizationAdsPage';
 function App() {
   return (
     <Router>
+      <Toaster />
       <div>
         <Routes>
           <Route path="/" element={<Home />} />
