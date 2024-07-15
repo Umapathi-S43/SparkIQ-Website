@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
 import { FaFacebook, FaFacebookF, FaInstagram } from "react-icons/fa";
 import Loader from "./Loader";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import { BiBookmark, BiComment, BiLike } from "react-icons/bi";
 import { GoShare } from "react-icons/go";
+import brandImage from "../../assets/dashboard_img/brand_img.png";
 
 const textCaption =
   "🎨 Explore Infinite Creativity with fdg adfwerw 🌈🌟 Discover a Hint of Enigma, Infused with Grace💖 Embrace the Magic of tr5vy5✨ Elevate Your Sensory Journey for Just BDT 500 🌟";
@@ -14,12 +14,6 @@ const AdPreview = ({ setPage }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [tabIndex, setTabIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const navigate = useNavigate();
-
-
-  const handleCustomizeAds = () => {
-    navigate('/CustomizationAdsPage');
-  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -121,7 +115,7 @@ const AdPreview = ({ setPage }) => {
           />
         </div>
         {isLoading ? (
-          <div className=" justify-center overflow-auto hide-scrollbar" style={{maxHeight:'60vh'}}>
+          <div className="w-4/5 py-8 overflow-auto hide-scrollbar" style={{maxHeight:'60vh'}}>
             <Loader />
           </div>
         ) : (
@@ -159,7 +153,7 @@ const AdPreview = ({ setPage }) => {
                     <div className="flex justify-center mt-6 gap-4">
                       <button
                         className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-6 whitespace-pre font-medium border border-[#0086CD80]"
-                        onClick={() => setPage("customizationAd")}
+                        onClick={() => setPage("generateAd")}
                       >
                         Customize Ads
                       </button>
@@ -192,7 +186,7 @@ const AdPreview = ({ setPage }) => {
                     <div className="flex justify-center mt-6 gap-4">
                       <button
                         className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-6 whitespace-pre font-medium border border-[#0086CD80]"
-                        onClick={() => setPage("customizationAd")}
+                        onClick={() => setPage("generateAd")}
                       >
                         Customize Ads
                       </button>
