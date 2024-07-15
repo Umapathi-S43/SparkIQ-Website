@@ -37,7 +37,7 @@ export default function Caption({
     <div className="p-2 sm:p-4 md:p-6 lg:p-8">
       <div>
         <textarea
-          className="bg-white p-2 border border-[#FCFCFC] rounded-[30px] shadow sm:p-3 w-full min-h-32 h-30px focus:ring-2 focus-within:ring-blue-400 focus:outline-none text-xs sm:text-sm md:text-base lg:text-base"
+          className="bg-white border border-[#FCFCFC] rounded-[30px] shadow sm:p-3 w-full min-h-32 lg:h-auto focus:ring-2 focus-within:ring-blue-400 focus:outline-none text-xs sm:text-sm md:text-base lg:text-base overflow-auto hide-scrollbar"
           value={selectedCaption}
           id="selectedCaption"
           onChange={handleOnChangeCaption}

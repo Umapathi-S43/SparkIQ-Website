@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../Dashboard/components1/header1';
-import Sidebar from '../../Dashboard/components1/sidebar';
+import Sidebar from '../../Dashboard/components1/sidebar1';
 import GenerateAd from '../../components/advert/GenerateAd';
 import AdPreview from '../../components/advert/AdPreview';
 import LauchCampaign from '../../components/advert/launchCampaign';
-import CustomizationAd from '../../Dashboard/components1/CustomizationAds';
 
 export default function AdCampaign() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
@@ -23,7 +22,6 @@ export default function AdCampaign() {
       generateAd: false,
       adPreview: false,
       lauchCampaign: false,
-      customizationAd:false,
       [page]: true,
     });
   };
@@ -55,7 +53,6 @@ export default function AdCampaign() {
             <div className={`flex-grow transition-transform duration-300 ${isSidebarOpen ? '-ml-6' : 'ml-0'}`}>
               <div className='m-2'>
                 {pages.generateAd && <GenerateAd setPage={setPage} pages={pages} />}
-                {pages.customizationAd && <CustomizationAd setPage={setPage} />} {/* Pass setPage to CustomizationAd */}
                 {pages.adPreview && <AdPreview setPage={setPage} />}
                 {pages.lauchCampaign && <LauchCampaign setPage={setPage} />}
               </div>
