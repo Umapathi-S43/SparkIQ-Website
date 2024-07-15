@@ -19,6 +19,7 @@ import SavedProducts from './Dashboard/components1/SavedProducts';
 import SavedProductsPage from './Dashboard/pages1/SavedProductsPage';
 import GeneratedCreativesPage from './Dashboard/pages1/GeneratedCreativesPage';
 import CustomizationAdsPage from './Dashboard/pages1/CustomizationAdsPage';
+import { Toaster } from "react-hot-toast";
 
 
 function App() {
