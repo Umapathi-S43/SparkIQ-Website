@@ -36,7 +36,6 @@ const BrandSetup = () => {
     isEdit: false,
   });
 
-
   const [customColor, setCustomColor] = useState("#000000");
   const [additionalColors, setAdditionalColors] = useState([]);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -57,19 +56,20 @@ const BrandSetup = () => {
     const fetchBrands = async (name) => {
       try {
         const response = await axios.get(`${baseUrl}/brand/company/123`);
-        const foundBrand = response.data.data.find((brand) => brand.name === name);
-
+        const foundBrand = response.data.data.find(
+          (brand) => brand.name === name
+        );
         if (foundBrand) {
           setFormInputs({
             brandName: foundBrand.name,
             brandDescription: foundBrand.description,
             brandLogo: foundBrand.logoURL,
+            domColors: [foundBrand.brandColours].map(color => JSON.parse(color)),
             isEdit: true,
           });
         }
       } catch (error) {
         console.log(error);
-        setError("Failed to fetch brands.");
       }
     };
 
@@ -77,6 +77,7 @@ const BrandSetup = () => {
       fetchBrands(brandName);
     }
   }, [brandName]);
+
 
   useEffect(() => {
     setExpandedSection(1); // Open first section by default
@@ -261,7 +262,7 @@ const BrandSetup = () => {
               </div>
               <div className="absolute top-0 w-full flex flex-col items-center justify-center p-4 text-white">
                 <h2 className="text-md sm:text-xl md:text-2xl font-bold capitalize md:pt-8 sm:pt-1">
-                  {formInputs.brandName}
+                  {truncateText(formInputs.brandName, 15)}
                 </h2>
                 <p className="text-xs sm:text-base md:text-lg text-center">
                   {truncateText(formInputs?.brandDescription, 35)}
@@ -303,9 +304,12 @@ const BrandSetup = () => {
                 {completedSections[1] && (
                   <div className="flex items-end bg-white rounded-2xl p-1 pl-2 pr-2 ml-2">
                     <p className="m-0 text-sm sm:text-base md:text-lg">
-                      {getDisplayText(
-                        formInputs.brandName,
-                        formInputs.brandDescription
+                      {truncateText(
+                        getDisplayText(
+                          formInputs.brandName,
+                          formInputs.brandDescription
+                        ),
+                        15
                       )}
                     </p>
                   </div>
@@ -429,7 +433,7 @@ const BrandSetup = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(2);
-                      uploadImage();
+                      formInputs.imageFile && uploadImage();
                     }}
                   >
                     Save and Continue
