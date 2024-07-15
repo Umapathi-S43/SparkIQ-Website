@@ -110,7 +110,7 @@ const SavedProducts = () => {
           {filteredProducts.map((product, index) => (
             <div
               key={index}
-              className="relative group border border-[#FCFCFC] rounded-xl m-1 p-3 w-full bg-[rgba(146,210,245,0.25)] flex flex-col items-center justify-between hover:transition-colors duration-200 glass-gradient-hover"
+              className="relative group border border-[#FCFCFC] rounded-xl m-1 p-3 w-full bg-[rgba(146,210,245,0.25)] flex flex-col items-center justify-between "
             >
               <div className='mb-10'>
                 <button
