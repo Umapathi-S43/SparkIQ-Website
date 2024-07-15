@@ -9,7 +9,6 @@ import productsIcon from '../../assets/dashboard_img/bag.svg';
 import viewPlanIcon from '../../assets/dashboard_img/plan.svg';
 import profileIcon from '../../assets/dashboard_img/user.svg';
 import signoutIcon from '../../assets/dashboard_img/signout.svg';
-import savedproducts from '../../assets/dashboard_img/savedProducts.svg';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [selectedItem, setSelectedItem] = useState('');
@@ -22,7 +21,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Campaigns', icon: campaignsIcon, path: '/campaigns' },
     { name: 'Products', icon: productsIcon, path: '/productspage' },
     { name: 'Saved Products', icon: savedproducts, path: '/savedproductspage' },
-    { name: 'View Plan', icon: viewPlanIcon, path: '/viewplans' },
+    { name: 'View Plan', icon: viewPlanIcon, path: '/view-plan' },
     { name: 'Profile', icon: profileIcon, path: '/profile' }
   ];
 
