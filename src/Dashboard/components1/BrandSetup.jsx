@@ -64,7 +64,9 @@ const BrandSetup = () => {
             brandName: foundBrand.name,
             brandDescription: foundBrand.description,
             brandLogo: foundBrand.logoURL,
-            domColors: [foundBrand.brandColours].map(color => JSON.parse(color)),
+            domColors: [foundBrand.brandColours].map((color) =>
+              JSON.parse(color)
+            ),
             isEdit: true,
           });
         }
@@ -77,7 +79,6 @@ const BrandSetup = () => {
       fetchBrands(brandName);
     }
   }, [brandName]);
-
 
   useEffect(() => {
     setExpandedSection(1); // Open first section by default
@@ -186,9 +187,32 @@ const BrandSetup = () => {
     try {
       await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
         toast.success("Brand created successfully");
-        const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
-        storedBrands.push(newBrand);
-        localStorage.setItem("brands", JSON.stringify(storedBrands));
+        // const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
+        // storedBrands.push(newBrand);
+        localStorage.setItem("task1Completed", "true");
+
+        navigate("/homepage");
+        console.log(res);
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleEditBrand = async () => {
+    const editBrand = {
+      id: "123",
+      name: formInputs.brandName,
+      description: formInputs.brandDescription,
+      // logoURL: formInputs.brandLogo,
+      brandColours: JSON.stringify(formInputs.domColors),
+    };
+
+    try {
+      await axios.patch(`${baseUrl}/brand/123`, editBrand).then((res) => {
+        toast.success("Brand edited successfully");
+        // const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
+        // storedBrands.push(editBrand);
         localStorage.setItem("task1Completed", "true");
 
         navigate("/homepage");
@@ -589,9 +613,11 @@ const BrandSetup = () => {
               <div className="flex justify-start mt-4">
                 <button
                   className="custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg"
-                  onClick={handleCreateBrand}
+                  onClick={
+                    formInputs.isEdit ? handleEditBrand : handleCreateBrand
+                  }
                 >
-                  Create Brand
+                  {formInputs.isEdit ? "Edit Brand" : "Create Brand"}
                 </button>
               </div>
             )}
