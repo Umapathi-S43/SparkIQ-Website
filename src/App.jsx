@@ -19,7 +19,7 @@ import SavedProductsPage from './Dashboard/pages1/SavedProductsPage';
 import GeneratedCreativesPage from './Dashboard/pages1/GeneratedCreativesPage';
 import CustomizationAdsPage from './Dashboard/pages1/CustomizationAdsPage';
 import ViewPlans from './Dashboard/pages1/ViewPlans';
-import Viewplan from './Dashboard/components1/Viewplan';
+import ExistingCampaignsPage from './Dashboard/pages1/ECampaignsPage';
 
 
 function App() {
@@ -46,6 +46,7 @@ function App() {
           <Route path="/generatedcreativespage" element={<GeneratedCreativesPage />}/>
           <Route path="/customizationadspage" element={< CustomizationAdsPage/>}/>
           <Route path="/viewplans" element={<ViewPlans/>}/>
+          <Route path="/Ecampaigns" element={<ExistingCampaignsPage/>}/>
         </Routes>
       </div>
     </Router>

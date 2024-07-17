@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../components1/sidebar';
 import Header from '../components1/header';
 import CustomizationAd from '../components1/CustomizationAds';
-import Loader from '../../components/advert/Loader'; // Assuming the Loader component is in the correct path
 import AdPreview from '../../components/advert/AdPreview'; // Assuming the AdPreview component is in the correct path
 import LauchCampaign from '../../components/advert/launchCampaign';
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components1/sidebar';
 import Header from '../components1/header';
-import Products from '../components1/Products';
 import SavedProducts from '../components1/SavedProducts';
 
 const SavedProductsPage = () => {

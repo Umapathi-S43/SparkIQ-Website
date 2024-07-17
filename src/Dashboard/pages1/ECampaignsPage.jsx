@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components1/sidebar';
 import Header from '../components1/header';
-import Viewplan from '../components1/Viewplan';
+import ExistingCampaigns from '../components1/ECampaigns';
 
-const ViewPlans= () => {
+const ExistingCampaignsPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
   
     const toggleSidebar = () => {
@@ -35,7 +35,7 @@ const ViewPlans= () => {
             <div className="flex flex-grow">
               <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
               <div className={`flex-grow transition-transform duration-300 ${isSidebarOpen ? '-ml-6' : 'ml-0'}`} >
-                <div className='m-2' ><Viewplan/></div>
+                <div className='m-2' ><ExistingCampaigns/></div>
               </div>
             </div>
           </div>
@@ -44,5 +44,4 @@ const ViewPlans= () => {
     );
   }
   
-
-export default ViewPlans;
+export default ExistingCampaignsPage;
