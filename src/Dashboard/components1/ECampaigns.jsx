@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import fileIcon from '../../assets/dashboard_img/file_c.svg'; // Adjust the path as needed
 
 const ExistingCampaigns = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(3);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const updateRowsPerPage = () => {
@@ -28,6 +30,10 @@ const ExistingCampaigns = () => {
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => prev - 1);
+  };
+
+  const handleCampaignClick = (campaign) => {
+    navigate(`/campaign-insights/${campaign.id}`, { state: { campaign } });
   };
 
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -90,12 +96,15 @@ const ExistingCampaigns = () => {
                 <tr key={index} className="rounded-lg">
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-[#082A66]">{campaign.startedOn}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-[#082A66]">
-                    <div className="items-center gap-1 bg-[rgba(252,252,252,0.40)] p-1 rounded-md text-xs inline-block text-[#6B7280]">
+                    <button 
+                      className="items-center gap-1 bg-[rgba(252,252,252,0.40)] p-1 rounded-md text-xs inline-block text-[#6B7280]"
+                      onClick={() => handleCampaignClick(campaign)}
+                    >
                       <span className="flex items-center">
                         {campaign.id}
                         <img src={fileIcon} alt="File Icon" className="ml-1 w-4 h-4" />
                       </span>
-                    </div>
+                    </button>
                     <div className="mt-2">{campaign.info}</div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-[#082A66]">

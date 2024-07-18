@@ -8,6 +8,8 @@ import facomment from '../../assets/dashboard_img/facomment.svg';
 import { useNavigate } from "react-router-dom";
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import brandIcon from '../../assets/dashboard_img/brand_b1.svg'; // Adjust the path as needed
+import { CreditCardIcon } from "@heroicons/react/24/outline";
+import { RiDiscountPercentLine } from "react-icons/ri";
 
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
@@ -253,6 +255,37 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   id="productDescription"
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full h-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                />
+              </div>
+              </div>
+              <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
+            
+              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
+                <span className="flex items-center gap-4 text-lg">
+                  <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                  <h6>Product Price</h6>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Enter Product Price(Example: 250 USD)"
+                  id="Product Price"
+                  onChange={handleOnChangeProductDetails}
+                  className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  autoComplete="off"
+                />
+              </div>              
+              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
+                <span className="flex items-center gap-4 text-lg">
+                  <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                  <h6>Discount</h6>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Enter Discount on Product"
+                  id="productDiscount"
+                  onChange={handleOnChangeProductDetails}
+                  className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  autoComplete="off"
                 />
               </div>
             </div>
