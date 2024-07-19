@@ -7,6 +7,7 @@ import Features from "../components/FeaturesSection/Features";
 import Pricing from "../components/PricingSection/Pricing";
 import Faqs from "../components/Faqs/Faqs";
 import Footer from "../components/Footer";
+import Community from '../components/CommunitySection/community';
 const Home = () => {
   return (
     <div className="overflow-hidden">
@@ -17,6 +18,7 @@ const Home = () => {
 				<AboutSection />
 				<Features />
 				{/* <Pricing /> */}
+				<Community/>
 				<Faqs />
 			</div>
 			<Footer />
