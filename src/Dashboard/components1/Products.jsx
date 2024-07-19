@@ -39,7 +39,7 @@ const Products = () => {
   );
 
   return (
-    <div className="flex-grow overflow-y-auto hide-scrollbar" style={{maxHeight:'90vh'}}>
+    <div className="flex-grow overflow-y-auto" style={{maxHeight:'90vh'}}>
       <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl pb-4">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-7 relative">
           <span className="flex items-center gap-4">
@@ -78,7 +78,7 @@ const Products = () => {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap lg:ml-12 sm:mx-auto justify-center pb-2 w-90% gap-8 overflow-auto hide-scrollbar" style={{maxHeight:'45vh'}}>
+        <div className="flex flex-wrap lg:ml-2 sm:mx-auto justify-center pb-2 w-90% gap-8 overflow-auto" style={{maxHeight:'45vh'}}>
           <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
             <div
               onClick={handleCreateProduct}

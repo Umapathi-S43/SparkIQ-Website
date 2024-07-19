@@ -19,6 +19,8 @@ import GeneratedCreativesPage from './Dashboard/pages1/GeneratedCreativesPage';
 import CustomizationAdsPage from './Dashboard/pages1/CustomizationAdsPage';
 import ViewPlans from './Dashboard/pages1/ViewPlans';
 import ExistingCampaignsPage from './Dashboard/pages1/ECampaignsPage';
+import CampaignInsights from './Dashboard/components1/CampaignInsights';
+import CampaignInsightsPage from './Dashboard/pages1/CampaignInsightsPage';
 
 
 function App() {
@@ -45,6 +47,8 @@ function App() {
           <Route path="/customizationadspage" element={< CustomizationAdsPage/>}/>
           <Route path="/viewplans" element={<ViewPlans/>}/>
           <Route path="/ECampaigns" element={<ExistingCampaignsPage/>}/>
+          <Route path="/campaign-insights/:id" element={<CampaignInsightsPage />} />
+          
         </Routes>
       </div>
     </Router>
