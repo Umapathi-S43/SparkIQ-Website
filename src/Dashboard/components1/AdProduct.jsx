@@ -11,7 +11,7 @@ import { CreditCardIcon } from "@heroicons/react/24/outline";
 import { RiDiscountPercentLine } from "react-icons/ri";
 
 const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
-const discountOptions = ["5%", "10%", "15%", "20%", "25%", "30%", "35%", "40%", "45%", "50%", "Custom"];
+const discountOptions = ["Price", "Percentage"];
 const brandNames = ["Brand1", "Brand2", "Brand3"];
 
 export default function AdProduct({ setIsNextSectionOpen }) {
@@ -295,31 +295,32 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   <h6>Product Price</h6>
                 </span>
                 <div className="relative w-full flex items-center">
-                  <select
-                    id="currency"
-                    onChange={handleOnChangeProductDetails}
-                    className="absolute left-0 rounded-[20px] px-10 py-2 pl-6 pr-12 m-2 border border-blue-400 focus:outline-none z-10"
-                    value={productDetails.currency}
-                    style={{ 
-                      appearance: 'none', 
-                      background: 'none', 
-                      backgroundPosition: 'right 10px center', 
-                      backgroundRepeat: 'no-repeat',
-                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`
-                    }}
-                  >
-                    {currencies.map((currency, index) => (
-                      <option key={index} value={currency}>
-                        {currency}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[90px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                    <select
+                      id="currency"
+                      onChange={handleOnChangeProductDetails}
+                      className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                      value={productDetails.currency}
+                      style={{
+                        background: '[#D9E9F2]',
+                        backgroundPosition: 'right 10px center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                      }}
+                    >
+                      {currencies.map((currency, index) => (
+                        <option key={index} value={currency}>
+                          {currency}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <input
                     type="text"
                     placeholder="Enter Product Price"
                     id="productPrice"
                     onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-36 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                    className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     autoComplete="off"
                     value={productDetails.productPrice}
                   />
@@ -331,17 +332,19 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   <h6>Discount</h6>
                 </span>
                 <div className="relative w-full flex items-center">
+                <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                  
                   <select
                     id="discount"
                     onChange={handleDiscountChange}
-                    className="absolute left-0 rounded-[20px] px-4 py-2 pl-6 pr-8 m-2 border border-blue-400 focus:outline-none z-10"
+                    className="absolute left-0 rounded-[20px] px-4 py-2 pl-2  pr-10 m-2  focus:outline-none z-10"
                     value={productDetails.discount}
-                    style={{ 
-                      appearance: 'none', 
-                      background: 'none', 
-                      backgroundPosition: 'right 10px center', 
-                      backgroundRepeat: 'no-repeat',
-                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`
+                    style={{
+                      appearance: "none",
+                      background: "none",
+                      backgroundPosition: "right 10px center",
+                      backgroundRepeat: "no-repeat",
+                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
                     }}
                   >
                     {discountOptions.map((discount, index) => (
@@ -350,24 +353,16 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                       </option>
                     ))}
                   </select>
-                  {productDetails.discount === "Custom" ? (
-                    <input
-                      type="text"
-                      placeholder="Enter Custom Discount"
-                      id="customDiscount"
-                      onChange={handleOnChangeProductDetails}
-                      className="rounded-[20px] py-4 pl-36 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                      autoComplete="off"
-                      value={customDiscount}
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      className="rounded-[20px] py-4 pl-40 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                      value={productDetails.discount}
-                      readOnly
-                    />
-                  )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={`Enter Discount in terms of ${productDetails.discount}`}
+                    id="customDiscount"
+                    onChange={handleOnChangeProductDetails}
+                    className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                    autoComplete="off"
+                    value={customDiscount}
+                  />
                 </div>
               </div>
             </div>
