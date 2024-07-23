@@ -6,24 +6,48 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import brandIcon from '../../assets/dashboard_img/brand.svg'; // Adjust the path as needed
 import './brandsetup.css'; // Import the CSS file
+import axios from 'axios';
+import { baseUrl } from '../../components/utils/Constant';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState('')
   const navigate = useNavigate();
 
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/product`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true 
+      });
+      setProducts(response.data.data);
+    } catch (error) {
+      console.log(error);
+      setError("Failed to fetch products.");
+    }
+  };
+  
   useEffect(() => {
-    const storedProducts = JSON.parse(localStorage.getItem('products')) || [];
-    const updatedProducts = storedProducts.map(product => {
-      // If the product doesn't have a price, assign a random one between 100 and 500
-      if (!product.price) {
-        product.price = Math.floor(Math.random() * 400) + 100;
-      }
-      return product;
-    });
-    setProducts(updatedProducts);
-    localStorage.setItem('products', JSON.stringify(updatedProducts)); // Save updated products back to localStorage
+    fetchProducts();
   }, []);
+
+  console.log(products,'products');
+
+  // useEffect(() => {
+  //   const storedProducts = JSON.parse(localStorage.getItem('products')) || [];
+  //   const updatedProducts = storedProducts.map(product => {
+  //     // If the product doesn't have a price, assign a random one between 100 and 500
+  //     if (!product.price) {
+  //       product.price = Math.floor(Math.random() * 400) + 100;
+  //     }
+  //     return product;
+  //   });
+  //   setProducts(updatedProducts);
+  //   localStorage.setItem('products', JSON.stringify(updatedProducts)); // Save updated products back to localStorage
+  // }, []);
 
   const handleCreateProduct = () => {
     navigate('/productdetails');
@@ -96,11 +120,14 @@ const Products = () => {
             key={index}
             className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 lg:w-80 lg:h-80 md:w-80 md:h-80 w-72 h-72 flex flex-col items-center justify-between hover:transition-colors duration-200 glass-gradient-hover"
           >
-            <img
-              src={product.image}
-              alt={product.name}
+            {product.productImagesList?.map((item) => (
+              <img
+              key={item.id}
+              src={item.imageURL}
+              alt={item.bucketName}
               className="object-cover w-full h-48 rounded-lg"
             />
+            ))}
             <div className="text-center flex justify-between w-full px-2">
               <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">{product.name}</h3>
               <span className="font-semibold text-[#082A66] group-hover:text-white">USD {product.price}</span>

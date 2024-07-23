@@ -187,8 +187,7 @@ const BrandSetup = () => {
     try {
       await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
         toast.success("Brand created successfully");
-        // const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
-        // storedBrands.push(newBrand);
+       
         localStorage.setItem("task1Completed", "true");
 
         navigate("/homepage");

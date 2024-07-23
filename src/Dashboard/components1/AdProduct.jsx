@@ -1,25 +1,34 @@
 /* eslint-disable react/prop-types */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaFolder, FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
 import { GoTag } from "react-icons/go";
+import { useNavigate } from "react-router-dom";
 import link2 from '../../assets/dashboard_img/linksvg1.svg';
 import facomment from '../../assets/dashboard_img/facomment.svg';
-import { useNavigate } from "react-router-dom";
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import brandIcon from '../../assets/dashboard_img/brand_b1.svg'; // Adjust the path as needed
+import toast from "react-hot-toast";
+import axios from "axios";
+import { baseUrl } from "../../components/utils/Constant";
 
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [productDetails, setProductDetails] = useState({
+    productName: "",
+    productDescription: "",
+    productURL: "",
+    brandName: "",
+    imageFile: null,
+    logoURL: "",
+  });
+
   const navigate = useNavigate();
 
   const handleFileChange = (event) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files).slice(
-        0,
-        3 - images.length
-      );
+      const newFiles = Array.from(event.target.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
     }
   };
@@ -27,10 +36,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const handleDrop = (event) => {
     event.preventDefault();
     if (event.dataTransfer.files) {
-      const newFiles = Array.from(event.dataTransfer.files).slice(
-        0,
-        3 - images.length
-      );
+      const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
     }
   };
@@ -41,43 +47,60 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const handleImageClick = (index) => {
     setSelectedImage(index);
+    setProductDetails({ ...productDetails, imageFile: images[index] });
   };
 
   const handleDeleteImage = (index) => {
     setImages(images.filter((_, i) => i !== index));
     if (selectedImage === index) {
       setSelectedImage(null);
+      setProductDetails({ ...productDetails, imageFile: null });
     }
   };
-
-  const [productDetails, setProductDetails] = useState({
-    productName: "",
-    productDescription: "",
-    productURL: "",
-    brandName: "",
-  });
 
   const handleOnChangeProductDetails = (e) => {
     setProductDetails({ ...productDetails, [e.target.id]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log(productDetails);
+  useEffect(() => {
+    if (productDetails.imageFile) {
+      uploadImage();
+    }
+  }, [productDetails.imageFile]);
+
+  const uploadImage = async () => {
+    const uploadData = new FormData();
+    uploadData.append("file", productDetails.imageFile);
+    uploadData.append("customerId", "123");
+
+    try {
+      await axios.post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }).then((res) => {
+        setProductDetails({...productDetails, logoURL: res.data.data.url})
+        toast.success("Image upload successful");
+      })
+
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const handleAdProduct = () => {
-    const storedProducts = JSON.parse(localStorage.getItem('products')) || [];
-    storedProducts.push({
+  const handleAdProduct = async () => {
+    const newProduct = {
       name: productDetails.productName,
       description: productDetails.productDescription,
-      url: productDetails.productURL,
-      brand: productDetails.brandName,
-      image: images[selectedImage] ? URL.createObjectURL(images[selectedImage]) : null,
-    });
-    localStorage.setItem('products', JSON.stringify(storedProducts));
-    
-    navigate('/productspage');
+      productImagesList: {
+        imageURL: productDetails.logoURL
+      },
+    };
+    try {
+      await axios.post(`${baseUrl}/product`, newProduct);
+      toast.success("Product created successfully");
+      navigate("/productspage");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const isNextStepDisabled =
@@ -111,11 +134,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               <p className="text-[#374151] lg:text-sm text-xs">Upload photos and details of your product</p>
             </span>
           </span>
-          <img
-            src={brandImage}
-            alt="Brand Banner"
-            className="absolute bottom-0 right-24 w-44 hidden lg:block"
-          />
+          <img src={brandImage} alt="Brand Banner" className="absolute bottom-0 right-24 w-44 hidden lg:block" />
         </div>
         <div className="overflow-auto hide-scrollbar" style={{ maxHeight: '55vh' }}>
           <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
@@ -129,11 +148,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                       className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
                       onClick={() => handleImageClick(index)}
                     >
-                      <img
-                        src={URL.createObjectURL(image)}
-                        alt={`Uploaded ${index}`}
-                        className="object-cover w-full h-48 rounded"
-                      />
+                      <img src={URL.createObjectURL(image)} alt={`Uploaded ${index}`} className="object-cover w-full h-48 rounded" />
                       <button
                         className="absolute top-1 left-1 text-red-500"
                         onClick={(e) => {
@@ -224,7 +239,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           <div className="flex justify-center p-2">
             <img src="/orIcon.svg" alt="" />
           </div>
-          <form onSubmit={handleSubmit} className="p-2">
+          <form onSubmit={handleAdProduct} className="p-2">
             <p className="text-lg pb-2 text-[#082A66] ml-2">
               Enter Product Details Manually
             </p>
