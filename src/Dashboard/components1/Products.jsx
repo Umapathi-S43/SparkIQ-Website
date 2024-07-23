@@ -21,7 +21,6 @@ const Products = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        withCredentials: true 
       });
       setProducts(response.data.data);
     } catch (error) {
