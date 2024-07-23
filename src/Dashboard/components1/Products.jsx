@@ -103,7 +103,7 @@ const Products = () => {
             />
             <div className="text-center flex justify-between w-full px-2">
               <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">{product.name}</h3>
-              <span className="font-semibold text-[#082A66] group-hover:text-white">USD {product.price}</span>
+              <span className="font-semibold text-[#082A66] group-hover:text-white">{product.price}</span>
             </div>
             <div className="text-justify w-full px-2 line-clamp-3">
               <p className="text-sm text-[#374151] group-hover:text-white">{product.description}</p>

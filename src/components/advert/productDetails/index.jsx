@@ -1,5 +1,4 @@
-/* eslint-disable react/prop-types */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaFolder, FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
@@ -12,7 +11,6 @@ import brandIcon from "../../../assets/dashboard_img/brand_b1.svg"; // Adjust th
 
 const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
 const discountOptions = ["Price", "Percentage"];
-const brandNames = ["Brand1", "Brand2", "Brand3"];
 
 export default function ProductDetails({
   setIsNextSectionOpen,
@@ -27,11 +25,33 @@ export default function ProductDetails({
     productName: "",
     productDescription: "",
     productURL: "",
-    brandName: brandNames[0],
+    brandName: "",
     productPrice: "",
     currency: currencies[0],
     discount: discountOptions[0],
   });
+  const [brandNames, setBrandNames] = useState([]);
+
+  useEffect(() => {
+    // Fetch the brand names from your API or data source
+    async function fetchBrandNames() {
+      try {
+        const response = await fetch("/api/brands"); // Replace with your API endpoint
+        const data = await response.json();
+        setBrandNames(data.brands);
+        if (data.brands.length === 1) {
+          setProductDetails((prevDetails) => ({
+            ...prevDetails,
+            brandName: data.brands[0],
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching brand names:", error);
+      }
+    }
+
+    fetchBrandNames();
+  }, []);
 
   const toggleAccordion = () => {
     setIsOpen(!isOpen);
@@ -162,251 +182,271 @@ export default function ProductDetails({
         </div>
         {isOpen && (
           <>
-            <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
-              {images.length > 0 && (
-                <div className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}>
-                  <h6 className="font-bold pb-4 mt-2 mb-4 text-sm md:text-base lg:text-lg">Select Your Desired Image</h6>
-                  <div className="flex gap-4 flex-wrap md:flex-nowrap">
-                    {images.map((image, index) => (
-                      <div
-                        key={index}
-                        className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
-                        onClick={() => handleImageClick(index)}
-                      >
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Uploaded ${index}`}
-                          className="object-cover w-full h-48 rounded"
-                        />
-                        <button
-                          className="absolute top-1 left-1 text-red-500"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteImage(index);
-                          }}
-                        >
-                          <FaTrash />
-                        </button>
-                        {selectedImage === index && (
-                          <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
-                            <BiCheck size={16} />
+            {brandNames.length === 0 ? (
+              <div className="text-center text-red-500 font-semibold">
+                No brands available. Please create a brand.
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
+                  {images.length > 0 && (
+                    <div className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}>
+                      <h6 className="font-bold pb-4 mt-2 mb-4 text-sm md:text-base lg:text-lg">Select Your Desired Image</h6>
+                      <div className="flex gap-4 flex-wrap md:flex-nowrap">
+                        {images.map((image, index) => (
+                          <div
+                            key={index}
+                            className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
+                            onClick={() => handleImageClick(index)}
+                          >
+                            <img
+                              src={URL.createObjectURL(image)}
+                              alt={`Uploaded ${index}`}
+                              className="object-cover w-full h-48 rounded"
+                            />
+                            <button
+                              className="absolute top-1 left-1 text-red-500"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(index);
+                              }}
+                            >
+                              <FaTrash />
+                            </button>
+                            {selectedImage === index && (
+                              <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                                <BiCheck size={16} />
+                              </div>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div
-                className={`bg-white rounded-[30px] shadow-md p-5 ${
-                  images.length > 0
-                    ? images.length === 1
-                      ? "w-full md:w-5/6"
-                      : images.length === 2
-                      ? "w-full md:w-4/6"
-                      : "w-full md:w-3/6"
-                    : "w-full"
-                } lg:h-82`}
-              >
-                <div
-                  className="border border-[#605880] border-dashed rounded-[20px] flex items-center justify-center py-12 px-6"
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                >
-                  <span className="flex flex-col items-center justify-center">
-                    <img src="/icon3.svg" alt="" className="w-10" />
-                    <h6 className="text-xl font-bold lg:text-lg">Upload a product Image</h6>
-                    <p>or drag and drop a product image here.</p>
-                    <p className="font-medium mt-2 mb-4 text-xs md:text-sm lg:text-base">
-                      You can select a maximum of 3 photo(s)
-                    </p>
-                    <div>
-                      <label className="custom-button px-6 flex gap-[10px] text-white rounded-[32px] font-semibold items-center justify-between h-12 cursor-pointer shadow-2xl">
-                        Your Library <FaFolder />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={handleFileChange}
-                          disabled={images.length >= 3}
-                        />
-                      </label>
                     </div>
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row gap-5 p-2">
-              <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
-                <span className="flex items-center gap-4 text-lg font-bold">
-                  <img src={link2} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />{" "}
-                  <h6>Product Page URL (Automatically get details)</h6>
-                </span>
-                <span className="flex flex-col md:flex-row items-center gap-5">
-                  <input
-                    type="text"
-                    placeholder="Your landing page or website (Example: spark.ai)"
-                    id="productURL"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                  />
-                  <button className="w-fit custom-button rounded-[20px] text-white py-3 px-10 whitespace-pre font-medium">
-                    Scan the URL
-                  </button>
-                </span>
-              </div>
-              <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
-                <span className="flex items-center gap-4 text-lg font-bold">
-                  <img src={brandIcon} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />
-                  <h6>Brand Name</h6>
-                </span>
-                <select
-                  id="brandName"
-                  onChange={handleOnChangeProductDetails}
-                  className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                  value={productDetails.brandName}
-                  style={{
-                    appearance: "none",
-                    background: "white",
-                    backgroundPosition: "right 10px center",
-                    backgroundRepeat: "no-repeat",
-                    backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                  }}
-                >
-                  {brandNames.map((brand, index) => (
-                    <option key={index} value={brand}>{brand}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-center p-2">
-              <img src="/orIcon.svg" alt="" />
-            </div>
-            <form onSubmit={handleSubmit}>
-              <p className="text-lg pb-2 text-[#082A66] ml-2 md:text-base lg:text-lg">
-                Enter Product Details Manually
-              </p>
-              <div className="flex flex-col md:flex-row gap-5 lg:h-56">
-                <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
-                  <span className="flex items-center gap-4 text-lg">
-                    <GoTag className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
-                    <h6 className="text-sm md:text-base lg:text-lg">Product Name</h6>
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Enter your product name"
-                    id="productName"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pr-[100px] pl-[25px] shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
-                  <span className="flex items-center gap-4 text-lg">
-                    <img
-                      src={facomment}
-                      className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3"
-                    />
-                    <h6 className="text-sm md:text-base lg:text-lg">Product Description</h6>
-                  </span>
-                  <textarea
-                    placeholder="Enter your Product Description"
-                    id="productDescription"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pr-[100px] pl-[25px] shadow-md w-full h-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
-              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
-                <span className="flex items-center gap-4 text-lg">
-                  <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
-                  <h6>Product Price</h6>
-                </span>
-                <div className="relative w-full flex items-center">
-                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[90px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
-                    <select
-                      id="currency"
-                      onChange={handleOnChangeProductDetails}
-                      className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
-                      value={productDetails.currency}
-                      style={{
-                        background: '[#D9E9F2]',
-                        backgroundPosition: 'right 10px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                      }}
-                    >
-                      {currencies.map((currency, index) => (
-                        <option key={index} value={currency}>
-                          {currency}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Enter Product Price"
-                    id="productPrice"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    autoComplete="off"
-                    value={productDetails.productPrice}
-                  />
-                </div>
-              </div>
-              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
-                <span className="flex items-center gap-4 text-lg">
-                  <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
-                  <h6>Discount</h6>
-                </span>
-                <div className="relative w-full flex items-center">
-                <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
-                  
-                  <select
-                    id="discount"
-                    onChange={handleDiscountChange}
-                    className="absolute left-0 rounded-[20px] px-4 py-2 pl-2  pr-10 m-2  focus:outline-none z-10"
-                    value={productDetails.discount}
-                    style={{
-                      appearance: "none",
-                      background: "none",
-                      backgroundPosition: "right 10px center",
-                      backgroundRepeat: "no-repeat",
-                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                    }}
+                  )}
+                  <div
+                    className={`bg-white rounded-[30px] shadow-md p-5 ${
+                      images.length > 0
+                        ? images.length === 1
+                          ? "w-full md:w-5/6"
+                          : images.length === 2
+                          ? "w-full md:w-4/6"
+                          : "w-full md:w-3/6"
+                        : "w-full"
+                    } lg:h-82`}
                   >
-                    {discountOptions.map((discount, index) => (
-                      <option key={index} value={discount}>
-                        {discount}
-                      </option>
-                    ))}
-                  </select>
+                    <div
+                      className="border border-[#605880] border-dashed rounded-[20px] flex items-center justify-center py-12 px-6"
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                    >
+                      <span className="flex flex-col items-center justify-center">
+                        <img src="/icon3.svg" alt="" className="w-10" />
+                        <h6 className="text-xl font-bold lg:text-lg">Upload a product Image</h6>
+                        <p>or drag and drop a product image here.</p>
+                        <p className="font-medium mt-2 mb-4 text-xs md:text-sm lg:text-base">
+                          You can select a maximum of 3 photo(s)
+                        </p>
+                        <div>
+                          <label className="custom-button px-6 flex gap-[10px] text-white rounded-[32px] font-semibold items-center justify-between h-12 cursor-pointer shadow-2xl">
+                            Your Library <FaFolder />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={handleFileChange}
+                              disabled={images.length >= 3}
+                            />
+                          </label>
+                        </div>
+                      </span>
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    placeholder={`Enter Discount in terms of ${productDetails.discount}`}
-                    id="customDiscount"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    autoComplete="off"
-                    value={customDiscount}
-                  />
                 </div>
-              </div>
-            </div>
-              <div className="flex justify-center md:justify-start p-2">
-                <button
-                  className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"
-                  disabled={isNextStepDisabled}
-                  onClick={handleNextStep}
-                >
-                  Next Step
-                </button>
-              </div>
-            </form>
+                <div className="flex flex-col md:flex-row gap-5 p-2">
+                  <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
+                    <span className="flex items-center gap-4 text-lg font-bold">
+                      <img src={link2} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />{" "}
+                      <h6>Product Page URL (Automatically get details)</h6>
+                    </span>
+                    <span className="flex flex-col md:flex-row items-center gap-5">
+                      <input
+                        type="text"
+                        placeholder="Your landing page or website (Example: spark.ai)"
+                        id="productURL"
+                        onChange={handleOnChangeProductDetails}
+                        className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                      />
+                      <button
+                        onClick={handleScanURL}
+                        className="w-fit custom-button rounded-[20px] text-white py-3 px-10 whitespace-pre font-medium"
+                      >
+                        Scan the URL
+                      </button>
+                    </span>
+                  </div>
+                  <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
+                    <span className="flex items-center gap-4 text-lg font-bold">
+                      <img src={brandIcon} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />
+                      <h6>Brand Name</h6>
+                    </span>
+                    {brandNames.length === 1 ? (
+                      <input
+                        type="text"
+                        value={brandNames[0]}
+                        readOnly
+                        disabled
+                        className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full bg-gray-100 cursor-not-allowed"
+                      />
+                    ) : (
+                      <select
+                        id="brandName"
+                        onChange={handleOnChangeProductDetails}
+                        className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                        value={productDetails.brandName}
+                        style={{
+                          appearance: "none",
+                          background: "white",
+                          backgroundPosition: "right 10px center",
+                          backgroundRepeat: "no-repeat",
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                        }}
+                      >
+                        {brandNames.map((brand, index) => (
+                          <option key={index} value={brand}>{brand}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-center p-2">
+                  <img src="/orIcon.svg" alt="" />
+                </div>
+                <form onSubmit={handleSubmit}>
+                  <p className="text-lg pb-2 text-[#082A66] ml-2 md:text-base lg:text-lg">
+                    Enter Product Details Manually
+                  </p>
+                  <div className="flex flex-col md:flex-row gap-5 lg:h-56">
+                    <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
+                      <span className="flex items-center gap-4 text-lg">
+                        <GoTag className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                        <h6 className="text-sm md:text-base lg:text-lg">Product Name</h6>
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Enter your product name"
+                        id="productName"
+                        onChange={handleOnChangeProductDetails}
+                        className="rounded-[20px] py-4 pr-[100px] pl-[25px] shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
+                      <span className="flex items-center gap-4 text-lg">
+                        <img
+                          src={facomment}
+                          className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3"
+                        />
+                        <h6 className="text-sm md:text-base lg:text-lg">Product Description</h6>
+                      </span>
+                      <textarea
+                        placeholder="Enter your Product Description"
+                        id="productDescription"
+                        onChange={handleOnChangeProductDetails}
+                        className="rounded-[20px] py-4 pr-[100px] pl-[25px] shadow-md w-full h-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
+                    <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
+                      <span className="flex items-center gap-4 text-lg">
+                        <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                        <h6>Product Price</h6>
+                      </span>
+                      <div className="relative w-full flex items-center">
+                        <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[90px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                          <select
+                            id="currency"
+                            onChange={handleOnChangeProductDetails}
+                            className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                            value={productDetails.currency}
+                            style={{
+                              background: '[#D9E9F2]',
+                              backgroundPosition: 'right 10px center',
+                              backgroundRepeat: 'no-repeat',
+                              backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                            }}
+                          >
+                            {currencies.map((currency, index) => (
+                              <option key={index} value={currency}>
+                                {currency}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Enter Product Price"
+                          id="productPrice"
+                          onChange={handleOnChangeProductDetails}
+                          className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                          autoComplete="off"
+                          value={productDetails.productPrice}
+                        />
+                      </div>
+                    </div>
+                    <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
+                      <span className="flex items-center gap-4 text-lg">
+                        <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                        <h6>Discount</h6>
+                      </span>
+                      <div className="relative w-full flex items-center">
+                        <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                          <select
+                            id="discount"
+                            onChange={handleDiscountChange}
+                            className="absolute left-0 rounded-[20px] px-4 py-2 pl-2  pr-10 m-2  focus:outline-none z-10"
+                            value={productDetails.discount}
+                            style={{
+                              appearance: "none",
+                              background: "none",
+                              backgroundPosition: "right 10px center",
+                              backgroundRepeat: "no-repeat",
+                              backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                            }}
+                          >
+                            {discountOptions.map((discount, index) => (
+                              <option key={index} value={discount}>
+                                {discount}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder={`Enter Discount in terms of ${productDetails.discount}`}
+                          id="customDiscount"
+                          onChange={handleOnChangeProductDetails}
+                          className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                          autoComplete="off"
+                          value={customDiscount}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-center md:justify-start p-2">
+                    <button
+                      className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"
+                      disabled={isNextStepDisabled}
+                      onClick={handleNextStep}
+                    >
+                      Next Step
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </>
         )}
       </section>
