@@ -4,10 +4,10 @@ import { FaFolder, FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
 import { GoTag } from "react-icons/go";
 import { useNavigate } from "react-router-dom";
-import link2 from '../../assets/dashboard_img/linksvg1.svg';
-import facomment from '../../assets/dashboard_img/facomment.svg';
-import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
-import brandIcon from '../../assets/dashboard_img/brand_b1.svg'; // Adjust the path as needed
+import link2 from "../../assets/dashboard_img/linksvg1.svg";
+import facomment from "../../assets/dashboard_img/facomment.svg";
+import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
+import brandIcon from "../../assets/dashboard_img/brand_b1.svg"; // Adjust the path as needed
 import toast from "react-hot-toast";
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
@@ -28,7 +28,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const handleFileChange = (event) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files).slice(0, 3 - images.length);
+      const newFiles = Array.from(event.target.files).slice(
+        0,
+        3 - images.length
+      );
       setImages([...images, ...newFiles]);
     }
   };
@@ -36,7 +39,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const handleDrop = (event) => {
     event.preventDefault();
     if (event.dataTransfer.files) {
-      const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length);
+      const newFiles = Array.from(event.dataTransfer.files).slice(
+        0,
+        3 - images.length
+      );
       setImages([...images, ...newFiles]);
     }
   };
@@ -74,25 +80,33 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     uploadData.append("customerId", "123");
 
     try {
-      await axios.post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      }).then((res) => {
-        setProductDetails({...productDetails, logoURL: res.data.data.url})
-        toast.success("Image upload successful");
-      })
-
+      await axios
+        .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((res) => {
+          setProductDetails({ ...productDetails, logoURL: res.data.data.url });
+          toast.success("Image upload successful");
+        });
     } catch (error) {
       console.log(error);
     }
   };
 
-  const handleAdProduct = async () => {
+  const handleAdProduct = async (e) => {
+    e.preventDefault();
     const newProduct = {
       name: productDetails.productName,
       description: productDetails.productDescription,
-      productImagesList: {
-        imageURL: productDetails.logoURL
-      },
+      price: 12,
+      priceType: "USD",
+      discount: 12,
+      discountType: "percentage",
+      productImagesList: [
+        {
+          imageURL: productDetails.logoURL,
+        },
+      ],
     };
     try {
       await axios.post(`${baseUrl}/product`, newProduct);
@@ -103,10 +117,12 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  console.log(productDetails, "productDetails");
+
   const isNextStepDisabled =
     productDetails.productName === "" ||
     productDetails.productDescription === "" ||
-    productDetails.productURL === "" ||
+    productDetails.logoURL === "" ||
     productDetails.brandName === "";
 
   const imageContainerClass =
@@ -118,10 +134,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const imageSectionWidth =
     images.length === 1
-      ? 'w-full lg:w-2/6'
+      ? "w-full lg:w-2/6"
       : images.length === 2
-      ? 'w-full lg:w-3/6'
-      : 'w-full lg:w-4/6';
+      ? "w-full lg:w-3/6"
+      : "w-full lg:w-4/6";
 
   return (
     <div className="overflow-auto hide-scrollbar">
@@ -130,17 +146,32 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon2.svg" alt="" />
             <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold text-xl md:text-2xl lg:text-2xl">Add Product Details</h4>
-              <p className="text-[#374151] lg:text-sm text-xs">Upload photos and details of your product</p>
+              <h4 className="text-[#082A66] font-bold text-xl md:text-2xl lg:text-2xl">
+                Add Product Details
+              </h4>
+              <p className="text-[#374151] lg:text-sm text-xs">
+                Upload photos and details of your product
+              </p>
             </span>
           </span>
-          <img src={brandImage} alt="Brand Banner" className="absolute bottom-0 right-24 w-44 hidden lg:block" />
+          <img
+            src={brandImage}
+            alt="Brand Banner"
+            className="absolute bottom-0 right-24 w-44 hidden lg:block"
+          />
         </div>
-        <div className="overflow-auto hide-scrollbar" style={{ maxHeight: '55vh' }}>
+        <div
+          className="overflow-auto hide-scrollbar"
+          style={{ maxHeight: "55vh" }}
+        >
           <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
             {images.length > 0 && (
-              <div className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}>
-                <h6 className="font-bold pb-4 mt-2 mb-4">Select Your Desired Image</h6>
+              <div
+                className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}
+              >
+                <h6 className="font-bold pb-4 mt-2 mb-4">
+                  Select Your Desired Image
+                </h6>
                 <div className="flex gap-4 flex-wrap md:flex-nowrap">
                   {images.map((image, index) => (
                     <div
@@ -148,7 +179,11 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                       className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
                       onClick={() => handleImageClick(index)}
                     >
-                      <img src={URL.createObjectURL(image)} alt={`Uploaded ${index}`} className="object-cover w-full h-48 rounded" />
+                      <img
+                        src={URL.createObjectURL(image)}
+                        alt={`Uploaded ${index}`}
+                        className="object-cover w-full h-48 rounded"
+                      />
                       <button
                         className="absolute top-1 left-1 text-red-500"
                         onClick={(e) => {
@@ -169,7 +204,15 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
             )}
             <div
-              className={`bg-white rounded-[30px] shadow-md p-5 ${images.length > 0 ? (images.length === 1 ? 'w-full md:w-5/6' : images.length === 2 ? 'w-full md:w-4/6' : 'w-full md:w-3/6') : 'w-full'} lg:h-82`}
+              className={`bg-white rounded-[30px] shadow-md p-5 ${
+                images.length > 0
+                  ? images.length === 1
+                    ? "w-full md:w-5/6"
+                    : images.length === 2
+                    ? "w-full md:w-4/6"
+                    : "w-full md:w-3/6"
+                  : "w-full"
+              } lg:h-82`}
             >
               <div
                 className="border border-[#605880] border-dashed rounded-[20px] flex items-center justify-center py-12 px-6"
@@ -204,7 +247,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           <div className="flex flex-col md:flex-row gap-5 p-2">
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
               <span className="flex items-center gap-4 text-lg font-bold">
-                <img src={link2} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />{" "}
+                <img
+                  src={link2}
+                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+                />{" "}
                 <h6>Product Page URL (Automatically get details)</h6>
               </span>
               <span className="flex flex-col md:flex-row items-center gap-5">
@@ -222,7 +268,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             </div>
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
               <span className="flex items-center gap-4 text-lg font-bold">
-                <img src={brandIcon} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />
+                <img
+                  src={brandIcon}
+                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+                />
                 <h6>Brand Name</h6>
               </span>
               <input
@@ -260,7 +309,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
               <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
                 <span className="flex items-center gap-4 text-lg">
-                  <img src={facomment} className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                  <img
+                    src={facomment}
+                    className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3"
+                  />
                   <h6>Product Description</h6>
                 </span>
                 <textarea
