@@ -117,7 +117,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
-  console.log(productDetails, "productDetails");
 
   const isNextStepDisabled =
     productDetails.productName === "" ||
