@@ -96,7 +96,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const handleAdProduct = async (e) => {
     e.preventDefault();
     const newProduct = {
-      brandId: "sic-a4e71c06-d",
+      brandID: "sic-a4e71c06-d",
       name: productDetails.productName,
       description: productDetails.productDescription,
       price: 12,
