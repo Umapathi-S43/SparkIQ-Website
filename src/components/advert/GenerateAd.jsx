@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ProductDetails from "./productDetails";
 import CreativeSize from "./creativeSize";
-import Customization from "./customization";
+import GeneratedCreatives from "../../Dashboard/components1/GeneratedCreatives";
 
 export default function GenerateAd({ setPage, pages }) {
   const [isNextSectionOpen, setIsNextSectionOpen] = useState(false);
@@ -15,7 +15,9 @@ export default function GenerateAd({ setPage, pages }) {
   };
 
   const toggleThirdSectionAccordion = () => {
-    setIsThirdSectionOpen(!isThirdSectionOpen);
+    if (openModalProductDetails && openModalCreativeSize) {
+      setIsThirdSectionOpen(!isThirdSectionOpen);
+    }
   };
 
   const handleNextSection = () => {
@@ -59,7 +61,7 @@ export default function GenerateAd({ setPage, pages }) {
             isCompleted={openModalCreativeSize}
             setIsCompleted={setOpenModalCreativeSize}
           />
-          <Customization
+          <GeneratedCreatives
             isThirdSectionOpen={isThirdSectionOpen}
             toggleThirdSectionAccordion={toggleThirdSectionAccordion}
             isLoading={isLoading}
