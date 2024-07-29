@@ -117,6 +117,22 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  const handleScanUrl = async (e) => {
+    try {
+      await axios
+        .get(`${baseUrl}/scrap/product?url=${productURL}`)
+        .then((res) => {
+          toast.success("Scan successful");
+          setProductDetails({
+            ...productDetails,
+            productName: res.data.productTitle,
+            productDescription: res.data.productDesc,
+          });
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const isNextStepDisabled =
     productDetails.productName === "" ||
@@ -260,7 +276,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
-                <button className="w-fit custom-button rounded-[20px] text-white py-4 px-10 whitespace-pre font-medium">
+                <button
+                  className="w-fit custom-button rounded-[20px] text-white py-4 px-10 whitespace-pre font-medium"
+                  onClick={handleScanUrl}
+                >
                   Scan the URL
                 </button>
               </span>
