@@ -28,6 +28,7 @@ const BrandSetup = () => {
     brandName: brandName || "",
     brandDescription: "",
     brandLogo: null,
+    brandId: "",
     imageFile: null,
     logoURL: "",
     showSubmitButton: false,
@@ -64,6 +65,7 @@ const BrandSetup = () => {
             brandName: foundBrand.name,
             brandDescription: foundBrand.description,
             brandLogo: foundBrand.logoURL,
+            brandId: foundBrand.id,
             domColors: [foundBrand.brandColours].map((color) =>
               JSON.parse(color)
             ),
@@ -187,7 +189,7 @@ const BrandSetup = () => {
     try {
       await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
         toast.success("Brand created successfully");
-       
+
         localStorage.setItem("task1Completed", "true");
 
         navigate("/homepage");
@@ -200,7 +202,7 @@ const BrandSetup = () => {
 
   const handleEditBrand = async () => {
     const editBrand = {
-      id: "123",
+      id: formInputs.brandId,
       name: formInputs.brandName,
       description: formInputs.brandDescription,
       // logoURL: formInputs.brandLogo,
@@ -208,10 +210,8 @@ const BrandSetup = () => {
     };
 
     try {
-      await axios.patch(`${baseUrl}/brand/123`, editBrand).then((res) => {
+      await axios.post(`${baseUrl}/brand`, editBrand).then((res) => {
         toast.success("Brand edited successfully");
-        // const storedBrands = JSON.parse(localStorage.getItem("brands")) || [];
-        // storedBrands.push(editBrand);
         localStorage.setItem("task1Completed", "true");
 
         navigate("/homepage");
