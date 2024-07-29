@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import { initialCaptions, initialSuggestions } from "./Data";
 
 export default function Caption({
@@ -6,6 +7,7 @@ export default function Caption({
   setSelectedCaption,
   selectedCaption,
 }) {
+  const navigate = useNavigate(); // Initialize useNavigate
   const [captions, setCaptions] = useState(initialCaptions.slice(0, 3));
   const [suggestions, setSuggestions] = useState(initialSuggestions);
   const [selectedSuggestion, setSelectedSuggestion] = useState("");
@@ -33,11 +35,19 @@ export default function Caption({
     setSelectedSuggestion("");
   };
 
+  const handleSave = () => {
+    navigate('/campaigns'); // Redirect to GeneratedCreatives
+  };
+
+  const handleNext = () => {
+    navigate('/adPreview'); // Redirect to adPreview
+  };
+
   return (
-    <div className="p-2 sm:p-4 md:p-6 lg:p-8">
+    <div className="p-2 sm:p-4 md:p-6 lg:p-8 overflow-auto" style={{ maxHeight: '66vh' }}>
       <div>
         <textarea
-          className="bg-white border border-[#FCFCFC] rounded-[30px] shadow sm:p-3 w-full min-h-32 lg:h-auto focus:ring-2 focus-within:ring-blue-400 focus:outline-none text-xs sm:text-sm md:text-base lg:text-base overflow-auto hide-scrollbar"
+          className="bg-white border border-[#FCFCFC] rounded-[20px] shadow sm:p-3 w-full min-h-32 lg:h-auto focus:ring-2 focus-within:ring-blue-400 focus:outline-none text-xs sm:text-sm md:text-base lg:text-base overflow-auto hide-scrollbar"
           value={selectedCaption}
           id="selectedCaption"
           onChange={handleOnChangeCaption}
@@ -73,7 +83,7 @@ export default function Caption({
           {suggestions.map((item, index) => (
             <button
               key={index}
-              className={`flex shadow-sm p-1 w-fit rounded-full text-xs sm:text-sm md:text-base lg:text-sm whitespace-pre ${
+              className={`flex shadow-sm py-2 px-6 w-fit rounded-full text-xs sm:text-sm md:text-base lg:text-sm whitespace-pre ${
                 selectedSuggestion === index
                   ? "bg-[#0064FA80] text-white"
                   : "bg-white text-[#082A66]"
@@ -103,15 +113,18 @@ export default function Caption({
           </div>
         ))}
       </div>
-      <div className="flex justify-center mt-6">
+      <div className="flex justify-end mt-6 mr-4 gap-4">
         <button
-          className="w-fit custom-button rounded-[20px] text-white py-2 sm:py-3 px-4 sm:px-6 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
-          onClick={() => {
-            console.log('Save Template button clicked');
-            setPage("adPreview");
-          }}
+          className="w-fit custom-button rounded-[18px] text-white py-2 sm:py-2 px-8 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
+          onClick={handleSave}
         >
-          Save Template
+          Save
+        </button>
+        <button
+          className="w-fit custom-button rounded-[18px] text-white py-2 sm:py-2 px-8 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
+          onClick={handleNext}
+        >
+          Next
         </button>
       </div>
       <style jsx>{`

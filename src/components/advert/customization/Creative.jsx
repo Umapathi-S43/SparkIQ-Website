@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { images, initialPhrases } from "./Data";
 import Picker from "../../../Dashboard/components1/colorPicker";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 export default function Creative({
   setRandomPhrase,
@@ -20,6 +21,7 @@ export default function Creative({
   const [phrases, setPhrases] = useState(initialPhrases);
   const dropdownRef = useRef(null);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     const handleResize = () => {
@@ -60,7 +62,7 @@ export default function Creative({
     }
     setIsDragging(false);
   };
-
+  
   const handleRemoveImage = () => {
     setUploadedImage(null);
     setSelectedImage(null);
@@ -132,8 +134,16 @@ export default function Creative({
     }
   };
 
+  const handleSave = () => {
+    navigate('/campaigns'); // Redirect to GeneratedCreatives
+  };
+
+  const handleNext = () => {
+    navigate('/adPreview'); // Redirect to adPreview
+  };
+
   return (
-    <div className="flex flex-col gap-4 pt-4 px-4 sm:px-6 md:px-8 lg:px-10">
+    <div className="flex flex-col gap-4 pt-4 px-4 sm:px-6 md:px-8 lg:px-10 overflow-auto" style={{maxHeight:'68vh'}}>
       <div className="flex flex-col items-center justify-center bg-white shadow-md rounded-[20px] p-2">
         {uploadedImage ? (
           <div className="border border-[#605880] border-dotted rounded-[20px] w-full flex gap-4 p-6 items-center justify-between">
@@ -223,7 +233,7 @@ export default function Creative({
           </div>
         </span>
       </div>
-      <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-xl py-4 px-5 flex items-center justify-between shadow">
+      <div className="border border-[#FCFCFC] rounded-xl py-4 px-5 flex items-center justify-between shadow">
         <span className="flex flex-col gap-3 w-full">
           <p className="text-[#9CA3AF] text-xs sm:text-sm">CTA</p>
           <input
@@ -317,15 +327,18 @@ export default function Creative({
             />
           ))}
         </div>
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-end mt-6 mr-2 gap-4">
           <button
-            className="w-fit custom-button rounded-[20px] text-white py-2 sm:py-3 px-6 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm lg:text-lg" 
-            onClick={() => {
-              console.log("Save Template clicked");
-              setPage("adPreview");
-            }}
+            className="w-fit custom-button rounded-[14px] text-white py-2 sm:py-2 px-10 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
+            onClick={handleSave}
           >
-            Save Template
+            Save
+          </button>
+          <button
+            className="w-fit custom-button rounded-[14px] text-white py-2 sm:py-2 px-10 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
+            onClick={handleNext}
+          >
+            Next
           </button>
         </div>
       </div>
