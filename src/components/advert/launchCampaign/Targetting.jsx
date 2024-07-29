@@ -73,7 +73,10 @@ export default function Targetting({ setPage }) {
     localStorage.setItem('task3Completed', 'true');
     navigate('/Congrats', { state: { task3Completed: true } });
   };
-
+  const handle_Goback = () => {
+    navigate('/adPreview'); // Redirect to adPreview
+  };
+  
   return (
     <form className="w-full flex flex-col gap-4 p-4">
       <div className="bg-[#FCFCFC40] border border-[#FCFCFC] rounded-[30px] p-6 pb-2 overflow-hidden">
@@ -172,17 +175,17 @@ export default function Targetting({ setPage }) {
           <img src="/figure-3.png" alt="" className="absolute bottom-0 right-0 hidden sm:block max-w-full w-auto" />
         </div>
       </div>
-      <div className="flex flex-col sm:flex-row justify-end mt-6 gap-4">
+      <div className="flex flex-col sm:flex-row justify-center mt-4 lg:mt-6 gap-2 lg:gap-4">
         <button
           type="button"
-          className="w-full sm:w-auto bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-4 sm:px-6 whitespace-pre font-medium border border-[#0086CD80] hover:opacity-70"
-          onClick={() => setPage("adPreview")}
+          className="w-full sm:w-auto bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-4 lg:py-2 lg:px-6 whitespace-pre font-medium border border-[#0086CD80] hover:opacity-70"
+          onClick={handle_Goback}
         >
           Go Back
         </button>
         <button
           type="button"
-          className="w-full sm:w-auto custom-button rounded-[10px] text-white py-2 px-4 sm:px-6 whitespace-pre font-medium"
+          className="w-full sm:w-auto custom-button rounded-[10px] text-white py-2 px-4 lg:py-2 lg:px-6 whitespace-pre font-medium"
           onClick={handleLaunch_Campaign}
         >
           Launch Campaign

@@ -5,15 +5,16 @@ import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import { BiBookmark, BiComment, BiLike } from "react-icons/bi";
 import { GoShare } from "react-icons/go";
+import { useNavigate } from "react-router-dom";
 import brandImage from "../../assets/dashboard_img/brand_img.png";
 
-const textCaption =
-  "🎨 Explore Infinite Creativity with fdg adfwerw 🌈🌟 Discover a Hint of Enigma, Infused with Grace💖 Embrace the Magic of tr5vy5✨ Elevate Your Sensory Journey for Just BDT 500 🌟";
+const textCaption = "🎨 Explore Infinite Creativity with fdg adfwerw 🌈🌟 Discover a Hint of Enigma, Infused with Grace💖 Embrace the Magic of tr5vy5✨ Elevate Your Sensory Journey for Just BDT 500 🌟";
 
 const AdPreview = ({ setPage }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [tabIndex, setTabIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -30,25 +31,25 @@ const AdPreview = ({ setPage }) => {
   }, []);
 
   const renderFacebookAd = (size, highlighted = false) => (
-    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] p-4 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-1/3' : 'lg:w-1/4'}`}>
-      <div className="bg-white shadow-lg rounded-[20px] overflow-hidden">
-        <div className="p-4">
-          <div className="flex items-center mb-4">
+    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] ml-4 p-3 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-1/5' : 'lg:w-1/5'}`}>
+      <div className="bg-white shadow-lg rounded-[20px] ">
+        <div className="p-2">
+          <div className="flex items-center mb-1">
             <FaFacebook className={`text-blue-600 ${size === 'large' ? 'text-3xl' : 'text-xl'}`} />
             <div className="ml-3">
               <h3 className="font-semibold text-xs">Brand</h3>
               <p className="text-xs text-gray-500">Sponsored</p>
             </div>
           </div>
-          <p className={`mb-4 text-[082A66] ${size === 'large' ? 'text-sm' : 'text-xs'} max-w-[20rem]`}>
+          <p className={`mb-2 text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'} max-w-[18rem]`}>
             {textCaption}
           </p>
           <img
             src="/image3.png"
             alt="Ad Image"
-            className={`rounded-lg mb-4 object-cover w-full h-auto ${size === 'large' ? 'h-[300px]' : 'h-[150px]'}`}
+            className={`rounded-lg mb-2 object-cover w-full ${size === 'large' ? 'h-[100px]' : 'h-[70px]'}`}
           />
-          <div className="flex items-center justify-between mt-4 gap-4">
+          <div className="flex items-center justify-between mt-3 gap-1">
             <p className={`text-${size === 'large' ? 'xs' : '[10px]'}`}>
               Ashiqur Rahman artwork for sale - Only BDT 500!
             </p>
@@ -62,10 +63,10 @@ const AdPreview = ({ setPage }) => {
   );
 
   const renderInstagramAd = (size, highlighted = false) => (
-    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] p-4 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-1/3' : 'lg:w-1/4'}`}>
-      <div className="bg-white shadow-lg rounded-[20px] overflow-hidden">
-        <div className="p-4">
-          <div className="flex items-center mb-4">
+    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] ml-0 p-2 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-1/5' : 'lg:w-1/5'}`}>
+      <div className="bg-white shadow-lg rounded-[20px]">
+        <div className="p-2">
+          <div className="flex items-center mb-2">
             <FaInstagram className={`text-pink-600 ${size === 'large' ? 'text-3xl' : 'text-xl'}`} />
             <div className="ml-3">
               <h3 className="font-semibold text-xs">Brand</h3>
@@ -75,7 +76,7 @@ const AdPreview = ({ setPage }) => {
           <img
             src="/image3.png"
             alt="Ad Image"
-            className={`rounded-lg mb-4 object-cover w-full h-auto ${size === 'large' ? 'h-[300px]' : 'h-[150px]'}`}
+            className={`rounded-lg mb-2 object-cover w-full ${size === 'large' ? 'h-[120px]' : 'h-[90px]'}`}
           />
           <div className="flex gap-2 justify-between pb-2">
             <span className="flex gap-2">
@@ -85,7 +86,7 @@ const AdPreview = ({ setPage }) => {
             </span>{" "}
             <BiBookmark className="cursor-pointer" />
           </div>
-          <p className={`mb-4 text-[082A66] ${size === 'large' ? 'text-sm' : 'text-xs'} max-w-[20rem]`}>
+          <p className={`mb-2 text-justify text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'} max-w-[20rem]`}>
             {textCaption}
           </p>
         </div>
@@ -95,7 +96,7 @@ const AdPreview = ({ setPage }) => {
 
   return (
     <div className="flex-grow overflow-auto">
-      <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-180px)]">
+      <div className="max-w-6xl w-full mx-auto flex flex-col gap-2 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-170px)]">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-6 relative pb-4">
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon1.svg" alt="" className="w-10 lg:w-14" />
@@ -114,28 +115,30 @@ const AdPreview = ({ setPage }) => {
             className="absolute bottom-0 lg:right-24 right-28 w-32 lg:w-44 hidden md:block"
           />
         </div>
+        
         {isLoading ? (
-          <div className="w-4/5 py-8 overflow-auto hide-scrollbar" style={{maxHeight:'60vh'}}>
+          <div className="overflow-auto hide-scrollbar mb-4 pb-6" style={{ maxHeight: '70vh' }}>
             <Loader />
-          </div>
+            </div>
+          
         ) : (
-          <div className="sticky overflow-auto hide-scrollbar" style={{ maxHeight: '70vh' }}>
+          <div className="sticky overflow-auto">
             <Tabs
               selectedTabClassName="outline-none bg-white text-[#082A66] font-bold rounded-[20px] shadow"
               selectedIndex={tabIndex}
               onSelect={(index) => setTabIndex(index)}
             >
-              <TabList className="border border-[#FCFCFC] rounded-[20px] shadow-sm px-2 py-2 bg-[#FCFCFC40] w-fit mx-auto flex">
-                <Tab className="cursor-pointer flex items-center p-3 font-bold text-sm gap-1">
+              <TabList className="border border-[#FCFCFC] rounded-[20px] shadow-sm px-2 py-1 bg-[#FCFCFC40] w-fit mx-auto flex">
+                <Tab className="cursor-pointer flex items-center px-3 py-2 font-bold text-sm gap-1">
                   <FaFacebookF className="bg-[#1977F3] text-white rounded-full w-5 h-5" />{" "}
                   Facebook
                 </Tab>
-                <Tab className="cursor-pointer flex items-center p-3 font-bold text-sm gap-1">
+                <Tab className="cursor-pointer flex items-center px-3 py-2 font-bold text-sm gap-1">
                   <FaInstagram className="rounded-full w-5 h-5" /> Instagram
                 </Tab>
               </TabList>
               <TabPanel>
-                <div className="py-8 lg:m-0 m-2">
+                <div className="py-2 lg:m-0 m-2">
                   <div className="rounded-[30px]">
                     <div className={`flex items-center justify-center gap-8 ${windowWidth < 750 ? 'flex-col' : ''}`}>
                       {windowWidth < 750 ? (
@@ -150,16 +153,16 @@ const AdPreview = ({ setPage }) => {
                         </>
                       )}
                     </div>
-                    <div className="flex justify-center mt-6 gap-4">
+                    <div className="flex justify-center mt-2 gap-4">
                       <button
-                        className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-6 whitespace-pre font-medium border border-[#0086CD80]"
-                        onClick={() => setPage("generateAd")}
+                        className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-1 px-3 whitespace-pre font-medium border border-[#0086CD80]"
+                        onClick={() => navigate("/customsample")}
                       >
                         Customize Ads
                       </button>
                       <button
-                        className="w-fit custom-button rounded-[10px] text-white py-2 px-6 whitespace-pre font-medium"
-                        onClick={() => setPage("lauchCampaign")}
+                        className="w-fit custom-button rounded-[10px] text-white py-1 px-3 whitespace-pre font-medium"
+                        onClick={() => navigate("/launchCampaign1")} // Corrected the spelling here
                       >
                         Next Step
                       </button>
@@ -168,7 +171,7 @@ const AdPreview = ({ setPage }) => {
                 </div>
               </TabPanel>
               <TabPanel>
-                <div className="py-8">
+              <div className="py-3 lg:m-0 m-2">
                   <div className="rounded-[30px]">
                     <div className={`flex items-center justify-center gap-8 ${windowWidth < 750 ? 'flex-col' : ''}`}>
                       {windowWidth < 750 ? (
@@ -183,16 +186,16 @@ const AdPreview = ({ setPage }) => {
                         </>
                       )}
                     </div>
-                    <div className="flex justify-center mt-6 gap-4">
+                    <div className="flex justify-center mt-2 gap-4">
                       <button
-                        className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-6 whitespace-pre font-medium border border-[#0086CD80]"
-                        onClick={() => setPage("generateAd")}
+                        className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-1 px-3 whitespace-pre font-medium border border-[#0086CD80]"
+                        onClick={() => navigate("/customsample")}
                       >
                         Customize Ads
                       </button>
                       <button
-                        className="w-fit custom-button rounded-[10px] text-white py-2 px-6 whitespace-pre font-medium"
-                        onClick={() => setPage("lauchCampaign")}
+                        className="w-fit custom-button rounded-[10px] text-white py-1 px-3 whitespace-pre font-medium"
+                        onClick={() => navigate("/launchCampaign1")} // Corrected the spelling here
                       >
                         Next Step
                       </button>

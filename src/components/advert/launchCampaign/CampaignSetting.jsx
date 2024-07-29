@@ -12,6 +12,9 @@ export default function CampaignSetting({ setPage }) {
     localStorage.setItem('task3Completed', 'true');
     navigate('/Congrats', { state: { task3Completed: true } });
   };
+  const handle_Goback = () => {
+    navigate('/adPreview'); // Redirect to adPreview
+  };
 
   return (
     <form className="w-full flex flex-col gap-4 p-2 lg:p-4">
@@ -77,7 +80,7 @@ export default function CampaignSetting({ setPage }) {
         <button
           type="button"
           className="w-full sm:w-auto bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-2 px-4 lg:py-2 lg:px-6 whitespace-pre font-medium border border-[#0086CD80] hover:opacity-70"
-          onClick={() => setPage("adPreview")}
+          onClick={handle_Goback}
         >
           Go Back
         </button>
