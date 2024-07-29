@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaFolder, FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
 import { GoTag } from "react-icons/go";
@@ -12,7 +12,6 @@ import { RiDiscountPercentLine } from "react-icons/ri";
 
 const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
 const discountOptions = ["Price", "Percentage"];
-const brandNames = ["Brand1", "Brand2", "Brand3"];
 
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
@@ -22,13 +21,32 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     productName: "",
     productDescription: "",
     productURL: "",
-    brandName: brandNames[0],
+    brandName: "",
     productPrice: "",
     currency: currencies[0],
     discount: discountOptions[0],
   });
-
+  const [brandNames, setBrandNames] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch brand names from an API or other data source
+    async function fetchBrandNames() {
+      try {
+        const response = await fetch("/api/brands"); // Adjust the endpoint as needed
+        const data = await response.json();
+        setBrandNames(data);
+        setProductDetails((prevDetails) => ({
+          ...prevDetails,
+          brandName: data.length > 0 ? data[0] : "",
+        }));
+      } catch (error) {
+        console.error("Error fetching brand names:", error);
+      }
+    }
+
+    fetchBrandNames();
+  }, []);
 
   const handleFileChange = (event) => {
     if (event.target.files) {
@@ -37,6 +55,9 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         3 - images.length
       );
       setImages([...images, ...newFiles]);
+      if (newFiles.length === 1) {
+        setSelectedImage(0);
+      }
     }
   };
 
@@ -48,6 +69,9 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         3 - images.length
       );
       setImages([...images, ...newFiles]);
+      if (newFiles.length === 1) {
+        setSelectedImage(0);
+      }
     }
   };
 
@@ -236,22 +260,43 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 <img src={brandIcon} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />
                 <h6>Brand Name</h6>
               </span>
-              <select
-                id="brandName"
-                onChange={handleOnChangeProductDetails}
-                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                style={{
-                  appearance: 'none',
-                  background: 'white',
-                  backgroundPosition: 'right 10px center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`
-                }}
-              >
-                {brandNames.map((brand, index) => (
-                  <option key={index} value={brand}>{brand}</option>
-                ))}
-              </select>
+              {brandNames.length > 0 ? (
+                brandNames.length > 1 ? (
+                  <select
+                    id="brandName"
+                    onChange={handleOnChangeProductDetails}
+                    className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                    value={productDetails.brandName}
+                    style={{
+                      appearance: 'none',
+                      background: 'white',
+                      backgroundPosition: 'right 10px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`
+                    }}
+                  >
+                    {brandNames.map((brand, index) => (
+                      <option key={index} value={brand}>{brand}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    id="brandName"
+                    value={productDetails.brandName}
+                    readOnly
+                    className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none opacity-50"
+                  />
+                )
+              ) : (
+                <input
+                  type="text"
+                  id="brandName"
+                  value="No brands. Please create a brand."
+                  readOnly
+                  className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none opacity-50"
+                />
+              )}
             </div>
           </div>
 
@@ -332,27 +377,25 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   <h6>Discount</h6>
                 </span>
                 <div className="relative w-full flex items-center">
-                <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
-                  
-                  <select
-                    id="discount"
-                    onChange={handleDiscountChange}
-                    className="absolute left-0 rounded-[20px] px-4 py-2 pl-2  pr-10 m-2  focus:outline-none z-10"
-                    value={productDetails.discount}
-                    style={{
-                      appearance: "none",
-                      background: "none",
-                      backgroundPosition: "right 10px center",
-                      backgroundRepeat: "no-repeat",
-                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                    }}
-                  >
-                    {discountOptions.map((discount, index) => (
-                      <option key={index} value={discount}>
-                        {discount}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                    <select
+                      id="discount"
+                      onChange={handleDiscountChange}
+                      className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                      value={productDetails.discount}
+                      style={{
+                        background: '[#D9E9F2]',
+                        backgroundPosition: 'right 10px center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                      }}
+                    >
+                      {discountOptions.map((discount, index) => (
+                        <option key={index} value={discount}>
+                          {discount}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <input
                     type="text"
