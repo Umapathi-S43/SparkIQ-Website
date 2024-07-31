@@ -54,34 +54,49 @@ const BrandSetup = () => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchBrands = async (name) => {
       try {
         const response = await axios.get(`${baseUrl}/brand/company/123`);
-        const foundBrand = response.data.data.find(
-          (brand) => brand.name === name
-        );
-        if (foundBrand) {
-          setFormInputs({
-            brandName: foundBrand.name,
-            brandDescription: foundBrand.description,
-            brandLogo: foundBrand.logoURL,
-            brandId: foundBrand.id,
-            domColors: [foundBrand.brandColours].map((color) =>
-              JSON.parse(color)
-            ),
-            isEdit: true,
-          });
+        if (isMounted) {
+          const foundBrand = response.data.data.find(
+            (brand) => brand.name === name
+          );
+          if (foundBrand) {
+            let parsedColors = [];
+            try {
+              parsedColors = JSON.parse(foundBrand.brandColours);
+            } catch (parseError) {
+              console.error("Error parsing brandColours:", parseError);
+            }
+            setFormInputs({
+              brandName: foundBrand.name,
+              brandDescription: foundBrand.description,
+              logoURL: foundBrand.logoURL,
+              brandId: foundBrand.id,
+              domColors: Array.isArray(parsedColors)
+                ? parsedColors
+                : [parsedColors],
+              isEdit: true,
+            });
+          }
         }
       } catch (error) {
-        console.log(error);
+        console.error(error);
       }
     };
 
     if (brandName) {
       fetchBrands(brandName);
     }
-  }, [brandName]);
 
+    return () => {
+      isMounted = false;
+    };
+  }, [brandName, baseUrl, setFormInputs]);
+
+  
   useEffect(() => {
     setExpandedSection(1); // Open first section by default
   }, []);
@@ -205,7 +220,7 @@ const BrandSetup = () => {
       id: formInputs.brandId,
       name: formInputs.brandName,
       description: formInputs.brandDescription,
-      // logoURL: formInputs.brandLogo,
+      logoURL: formInputs.logoURL,
       brandColours: JSON.stringify(formInputs.domColors),
     };
 
@@ -275,9 +290,9 @@ const BrandSetup = () => {
           <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-white rounded-3xl flex items-center justify-center">
               <div className="absolute w-48 h-48 sm:w-64 sm:h-64 md:w-[21rem] md:h-[20rem] bg-[#859398] rounded-3xl flex items-center justify-center">
-                <div className="absolute w-36 h-28 sm:w-48 sm:h-40 bg-[rgba(255,255,255,0.24)] rounded-2xl flex items-center justify-center">
+                <div className="absolute w-36 h-28 sm:w-48 sm:h-40 bg-[rgba(255,255,255,0.24)] rounded-2xl flex items-center justify-center border border-red-500">
                   <img
-                    src={formInputs.brandLogo || gallery}
+                    src={formInputs.logoURL || formInputs.brandLogo || gallery}
                     alt="Brand"
                     className="w-32 h-24 sm:w-36 sm:h-28 object-cover rounded-xl"
                   />

@@ -22,7 +22,9 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     brandName: "",
     imageFile: null,
     logoURL: "",
+    brandID: "",
   });
+  const [brands, setBrands] = useState([]);
 
   const navigate = useNavigate();
 
@@ -69,6 +71,22 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   };
 
   useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await axios.get(`${baseUrl}/brand/company/123`);
+        setBrands(response.data.data);
+      } catch (error) {
+        console.log(error);
+        setError("Failed to fetch brands.");
+      }
+    };
+
+    fetchBrands();
+  }, []);
+
+  console.log(brands, "products", productDetails);
+
+  useEffect(() => {
     if (productDetails.imageFile) {
       uploadImage();
     }
@@ -96,7 +114,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const handleAdProduct = async (e) => {
     e.preventDefault();
     const newProduct = {
-      brandID: "sic-a4e71c06-d",
+      brandID: productDetails.brandID,
       name: productDetails.productName,
       description: productDetails.productDescription,
       price: 12,
@@ -119,9 +137,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   };
 
   const handleScanUrl = async (e) => {
+    console.log(`${baseUrl}/scrap/product?url=${productDetails.productURL}`);
     try {
       await axios
-        .get(`${baseUrl}/scrap/product?url=${productURL}`)
+        .get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`)
         .then((res) => {
           toast.success("Scan successful");
           setProductDetails({
@@ -293,14 +312,30 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 />
                 <h6>Brand Name</h6>
               </span>
-              <input
+              {/* <input
                 type="text"
                 placeholder="Enter your brand name"
                 id="brandName"
                 onChange={handleOnChangeProductDetails}
                 className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 autoComplete="off"
-              />
+              /> */}
+              <select
+                id="brandName"
+                onChange={(e) =>
+                  setProductDetails({
+                    ...productDetails,
+                    brandID: e.target.value,
+                  })
+                }
+              >
+                <option>Select brand name</option>
+                {brands.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
