@@ -44,6 +44,7 @@ const BrandSetup = () => {
   const [completedSections, setCompletedSections] = useState({});
   const [expandedSection, setExpandedSection] = useState(1); // Open first section by default
   const navigate = useNavigate();
+  const [imageSrc, setImageSrc] = useState("");
 
   const handleOnChange = (event) => {
     const { name, value } = event.target;
@@ -53,12 +54,15 @@ const BrandSetup = () => {
     }));
   };
 
+  console.log(formInputs, "formInputs", imageSrc);
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchBrands = async (name) => {
       try {
         const response = await axios.get(`${baseUrl}/brand/company/123`);
+        console.log(response.data);
         if (isMounted) {
           const foundBrand = response.data.data.find(
             (brand) => brand.name === name
@@ -75,9 +79,9 @@ const BrandSetup = () => {
               brandDescription: foundBrand.description,
               logoURL: foundBrand.logoURL,
               brandId: foundBrand.id,
-              domColors: Array.isArray(parsedColors)
-                ? parsedColors
-                : [parsedColors],
+              // domColors: Array.isArray(parsedColors)
+              //   ? parsedColors
+              //   : [parsedColors],
               isEdit: true,
             });
           }
@@ -96,7 +100,6 @@ const BrandSetup = () => {
     };
   }, [brandName, baseUrl, setFormInputs]);
 
-  
   useEffect(() => {
     setExpandedSection(1); // Open first section by default
   }, []);
@@ -111,6 +114,10 @@ const BrandSetup = () => {
       });
     }
   };
+
+  useEffect(() => {
+    setImageSrc(formInputs.brandLogo || gallery || formInputs.logoURL);
+  }, [gallery, formInputs.brandLogo, formInputs.logoURL]);
 
   const handleColorSelect = (color) => {
     setCustomColor(color.hex);
@@ -222,6 +229,7 @@ const BrandSetup = () => {
       description: formInputs.brandDescription,
       logoURL: formInputs.logoURL,
       brandColours: JSON.stringify(formInputs.domColors),
+      companyId: "123",
     };
 
     try {
@@ -292,7 +300,7 @@ const BrandSetup = () => {
               <div className="absolute w-48 h-48 sm:w-64 sm:h-64 md:w-[21rem] md:h-[20rem] bg-[#859398] rounded-3xl flex items-center justify-center">
                 <div className="absolute w-36 h-28 sm:w-48 sm:h-40 bg-[rgba(255,255,255,0.24)] rounded-2xl flex items-center justify-center border border-red-500">
                   <img
-                    src={formInputs.logoURL || formInputs.brandLogo || gallery}
+                    src={imageSrc}
                     alt="Brand"
                     className="w-32 h-24 sm:w-36 sm:h-28 object-cover rounded-xl"
                   />
