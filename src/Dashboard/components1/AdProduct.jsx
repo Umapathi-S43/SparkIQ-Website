@@ -320,22 +320,24 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 autoComplete="off"
               /> */}
-              <select
-                id="brandName"
-                onChange={(e) =>
-                  setProductDetails({
-                    ...productDetails,
-                    brandID: e.target.value,
-                  })
-                }
-              >
-                <option>Select brand name</option>
-                {brands.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+             <select
+  id="brandName"
+  onChange={(e) => {
+    const selectedBrand = brands.find((item) => item.id === e.target.value);
+    setProductDetails({
+      ...productDetails,
+      brandID: selectedBrand.id,
+      brandName: selectedBrand.name,
+    });
+  }}
+>
+  <option>Select brand name</option>
+  {brands.map((item) => (
+    <option key={item.id} value={item.id}>
+      {item.name}
+    </option>
+  ))}
+</select>
             </div>
           </div>
 

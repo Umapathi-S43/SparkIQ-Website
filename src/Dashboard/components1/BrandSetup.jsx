@@ -54,7 +54,6 @@ const BrandSetup = () => {
     }));
   };
 
-  console.log(formInputs, "formInputs", imageSrc);
 
   useEffect(() => {
     let isMounted = true;
