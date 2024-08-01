@@ -15,7 +15,7 @@ const Brands = () => {
   const navigate = useNavigate();
 
   const handleCreateBrand = () => {
-    navigate("/brandsetup");
+    navigate("/brandsetup/");
   };
 
   const handleSearchChange = (event) => {
