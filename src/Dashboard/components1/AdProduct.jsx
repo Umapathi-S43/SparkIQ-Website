@@ -1,52 +1,32 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from "react";
 import { FaFolder, FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
 import { GoTag } from "react-icons/go";
-import link2 from '../../assets/dashboard_img/linksvg1.svg';
-import facomment from '../../assets/dashboard_img/facomment.svg';
 import { useNavigate } from "react-router-dom";
-import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
-import brandIcon from '../../assets/dashboard_img/brand_b1.svg'; // Adjust the path as needed
-import { CreditCardIcon } from "@heroicons/react/24/outline";
-import { RiDiscountPercentLine } from "react-icons/ri";
-
-const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
-const discountOptions = ["Price", "Percentage"];
+import link2 from "../../assets/dashboard_img/linksvg1.svg";
+import facomment from "../../assets/dashboard_img/facomment.svg";
+import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
+import brandIcon from "../../assets/dashboard_img/brand_b1.svg"; // Adjust the path as needed
+import toast from "react-hot-toast";
+import axios from "axios";
+import { baseUrl } from "../../components/utils/Constant";
 
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [customDiscount, setCustomDiscount] = useState("");
   const [productDetails, setProductDetails] = useState({
     productName: "",
     productDescription: "",
     productURL: "",
     brandName: "",
-    productPrice: "",
-    currency: currencies[0],
-    discount: discountOptions[0],
+    imageFile: null,
+    logoURL: "",
+    brandID: "",
   });
-  const [brandNames, setBrandNames] = useState([]);
+  const [brands, setBrands] = useState([]);
+
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Fetch brand names from an API or other data source
-    async function fetchBrandNames() {
-      try {
-        const response = await fetch("/api/brands"); // Adjust the endpoint as needed
-        const data = await response.json();
-        setBrandNames(data);
-        setProductDetails((prevDetails) => ({
-          ...prevDetails,
-          brandName: data.length > 0 ? data[0] : "",
-        }));
-      } catch (error) {
-        console.error("Error fetching brand names:", error);
-      }
-    }
-
-    fetchBrandNames();
-  }, []);
 
   const handleFileChange = (event) => {
     if (event.target.files) {
@@ -55,9 +35,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         3 - images.length
       );
       setImages([...images, ...newFiles]);
-      if (newFiles.length === 1) {
-        setSelectedImage(0);
-      }
     }
   };
 
@@ -69,9 +46,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         3 - images.length
       );
       setImages([...images, ...newFiles]);
-      if (newFiles.length === 1) {
-        setSelectedImage(0);
-      }
     }
   };
 
@@ -81,60 +55,110 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const handleImageClick = (index) => {
     setSelectedImage(index);
+    setProductDetails({ ...productDetails, imageFile: images[index] });
   };
 
   const handleDeleteImage = (index) => {
     setImages(images.filter((_, i) => i !== index));
     if (selectedImage === index) {
       setSelectedImage(null);
+      setProductDetails({ ...productDetails, imageFile: null });
     }
   };
 
   const handleOnChangeProductDetails = (e) => {
-    const { id, value } = e.target;
-    if (id === "customDiscount") {
-      setCustomDiscount(value);
-    } else {
-      setProductDetails({ ...productDetails, [id]: value });
+    setProductDetails({ ...productDetails, [e.target.id]: e.target.value });
+  };
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await axios.get(`${baseUrl}/brand/company/123`);
+        setBrands(response.data.data);
+      } catch (error) {
+        console.log(error);
+        setError("Failed to fetch brands.");
+      }
+    };
+
+    fetchBrands();
+  }, []);
+
+  console.log(brands, "products", productDetails);
+
+  useEffect(() => {
+    if (productDetails.imageFile) {
+      uploadImage();
+    }
+  }, [productDetails.imageFile]);
+
+  const uploadImage = async () => {
+    const uploadData = new FormData();
+    uploadData.append("file", productDetails.imageFile);
+    uploadData.append("customerId", "123");
+
+    try {
+      await axios
+        .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((res) => {
+          setProductDetails({ ...productDetails, logoURL: res.data.data.url });
+          toast.success("Image upload successful");
+        });
+    } catch (error) {
+      console.log(error);
     }
   };
 
-  const handleDiscountChange = (e) => {
-    if (e.target.value !== "Custom") {
-      setProductDetails({ ...productDetails, discount: e.target.value, customDiscount: "" });
-    } else {
-      setProductDetails({ ...productDetails, discount: e.target.value });
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleAdProduct = async (e) => {
     e.preventDefault();
-    console.log(productDetails);
-  };
-
-  const handleAdProduct = () => {
-    const storedProducts = JSON.parse(localStorage.getItem('products')) || [];
-    storedProducts.push({
+    const newProduct = {
+      brandID: productDetails.brandID,
       name: productDetails.productName,
       description: productDetails.productDescription,
-      url: productDetails.productURL,
-      brand: productDetails.brandName,
-      price: `${productDetails.productPrice} ${productDetails.currency}`,
-      discount: productDetails.discount === "Custom" ? customDiscount : productDetails.discount,
-      image: images[selectedImage] ? URL.createObjectURL(images[selectedImage]) : null,
-    });
-    localStorage.setItem('products', JSON.stringify(storedProducts));
+      price: 12,
+      priceType: "USD",
+      discount: 12,
+      discountType: "percentage",
+      productImagesList: [
+        {
+          imageURL: productDetails.logoURL,
+        },
+      ],
+    };
+    try {
+      await axios.post(`${baseUrl}/product`, newProduct);
+      toast.success("Product created successfully");
+      navigate("/productspage");
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-    navigate('/productspage');
+  const handleScanUrl = async (e) => {
+    console.log(`${baseUrl}/scrap/product?url=${productDetails.productURL}`);
+    try {
+      await axios
+        .get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`)
+        .then((res) => {
+          toast.success("Scan successful");
+          setProductDetails({
+            ...productDetails,
+            productName: res.data.productTitle,
+            productDescription: res.data.productDesc,
+          });
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const isNextStepDisabled =
     productDetails.productName === "" ||
     productDetails.productDescription === "" ||
-    productDetails.productURL === "" ||
-    productDetails.brandName === "" ||
-    productDetails.productPrice === "" ||
-    (productDetails.discount === "Custom" && customDiscount === "");
+    productDetails.logoURL === "" ||
+    productDetails.brandName === "";
 
   const imageContainerClass =
     images.length === 2
@@ -145,10 +169,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const imageSectionWidth =
     images.length === 1
-      ? 'w-full lg:w-2/6'
+      ? "w-full lg:w-2/6"
       : images.length === 2
-      ? 'w-full lg:w-3/6'
-      : 'w-full lg:w-4/6';
+      ? "w-full lg:w-3/6"
+      : "w-full lg:w-4/6";
 
   return (
     <div className="overflow-auto hide-scrollbar">
@@ -157,8 +181,12 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon2.svg" alt="" />
             <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold text-xl md:text-2xl lg:text-2xl">Add Product Details</h4>
-              <p className="text-[#374151] lg:text-sm text-xs">Upload photos and details of your product</p>
+              <h4 className="text-[#082A66] font-bold text-xl md:text-2xl lg:text-2xl">
+                Add Product Details
+              </h4>
+              <p className="text-[#374151] lg:text-sm text-xs">
+                Upload photos and details of your product
+              </p>
             </span>
           </span>
           <img
@@ -167,11 +195,18 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             className="absolute bottom-0 right-24 w-44 hidden lg:block"
           />
         </div>
-        <div className="overflow-auto hide-scrollbar" style={{ maxHeight: '55vh' }}>
+        <div
+          className="overflow-auto hide-scrollbar"
+          style={{ maxHeight: "55vh" }}
+        >
           <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
             {images.length > 0 && (
-              <div className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}>
-                <h6 className="font-bold pb-4 mt-2 mb-4">Select Your Desired Image</h6>
+              <div
+                className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}
+              >
+                <h6 className="font-bold pb-4 mt-2 mb-4">
+                  Select Your Desired Image
+                </h6>
                 <div className="flex gap-4 flex-wrap md:flex-nowrap">
                   {images.map((image, index) => (
                     <div
@@ -204,7 +239,15 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
             )}
             <div
-              className={`bg-white rounded-[30px] shadow-md p-5 ${images.length > 0 ? (images.length === 1 ? 'w-full md:w-5/6' : images.length === 2 ? 'w-full md:w-4/6' : 'w-full md:w-3/6') : 'w-full'} lg:h-82`}
+              className={`bg-white rounded-[30px] shadow-md p-5 ${
+                images.length > 0
+                  ? images.length === 1
+                    ? "w-full md:w-5/6"
+                    : images.length === 2
+                    ? "w-full md:w-4/6"
+                    : "w-full md:w-3/6"
+                  : "w-full"
+              } lg:h-82`}
             >
               <div
                 className="border border-[#605880] border-dashed rounded-[20px] flex items-center justify-center py-12 px-6"
@@ -239,7 +282,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           <div className="flex flex-col md:flex-row gap-5 p-2">
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
               <span className="flex items-center gap-4 text-lg font-bold">
-                <img src={link2} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />{" "}
+                <img
+                  src={link2}
+                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+                />{" "}
                 <h6>Product Page URL (Automatically get details)</h6>
               </span>
               <span className="flex flex-col md:flex-row items-center gap-5">
@@ -250,61 +296,58 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
-                <button className="w-fit custom-button rounded-[20px] text-white py-3 px-10 whitespace-pre font-medium">
+                <button
+                  className="w-fit custom-button rounded-[20px] text-white py-4 px-10 whitespace-pre font-medium"
+                  onClick={handleScanUrl}
+                >
                   Scan the URL
                 </button>
               </span>
             </div>
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
               <span className="flex items-center gap-4 text-lg font-bold">
-                <img src={brandIcon} className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3" />
+                <img
+                  src={brandIcon}
+                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+                />
                 <h6>Brand Name</h6>
               </span>
-              {brandNames.length > 0 ? (
-                brandNames.length > 1 ? (
-                  <select
-                    id="brandName"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    value={productDetails.brandName}
-                    style={{
-                      appearance: 'none',
-                      background: 'white',
-                      backgroundPosition: 'right 10px center',
-                      backgroundRepeat: 'no-repeat',
-                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`
-                    }}
-                  >
-                    {brandNames.map((brand, index) => (
-                      <option key={index} value={brand}>{brand}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    id="brandName"
-                    value={productDetails.brandName}
-                    readOnly
-                    className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none opacity-50"
-                  />
-                )
-              ) : (
-                <input
-                  type="text"
-                  id="brandName"
-                  value="No brands. Please create a brand."
-                  readOnly
-                  className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none opacity-50"
-                />
-              )}
+              {/* <input
+                type="text"
+                placeholder="Enter your brand name"
+                id="brandName"
+                onChange={handleOnChangeProductDetails}
+                className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                autoComplete="off"
+              /> */}
+             <select
+  id="brandName"
+  onChange={(e) => {
+    const selectedBrand = brands.find((item) => item.id === e.target.value);
+    setProductDetails({
+      ...productDetails,
+      brandID: selectedBrand.id,
+      brandName: selectedBrand.name,
+    });
+  }}
+>
+  <option>Select brand name</option>
+  {brands.map((item) => (
+    <option key={item.id} value={item.id}>
+      {item.name}
+    </option>
+  ))}
+</select>
             </div>
           </div>
 
           <div className="flex justify-center p-2">
             <img src="/orIcon.svg" alt="" />
           </div>
-          <form onSubmit={handleSubmit} className="p-2">
-            <p className="text-lg pb-2 text-[#082A66] ml-2">Enter Product Details Manually</p>
+          <form onSubmit={handleAdProduct} className="p-2">
+            <p className="text-lg pb-2 text-[#082A66] ml-2">
+              Enter Product Details Manually
+            </p>
             <div className="flex flex-col md:flex-row gap-5 lg:h-56">
               <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
                 <span className="flex items-center gap-4 text-lg">
@@ -322,7 +365,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
               <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px]">
                 <span className="flex items-center gap-4 text-lg">
-                  <img src={facomment} className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                  <img
+                    src={facomment}
+                    className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3"
+                  />
                   <h6>Product Description</h6>
                 </span>
                 <textarea
@@ -331,82 +377,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full h-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
-              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
-                <span className="flex items-center gap-4 text-lg">
-                  <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
-                  <h6>Product Price</h6>
-                </span>
-                <div className="relative w-full flex items-center">
-                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[90px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
-                    <select
-                      id="currency"
-                      onChange={handleOnChangeProductDetails}
-                      className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
-                      value={productDetails.currency}
-                      style={{
-                        background: '[#D9E9F2]',
-                        backgroundPosition: 'right 10px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                      }}
-                    >
-                      {currencies.map((currency, index) => (
-                        <option key={index} value={currency}>
-                          {currency}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Enter Product Price"
-                    id="productPrice"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    autoComplete="off"
-                    value={productDetails.productPrice}
-                  />
-                </div>
-              </div>
-              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
-                <span className="flex items-center gap-4 text-lg">
-                  <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
-                  <h6>Discount</h6>
-                </span>
-                <div className="relative w-full flex items-center">
-                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
-                    <select
-                      id="discount"
-                      onChange={handleDiscountChange}
-                      className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
-                      value={productDetails.discount}
-                      style={{
-                        background: '[#D9E9F2]',
-                        backgroundPosition: 'right 10px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                      }}
-                    >
-                      {discountOptions.map((discount, index) => (
-                        <option key={index} value={discount}>
-                          {discount}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder={`Enter Discount in terms of ${productDetails.discount}`}
-                    id="customDiscount"
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    autoComplete="off"
-                    value={customDiscount}
-                  />
-                </div>
               </div>
             </div>
             <div className="flex justify-center md:justify-start p-2">
