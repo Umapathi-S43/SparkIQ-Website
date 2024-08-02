@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ProductDetails from "./productDetails";
 import CreativeSize from "./creativeSize";
 import GeneratedCreatives from "../../Dashboard/components1/GeneratedCreatives";
@@ -9,6 +9,7 @@ export default function GenerateAd({ setPage, pages }) {
   const [isLoading, setIsLoading] = useState(true);
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
   const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
+  const creativeSizeRef = useRef(null);
 
   const toggleNextSectionAccordion = () => {
     setIsNextSectionOpen(!isNextSectionOpen);
@@ -24,6 +25,12 @@ export default function GenerateAd({ setPage, pages }) {
     setIsNextSectionOpen(false);
     setIsThirdSectionOpen(true);
   };
+
+  useEffect(() => {
+    if (isNextSectionOpen && creativeSizeRef.current) {
+      creativeSizeRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isNextSectionOpen]);
 
   return (
     <div className="flex-grow">
@@ -52,15 +59,17 @@ export default function GenerateAd({ setPage, pages }) {
             isCompleted={openModalProductDetails}
             setIsCompleted={setOpenModalProductDetails}
           />
-          <CreativeSize
-            isNextSectionOpen={isNextSectionOpen}
-            toggleNextSectionAccordion={toggleNextSectionAccordion}
-            handleNextSection={handleNextSection}
-            setIsLoading={setIsLoading}
-            openModalProductDetails={openModalProductDetails}
-            isCompleted={openModalCreativeSize}
-            setIsCompleted={setOpenModalCreativeSize}
-          />
+          <div ref={creativeSizeRef}>
+            <CreativeSize
+              isNextSectionOpen={isNextSectionOpen}
+              toggleNextSectionAccordion={toggleNextSectionAccordion}
+              handleNextSection={handleNextSection}
+              setIsLoading={setIsLoading}
+              openModalProductDetails={openModalProductDetails}
+              isCompleted={openModalCreativeSize}
+              setIsCompleted={setOpenModalCreativeSize}
+            />
+          </div>
           <GeneratedCreatives
             isThirdSectionOpen={isThirdSectionOpen}
             toggleThirdSectionAccordion={toggleThirdSectionAccordion}

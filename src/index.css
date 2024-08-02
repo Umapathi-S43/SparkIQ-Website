@@ -257,3 +257,12 @@ hr {
 		
     }
 }
+
+.toolbar-button {
+	@apply p-2 border rounded hover:bg-gray-200 cursor-pointer;
+  }
+  
+  .toolbar-select {
+	@apply p-2 border rounded;
+  }
+  

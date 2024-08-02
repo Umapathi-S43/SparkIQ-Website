@@ -23,6 +23,10 @@ import CampaignInsightsPage from './Dashboard/pages1/CampaignInsightsPage';
 import CustomSample from './Dashboard/components1/customsample';
 import AdPreviewPage from './Dashboard/pages1/AdPreviewPage';
 import LaunchCampaignPage from './Dashboard/pages1/LaunchCampaignPage';
+import EditTemplate from './Dashboard/components1/Edit/EditTemplate';
+import AdCreatives from './Dashboard/components1/Edit/AdCreatives';
+import TextFormat from './Dashboard/components1/Edit/Textformat';
+
 
 function App() {
   return (
@@ -52,6 +56,9 @@ function App() {
           <Route path="/customsample" element={<CustomSample/>}/>
           <Route path="/adPreview" element={<AdPreviewPage/>}/> {/* Ensure the path matches exactly */}
           <Route path="/launchCampaign1" element={<LaunchCampaignPage/>}/>
+          <Route path='/edit_template' element={<EditTemplate/>}/>
+          <Route path='/ad_creatives' element={<AdCreatives/>}/>
+          <Route path="/text_format" element={<TextFormat/>}/>
         </Routes>
       </div>
     </Router>
