@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from 'react-router-dom';
 import { FaFacebook } from "react-icons/fa";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
@@ -13,9 +14,10 @@ export default function CustomSample({
   setPage,
   openModalCreativeSize,
 }) {
-  const [selectedImage, setSelectedImage] = useState(null);
+  const location = useLocation();
+  const { state } = location;
+  const [selectedImage, setSelectedImage] = useState(state?.image || null);
   const [tabIndex, setTabIndex] = useState(0);
-
   const [selectedCaption, setSelectedCaption] = useState(
     "🎨 Discover Uniqueness with Ashiqur Rahman: A Blend of Abstract and Precision  🧩 Thought-Provoking Artistry 💲 Priced at USD 400 A Touch of Elegance to Your Collection."
   );
