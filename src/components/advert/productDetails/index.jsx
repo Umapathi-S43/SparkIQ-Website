@@ -20,7 +20,7 @@ export default function ProductDetails({
   setIsCompleted,
   isNewUser,
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [customDiscount, setCustomDiscount] = useState("");
