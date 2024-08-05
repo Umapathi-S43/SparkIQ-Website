@@ -118,13 +118,13 @@ export default function Caption({
           className="w-fit custom-button rounded-[18px] text-white py-2 sm:py-2 px-8 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
           onClick={handleSave}
         >
-          Save
+          Back
         </button>
         <button
           className="w-fit custom-button rounded-[18px] text-white py-2 sm:py-2 px-8 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
           onClick={handleNext}
         >
-          Next
+          Save & Next
         </button>
       </div>
       <style jsx>{`

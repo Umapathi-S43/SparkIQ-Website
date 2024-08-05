@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { BiCheck } from "react-icons/bi";
 import { FaFacebookF, FaGoogle } from "react-icons/fa";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
@@ -36,14 +36,6 @@ export default function CreativeSize({
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState(null);
 
-  const sectionRef = useRef(null);
-
-  useEffect(() => {
-    if (isNextSectionOpen && sectionRef.current) {
-      sectionRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [isNextSectionOpen]);
-
   const handleSizeClick = (size) => {
     setSelectedSize(size);
   };
@@ -63,7 +55,7 @@ export default function CreativeSize({
   };
 
   return (
-    <div ref={sectionRef}>
+    <div>
       <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-2 lg:p-4 flex flex-col gap-6 relative z-10">
         <div
           className="flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] lg:p-4 p-4 relative cursor-pointer"

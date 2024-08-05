@@ -64,7 +64,12 @@ export default function ProductDetails({
   };
 
   const handleImageClick = (index) => {
-    setSelectedImage(index);
+    const selectedFile = images[index];
+    if (selectedFile instanceof File || selectedFile instanceof Blob) {
+      setSelectedImage(index);
+    } else {
+      console.error("Selected file is not a valid File or Blob object");
+    }
   };
 
   const handleDeleteImage = (index) => {
@@ -111,6 +116,8 @@ export default function ProductDetails({
 
     // Save product details to localStorage
     const storedProducts = JSON.parse(localStorage.getItem("products")) || [];
+    const productImage = selectedImage !== null && images[selectedImage] instanceof File ? URL.createObjectURL(images[selectedImage]) : null;
+
     storedProducts.push({
       name: productDetails.productName,
       description: productDetails.productDescription,
@@ -118,7 +125,7 @@ export default function ProductDetails({
       brand: productDetails.brandName,
       price: `${productDetails.productPrice} ${productDetails.currency}`,
       discount: customDiscount,
-      image: selectedImage !== null ? URL.createObjectURL(images[selectedImage]) : null,
+      image: productImage,
     });
     localStorage.setItem("products", JSON.stringify(storedProducts));
   };
@@ -333,6 +340,7 @@ export default function ProductDetails({
                     type="text"
                     placeholder="Enter your product name"
                     id="productName"
+                    value={productDetails.productName} // Use either value or defaultValue, not both
                     onChange={handleOnChangeProductDetails}
                     className="rounded-[20px] py-4 pr-[100px] pl-[25px] shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     autoComplete="off"
@@ -349,6 +357,7 @@ export default function ProductDetails({
                   <textarea
                     placeholder="Enter your Product Description"
                     id="productDescription"
+                    value={productDetails.productDescription} // Use either value or defaultValue, not both
                     onChange={handleOnChangeProductDetails}
                     className="rounded-[20px] py-4 pr-[100px] pl-[25px] shadow-md w-full h-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                   />
@@ -365,13 +374,13 @@ export default function ProductDetails({
                       <select
                         id="currency"
                         onChange={handleOnChangeProductDetails}
+                        value={productDetails.currency} // Use either value or defaultValue, not both
                         className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
-                        value={productDetails.currency}
                         style={{
                           background: '[#D9E9F2]',
                           backgroundPosition: 'right 10px center',
                           backgroundRepeat: 'no-repeat',
-                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                         }}
                       >
                         {currencies.map((currency, index) => (
@@ -385,10 +394,10 @@ export default function ProductDetails({
                       type="text"
                       placeholder="Enter Product Price"
                       id="productPrice"
+                      value={productDetails.productPrice} // Use either value or defaultValue, not both
                       onChange={handleOnChangeProductDetails}
                       className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                       autoComplete="off"
-                      value={productDetails.productPrice}
                     />
                   </div>
                 </div>
@@ -402,13 +411,13 @@ export default function ProductDetails({
                       <select
                         id="discount"
                         onChange={handleDiscountChange}
+                        value={productDetails.discount} // Use either value or defaultValue, not both
                         className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
-                        value={productDetails.discount}
                         style={{
                           background: '[#D9E9F2]',
                           backgroundPosition: 'right 10px center',
                           backgroundRepeat: 'no-repeat',
-                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                         }}
                       >
                         {discountOptions.map((discount, index) => (
@@ -422,10 +431,10 @@ export default function ProductDetails({
                       type="text"
                       placeholder={`Enter Discount in terms of ${productDetails.discount}`}
                       id="customDiscount"
+                      value={customDiscount} // Use either value or defaultValue, not both
                       onChange={handleOnChangeProductDetails}
                       className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                       autoComplete="off"
-                      value={customDiscount}
                     />
                   </div>
                 </div>

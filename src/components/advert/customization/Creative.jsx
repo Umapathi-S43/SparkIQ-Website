@@ -332,13 +332,13 @@ export default function Creative({
             className="w-fit custom-button rounded-[14px] text-white py-2 sm:py-2 px-10 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
             onClick={handleSave}
           >
-            Save
+            Back
           </button>
           <button
             className="w-fit custom-button rounded-[14px] text-white py-2 sm:py-2 px-10 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
             onClick={handleNext}
           >
-            Next
+            Save & Next
           </button>
         </div>
       </div>

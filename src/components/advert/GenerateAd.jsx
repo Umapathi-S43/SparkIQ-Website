@@ -9,7 +9,42 @@ export default function GenerateAd({ setPage, pages }) {
   const [isLoading, setIsLoading] = useState(true);
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
   const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
+
   const creativeSizeRef = useRef(null);
+  const generatedCreativesRef = useRef(null);
+
+  useEffect(() => {
+    // Restore state from localStorage
+    const savedIsNextSectionOpen = JSON.parse(localStorage.getItem("isNextSectionOpen"));
+    const savedIsThirdSectionOpen = JSON.parse(localStorage.getItem("isThirdSectionOpen"));
+    const savedOpenModalProductDetails = JSON.parse(localStorage.getItem("openModalProductDetails"));
+    const savedOpenModalCreativeSize = JSON.parse(localStorage.getItem("openModalCreativeSize"));
+
+    if (savedIsNextSectionOpen !== null) setIsNextSectionOpen(savedIsNextSectionOpen);
+    if (savedIsThirdSectionOpen !== null) setIsThirdSectionOpen(savedIsThirdSectionOpen);
+    if (savedOpenModalProductDetails !== null) setOpenModalProductDetails(savedOpenModalProductDetails);
+    if (savedOpenModalCreativeSize !== null) setOpenModalCreativeSize(savedOpenModalCreativeSize);
+  }, []);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("isNextSectionOpen", JSON.stringify(isNextSectionOpen));
+  }, [isNextSectionOpen]);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("isThirdSectionOpen", JSON.stringify(isThirdSectionOpen));
+  }, [isThirdSectionOpen]);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("openModalProductDetails", JSON.stringify(openModalProductDetails));
+  }, [openModalProductDetails]);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("openModalCreativeSize", JSON.stringify(openModalCreativeSize));
+  }, [openModalCreativeSize]);
 
   const toggleNextSectionAccordion = () => {
     setIsNextSectionOpen(!isNextSectionOpen);
@@ -31,6 +66,12 @@ export default function GenerateAd({ setPage, pages }) {
       creativeSizeRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [isNextSectionOpen]);
+
+  useEffect(() => {
+    if (isThirdSectionOpen && generatedCreativesRef.current) {
+      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isThirdSectionOpen]);
 
   return (
     <div className="flex-grow">
@@ -70,14 +111,16 @@ export default function GenerateAd({ setPage, pages }) {
               setIsCompleted={setOpenModalCreativeSize}
             />
           </div>
-          <GeneratedCreatives
-            isThirdSectionOpen={isThirdSectionOpen}
-            toggleThirdSectionAccordion={toggleThirdSectionAccordion}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-            setPage={setPage}
-            openModalCreativeSize={openModalCreativeSize}
-          />
+          <div ref={generatedCreativesRef}>
+            <GeneratedCreatives
+              isThirdSectionOpen={isThirdSectionOpen}
+              toggleThirdSectionAccordion={toggleThirdSectionAccordion}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              setPage={setPage}
+              openModalCreativeSize={openModalCreativeSize}
+            />
+          </div>
         </div>
       </div>
     </div>
