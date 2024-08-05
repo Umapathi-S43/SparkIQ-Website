@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import ProductDetails from "./productDetails";
 import CreativeSize from "./creativeSize";
 import GeneratedCreatives from "../../Dashboard/components1/GeneratedCreatives";
+import ExistingProducts from "./productDetails/ExistingProducts";
 
 export default function GenerateAd({ setPage, pages }) {
   const [isNextSectionOpen, setIsNextSectionOpen] = useState(false);
@@ -9,7 +10,7 @@ export default function GenerateAd({ setPage, pages }) {
   const [isLoading, setIsLoading] = useState(true);
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
   const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
-  const creativeSizeRef = useRef(null);
+  const [showProductDetails, setShowProductDetails] = useState(false); // New state
 
   const toggleNextSectionAccordion = () => {
     setIsNextSectionOpen(!isNextSectionOpen);
@@ -25,12 +26,6 @@ export default function GenerateAd({ setPage, pages }) {
     setIsNextSectionOpen(false);
     setIsThirdSectionOpen(true);
   };
-
-  useEffect(() => {
-    if (isNextSectionOpen && creativeSizeRef.current) {
-      creativeSizeRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [isNextSectionOpen]);
 
   return (
     <div className="flex-grow">
@@ -53,23 +48,31 @@ export default function GenerateAd({ setPage, pages }) {
             className="absolute bottom-0 right-24 w-32 lg:w-44 hidden md:block"
           />
         </div>
-        <div className="px-4 lg:px-6 flex flex-col gap-6 overflow-y-auto hide-scrollbar" style={{ maxHeight: '70vh' }}>
-          <ProductDetails
-            setIsNextSectionOpen={setIsNextSectionOpen}
-            isCompleted={openModalProductDetails}
-            setIsCompleted={setOpenModalProductDetails}
-          />
-          <div ref={creativeSizeRef}>
-            <CreativeSize
-              isNextSectionOpen={isNextSectionOpen}
-              toggleNextSectionAccordion={toggleNextSectionAccordion}
-              handleNextSection={handleNextSection}
-              setIsLoading={setIsLoading}
-              openModalProductDetails={openModalProductDetails}
-              isCompleted={openModalCreativeSize}
-              setIsCompleted={setOpenModalCreativeSize}
+        <div className="px-4 lg:px-6 flex flex-col gap-6 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+          {showProductDetails ? (
+            <ProductDetails
+              setIsNextSectionOpen={setIsNextSectionOpen}
+              isCompleted={openModalProductDetails}
+              setIsCompleted={setOpenModalProductDetails}
+              isNewUser={true}
             />
-          </div>
+          ) : (
+            <ExistingProducts
+              setIsNextSectionOpen={setIsNextSectionOpen}
+              isCompleted={openModalProductDetails}
+              setIsCompleted={setOpenModalProductDetails}
+              setShowProductDetails={setShowProductDetails} // Pass the new prop
+            />
+          )}
+          <CreativeSize
+            isNextSectionOpen={isNextSectionOpen}
+            toggleNextSectionAccordion={toggleNextSectionAccordion}
+            handleNextSection={handleNextSection}
+            setIsLoading={setIsLoading}
+            openModalProductDetails={openModalProductDetails}
+            isCompleted={openModalCreativeSize}
+            setIsCompleted={setOpenModalCreativeSize}
+          />
           <GeneratedCreatives
             isThirdSectionOpen={isThirdSectionOpen}
             toggleThirdSectionAccordion={toggleThirdSectionAccordion}
