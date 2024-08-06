@@ -1,0 +1,74 @@
+.button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px; /* Adjusted gap between image and text */
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.button-container img,
+.button-container svg {
+  width: 14px; /* Adjusted size for consistency */
+  height: 14px;
+  transition: all 0.3s ease;
+}
+
+.button-container .edit-svg {
+  width: 17px;
+  height: 17px;
+}
+
+.button-container span {
+  text-align: left;
+  transition: all 0.3s ease;
+  color: #A8A8A8;
+}
+
+.button-clear {
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px; /* Adjusted padding */
+  transition: all 0.3s ease;
+  width: auto;
+  flex: 1; /* Make buttons take up equal space */
+}
+
+.button-clear:hover {
+  background: white;
+  color: white;
+}
+
+.button-clear:hover .button-container img,
+.button-clear:hover .button-container svg path,
+.button-clear:hover .button-container svg rect {
+  fill: url(#gradient); /* Applying gradient fill on hover */
+  stroke: none;
+}
+
+.button-clear:hover .button-container span {
+  background: linear-gradient(115deg, #004367 0%, #00A7FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+}
+
+.launch-button {
+  background: linear-gradient(115deg, #004367 0%, #00A7FF 100%);
+  color: white;
+}
+
+.launch-button:hover {
+  background: #082A66;
+  color: white;
+}
+
+.button-wrapper {
+  display: flex;
+  justify-content: flex-start; /* Align buttons to the left */
+  gap: 4px; /* Adjusted gap between buttons */
+  width: 100%;
+}
