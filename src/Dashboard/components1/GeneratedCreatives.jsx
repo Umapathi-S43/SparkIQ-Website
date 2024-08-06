@@ -251,10 +251,7 @@ const GeneratedCreatives = ({
                           </button>
                           <button
                             className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                            onClick={() => {
-                              console.log("Save Template clicked");
-                              setPage("customizationAd");
-                            }}
+                            onClick={() => navigate('/edit_template')}
                           >
                             <div className="button-container">
                               <svg className="edit-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
