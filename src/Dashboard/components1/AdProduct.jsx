@@ -312,32 +312,35 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 />
                 <h6>Brand Name</h6>
               </span>
-              {/* <input
-                type="text"
-                placeholder="Enter your brand name"
+
+              <select
+                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                style={{
+                  appearance: "none",
+                  background: "white",
+                  backgroundPosition: "right 10px center",
+                  backgroundRepeat: "no-repeat",
+                  backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                }}
                 id="brandName"
-                onChange={handleOnChangeProductDetails}
-                className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                autoComplete="off"
-              /> */}
-             <select
-  id="brandName"
-  onChange={(e) => {
-    const selectedBrand = brands.find((item) => item.id === e.target.value);
-    setProductDetails({
-      ...productDetails,
-      brandID: selectedBrand.id,
-      brandName: selectedBrand.name,
-    });
-  }}
->
-  <option>Select brand name</option>
-  {brands.map((item) => (
-    <option key={item.id} value={item.id}>
-      {item.name}
-    </option>
-  ))}
-</select>
+                onChange={(e) => {
+                  const selectedBrand = brands.find(
+                    (item) => item.id === e.target.value
+                  );
+                  setProductDetails({
+                    ...productDetails,
+                    brandID: selectedBrand.id,
+                    brandName: selectedBrand.name,
+                  });
+                }}
+              >
+                <option>Select brand name</option>
+                {brands.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

@@ -35,7 +35,7 @@ export default function CreativeSize({
 }) {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState(null);
-
+  localStorage.setItem('imageSize', JSON.stringify(selectedSize));
   const sectionRef = useRef(null);
 
   useEffect(() => {

@@ -54,6 +54,7 @@ export default function GenerateAd({ setPage, pages }) {
               setIsNextSectionOpen={setIsNextSectionOpen}
               isCompleted={openModalProductDetails}
               setIsCompleted={setOpenModalProductDetails}
+              setShowProductDetails={setShowProductDetails}
               isNewUser={true}
             />
           ) : (
