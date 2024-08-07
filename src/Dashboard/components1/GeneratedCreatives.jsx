@@ -39,7 +39,7 @@ const GeneratedCreatives = ({
   const modelName2 = "AIDA";
   const modelName3 = "USP";
 
-  // console.log(modelData, storedProductID, storedImageSize, "storedImageSize");
+  // console.log(modelData, "storedImageSize");
 
   const navigate = useNavigate();
 
@@ -103,62 +103,54 @@ const GeneratedCreatives = ({
   useEffect(() => {
     if (isLoading) {
       const fetchModels = async () => {
-        const data1 = {
-          productId: storedProductID,
-          imageSize: cleanedSize,
-          modelName: modelName1,
-        };
-        const data2 = {
-          productId: storedProductID,
-          imageSize: cleanedSize,
-          modelName: modelName2,
-        };
-        const data3 = {
-          productId: storedProductID,
-          imageSize: cleanedSize,
-          modelName: modelName3,
-        };
         try {
           const response1 = await axios.post(
             `${baseUrl}/generate/{productId}/{imageSize}/{modelName}?productId=${storedProductID}&imageSize=${cleanedSize}&modelName=${modelName1}`
-            // data1
           );
-          setModelData((prevData) => ({
-            ...prevData,
-            model1: response1.data.data,
-          }));
-          console.log(response1.data.data);
+          if (response1.data.message) {
+            const res1 = await axios.get(`${baseUrl}/generated-images/model/PAS`);
+            setModelData((prevData) => ({
+              ...prevData,
+              model1: res1.data,
+            }));
+            console.log(res1.data, 'data1');
+          }
+          console.log(response1.data, 'datares1');
           setLoadingModel1(false);
         } catch (error) {
           console.error("Failed to fetch PAS model", error);
           setLoadingModel1(false);
         }
-
+  
         try {
           const response2 = await axios.post(
             `${baseUrl}/generate/{productId}/{imageSize}/{modelName}?productId=${storedProductID}&imageSize=${cleanedSize}&modelName=${modelName2}`
-            // data2
           );
-          setModelData((prevData) => ({
-            ...prevData,
-            model2: response2.data.data,
-          }));
+          if (response2.data.message) {
+            const res2 = await axios.get(`${baseUrl}/generated-images/model/AIDA`);
+            setModelData((prevData) => ({
+              ...prevData,
+              model2: res2.data,
+            }));
+          }
           console.log(response2.data.data);
           setLoadingModel2(false);
         } catch (error) {
           console.error("Failed to fetch AIDA model", error);
           setLoadingModel2(false);
         }
-
+  
         try {
           const response3 = await axios.post(
             `${baseUrl}/generate/{productId}/{imageSize}/{modelName}?productId=${storedProductID}&imageSize=${cleanedSize}&modelName=${modelName3}`
-            // data3
           );
-          setModelData((prevData) => ({
-            ...prevData,
-            model3: response3.data.data,
-          }));
+          if (response3.data.message) {
+            const res3 = await axios.get(`${baseUrl}/generated-images/model/USP`);
+            setModelData((prevData) => ({
+              ...prevData,
+              model3: res3.data,
+            }));
+          }
           console.log(response3.data.data);
           setLoadingModel3(false);
         } catch (error) {
@@ -168,7 +160,7 @@ const GeneratedCreatives = ({
           setIsLoading(false);
         }
       };
-
+  
       fetchModels();
     }
   }, [
@@ -180,16 +172,18 @@ const GeneratedCreatives = ({
     modelName2,
     modelName3,
   ]);
+  
+  
 
   const FilteredData = ({ filteredModel }) => {
     const filteredProducts = filteredModel.filter((product) => {
       const matchesSearchQuery =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesBrand = selectedBrand
-        ? product.brand === selectedBrand
-        : true;
-      return matchesSearchQuery && matchesBrand;
+      // const matchesBrand = selectedBrand
+      //   ? product.brand === selectedBrand
+      //   : true;
+      return matchesSearchQuery;
     });
 
     return (
@@ -200,8 +194,8 @@ const GeneratedCreatives = ({
             className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 pb-1 flex flex-col items-center justify-between"
           >
             <img
-              src={defaultAdImage}
-              alt={product.name}
+              src={product.imageURL}
+              alt={product.title}
               className="object-cover w-full rounded-lg"
             />
             <div className="button-wrapper mt-1">
@@ -239,7 +233,7 @@ const GeneratedCreatives = ({
               </button>
               <button
                 className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                onClick={() => navigate("/edit_template")}
+                onClick={() => navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)}
               >
                 <div className="button-container">
                   <svg
