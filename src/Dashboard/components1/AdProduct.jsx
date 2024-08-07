@@ -11,18 +11,30 @@ import brandIcon from "../../assets/dashboard_img/brand_b1.svg"; // Adjust the p
 import toast from "react-hot-toast";
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
+import { CreditCardIcon } from "@heroicons/react/24/outline";
+import { RiDiscountPercentLine } from "react-icons/ri";
+
+const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
+const discountOptions = ["Price", "Percentage"];
 
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
+  const [generatedImages, setGeneratedImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [productDetails, setProductDetails] = useState({
     productName: "",
     productDescription: "",
     productURL: "",
     brandName: "",
+    productPrice: "",
+    currency: currencies[0],
+    discount: discountOptions[0],
+    customDiscount: "",
     imageFile: null,
     logoURL: "",
     brandID: "",
+    prompt: "",
   });
   const [brands, setBrands] = useState([]);
 
@@ -30,22 +42,24 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const handleFileChange = (event) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files).slice(
-        0,
-        3 - images.length
-      );
+      const newFiles = Array.from(event.target.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
+      if (newFiles.length === 1) {
+        setSelectedImage(images.length);
+        setProductDetails({ ...productDetails, imageFile: newFiles[0] });
+      }
     }
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
     if (event.dataTransfer.files) {
-      const newFiles = Array.from(event.dataTransfer.files).slice(
-        0,
-        3 - images.length
-      );
+      const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
+      if (newFiles.length === 1) {
+        setSelectedImage(images.length);
+        setProductDetails({ ...productDetails, imageFile: newFiles[0] });
+      }
     }
   };
 
@@ -53,21 +67,38 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     event.preventDefault();
   };
 
-  const handleImageClick = (index) => {
+  const handleImageClick = (index, isGenerated = false) => {
     setSelectedImage(index);
-    setProductDetails({ ...productDetails, imageFile: images[index] });
+    if (isGenerated) {
+      setProductDetails({ ...productDetails, imageFile: null, logoURL: generatedImages[index].imgUrl });
+    } else {
+      setProductDetails({ ...productDetails, imageFile: images[index], logoURL: "" });
+    }
   };
 
   const handleDeleteImage = (index) => {
     setImages(images.filter((_, i) => i !== index));
     if (selectedImage === index) {
       setSelectedImage(null);
-      setProductDetails({ ...productDetails, imageFile: null });
+      setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
     }
   };
 
   const handleOnChangeProductDetails = (e) => {
-    setProductDetails({ ...productDetails, [e.target.id]: e.target.value });
+    const { id, value } = e.target;
+    if (id === "customDiscount") {
+      setProductDetails({ ...productDetails, customDiscount: value });
+    } else {
+      setProductDetails({ ...productDetails, [id]: value });
+    }
+  };
+
+  const handleDiscountChange = (e) => {
+    setProductDetails({
+      ...productDetails,
+      discount: e.target.value,
+      customDiscount: "",
+    });
   };
 
   useEffect(() => {
@@ -117,10 +148,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
       brandID: productDetails.brandID,
       name: productDetails.productName,
       description: productDetails.productDescription,
-      price: 12,
-      priceType: "USD",
-      discount: 12,
-      discountType: "percentage",
+      price: productDetails.productPrice,
+      priceType: productDetails.currency,
+      discount: productDetails.customDiscount,
+      discountType: productDetails.discount,
       productImagesList: [
         {
           imageURL: productDetails.logoURL,
@@ -154,11 +185,45 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  const handleSearchForImages = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/search/get-images`, {
+        params: {
+          prompt: productDetails.prompt,
+          page: currentPage,
+          size: 10,
+        },
+      });
+      setGeneratedImages(response.data.result.data);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to generate images.");
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prevPage) => prevPage - 1);
+      handleSearchForImages();
+    }
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prevPage) => prevPage + 1);
+    handleSearchForImages();
+  };
+
   const isNextStepDisabled =
     productDetails.productName === "" ||
     productDetails.productDescription === "" ||
-    productDetails.logoURL === "" ||
-    productDetails.brandName === "";
+    (!productDetails.logoURL && !productDetails.imageFile) ||
+    productDetails.brandName === "" ||
+    productDetails.productPrice === "" ||
+    productDetails.customDiscount === "" ||
+    (productDetails.discount === "Price" &&
+      parseFloat(productDetails.productPrice) <= parseFloat(productDetails.customDiscount)) ||
+    (productDetails.discount === "Percentage" &&
+      parseFloat(productDetails.customDiscount) > 100);
 
   const imageContainerClass =
     images.length === 2
@@ -278,6 +343,75 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
             </div>
           </div>
+          
+          <div className="flex flex-col md:flex-row p-2 m-2">
+            <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-4">
+              <span className="flex items-center gap-4 text-lg font-bold">
+                <img
+                  src={link2}
+                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+                />{" "}
+                <h6>Enter the prompt to get images for your service/product</h6>
+              </span>
+              <span className="flex flex-col md:flex-row items-center gap-5">
+                <input
+                  type="text"
+                  placeholder="Your prompt (Example: Tuition classes for kids)"
+                  id="prompt"
+                  onChange={handleOnChangeProductDetails}
+                  className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                />
+                <button
+                  className="w-fit custom-button rounded-[20px] text-white py-3 px-6 whitespace-pre font-medium"
+                  onClick={handleSearchForImages}
+                >
+                  Search for Images
+                </button>
+              </span>
+            </div>
+          </div>
+
+          {generatedImages.length > 0 && (
+            <div className="p-2 border border-[#FCFCFC] m-3 rounded-2xl">
+              <h6 className="font-bold pb-4 mt-2 mb-4 text-center">Select a Generated Image</h6>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mx-2">
+                {generatedImages.map((image, index) => (
+                  <div
+                    key={index}
+                    className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded`}
+                    onClick={() => handleImageClick(index, true)}
+                  >
+                    <img
+                      src={image.imgUrl}
+                      alt={`Generated ${index}`}
+                      className="object-cover w-full h-48 rounded"
+                    />
+                    {selectedImage === index && (
+                      <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                        <BiCheck size={16} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end items-end gap-4 m-4">
+                <button
+                  className="w-fit custom-button rounded-[16px] text-white py-2 px-4 font-medium"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Prev
+                </button>
+                
+                <button
+                  className="w-fit custom-button rounded-[16px] text-white py-2 px-4 font-medium"
+                  onClick={handleNextPage}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col md:flex-row gap-5 p-2">
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
@@ -382,11 +516,86 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 />
               </div>
             </div>
+            <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
+              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
+                <span className="flex items-center gap-4 text-lg">
+                  <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                  <h6>Product Price</h6>
+                </span>
+                <div className="relative w-full flex items-center">
+                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[90px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                    <select
+                      id="currency"
+                      onChange={handleOnChangeProductDetails}
+                      value={productDetails.currency}
+                      className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                      style={{
+                        background: "[#D9E9F2]",
+                        backgroundPosition: "right 10px center",
+                        backgroundRepeat: "no-repeat",
+                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                      }}
+                    >
+                      {currencies.map((currency, index) => (
+                        <option key={index} value={currency}>
+                          {currency}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Enter Product Price"
+                    id="productPrice"
+                    value={productDetails.productPrice}
+                    onChange={handleOnChangeProductDetails}
+                    className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
+                <span className="flex items-center gap-4 text-lg">
+                  <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                  <h6>Discount</h6>
+                </span>
+                <div className="relative w-full flex items-center">
+                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                    <select
+                      id="discount"
+                      onChange={handleDiscountChange}
+                      value={productDetails.discount}
+                      className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                      style={{
+                        background: "[#D9E9F2]",
+                        backgroundPosition: "right 10px center",
+                        backgroundRepeat: "no-repeat",
+                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                      }}
+                    >
+                      {discountOptions.map((discount, index) => (
+                        <option key={index} value={discount}>
+                          {discount}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={`Enter Discount in terms of ${productDetails.discount}`}
+                    id="customDiscount"
+                    value={productDetails.customDiscount}
+                    onChange={handleOnChangeProductDetails}
+                    className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            </div>
             <div className="flex justify-center md:justify-start p-2">
               <button
                 className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"
                 disabled={isNextStepDisabled}
-                onClick={handleAdProduct}
               >
                 Add Product
               </button>
