@@ -111,14 +111,42 @@ export default function EditTemplate() {
   const [productForm, setProductForm] = useState({
     title: productDetails?.title || "",
     description: productDetails?.description || "",
-    cta: productDetails?.ctaButtonText || "",
-    website: productDetails?.websiteAddressText || "",
-    phoneNumber: productDetails?.phoneNumberText || "",
+    ctaButtonText: productDetails?.ctaButtonText || "",
+    websiteAddressText: productDetails?.websiteAddressText || "",
+    phoneNumberText: productDetails?.phoneNumberText || "",
   });
+  // console.log(productDetails,'productDetails', productForm);
 
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
+
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      try {
+        const response = await axios.get(
+          `${baseUrl}/generated-images/${productID}`
+        );
+        setProductDetails(response.data);
+      } catch (error) {
+        console.log("Failed to fetch product details.", error);
+      }
+    };
+    fetchProductDetails();
+  }, [productID]);
+
+  useEffect(() => {
+    if (productDetails) {
+      setProductForm({
+        title: productDetails.title || "",
+        description: productDetails.description || "",
+        ctaButtonText: productDetails.ctaButtonText || "",
+        websiteAddressText: productDetails.websiteAddressText || "",
+        phoneNumberText: productDetails.phoneNumberText || "",
+      });
+    }
+  }, [productDetails]);
+
 
   const handleOnChange = (e) => {
     setProductForm({ ...productForm, [e.target.name]: e.target.value });
@@ -234,19 +262,7 @@ export default function EditTemplate() {
     }, 100); // Wait for the deselection to render
   };
 
-  useEffect(() => {
-    const fetchBrands = async () => {
-      try {
-        const response = await axios.get(
-          `${baseUrl}/generated-images/${productID}`
-        );
-        setProductDetails(response.data);
-      } catch (error) {
-        console.log("Failed to fetch brands.", error);
-      }
-    };
-    fetchBrands();
-  }, []);
+  
 
   const titleSuggestions = [
     "Surveying prisms - Geomatics",
@@ -515,7 +531,7 @@ export default function EditTemplate() {
                           <input
                             type="text"
                             value={productForm.ctaButtonText}
-                            name="cta"
+                            name="ctaButtonText"
                             onChange={handleOnChange}
                             className="input lg:w-[387px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                           />
@@ -554,7 +570,7 @@ export default function EditTemplate() {
                       <input
                         type="text"
                         value={productForm.websiteAddressText}
-                        name="website"
+                        name="websiteAddressText"
                         onChange={handleOnChange}
                         className="input lg:w-[550px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                       />
@@ -564,7 +580,7 @@ export default function EditTemplate() {
                       <input
                         type="text"
                         value={productForm.phoneNumberText}
-                        name="phoneNumber"
+                        name="phoneNumberText"
                         onChange={handleOnChange}
                         className="input lg:w-[550px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                       />
@@ -624,14 +640,14 @@ export default function EditTemplate() {
                           className="object-contain"
                         />
                       </div>
-                      <p>{productForm?.website}</p>
-                      <p>{productForm?.title}</p>
-                      <p>{productForm?.description}</p>
+                      <p>{productForm.website}</p>
+                      <p>{productForm.title}</p>
+                      <p>{productForm.description}</p>
                       <div className="flex items-start gap-8">
-                        <button className="bg-blue-600 leading-10 rounded text-center text-white text-sm">
+                        <button className="bg-blue-600 leading-10 px-8 rounded text-center text-white text-sm">
                           Learn More
                         </button>
-                        <p>{productForm?.phoneNumber}</p>
+                        <p>{productForm.phoneNumber}</p>
                       </div>
                     </div>
                   </Rnd>
