@@ -21,7 +21,7 @@ const Products = () => {
       }
       return product;
     });
-    setProducts(updatedProducts);
+    setProducts(updatedProducts.reverse()); // Show latest products first
     localStorage.setItem('products', JSON.stringify(updatedProducts)); // Save updated products back to localStorage
   }, []);
 
@@ -39,7 +39,7 @@ const Products = () => {
   );
 
   return (
-    <div className="flex-grow overflow-y-auto" style={{maxHeight:'90vh'}}>
+    <div className="flex-grow overflow-y-auto" style={{ maxHeight: '90vh' }}>
       <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl pb-4">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-7 relative">
           <span className="flex items-center gap-4">
@@ -50,12 +50,8 @@ const Products = () => {
               </div>
             </div>
             <span className="flex flex-col ml-2">
-              <h4 className="text-[#082A66] font-bold text-xl">
-                Products
-              </h4>
-              <p className="text-[#374151] ">
-                Explore existing products or add new ones effortlessly
-              </p>
+              <h4 className="text-[#082A66] font-bold text-xl">Products</h4>
+              <p className="text-[#374151] ">Explore existing products or add new ones effortlessly</p>
             </span>
           </span>
           <img
@@ -78,12 +74,13 @@ const Products = () => {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap lg:ml-2 sm:mx-auto justify-center pb-2 w-90% gap-8 overflow-auto" style={{maxHeight:'45vh'}}>
+        <div className="flex flex-wrap justify-start pb-2 w-full lg:ml-4u gap-8 overflow-auto" style={{ maxHeight: '45vh'}}>
           <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
             <div
               onClick={handleCreateProduct}
-              className="relative cursor-pointer bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-xl shadow-cyan-100 shadow-2xl p-4 w-full h-full flex flex-col items-center justify-center "
-              style={{ background: 'linear-gradient(to left bottom, rgba(92, 198, 255, 0.15), rgba(0, 160, 245, 0.3))' }}>
+              className="relative cursor-pointer bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-xl shadow-cyan-100 shadow-2xl p-4 w-full h-full flex flex-col items-center justify-center"
+              style={{ background: 'linear-gradient(to left bottom, rgba(92, 198, 255, 0.15), rgba(0, 160, 245, 0.3))' }}
+            >
               <div className="bg-[#00A0F5] w-8 h-8 rounded-xl flex items-center justify-center">
                 <FaPlus className="text-white w-6 h-6 flex justify-center text-xs" />
               </div>
@@ -92,25 +89,24 @@ const Products = () => {
             </div>
           </div>
           {filteredProducts.map((product, index) => (
-          <div
-            key={index}
-            className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 lg:w-80 lg:h-80 md:w-80 md:h-80 w-72 h-72 flex flex-col items-center justify-between hover:transition-colors duration-200 glass-gradient-hover"
-          >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="object-cover w-full h-48 rounded-lg"
-            />
-            <div className="text-center flex justify-between w-full px-2">
-              <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">{product.name}</h3>
-              <span className="font-semibold text-[#082A66] group-hover:text-white">{product.price}</span>
+            <div
+              key={index}
+              className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 lg:w-80 lg:h-80 md:w-80 md:h-80 w-72 h-72 flex flex-col items-center justify-between hover:transition-colors duration-200 glass-gradient-hover"
+            >
+              <img
+                src={product.image}
+                alt={product.name}
+                className="object-cover w-full h-48 rounded-lg"
+              />
+              <div className="text-center flex justify-between w-full px-2">
+                <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">{product.name}</h3>
+                <span className="font-semibold text-[#082A66] group-hover:text-white">{product.price}</span>
+              </div>
+              <div className="text-justify w-full px-2 line-clamp-3">
+                <p className="text-sm text-[#374151] group-hover:text-white">{product.description}</p>
+              </div>
             </div>
-            <div className="text-justify w-full px-2 line-clamp-3">
-              <p className="text-sm text-[#374151] group-hover:text-white">{product.description}</p>
-            </div>
-          </div>
-        ))}
-
+          ))}
         </div>
       </div>
     </div>
