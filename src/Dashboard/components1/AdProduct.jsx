@@ -343,7 +343,9 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
             </div>
           </div>
-          
+          <div className="flex justify-center p-2">
+            <img src="/orIcon.svg" alt="" />
+          </div>
           <div className="flex flex-col md:flex-row p-2 m-2">
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-4">
               <span className="flex items-center gap-4 text-lg font-bold">
