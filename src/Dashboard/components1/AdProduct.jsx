@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
 import { FaFolder, FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
@@ -8,6 +7,7 @@ import link2 from "../../assets/dashboard_img/linksvg1.svg";
 import facomment from "../../assets/dashboard_img/facomment.svg";
 import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
 import brandIcon from "../../assets/dashboard_img/brand_b1.svg"; // Adjust the path as needed
+import { IoImageOutline } from "react-icons/io5";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
@@ -20,7 +20,8 @@ const discountOptions = ["Price", "Percentage"];
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const [selectedImageType, setSelectedImageType] = useState(null); // 'uploaded' or 'generated'
   const [currentPage, setCurrentPage] = useState(1);
   const [productDetails, setProductDetails] = useState({
     productName: "",
@@ -45,8 +46,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
       const newFiles = Array.from(event.target.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
       if (newFiles.length === 1) {
-        setSelectedImage(images.length);
-        setProductDetails({ ...productDetails, imageFile: newFiles[0] });
+        setSelectedImageIndex(images.length);
+        setSelectedImageType('uploaded');
+        setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
+        toast.success("Image uploaded successfully");
       }
     }
   };
@@ -57,8 +60,10 @@ export default function AdProduct({ setIsNextSectionOpen }) {
       const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
       if (newFiles.length === 1) {
-        setSelectedImage(images.length);
-        setProductDetails({ ...productDetails, imageFile: newFiles[0] });
+        setSelectedImageIndex(images.length);
+        setSelectedImageType('uploaded');
+        setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
+        toast.success("Image uploaded successfully");
       }
     }
   };
@@ -68,18 +73,22 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   };
 
   const handleImageClick = (index, isGenerated = false) => {
-    setSelectedImage(index);
+    setSelectedImageIndex(index);
+    setSelectedImageType(isGenerated ? 'generated' : 'uploaded');
     if (isGenerated) {
       setProductDetails({ ...productDetails, imageFile: null, logoURL: generatedImages[index].imgUrl });
+      toast.success("Image selected successfully");
     } else {
       setProductDetails({ ...productDetails, imageFile: images[index], logoURL: "" });
+      toast.success("Image uploaded successfully");
     }
   };
 
   const handleDeleteImage = (index) => {
     setImages(images.filter((_, i) => i !== index));
-    if (selectedImage === index) {
-      setSelectedImage(null);
+    if (selectedImageIndex === index && selectedImageType === 'uploaded') {
+      setSelectedImageIndex(null);
+      setSelectedImageType(null);
       setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
     }
   };
@@ -114,8 +123,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
     fetchBrands();
   }, []);
-
-  console.log(brands, "products", productDetails);
 
   useEffect(() => {
     if (productDetails.imageFile) {
@@ -201,16 +208,21 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prevPage) => prevPage - 1);
-      handleSearchForImages();
+  const handlePageChange = async (page) => {
+    setCurrentPage(page);
+    try {
+      const response = await axios.get(`${baseUrl}/search/get-images`, {
+        params: {
+          prompt: productDetails.prompt,
+          page: page,
+          size: 10,
+        },
+      });
+      setGeneratedImages(response.data.result.data);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to generate images.");
     }
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prevPage) => prevPage + 1);
-    handleSearchForImages();
   };
 
   const isNextStepDisabled =
@@ -293,7 +305,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                       >
                         <FaTrash />
                       </button>
-                      {selectedImage === index && (
+                      {selectedImageIndex === index && selectedImageType === 'uploaded' && (
                         <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
                           <BiCheck size={16} />
                         </div>
@@ -347,12 +359,11 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             <img src="/orIcon.svg" alt="" />
           </div>
           <div className="flex flex-col md:flex-row p-2 m-2">
-            <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-4">
+            <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full ${productDetails.logoURL || productDetails.imageFile ? "md:w-3/4" : "md:w-full"} p-4`}>
               <span className="flex items-center gap-4 text-lg font-bold">
-                <img
-                  src={link2}
-                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
-                />{" "}
+                <div 
+                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3 flex justify-center items-center"
+                ><IoImageOutline /></div>{" "}
                 <h6>Enter the prompt to get images for your service/product</h6>
               </span>
               <span className="flex flex-col md:flex-row items-center gap-5">
@@ -371,6 +382,15 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 </button>
               </span>
             </div>
+            {(productDetails.logoURL || productDetails.imageFile) && (
+              <div className="w-1/4 p-4 border border-[#FCFCFC] bg-[#FCFCFC60] ml-2 rounded-[12px]">
+                <img
+                  src={productDetails.logoURL || URL.createObjectURL(productDetails.imageFile)}
+                  alt="Selected"
+                  className="object-cover w-full h-40 rounded"
+                />
+              </div>
+            )}
           </div>
 
           {generatedImages.length > 0 && (
@@ -388,7 +408,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                       alt={`Generated ${index}`}
                       className="object-cover w-full h-48 rounded"
                     />
-                    {selectedImage === index && (
+                    {selectedImageIndex === index && selectedImageType === 'generated' && (
                       <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
                         <BiCheck size={16} />
                       </div>
@@ -398,18 +418,16 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
               <div className="flex justify-end items-end gap-4 m-4">
                 <button
-                  className="w-fit custom-button rounded-[16px] text-white py-2 px-4 font-medium"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
+                  className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
+                  onClick={() => handlePageChange(currentPage > 1 ? currentPage - 1 : 1)}
                 >
-                  Prev
+                  Prev {currentPage > 1 ? currentPage - 1 : ''}
                 </button>
-                
                 <button
-                  className="w-fit custom-button rounded-[16px] text-white py-2 px-4 font-medium"
-                  onClick={handleNextPage}
+                  className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
+                  onClick={() => handlePageChange(currentPage + 1)}
                 >
-                  Next
+                  Next {currentPage + 1}
                 </button>
               </div>
             </div>
