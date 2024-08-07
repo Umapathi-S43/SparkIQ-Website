@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ProductDetails from "./productDetails";
 import CreativeSize from "./creativeSize";
 import GeneratedCreatives from "../../Dashboard/components1/GeneratedCreatives";
@@ -10,7 +10,25 @@ export default function GenerateAd({ setPage, pages }) {
   const [isLoading, setIsLoading] = useState(true);
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
   const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
-  const [showProductDetails, setShowProductDetails] = useState(false); // New state
+  const [showProductDetails, setShowProductDetails] = useState(false);
+
+  // Create refs for sections
+  const secondSectionRef = useRef(null);
+  const thirdSectionRef = useRef(null);
+
+  // Scroll to the second section when it opens
+  useEffect(() => {
+    if (isNextSectionOpen && secondSectionRef.current) {
+      secondSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isNextSectionOpen]);
+
+  // Scroll to the third section when it opens
+  useEffect(() => {
+    if (isThirdSectionOpen && thirdSectionRef.current) {
+      thirdSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isThirdSectionOpen]);
 
   const toggleNextSectionAccordion = () => {
     setIsNextSectionOpen(!isNextSectionOpen);
@@ -62,26 +80,30 @@ export default function GenerateAd({ setPage, pages }) {
               setIsNextSectionOpen={setIsNextSectionOpen}
               isCompleted={openModalProductDetails}
               setIsCompleted={setOpenModalProductDetails}
-              setShowProductDetails={setShowProductDetails} // Pass the new prop
+              setShowProductDetails={setShowProductDetails}
             />
           )}
-          <CreativeSize
-            isNextSectionOpen={isNextSectionOpen}
-            toggleNextSectionAccordion={toggleNextSectionAccordion}
-            handleNextSection={handleNextSection}
-            setIsLoading={setIsLoading}
-            openModalProductDetails={openModalProductDetails}
-            isCompleted={openModalCreativeSize}
-            setIsCompleted={setOpenModalCreativeSize}
-          />
-          <GeneratedCreatives
-            isThirdSectionOpen={isThirdSectionOpen}
-            toggleThirdSectionAccordion={toggleThirdSectionAccordion}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-            setPage={setPage}
-            openModalCreativeSize={openModalCreativeSize}
-          />
+          <div ref={secondSectionRef}>
+            <CreativeSize
+              isNextSectionOpen={isNextSectionOpen}
+              toggleNextSectionAccordion={toggleNextSectionAccordion}
+              handleNextSection={handleNextSection}
+              setIsLoading={setIsLoading}
+              openModalProductDetails={openModalProductDetails}
+              isCompleted={openModalCreativeSize}
+              setIsCompleted={setOpenModalCreativeSize}
+            />
+          </div>
+          <div ref={thirdSectionRef}>
+            <GeneratedCreatives
+              isThirdSectionOpen={isThirdSectionOpen}
+              toggleThirdSectionAccordion={toggleThirdSectionAccordion}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              setPage={setPage}
+              openModalCreativeSize={openModalCreativeSize}
+            />
+          </div>
         </div>
       </div>
     </div>
