@@ -116,15 +116,13 @@ export default function EditTemplate() {
     phoneNumber: productDetails?.phoneNumberText || "",
   });
 
-  console.log(productDetails, "productDetails");
-
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
 
   const handleOnChange = (e) => {
-    setProductForm({...productForm, [e.target.name] : e.target.value})
-  }
+    setProductForm({ ...productForm, [e.target.name]: e.target.value });
+  };
 
   const saveHistory = (updatedElements) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -425,7 +423,7 @@ export default function EditTemplate() {
                         <div className="flex flex-row">
                           <input
                             type="text"
-                            name='title'
+                            name="title"
                             value={productForm.title}
                             onChange={handleOnChange}
                             className="input lg:w-[387px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
@@ -466,7 +464,7 @@ export default function EditTemplate() {
                         <div className="flex flex-row">
                           <textarea
                             value={productForm.description}
-                            name='description'
+                            name="description"
                             onChange={handleOnChange}
                             className="textarea lg:w-[387px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none hide-scrollbar"
                             contentEditable={true}
@@ -517,7 +515,7 @@ export default function EditTemplate() {
                           <input
                             type="text"
                             value={productForm.ctaButtonText}
-                            name='cta'
+                            name="cta"
                             onChange={handleOnChange}
                             className="input lg:w-[387px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                           />
@@ -556,7 +554,7 @@ export default function EditTemplate() {
                       <input
                         type="text"
                         value={productForm.websiteAddressText}
-                        name='website'
+                        name="website"
                         onChange={handleOnChange}
                         className="input lg:w-[550px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                       />
@@ -566,7 +564,7 @@ export default function EditTemplate() {
                       <input
                         type="text"
                         value={productForm.phoneNumberText}
-                        name='phoneNumber'
+                        name="phoneNumber"
                         onChange={handleOnChange}
                         className="input lg:w-[550px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                       />
