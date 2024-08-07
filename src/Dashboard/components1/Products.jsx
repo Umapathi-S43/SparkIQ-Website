@@ -89,13 +89,13 @@ const Products = () => {
           </div>
         </div>
         <div
-          className="flex flex-wrap lg:ml-12 sm:mx-auto justify-center pb-2 w-90% gap-8 overflow-auto hide-scrollbar"
+          className="flex flex-wrap sm:ml-1 lg:ml-12 sm:mx-auto justify-start pb-2 w-90% gap-8 overflow-auto"
           style={{ maxHeight: "45vh" }}
         >
           <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
             <div
               onClick={handleCreateProduct}
-              className="relative cursor-pointer bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-xl shadow-cyan-100 shadow-2xl p-4 w-full h-full flex flex-col items-center justify-center "
+              className="relative cursor-pointer bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-xl shadow-cyan-100 shadow-2xl p-4 w-full h-full flex flex-col items-center justify-center"
               style={{
                 background:
                   "linear-gradient(to left bottom, rgba(92, 198, 255, 0.15), rgba(0, 160, 245, 0.3))",
