@@ -129,7 +129,7 @@ const Products = () => {
                   {product.name}
                 </h3>
                 <span className="font-semibold text-[#082A66] group-hover:text-white">
-                  USD {product.price}
+                  {product.price}
                 </span>
               </div>
               <div className="text-justify w-full px-2 line-clamp-3">
