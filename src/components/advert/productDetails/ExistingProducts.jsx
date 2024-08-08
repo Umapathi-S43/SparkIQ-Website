@@ -3,6 +3,8 @@ import { FaPlus } from 'react-icons/fa';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { BiCheck } from 'react-icons/bi';
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
+import axios from 'axios';
+import { baseUrl } from '../../utils/Constant'; // Update this path as needed
 
 const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, setShowProductDetails }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,22 +14,29 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedBrand, setSelectedBrand] = useState('All Brands');
 
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/product`);
+      console.log('Fetched Products:', response.data);
+      setProducts(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/brand/company/{companyid}`);
+      console.log('Fetched Brands:', response.data);
+      setBrands(['All Brands', ...(response.data.data || [])]);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+    }
+  };
+
   useEffect(() => {
-    // Fetch products and brands from local storage
-    const storedProducts = JSON.parse(localStorage.getItem('products')) || [];
-    const storedBrands = JSON.parse(localStorage.getItem('brands')) || [];
-
-    // Update products and brands state
-    const updatedProducts = storedProducts.map(product => {
-      if (!product.price) {
-        product.price = Math.floor(Math.random() * 400) + 100;
-      }
-      return product;
-    }).reverse(); // Reverse to get the latest products first
-
-    setProducts(updatedProducts);
-    setBrands(['All Brands', ...storedBrands]);
-    localStorage.setItem('products', JSON.stringify(updatedProducts));
+    fetchProducts();
+    fetchBrands();
   }, []);
 
   const handleCreateProduct = () => {
@@ -44,8 +53,8 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
 
   const filteredProducts = products.filter(product => {
     return (selectedBrand === 'All Brands' || product.brand === selectedBrand) &&
-      (product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
   const handleNextStep = () => {
@@ -72,10 +81,10 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
         onClick={toggleAccordion}
       >
         {isCompleted && (
-            <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
-              Completed <BiCheck size={20} />
-            </span>
-          )}
+          <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
+            Completed <BiCheck size={20} />
+          </span>
+        )}
         <div className="flex items-center gap-4">
           <img src="/icon2.svg" alt="" />
           <span className="flex flex-col">
@@ -90,7 +99,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 <p className="text-[#1E1154] font-medium">Selected Product</p>
               </div>
               <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
-                <p className="text-[#1E1154] font-medium">{selectedProduct.name}</p>
+                <p className="text-[#1E1154] font-medium">{selectedProduct?.name}</p>
               </div>
             </div>
           )}
