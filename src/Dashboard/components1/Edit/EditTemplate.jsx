@@ -16,6 +16,7 @@ import { Rnd } from "react-rnd";
 import "./EditTemplate.css";
 import { baseUrl } from "../../../components/utils/Constant";
 import axios from "axios";
+import Draggable from "react-draggable";
 
 const initialElements = [
   {
@@ -115,7 +116,7 @@ export default function EditTemplate() {
     websiteAddressText: productDetails?.websiteAddressText || "",
     phoneNumberText: productDetails?.phoneNumberText || "",
   });
-  // console.log(productDetails,'productDetails', productForm);
+  console.log(productDetails, "productDetails");
 
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -146,7 +147,6 @@ export default function EditTemplate() {
       });
     }
   }, [productDetails]);
-
 
   const handleOnChange = (e) => {
     setProductForm({ ...productForm, [e.target.name]: e.target.value });
@@ -262,8 +262,6 @@ export default function EditTemplate() {
     }, 100); // Wait for the deselection to render
   };
 
-  
-
   const titleSuggestions = [
     "Surveying prisms - Geomatics",
     "Geomatics-prims",
@@ -312,6 +310,31 @@ export default function EditTemplate() {
     setShowSuggestions((prev) => ({
       ...prev,
       [field]: false,
+    }));
+  };
+
+  const [element, setElement] = useState({
+    logo: { x: 0, y: 0, width: 216, height: 113 },
+    title: {
+      x: 43,
+      y: 810,
+      fontSize: 70,
+      text: "Managing\nHypertension Effectively",
+    },
+    description: {
+      x: 54,
+      y: 367,
+      fontSize: 40,
+      text: "- Uncontrolled blood pressure risks\n- Increased stroke and heart failure\n- Arjuna for hypertension control",
+    },
+    ctaButton: { x: 669, y: 194, width: 221, height: 97, text: "Act Now" },
+    phoneNumber: { x: 95, y: 194, text: "8688423165" },
+  });
+
+  const handleDrag = (e, data, key) => {
+    setElement((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], x: data.x, y: data.y },
     }));
   };
 
@@ -590,68 +613,60 @@ export default function EditTemplate() {
               </div>
               <div className="border shadow-sm justify-center bg-striped mx-auto p-0 pl-14 pt-2 m-1 ">
                 <div
-                  ref={templateRef}
-                  className={`w-[400px] h-[400px] bg-[#FCFCFC] rounded-lg flex flex-col items-center p-4 mr-12 mt-8 hover:ring-2 hover:ring-blue-400 ${bgColor}`}
-                  onDrop={(e) => onDrop(e)}
-                  onDragOver={(e) => onDragOver(e)}
+                  className="w-[400px] h-[400px] bg-[#FCFCFC] rounded-lg flex flex-col items-center p-4 mr-12 mt-8 hover:ring-2 hover:ring-blue-400"
+                  style={{ backgroundImage: `url(${productDetails?.logoUrl})` }}
                 >
-                  {/* {elements.map(el => ( */}
-                  <Rnd
-                    // key={el.id}
-                    // default={{
-                    //   x: productDetails?.defaultPosition.x,
-                    //   y: productDetails?.defaultPosition.y,
-                    //   width: productDetails?.defaultSize.width,
-                    //   height: productDetails?.defaultSize.height,
-                    // }}
-                    bounds="parent"
-                    onResize={(e, direction, ref, delta) =>
-                      handleResize(e, direction, ref, delta, el.id)
-                    }
-                    onDragStop={(e, d) =>
-                      handleDragStop(e, d, productDetails?.id)
-                    }
-                    onClick={() => handleClick(productDetails?.id)}
-                    enableResizing={{
-                      top: true,
-                      right: true,
-                      bottom: true,
-                      left: true,
-                      topRight: true,
-                      bottomRight: true,
-                      bottomLeft: true,
-                      topLeft: true,
-                    }}
-                    style={{
-                      border:
-                        activeElementId === productDetails?.id
-                          ? "2px dashed #000"
-                          : "none",
-                      boxSizing: "border-box",
-                    }}
+                  <Draggable
+                    position={{ x: element.logo.x, y: element.logo.y }}
+                    onStop={(e, data) => handleDrag(e, data, "logo")}
                   >
-                    <div>
-                      <div className="flex flex-col items-center w-full h-full">
-                        <img
-                          src={productDetails?.imageURL}
-                          alt="Ad Image"
-                          width={250}
-                          height={200}
-                          className="object-contain"
-                        />
-                      </div>
-                      <p>{productForm.website}</p>
-                      <p>{productForm.title}</p>
-                      <p>{productForm.description}</p>
-                      <div className="flex items-start gap-8">
-                        <button className="bg-blue-600 leading-10 px-8 rounded text-center text-white text-sm">
-                          Learn More
-                        </button>
-                        <p>{productForm.phoneNumber}</p>
-                      </div>
+                    <div
+                      className="draggable-element"
+                      style={{
+                        width: element.logo.width,
+                        height: element.logo.height,
+                      }}
+                    >
+                      <img
+                        src={productDetails?.imageURL}
+                        alt="Logo"
+                        width={250}
+                        height={200}
+                      />
                     </div>
-                  </Rnd>
-                  {/* ))} */}
+                  </Draggable>
+
+                  <Draggable onStop={(e, data) => handleDrag(e, data, "title")}>
+                    <div>{productForm.title}</div>
+                  </Draggable>
+
+                  <Draggable
+                    onStop={(e, data) => handleDrag(e, data, "description")}
+                  >
+                    <div>{productForm.description}</div>
+                  </Draggable>
+
+                  <Draggable
+                    onStop={(e, data) => handleDrag(e, data, "ctaButton")}
+                  >
+                    <button
+                      className="bg-blue-600 leading-10 px-8 rounded text-center text-white text-sm"
+                      style={{
+                        width: productDetails?.ctaButtonWidth,
+                        height: productDetails?.ctaButtonHeight,
+                      }}
+                    >
+                      {productForm.ctaButtonText}
+                    </button>
+                  </Draggable>
+
+                  <Draggable
+                    onStop={(e, data) => handleDrag(e, data, "phoneNumber")}
+                  >
+                    <div className="draggable-element">
+                      {productForm.phoneNumberText}
+                    </div>
+                  </Draggable>
                 </div>
               </div>
             </div>
