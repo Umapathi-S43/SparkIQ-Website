@@ -23,6 +23,11 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [selectedImageType, setSelectedImageType] = useState(null); // 'uploaded' or 'generated'
   const [currentPage, setCurrentPage] = useState(1);
+
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const productID = params.get("id");
+
   const [productDetails, setProductDetails] = useState({
     productName: "",
     productDescription: "",
@@ -36,6 +41,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     logoURL: "",
     brandID: "",
     prompt: "",
+    isEdit: false,
   });
   const [brands, setBrands] = useState([]);
 
@@ -83,7 +89,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         setSelectedImageIndex(images.length);
         setSelectedImageType('uploaded');
         setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
-        toast.success("Image uploaded successfully");
       }
     }
   };
@@ -157,6 +162,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
     fetchBrands();
   }, []);
+  console.log(brands, "products", productDetails);
 
   useEffect(() => {
     if (productDetails.imageFile) {
@@ -472,7 +478,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
               <div className="flex justify-end items-end gap-4 m-4">
                 <button
-                  className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
+                  className="w-fit custom-button rounded-[10px] text-white py-2 px-5 font-medium"
                   onClick={() => handlePageChange(currentPage > 1 ? currentPage - 1 : 1)}
                 >
                   Prev {currentPage > 1 ? currentPage - 1 : ''}
@@ -481,7 +487,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
                   onClick={() => handlePageChange(currentPage + 1)}
                 >
-                  Next {currentPage + 1}
+                  Next
                 </button>
               </div>
             </div>
