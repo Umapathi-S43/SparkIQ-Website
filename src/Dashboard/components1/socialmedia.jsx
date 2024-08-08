@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import insta from '../../assets/dashboard_img/instagram.png';
 import linkimg from '../../assets/dashboard_img/link2.png';
@@ -9,11 +9,28 @@ import glogo from '../../assets/dashboard_img/glogosvg.svg';
 import brandl from '../../assets/dashboard_img/brand_img.png';
 
 const SocialMediaConnect = ({ handleTaskCompletion }) => {
-  const [selectedMetaAccount, setSelectedMetaAccount] = useState(null);
-  const [selectedGoogleAccount, setSelectedGoogleAccount] = useState(null);
-  const [metaDropdownVisible, setMetaDropdownVisible] = useState(false);
-  const [googleDropdownVisible, setGoogleDropdownVisible] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [accountType, setAccountType] = useState(null);
+  const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [fromPreviewBtn, setFromPreviewBtn] = useState(false);
+
+  useEffect(() => {
+    if (location.state) {
+      if (location.state.skipToSelectPage) {
+        setCurrentStep(2);
+        const savedAccountType = localStorage.getItem('accountType') || 'google';
+        const savedAccount = JSON.parse(localStorage.getItem('selectedAccount')) || { id: 1, name: 'John Smith', img: glogo };
+        setAccountType(savedAccountType);
+        setSelectedAccount(savedAccount);
+      }
+      if (location.state.fromPreviewBtn) {
+        setFromPreviewBtn(true);
+      }
+    }
+  }, [location.state]);
 
   const metaAccounts = [
     { id: 1, name: 'John Smith', img: meta },
@@ -27,22 +44,33 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
     { id: 3, name: 'Shane Warne', img: glogo },
   ];
 
-  const handleSelectMetaAccount = (account) => {
-    setSelectedMetaAccount(account);
-    setMetaDropdownVisible(false);
+  const handleConnectAccount = (type) => {
+    setAccountType(type);
+    setSelectedAccount(type === 'meta' ? metaAccounts[0] : googleAccounts[0]);
+    localStorage.setItem('accountType', type);
+    localStorage.setItem('selectedAccount', JSON.stringify(type === 'meta' ? metaAccounts[0] : googleAccounts[0]));
   };
 
-  const handleSelectGoogleAccount = (account) => {
-    setSelectedGoogleAccount(account);
-    setGoogleDropdownVisible(false);
+  const handleSelectAccount = (account) => {
+    setSelectedAccount(account);
+    setDropdownVisible(false);
+    localStorage.setItem('selectedAccount', JSON.stringify(account));
   };
 
-  const handleSaveAndContinue_social = () => {
+  const handleSaveAndContinue = () => {
+    setCurrentStep(2);
+  };
+
+  const handleSaveAndContinueFinal = () => {
     localStorage.setItem('task2Completed', 'true');
-    navigate('/homepage', { state: { task2Completed: true } });
+    if (fromPreviewBtn) {
+      navigate('/customsample');
+    } else {
+      navigate('/homepage', { state: { task2Completed: true } });
+    }
   };
 
-  const AccountDropdown = ({ accounts, selectedAccount, setSelectedAccount, dropdownVisible, setDropdownVisible, logo }) => (
+  const AccountDropdown = ({ accounts, selectedAccount, setSelectedAccount, dropdownVisible, setDropdownVisible }) => (
     <div className={`relative ${selectedAccount ? 'p-2 rounded-2xl border border-[#FCFCFC] bg-[rgba(252,252,252,0.25)]' : ''}`}>
       <button
         className={`px-4 py-2 rounded-xl flex items-center ${selectedAccount ? 'bg-[#FCFCFC] text-black' : 'bg-gradient-to-r from-[#283048] to-[#859398] text-white'}`}
@@ -57,8 +85,8 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
           </>
         ) : (
           <>
-            <img src={logo} alt="Link" className="w-4 h-4 mr-2" />
-            <span>Connect Account</span>
+            <img src={linkimg} alt="Link" className="w-4 h-4 mr-2" />
+            <span>Select Account</span>
           </>
         )}
       </button>
@@ -67,10 +95,7 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
           {accounts.map((account) => (
             <button
               key={account.id}
-              onClick={() => {
-                setSelectedAccount(account);
-                setDropdownVisible(false);
-              }}
+              onClick={() => handleSelectAccount(account)}
               className="flex items-center w-full px-4 py-2 hover:bg-gray-200"
             >
               <img src={account.img} alt={account.name} className="w-6 h-6 mr-2" />
@@ -98,76 +123,206 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
             <img src={brandl} alt="Brand Banner" className="lg:w-[180px] lg:h-[90px] w-[120px] h-[64px] relative bottom-[-9px] mr-20 hidden lg:block md:block" />
           </div>
         </div>
-        <div className="flex flex-col lg:flex-row lg:p-6 lg:pt-0 w-full ">
-          <div className="flex lg:justify-center items-center justify-around mb-4 lg:mb-0 lg:mr-8 m-auto lg:pt-0 lg:w-96 lg:h-96 w-72 h-72 bg-gradient-to-b from-[#00A0F5] to-[#0085CC] rounded-2xl">
-            <img src={insta} alt="Instagram" className="flex items-center justify-center w-56 h-56 rounded-lg object-cover" />
-          </div>
-          <div className="flex-grow m-2">
-            <div className="border border-[#fcfcfc] bg-[rgba(252,252,252,0.25)] rounded-3xl shadow-inner mb-2">
-              <div className="flex items-center justify-between bg-[#F6F8FE] p-4 mb-4 rounded-t-3xl">
-                <div className="flex items-center">
-                  <div className="bg-[rgba(0,39,153,0.15)] w-10 h-10 rounded-full flex items-center justify-center">
-                    <img src={linkimg2} alt="Link" className="w-4 h-4" />
+        {currentStep === 1 && (
+          <div className="flex flex-col lg:flex-row lg:p-6 lg:pt-0 w-full ">
+            <div className="flex lg:justify-center items-center justify-around mb-4 lg:mb-0 lg:mr-8 m-auto lg:pt-0 lg:w-96 lg:h-96 w-72 h-72 bg-gradient-to-b from-[#00A0F5] to-[#0085CC] rounded-2xl">
+              <img src={insta} alt="Instagram" className="flex items-center justify-center w-56 h-56 rounded-lg object-cover" />
+            </div>
+            <div className="flex-grow m-2">
+              <div className="border border-[#fcfcfc] bg-[rgba(252,252,252,0.25)] rounded-3xl shadow-inner mb-2">
+                <div className="flex items-center justify-between bg-[#F6F8FE] p-4 mb-4 rounded-t-3xl">
+                  <div className="flex items-center">
+                    <div className="bg-[rgba(0,39,153,0.15)] w-10 h-10 rounded-full flex items-center justify-center">
+                      <img src={linkimg2} alt="Link" className="w-4 h-4" />
+                    </div>
+                    <h2 className=" flex-row text-lg font-bold text-blue-900 ml-4">Connect Your Ad Accounts</h2>
                   </div>
-                  <h2 className=" flex-row text-lg font-bold text-blue-900 ml-4">Connect Your Ad Accounts</h2>
                 </div>
-              </div>
-              <div className="flex flex-col space-y-4 p-4">
-                <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                  <div className="flex items-center mb-2 sm:mb-0">
-                    <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
-                      <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
-                        <img src={meta} alt="Meta" className="w-4 h-3" />
+                <div className="flex flex-col space-y-4 p-4">
+                  <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                    <div className="flex items-center mb-2 sm:mb-0">
+                      <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
+                        <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
+                          <img src={meta} alt="Meta" className="w-4 h-3" />
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-bold text-blue-900">Meta Ad Account</h3>
+                        <p className="text-gray-600">Connect and link your ad accounts</p>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-bold text-blue-900">Meta Ad Account</h3>
-                      <p className="text-gray-600">Connect and link your ad accounts</p>
+                    <div className="flex justify-center w-full sm:w-auto">
+                      <button
+                        className={`px-4 py-2 rounded-xl flex items-center ${accountType === 'meta' ? 'bg-[#FCFCFC] text-black' : 'bg-gradient-to-r from-[#283048] to-[#859398] text-white'}`}
+                        onClick={() => handleConnectAccount('meta')}
+                        style={{ width: '100%' }}
+                      >
+                        <img src={linkimg} alt="Link" className="w-4 h-4 mr-2" />
+                        <span>{accountType === 'meta' ? 'Connected' : 'Connect Account'}</span>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex justify-center w-full sm:w-auto"> {/* Updated line */}
-                    <AccountDropdown
-                      accounts={metaAccounts}
-                      selectedAccount={selectedMetaAccount}
-                      setSelectedAccount={setSelectedMetaAccount}
-                      dropdownVisible={metaDropdownVisible}
-                      setDropdownVisible={setMetaDropdownVisible}
-                      logo={linkimg}
-                    />
-                  </div>
-                </div>
-                <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                  <div className="flex items-center mb-2 sm:mb-0">
-                    <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
-                      <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
-                        <img src={glogo} alt="Google" className="w-4 h-4" />
+                  <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                    <div className="flex items-center mb-2 sm:mb-0">
+                      <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
+                        <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
+                          <img src={glogo} alt="Google" className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-bold text-blue-900">Google Ad Account</h3>
+                        <p className="text-gray-600">Connect and link your ad accounts</p>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-bold text-blue-900">Google Ad Account</h3>
-                      <p className="text-gray-600">Connect and link your ad accounts</p>
+                    <div className="flex justify-center w-full sm:w-auto">
+                      <button
+                        className={`px-4 py-2 rounded-xl flex items-center ${accountType === 'google' ? 'bg-[#FCFCFC] text-black' : 'bg-gradient-to-r from-[#283048] to-[#859398] text-white'}`}
+                        onClick={() => handleConnectAccount('google')}
+                        style={{ width: '100%' }}
+                      >
+                        <img src={linkimg} alt="Link" className="w-4 h-4 mr-2" />
+                        <span>{accountType === 'google' ? 'Connected' : 'Connect Account'}</span>
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex justify-center w-full sm:w-auto"> {/* Updated line */}
-                    <AccountDropdown
-                      accounts={googleAccounts}
-                      selectedAccount={selectedGoogleAccount}
-                      setSelectedAccount={setSelectedGoogleAccount}
-                      dropdownVisible={googleDropdownVisible}
-                      setDropdownVisible={setGoogleDropdownVisible}
-                      logo={linkimg}
-                    />
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="flex justify-end mt-4">
-              <button className="custom-button p-2 lg:pl-6 lg:pr-6 m-4 lg:mb-0 text-white rounded-xl shadow-inner flex justify-center w-fit mt-1" onClick={handleSaveAndContinue_social}>
-                Save and Continue
-              </button>
+              <div className="flex justify-end mt-4">
+                <button className="custom-button p-2 lg:pl-6 lg:pr-6 m-4 lg:mb-0 text-white rounded-xl shadow-inner flex justify-center w-fit mt-1" onClick={handleSaveAndContinue}>
+                  Save and Continue
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+        {currentStep === 2 && (
+          <div className="flex flex-col lg:flex-row lg:p-6 lg:pt-0 w-full ">
+            <div className="flex lg:justify-center items-center justify-around mb-4 lg:mb-0 lg:mr-8 m-auto lg:pt-0 lg:w-96 lg:h-96 w-72 h-72 bg-gradient-to-b from-[#00A0F5] to-[#0085CC] rounded-2xl">
+              <img src={insta} alt="Instagram" className="flex items-center justify-center w-56 h-56 rounded-lg object-cover" />
+            </div>
+            <div className="flex-grow m-2">
+              <div className="border border-[#fcfcfc] bg-[rgba(252,252,252,0.25)] rounded-3xl shadow-inner mb-2">
+                <div className="flex items-center justify-between bg-[#F6F8FE] p-4 mb-4 rounded-t-3xl">
+                  <div className="flex items-center">
+                    <div className="bg-[rgba(0,39,153,0.15)] w-10 h-10 rounded-full flex items-center justify-center">
+                      <img src={linkimg2} alt="Link" className="w-4 h-4" />
+                    </div>
+                    <h2 className=" flex-row text-lg font-bold text-blue-900 ml-4">Select Your Ad Account</h2>
+                  </div>
+                </div>
+                <div className="flex flex-col space-y-4 p-4">
+                  {accountType === 'meta' && (
+                    <>
+                      <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                        <div className="flex items-center mb-2 sm:mb-0">
+                          <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
+                            <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
+                              <img src={meta} alt="Meta" className="w-4 h-3" />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="text-lg font-bold text-blue-900">Meta Ad Account</h3>
+                            <p className="text-gray-600">Choose your meta ad account</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-center w-full sm:w-auto">
+                          <div className={`relative ${selectedAccount ? 'p-2 rounded-2xl border border-[#FCFCFC] bg-[rgba(252,252,252,0.25)]' : ''}`}>
+                            <div className={`px-4 py-2 rounded-xl flex items-center ${selectedAccount ? 'bg-[#FCFCFC] text-black' : 'bg-gradient-to-r from-[#283048] to-[#859398] text-white'}`} style={{ width: '100%' }}>
+                              {selectedAccount && (
+                                <>
+                                  <img src={selectedAccount.img} alt="Account" className="w-6 h-6 mr-2" />
+                                  <span>{selectedAccount.name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                        <div className="flex items-center mb-2 sm:mb-0">
+                          <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
+                            <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
+                              <img src={meta} alt="Meta" className="w-4 h-3" />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="text-lg font-bold text-blue-900">Select Page</h3>
+                            <p className="text-gray-600">Select your desired page</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-center w-full sm:w-auto">
+                          <AccountDropdown
+                            accounts={metaAccounts}
+                            selectedAccount={selectedAccount}
+                            setSelectedAccount={handleSelectAccount}
+                            dropdownVisible={dropdownVisible}
+                            setDropdownVisible={setDropdownVisible}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {accountType === 'google' && (
+                    <>
+                      <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                        <div className="flex items-center mb-2 sm:mb-0">
+                          <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
+                            <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
+                              <img src={glogo} alt="Google" className="w-4 h-4" />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="text-lg font-bold text-blue-900">Google Ad Account</h3>
+                            <p className="text-gray-600">Choose your Google ad account</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-center w-full sm:w-auto">
+                          <div className={`relative ${selectedAccount ? 'p-2 rounded-2xl border border-[#FCFCFC] bg-[rgba(252,252,252,0.25)]' : ''}`}>
+                            <div className={`px-4 py-2 rounded-xl flex items-center ${selectedAccount ? 'bg-[#FCFCFC] text-black' : 'bg-gradient-to-r from-[#283048] to-[#859398] text-white'}`} style={{ width: '100%' }}>
+                              {selectedAccount && (
+                                <>
+                                  <img src={selectedAccount.img} alt="Account" className="w-6 h-6 mr-2" />
+                                  <span>{selectedAccount.name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-lg shadow-md bg-[rgba(252,252,252,0.35)] lg:h-24 h-auto flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                        <div className="flex items-center mb-2 sm:mb-0">
+                          <div className="bg-[rgba(0,39,153,0.15)] w-9 h-9 rounded-md flex items-center justify-center">
+                            <div className="bg-[#082a66] rounded-md p-1 flex items-center justify-center w-6 h-6">
+                              <img src={glogo} alt="Google" className="w-4 h-4" />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <h3 className="text-lg font-bold text-blue-900">Select Page</h3>
+                            <p className="text-gray-600">Select your desired page</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-center w-full sm:w-auto">
+                          <AccountDropdown
+                            accounts={googleAccounts}
+                            selectedAccount={selectedAccount}
+                            setSelectedAccount={handleSelectAccount}
+                            dropdownVisible={dropdownVisible}
+                            setDropdownVisible={setDropdownVisible}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button className="custom-button p-2 lg:pl-6 lg:pr-6 m-4 lg:mb-0 text-white rounded-xl shadow-inner flex justify-center w-fit mt-1" onClick={handleSaveAndContinueFinal}>
+                  Save and Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

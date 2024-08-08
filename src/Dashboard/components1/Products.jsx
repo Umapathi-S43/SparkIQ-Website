@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
-import { TbTargetArrow } from "react-icons/tb";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
-import "./brandsetup.css"; // Import the CSS file
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 
@@ -43,8 +41,8 @@ const Products = () => {
 
   const filteredProducts = products?.filter(
     (product) =>
-      product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product?.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -89,13 +87,13 @@ const Products = () => {
           </div>
         </div>
         <div
-          className="flex flex-wrap lg:ml-12 sm:mx-auto justify-center pb-2 w-90% gap-8 overflow-auto hide-scrollbar"
+          className="flex flex-wrap sm:ml-1 lg:ml-12 sm:mx-auto justify-start pb-2 w-90% gap-8 overflow-auto"
           style={{ maxHeight: "45vh" }}
         >
           <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
             <div
               onClick={handleCreateProduct}
-              className="relative cursor-pointer bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-xl shadow-cyan-100 shadow-2xl p-4 w-full h-full flex flex-col items-center justify-center "
+              className="relative cursor-pointer bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-xl shadow-cyan-100 shadow-2xl p-4 w-full h-full flex flex-col items-center justify-center"
               style={{
                 background:
                   "linear-gradient(to left bottom, rgba(92, 198, 255, 0.15), rgba(0, 160, 245, 0.3))",
@@ -134,7 +132,7 @@ const Products = () => {
                   {product.name}
                 </h3>
                 <span className="font-semibold text-[#082A66] group-hover:text-white">
-                  USD {product.price}
+                  {product.price}
                 </span>
               </div>
               <div className="text-justify w-full px-2 line-clamp-3">

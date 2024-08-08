@@ -36,6 +36,10 @@ const ExistingCampaigns = () => {
     navigate(`/campaign-insights/${campaign.id}`, { state: { campaign } });
   };
 
+  const handleCreateCampaign = () => {
+    navigate('/campaigns');
+  };
+
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentCampaigns = campaigns.slice(startIndex, startIndex + rowsPerPage);
 
@@ -62,7 +66,10 @@ const ExistingCampaigns = () => {
         </div>
         <div className="flex justify-end pr-6">
           <div className="p-2 border border-1 border-[#FCFCFC80] bg-[rgba(252,252,252,0.25)] rounded-3xl">
-            <button className="bg-[#00A0F5] text-white px-6 py-3 rounded-3xl shadow-[0_13px_25px_0_#00A0F557]">
+            <button 
+              className="bg-[#00A0F5] text-white px-6 py-3 rounded-3xl shadow-[0_13px_25px_0_#00A0F557]"
+              onClick={handleCreateCampaign}
+            >
               Create Campaign
             </button>
           </div>

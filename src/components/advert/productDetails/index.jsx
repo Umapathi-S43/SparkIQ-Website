@@ -6,6 +6,7 @@ import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import { GoTag } from "react-icons/go";
 import { CreditCardIcon } from "@heroicons/react/24/outline";
 import { RiArrowGoBackLine, RiDiscountPercentLine } from "react-icons/ri";
+import { IoImageOutline } from "react-icons/io5";
 import link2 from "../../../assets/dashboard_img/linksvg1.svg";
 import facomment from "../../../assets/dashboard_img/facomment.svg";
 import brandIcon from "../../../assets/dashboard_img/brand_b1.svg"; // Adjust the path as needed
@@ -42,6 +43,7 @@ export default function ProductDetails({
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [images, setImages] = useState([]);
+  const [generatedImages, setGeneratedImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [customDiscount, setCustomDiscount] = useState(0);
   const [productDetails, setProductDetails] = useState({
@@ -54,8 +56,10 @@ export default function ProductDetails({
     discount: discountOptions[0],
     imageFile: null,
     logoURL: "",
+    prompt: "",
   });
   const [brands, setBrands] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const toggleAccordion = () => {
     setIsOpen(!isOpen);
@@ -92,13 +96,12 @@ export default function ProductDetails({
     event.preventDefault();
   };
 
-  const handleImageClick = (index) => {
-    const selectedFile = images[index];
-    if (selectedFile instanceof File || selectedFile instanceof Blob) {
-      setSelectedImage(index);
-      setProductDetails({ ...productDetails, imageFile: images[index] });
+  const handleImageClick = (index, isGenerated = false) => {
+    setSelectedImage(index);
+    if (isGenerated) {
+      setProductDetails({ ...productDetails, imageFile: null, logoURL: generatedImages[index].imgUrl });
     } else {
-      console.error("Selected file is not a valid File or Blob object");
+      setProductDetails({ ...productDetails, imageFile: images[index], logoURL: "" });
     }
   };
 
@@ -124,6 +127,39 @@ export default function ProductDetails({
       discount: e.target.value,
       customDiscount: "",
     });
+  };
+
+  const handleSearchForImages = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/search/get-images`, {
+        params: {
+          prompt: productDetails.prompt,
+          page: currentPage,
+          size: 10,
+        },
+      });
+      setGeneratedImages(response.data.result.data);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to generate images.");
+    }
+  };
+
+  const handlePageChange = async (page) => {
+    setCurrentPage(page);
+    try {
+      const response = await axios.get(`${baseUrl}/search/get-images`, {
+        params: {
+          prompt: productDetails.prompt,
+          page: page,
+          size: 10,
+        },
+      });
+      setGeneratedImages(response.data.result.data);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to generate images.");
+    }
   };
 
   useEffect(() => {
@@ -289,9 +325,9 @@ export default function ProductDetails({
               </div>
             )}
             {isOpen ? (
-              <MdArrowDropUp size={32} className="cursor-pointer" />
+              <MdArrowDropUp size={32} className="cursor-pointer" onClick={toggleAccordion} />
             ) : (
-              <MdArrowDropDown size={32} className="cursor-pointer" />
+              <MdArrowDropDown size={32} className="cursor-pointer" onClick={toggleAccordion} />
             )}
           </div>
         </div>
@@ -378,6 +414,80 @@ export default function ProductDetails({
                 </div>
               </div>
             </div>
+            <div className="flex flex-col md:flex-row p-2 m-2">
+              <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full ${productDetails.logoURL || productDetails.imageFile ? "md:w-3/4" : "md:w-full"} p-4`}>
+                <span className="flex items-center gap-4 text-lg font-bold">
+                  <div 
+                    className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3 flex justify-center items-center"
+                  ><IoImageOutline /></div>{" "}
+                  <h6>Enter the prompt to get images for your service/product</h6>
+                </span>
+                <span className="flex flex-col md:flex-row items-center gap-5">
+                  <input
+                    type="text"
+                    placeholder="Your prompt (Example: Tuition classes for kids)"
+                    id="prompt"
+                    onChange={handleOnChangeProductDetails}
+                    className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  />
+                  <button
+                    className="w-fit custom-button rounded-[20px] text-white py-3 px-6 whitespace-pre font-medium"
+                    onClick={handleSearchForImages}
+                  >
+                    Search for Images
+                  </button>
+                </span>
+              </div>
+              {(productDetails.logoURL || productDetails.imageFile) && (
+                <div className="w-1/4 p-4 border border-[#FCFCFC] bg-[#FCFCFC60] ml-2 rounded-[12px]">
+                  <img
+                    src={productDetails.logoURL || URL.createObjectURL(productDetails.imageFile)}
+                    alt="Selected"
+                    className="object-cover w-full h-40 rounded"
+                  />
+                </div>
+              )}
+            </div>
+
+            {generatedImages.length > 0 && (
+              <div className="p-2 border border-[#FCFCFC] m-3 rounded-2xl">
+                <h6 className="font-bold pb-4 mt-2 mb-4 text-center">Select a Generated Image</h6>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mx-2">
+                  {generatedImages.map((image, index) => (
+                    <div
+                      key={index}
+                      className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded`}
+                      onClick={() => handleImageClick(index, true)}
+                    >
+                      <img
+                        src={image.imgUrl}
+                        alt={`Generated ${index}`}
+                        className="object-cover w-full h-48 rounded"
+                      />
+                      {selectedImage === index && (
+                        <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                          <BiCheck size={16} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end items-end gap-4 m-4">
+                  <button
+                    className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
+                    onClick={() => handlePageChange(currentPage > 1 ? currentPage - 1 : 1)}
+                  >
+                    Prev {currentPage > 1 ? currentPage - 1 : ''}
+                  </button>
+                  <button
+                    className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                  >
+                    Next {currentPage + 1}
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="flex flex-col md:flex-row gap-5 p-2">
               <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
                 <span className="flex items-center gap-4 text-lg font-bold">
@@ -420,7 +530,7 @@ export default function ProductDetails({
                       background: "white",
                       backgroundPosition: "right 10px center",
                       backgroundRepeat: "no-repeat",
-                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
                     }}
                     id="brandName"
                     onChange={(e) => {
@@ -551,7 +661,7 @@ export default function ProductDetails({
                           background: "[#D9E9F2]",
                           backgroundPosition: "right 10px center",
                           backgroundRepeat: "no-repeat",
-                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                         }}
                       >
                         {discountOptions.map((discount, index) => (
@@ -577,7 +687,6 @@ export default function ProductDetails({
                 <button
                   className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"
                   disabled={isNextStepDisabled}
-                  // onClick={handleNextStep}
                 >
                   Next Step
                 </button>
