@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
-import { TbTargetArrow } from "react-icons/tb";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
-import "./brandsetup.css"; // Import the CSS file
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 
@@ -43,8 +41,8 @@ const Products = () => {
 
   const filteredProducts = products.filter(
     (product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
