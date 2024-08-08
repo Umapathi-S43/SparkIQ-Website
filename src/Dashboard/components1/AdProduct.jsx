@@ -44,7 +44,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     isEdit: false,
   });
   const [brands, setBrands] = useState([]);
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -153,16 +152,21 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     const fetchBrands = async () => {
       try {
         const response = await axios.get(`${baseUrl}/brand/company/123`);
-        setBrands(response.data.data);
+        const fetchedBrands = response.data.data.map((brand) => {
+          const storedCount = localStorage.getItem(`brand_${brand.id}_count`);
+          return {
+            ...brand,
+            productsCreated: storedCount ? parseInt(storedCount) : 0,
+          };
+        });
+        setBrands(fetchedBrands);
       } catch (error) {
         console.log(error);
-        setError("Failed to fetch brands.");
       }
     };
 
     fetchBrands();
   }, []);
-  console.log(brands, "products", productDetails);
 
   useEffect(() => {
     if (productDetails.imageFile) {
@@ -207,11 +211,28 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     };
     try {
       await axios.post(`${baseUrl}/product`, newProduct);
+      updateBrandProductCount(productDetails.brandID);
       toast.success("Product created successfully");
       navigate("/productspage");
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const updateBrandProductCount = (brandID) => {
+    setBrands((prevBrands) => {
+      return prevBrands.map((brand) => {
+        if (brand.id === brandID) {
+          const updatedCount = brand.productsCreated + 1;
+          localStorage.setItem(`brand_${brand.id}_count`, updatedCount);
+          return {
+            ...brand,
+            productsCreated: updatedCount,
+          };
+        }
+        return brand;
+      });
+    });
   };
 
   const handleEditProduct = async () => {
@@ -535,7 +556,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   background: "white",
                   backgroundPosition: "right 10px center",
                   backgroundRepeat: "no-repeat",
-                  backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                  backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
                 }}
                 id="brandName"
                 onChange={(e) => {
@@ -621,7 +642,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                         background: "[#D9E9F2]",
                         backgroundPosition: "right 10px center",
                         backgroundRepeat: "no-repeat",
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                       }}
                     >
                       {currencies.map((currency, index) => (

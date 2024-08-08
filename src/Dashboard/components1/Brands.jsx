@@ -11,6 +11,7 @@ import { baseUrl } from "../../components/utils/Constant";
 
 const Brands = () => {
   const [brands, setBrands] = useState([]);
+  const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
@@ -36,12 +37,38 @@ const Brands = () => {
         setBrands(response.data.data);
       } catch (error) {
         console.log(error);
-        setError("Failed to fetch brands.");
+      }
+    };
+
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get(`${baseUrl}/product`);
+        setProducts(response.data.data);
+      } catch (error) {
+        console.log(error);
       }
     };
 
     fetchBrands();
+    fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (brands.length > 0 && products.length > 0) {
+      const updatedBrands = brands.map((brand) => {
+        const productCount = products.filter(product => product.brandID === brand.id).length;
+        return {
+          ...brand,
+          productsCreated: productCount,
+        };
+      });
+      setBrands(updatedBrands);
+    }
+  }, [brands, products]);
+
+  const filteredBrands = brands.filter((brand) =>
+    brand.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="flex-grow mb-6">
@@ -72,7 +99,7 @@ const Brands = () => {
           </div>
         </div>
         <div className="flex items-center justify-end w-full px-3 m-8 mb-2">
-          <div className="flex items-center bg-white mb-4 rounded-xl shadow-xl ">
+          <div className="flex items-center bg-white mb-4 rounded-xl shadow-xl lg:mr-12 mr-4 ">
             <div className="relative w-full">
               <input
                 type="text"
@@ -87,7 +114,7 @@ const Brands = () => {
         </div>
 
         <div
-          className="flex flex-wrap justify-between w-full ml-4 p-4 items-center overflow-auto hide-scrollbar"
+          className="flex flex-wrap justify-between w-full ml-4 p-4 items-center overflow-auto hide-scrollbar grid-cols-4 gap-4"
           style={{ maxHeight: "46vh" }}
         >
           <div className="w-full flex flex-wrap justify-start gap-4 ml-4 pl-2">
@@ -110,7 +137,7 @@ const Brands = () => {
                 </p>
               </div>
             </div>
-            {brands.map((brand, index) => (
+            {filteredBrands.map((brand, index) => (
               <div
                 key={index}
                 className="group brand-card1 flex items-center justify-center w-64 h-80"
@@ -124,7 +151,7 @@ const Brands = () => {
                   </div>
                   <div className="absolute top-8 bg-white p-2 rounded-lg mt-0 mb-8">
                     <img
-                      src={brand.logoUrl}
+                      src={brand.logoURL}
                       alt={brand.name}
                       className="w-16 h-16 object-cover rounded-lg group-hover:mt-0"
                     />
@@ -145,7 +172,7 @@ const Brands = () => {
                       style={{ background: "rgba(0, 0, 0, 0.2)" }}
                     />
                     <span className="opacity-80">
-                      {brand.productsCreated} Products Created
+                      {brand.productsCreated || 0} Products Created
                     </span>
                   </div>
                 </div>

@@ -32,7 +32,7 @@ const BrandSetup = () => {
     imageFile: null,
     logoURL: "",
     showSubmitButton: false,
-    domColors: null,
+    domColors: [],
     isLoadingColor: true,
     isEdit: false,
   });
@@ -41,7 +41,11 @@ const BrandSetup = () => {
   const [additionalColors, setAdditionalColors] = useState([]);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorPickerTarget, setColorPickerTarget] = useState(null);
-  const [completedSections, setCompletedSections] = useState({});
+  const [completedSections, setCompletedSections] = useState({
+    1: false,
+    2: false,
+    3: false,
+  });
   const [expandedSection, setExpandedSection] = useState(1); // Open first section by default
   const navigate = useNavigate();
   const [imageSrc, setImageSrc] = useState("");
@@ -53,7 +57,6 @@ const BrandSetup = () => {
       [name]: value,
     }));
   };
-
 
   useEffect(() => {
     let isMounted = true;
@@ -78,11 +81,14 @@ const BrandSetup = () => {
               brandDescription: foundBrand.description,
               logoURL: foundBrand.logoURL,
               brandId: foundBrand.id,
-              // domColors: Array.isArray(parsedColors)
-              //   ? parsedColors
-              //   : [parsedColors],
+              domColors: Array.isArray(parsedColors)
+                ? parsedColors
+                : [parsedColors],
               isEdit: true,
+              showSubmitButton: true,
             });
+            setCompletedSections({ 1: true, 2: true, 3: true });
+            setExpandedSection(1);
           }
         }
       } catch (error) {
@@ -97,11 +103,11 @@ const BrandSetup = () => {
     return () => {
       isMounted = false;
     };
-  }, [brandName, baseUrl, setFormInputs]);
+  }, [brandName]);
 
   useEffect(() => {
-    setExpandedSection(1); // Open first section by default
-  }, []);
+    setImageSrc(formInputs.logoURL || gallery || formInputs.brandLogo);
+  }, [gallery, formInputs.logoURL, formInputs.brandLogo]);
 
   const handleLogoUpload = (event) => {
     const file = event.target.files[0];
@@ -113,10 +119,6 @@ const BrandSetup = () => {
       });
     }
   };
-
-  useEffect(() => {
-    setImageSrc(formInputs.brandLogo || gallery || formInputs.logoURL);
-  }, [gallery, formInputs.brandLogo, formInputs.logoURL]);
 
   const handleColorSelect = (color) => {
     setCustomColor(color.hex);
@@ -158,7 +160,7 @@ const BrandSetup = () => {
         })
         .then((res) => {
           setFormInputs({ ...formInputs, isLoadingColor: true });
-          toast.success("image upload successful");
+          toast.success("Image upload successful");
           dominantColor(res.data.data.url);
         });
     } catch (error) {
@@ -184,11 +186,6 @@ const BrandSetup = () => {
   };
 
   const toggleSection = (section) => {
-    for (let i = 1; i < section; i++) {
-      if (!completedSections[i]) {
-        return;
-      }
-    }
     setExpandedSection((prev) => (prev === section ? null : section));
   };
 
@@ -281,7 +278,7 @@ const BrandSetup = () => {
               </div>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-[#082a66] ml-4 md:mr-auto text-nowrap">
-              {formInputs.isEdit ? "Edit Brand" : "              Brand Setup"}
+              {formInputs.isEdit ? "Edit Brand" : "Brand Setup"}
             </h1>
             <img
               src={brandImage}
@@ -388,10 +385,7 @@ const BrandSetup = () => {
                     onClick={(e) => e.stopPropagation()}
                   />
                   <button
-                    disabled={
-                      !formInputs.brandDescription || !formInputs.brandName
-                    }
-                    className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl disabled:opacity-50"
+                    className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(1);
@@ -406,6 +400,8 @@ const BrandSetup = () => {
               onClick={() => toggleSection(2)}
               className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${
                 expandedSection === 2 ? "bg-[rgba(252,252,252,0.25)]" : ""
+              } ${
+                formInputs.isEdit ? "" : !completedSections[1] ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               {completedSections[2] && (
@@ -427,10 +423,10 @@ const BrandSetup = () => {
                     Select Brand Logo
                   </p>
                 </div>
-                {completedSections[2] && formInputs.brandLogo && (
+                {completedSections[2] && (
                   <div className="flex items-center ml-auto bg-white rounded-lg p-1">
                     <img
-                      src={formInputs.brandLogo}
+                      src={formInputs.logoURL || formInputs.brandLogo}
                       alt="Brand Logo"
                       className="w-12 h-7 object-cover rounded-md"
                     />
@@ -473,8 +469,7 @@ const BrandSetup = () => {
                     </div>
                   </div>
                   <button
-                    disabled={!formInputs.brandLogo}
-                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl disabled:opacity-50"
+                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(2);
@@ -490,6 +485,8 @@ const BrandSetup = () => {
               onClick={() => toggleSection(3)}
               className={`relative items-center border border-[#fcfcfc] p-0 rounded-2xl cursor-pointer ${
                 expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
+              } ${
+                formInputs.isEdit ? "" : !completedSections[2] ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               {completedSections[3] && (
@@ -617,8 +614,7 @@ const BrandSetup = () => {
                     </div>
                   )}
                   <button
-                    disabled={!formInputs.domColors}
-                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl disabled:opacity-50"
+                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(3);
@@ -638,7 +634,7 @@ const BrandSetup = () => {
                     formInputs.isEdit ? handleEditBrand : handleCreateBrand
                   }
                 >
-                  {formInputs.isEdit ? "Edit Brand" : "Create Brand"}
+                  {formInputs.isEdit ? "Update" : "Create Brand"}
                 </button>
               </div>
             )}
