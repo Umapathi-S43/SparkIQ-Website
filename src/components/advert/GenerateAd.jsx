@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ProductDetails from "./productDetails";
 import CreativeSize from "./creativeSize";
 import GeneratedCreatives from "../../Dashboard/components1/GeneratedCreatives";
@@ -11,6 +11,42 @@ export default function GenerateAd({ setPage, pages }) {
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
   const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
   const [showProductDetails, setShowProductDetails] = useState(false); // New state
+
+  const creativeSizeRef = useRef(null);
+  const generatedCreativesRef = useRef(null);
+
+  useEffect(() => {
+    // Restore state from localStorage
+    const savedIsNextSectionOpen = JSON.parse(localStorage.getItem("isNextSectionOpen"));
+    const savedIsThirdSectionOpen = JSON.parse(localStorage.getItem("isThirdSectionOpen"));
+    const savedOpenModalProductDetails = JSON.parse(localStorage.getItem("openModalProductDetails"));
+    const savedOpenModalCreativeSize = JSON.parse(localStorage.getItem("openModalCreativeSize"));
+
+    if (savedIsNextSectionOpen !== null) setIsNextSectionOpen(savedIsNextSectionOpen);
+    if (savedIsThirdSectionOpen !== null) setIsThirdSectionOpen(savedIsThirdSectionOpen);
+    if (savedOpenModalProductDetails !== null) setOpenModalProductDetails(savedOpenModalProductDetails);
+    if (savedOpenModalCreativeSize !== null) setOpenModalCreativeSize(savedOpenModalCreativeSize);
+  }, []);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("isNextSectionOpen", JSON.stringify(isNextSectionOpen));
+  }, [isNextSectionOpen]);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("isThirdSectionOpen", JSON.stringify(isThirdSectionOpen));
+  }, [isThirdSectionOpen]);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("openModalProductDetails", JSON.stringify(openModalProductDetails));
+  }, [openModalProductDetails]);
+
+  useEffect(() => {
+    // Save state to localStorage
+    localStorage.setItem("openModalCreativeSize", JSON.stringify(openModalCreativeSize));
+  }, [openModalCreativeSize]);
 
   const toggleNextSectionAccordion = () => {
     setIsNextSectionOpen(!isNextSectionOpen);
@@ -27,10 +63,27 @@ export default function GenerateAd({ setPage, pages }) {
     setIsThirdSectionOpen(true);
   };
 
+  const handleBack = () => {
+    setShowProductDetails(false);
+    setIsNextSectionOpen(false);
+  };
+
+  useEffect(() => {
+    if (isNextSectionOpen && creativeSizeRef.current) {
+      creativeSizeRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isNextSectionOpen]);
+
+  useEffect(() => {
+    if (isThirdSectionOpen && generatedCreativesRef.current) {
+      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isThirdSectionOpen]);
+
   return (
     <div className="flex-grow">
       <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-180px)]">
-        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-6 relative ">
+        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-6 relative">
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon1.svg" alt="" className="w-10 lg:w-14" />
             <span className="flex flex-col">
@@ -48,15 +101,17 @@ export default function GenerateAd({ setPage, pages }) {
             className="absolute bottom-0 right-24 w-32 lg:w-44 hidden md:block"
           />
         </div>
-        <div className="px-4 lg:px-6 flex flex-col gap-6 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+        <div className="px-4 lg:px-6 flex flex-col gap-6 overflow-y-auto " style={{ maxHeight: '70vh' }}>
           {showProductDetails ? (
-            <ProductDetails
-              setIsNextSectionOpen={setIsNextSectionOpen}
-              isCompleted={openModalProductDetails}
-              setIsCompleted={setOpenModalProductDetails}
-              setShowProductDetails={setShowProductDetails}
-              isNewUser={true}
-            />
+            <>
+              <ProductDetails
+                setIsNextSectionOpen={setIsNextSectionOpen}
+                isCompleted={openModalProductDetails}
+                setIsCompleted={setOpenModalProductDetails}
+                setShowProductDetails={setShowProductDetails}
+                isNewUser={true}
+              />
+            </>
           ) : (
             <ExistingProducts
               setIsNextSectionOpen={setIsNextSectionOpen}
@@ -65,23 +120,27 @@ export default function GenerateAd({ setPage, pages }) {
               setShowProductDetails={setShowProductDetails} // Pass the new prop
             />
           )}
-          <CreativeSize
-            isNextSectionOpen={isNextSectionOpen}
-            toggleNextSectionAccordion={toggleNextSectionAccordion}
-            handleNextSection={handleNextSection}
-            setIsLoading={setIsLoading}
-            openModalProductDetails={openModalProductDetails}
-            isCompleted={openModalCreativeSize}
-            setIsCompleted={setOpenModalCreativeSize}
-          />
-          <GeneratedCreatives
-            isThirdSectionOpen={isThirdSectionOpen}
-            toggleThirdSectionAccordion={toggleThirdSectionAccordion}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-            setPage={setPage}
-            openModalCreativeSize={openModalCreativeSize}
-          />
+          <div ref={creativeSizeRef}>
+            <CreativeSize
+              isNextSectionOpen={isNextSectionOpen}
+              toggleNextSectionAccordion={toggleNextSectionAccordion}
+              handleNextSection={handleNextSection}
+              setIsLoading={setIsLoading}
+              openModalProductDetails={openModalProductDetails}
+              isCompleted={openModalCreativeSize}
+              setIsCompleted={setOpenModalCreativeSize}
+            />
+          </div>
+          <div ref={generatedCreativesRef}>
+            <GeneratedCreatives
+              isThirdSectionOpen={isThirdSectionOpen}
+              toggleThirdSectionAccordion={toggleThirdSectionAccordion}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              setPage={setPage}
+              openModalCreativeSize={openModalCreativeSize}
+            />
+          </div>
         </div>
       </div>
     </div>
