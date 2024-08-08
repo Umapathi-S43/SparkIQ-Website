@@ -6,6 +6,8 @@ import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import axios from 'axios';
 import { baseUrl } from '../../utils/Constant'; // Update this path as needed
 
+const companyId = '123'; // Replace with your actual company ID
+
 const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, setShowProductDetails }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [products, setProducts] = useState([]);
@@ -26,9 +28,10 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
 
   const fetchBrands = async () => {
     try {
-      const response = await axios.get(`${baseUrl}/brand/company/{companyid}`);
+      const response = await axios.get(`${baseUrl}/brand/company/${companyId}`);
       console.log('Fetched Brands:', response.data);
-      setBrands(['All Brands', ...(response.data.data || [])]);
+      const brandNames = response.data.data.map(brand => brand.name);
+      setBrands(['All Brands', ...brandNames]);
     } catch (error) {
       console.error('Error fetching brands:', error);
     }
@@ -53,8 +56,8 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
 
   const filteredProducts = products.filter(product => {
     return (selectedBrand === 'All Brands' || product.brand === selectedBrand) &&
-      (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      ((product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())));
   });
 
   const handleNextStep = () => {
@@ -70,6 +73,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
 
   const handleProductClick = (product) => {
     setSelectedProduct(product);
+    handleNextStep();
   };
 
   const isNextStepDisabled = selectedProduct === null;
@@ -126,18 +130,21 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 <MagnifyingGlassIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 focus:text-blue-500" />
               </div>
             </div>
-            <select
-              value={selectedBrand}
-              onChange={handleBrandChange}
-              className="ml-4 p-2 rounded-md text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              {brands.map((brand, index) => (
-                <option key={index} value={brand}>{brand}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedBrand}
+                onChange={handleBrandChange}
+                className="ml-4 p-2 rounded-md text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                style={{ maxHeight: '10vh', overflowY: 'auto' }}
+              >
+                {brands.map((brand, index) => (
+                  <option key={index} value={brand}>{brand}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-5 ml-2 pl-2 justify-start">
+          <div className="flex flex-wrap gap-5 ml-2 pl-2 justify-start" >
             <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
               <div
                 onClick={handleCreateProduct}
@@ -158,11 +165,20 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 onClick={() => handleProductClick(product)}
                 style={selectedProduct === product ? { border: '4px solid transparent', borderImage: 'linear-gradient(201.07deg, #00A7FF 0.53%, #004367 98.24%) 1', borderRadius: '16px' } : { borderRadius: '16px' }}
               >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="object-cover w-full h-48 rounded-lg"
-                />
+                {product.productImagesList?.length ? (
+                  product.productImagesList.map((item, idx) => (
+                    <img
+                      key={idx}
+                      src={item.imageURL}
+                      alt={item.bucketName}
+                      className="object-cover w-full h-48 rounded-lg"
+                    />
+                  ))
+                ) : (
+                  <div className="object-cover w-full h-48 rounded-lg bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500">No Image</span>
+                  </div>
+                )}
                 <div className="text-center flex justify-between w-full px-2">
                   <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">{product.name}</h3>
                   <span className="font-semibold text-[#082A66] group-hover:text-white">{product.price}</span>
@@ -177,15 +193,6 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 )}
               </div>
             ))}
-          </div>
-          <div className="flex justify-center md:justify-start p-2">
-            <button
-              className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"
-              disabled={isNextStepDisabled}
-              onClick={handleNextStep}
-            >
-              Next Step
-            </button>
           </div>
         </>
       )}
