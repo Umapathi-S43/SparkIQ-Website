@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { FaFolder, FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
 import { GoTag } from "react-icons/go";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import link2 from "../../assets/dashboard_img/linksvg1.svg";
 import facomment from "../../assets/dashboard_img/facomment.svg";
 import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
@@ -15,6 +15,11 @@ import { baseUrl } from "../../components/utils/Constant";
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const productID = params.get("id");
+
   const [productDetails, setProductDetails] = useState({
     productName: "",
     productDescription: "",
@@ -23,10 +28,45 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     imageFile: null,
     logoURL: "",
     brandID: "",
+    isEdit: false,
   });
   const [brands, setBrands] = useState([]);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProducts = async (id) => {
+      try {
+        const response = await axios.get(`${baseUrl}/product`);
+        if (isMounted) {
+          const foundProduct = response.data.data.find(
+            (brand) => brand.id === id
+          );
+          if (foundProduct) {
+            setProductDetails({
+              productName: foundProduct.name,
+              productDescription: foundProduct.description,
+              productURL: foundProduct.productURL,
+              brandID: foundProduct.brandID,
+              isEdit: true,
+            });
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    if (productID) {
+      fetchProducts(productID);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productID, baseUrl, setProductDetails]);
 
   const handleFileChange = (event) => {
     if (event.target.files) {
@@ -84,7 +124,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     fetchBrands();
   }, []);
 
-  console.log(brands, "products", productDetails);
 
   useEffect(() => {
     if (productDetails.imageFile) {
@@ -136,8 +175,28 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  const handleEditProduct = async () => {
+    const editProduct = {
+      brandID: productDetails.brandID,
+      name: productDetails.productName,
+      description: productDetails.productDescription,
+      productImagesList: [
+        {
+          imageURL: productDetails.logoURL,
+        },
+      ],
+    };
+
+    try {
+      await axios.post(`${baseUrl}/product`, editProduct);
+      toast.success("Product edited successfully");
+      navigate("/productspage");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleScanUrl = async (e) => {
-    console.log(`${baseUrl}/scrap/product?url=${productDetails.productURL}`);
     try {
       await axios
         .get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`)
@@ -293,6 +352,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   type="text"
                   placeholder="Your landing page or website (Example: spark.ai)"
                   id="productURL"
+                  value={productDetails.productURL}
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
@@ -347,7 +407,12 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           <div className="flex justify-center p-2">
             <img src="/orIcon.svg" alt="" />
           </div>
-          <form onSubmit={handleAdProduct} className="p-2">
+          <form
+            onSubmit={
+              productDetails.isEdit ? handleEditProduct : handleAdProduct
+            }
+            className="p-2"
+          >
             <p className="text-lg pb-2 text-[#082A66] ml-2">
               Enter Product Details Manually
             </p>
@@ -361,6 +426,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   type="text"
                   placeholder="Enter your product name"
                   id="productName"
+                  value={productDetails.productName}
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                   autoComplete="off"
@@ -377,6 +443,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 <textarea
                   placeholder="Enter your Product Description"
                   id="productDescription"
+                  value={productDetails.productDescription}
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full h-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
@@ -388,7 +455,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 disabled={isNextStepDisabled}
                 onClick={handleAdProduct}
               >
-                Add Product
+                {productDetails.isEdit ? "Edit Product" : "Add Product"}
               </button>
             </div>
           </form>
