@@ -39,7 +39,7 @@ const Products = () => {
     setSearchQuery(event.target.value);
   };
 
-  const filteredProducts = products.filter(
+  const filteredProducts = products?.filter(
     (product) =>
       (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -112,7 +112,12 @@ const Products = () => {
           {filteredProducts.map((product, index) => (
             <div
               key={index}
-              className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 lg:w-80 lg:h-80 md:w-80 md:h-80 w-72 h-72 flex flex-col items-center justify-between hover:transition-colors duration-200 glass-gradient-hover"
+              className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 lg:w-80 lg:h-80 md:w-80 md:h-80 w-72 h-72 flex flex-col items-center justify-between hover:transition-colors duration-200 glass-gradient-hover cursor-pointer"
+              onClick={() =>
+                navigate(
+                  `/productdetails?id=${encodeURIComponent(product.id)}`
+                )
+              }
             >
               {product.productImagesList?.map((item) => (
                 <img
