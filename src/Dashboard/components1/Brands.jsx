@@ -43,6 +43,12 @@ const Brands = () => {
     fetchBrands();
   }, []);
 
+  const filteredBrands = brands.filter(
+    (brand) =>
+      brand.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      brand.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="flex-grow mb-6">
       <div className="max-w-6xl mx-auto border border-[#fcfcfc] rounded-3xl flex flex-col items-center">
@@ -110,7 +116,7 @@ const Brands = () => {
                 </p>
               </div>
             </div>
-            {brands.map((brand, index) => (
+            {filteredBrands.map((brand, index) => (
               <div
                 key={index}
                 className="group brand-card1 flex items-center justify-center w-64 h-80"

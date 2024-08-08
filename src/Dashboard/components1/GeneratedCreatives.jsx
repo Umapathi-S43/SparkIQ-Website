@@ -4,6 +4,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import Loader from '../../components/advert/Loader';
 import defaultAdImage from '../../assets/dashboard_img/saved_products.svg'; // Adjust the path as needed
+import PreviewBtn from './previewbtn'; // Adjust the path as needed
 
 const GeneratedCreatives = ({
   isThirdSectionOpen,
@@ -17,6 +18,7 @@ const GeneratedCreatives = ({
   const [savedProducts, setSavedProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,6 +72,14 @@ const GeneratedCreatives = ({
     navigate('/AdPreview');
   };
 
+  const handlePreview = () => {
+    setIsPreviewVisible(true);
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewVisible(false);
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearchQuery = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesBrand = selectedBrand ? product.brand === selectedBrand : true;
@@ -77,7 +87,20 @@ const GeneratedCreatives = ({
   });
 
   return (
-    <div className="container lg:mb-4 sm:mx-auto mb-4 lg:p-0 sm:p-4 flex-grow">
+    <div className="container lg:mb-4 sm:mx-auto mb-4 lg:p-0 sm:p-4 flex-grow relative">
+      {isPreviewVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+          <div className="relative">
+            <PreviewBtn />
+            <button
+              className="absolute top-14 right-14  px-2 py-1 rounded-md  text-md font-bold"
+              onClick={handleClosePreview}
+            >
+              X
+            </button>
+          </div>
+        </div>
+      )}
       <style>{`
         .button-container {
           display: flex;
@@ -248,7 +271,7 @@ const GeneratedCreatives = ({
                           </button>
                           <button
                             className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                            onClick={() => navigate('/edit_template')}
+                            onClick={handleEdit}
                           >
                             <div className="button-container">
                               <svg className="edit-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -260,7 +283,7 @@ const GeneratedCreatives = ({
                           </button>
                           <button
                             className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                            onClick={() => navigate('/customsample')}
+                            onClick={handlePreview}
                           >
                             <div className="button-container">
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="#A8A8A8" width="20" height="20">
