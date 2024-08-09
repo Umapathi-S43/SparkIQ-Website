@@ -9,6 +9,8 @@ import { baseUrl } from "../../components/utils/Constant";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState("AllBrands");
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -27,8 +29,19 @@ const Products = () => {
     }
   };
 
+  const fetchBrands = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/brand/company/123`);
+      setBrands(response.data.data);
+    } catch (error) {
+      console.log(error);
+      setError("Failed to fetch brands.");
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchBrands();
   }, []);
 
   const handleCreateProduct = () => {
@@ -39,11 +52,18 @@ const Products = () => {
     setSearchQuery(event.target.value);
   };
 
-  const filteredProducts = products?.filter(
-    (product) =>
+  const handleBrandChange = (event) => {
+    setSelectedBrand(event.target.value);
+  };
+
+  const filteredProducts = products?.filter((product) => {
+    const matchesSearchQuery =
       (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesBrand =
+      selectedBrand === "AllBrands" || product.brandID === selectedBrand;
+    return matchesSearchQuery && matchesBrand;
+  });
 
   return (
     <div
@@ -72,8 +92,8 @@ const Products = () => {
             className="absolute bottom-0 right-24 w-44 hidden lg:block"
           />
         </div>
-        <div className="flex justify-end w-full px-5">
-          <div className="flex items-center justify-end bg-white rounded-xl mr-10">
+        <div className="flex justify-end w-full px-5 gap-4">
+          <div className="flex items-end justify-end bg-white rounded-xl mr-2">
             <div className="relative w-full">
               <input
                 type="text"
@@ -85,9 +105,23 @@ const Products = () => {
               <MagnifyingGlassIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 focus:text-blue-500" />
             </div>
           </div>
+          <div className="flex items-center justify-start bg-white rounded-xl">
+            <select
+              value={selectedBrand}
+              onChange={handleBrandChange}
+              className="w-full text-sm leading-6 text-slate-900 rounded-md py-2 pl-3 pr-10 ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="AllBrands">All Brands</option>
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div
-          className="flex flex-wrap sm:ml-1 lg:ml-12 sm:mx-auto justify-start pb-2 w-90% gap-8 overflow-auto"
+          className="flex flex-wrap justify-start pb-2 w-full gap-8 overflow-auto lg:px-10"
           style={{ maxHeight: "45vh" }}
         >
           <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
@@ -132,7 +166,7 @@ const Products = () => {
                   {product.name}
                 </h3>
                 <span className="font-semibold text-[#082A66] group-hover:text-white">
-                  {product.price}
+                  {product.price} {product.priceType}
                 </span>
               </div>
               <div className="text-justify w-full px-2 line-clamp-3">
