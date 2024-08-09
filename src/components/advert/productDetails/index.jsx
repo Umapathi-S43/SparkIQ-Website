@@ -131,10 +131,10 @@ export default function ProductDetails({
     }
   };
 
-  const handleDeleteImage = (url) => {
-    setImages(images.filter((img) => URL.createObjectURL(img) !== url));
-    if (selectedImageUrl === url && selectedImageType === 'uploaded') {
-      setSelectedImageUrl(null);
+  const handleDeleteImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+    if (selectedImageIndex === index && selectedImageType === 'uploaded') {
+      setSelectedImageIndex(null);
       setSelectedImageType(null);
       setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
     }
@@ -421,7 +421,7 @@ export default function ProductDetails({
                             className="absolute top-1 left-1 text-red-500"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteImage(imageUrl);
+                              handleDeleteImage(index);
                             }}
                           >
                             <FaTrash />
@@ -477,10 +477,10 @@ export default function ProductDetails({
                 </div>
               </div>
             </div>
-            <div className="flex justify-center p-2">
+            <div className="flex justify-center">
               <img src="/orIcon.svg" alt="" />
             </div>
-            <div className="flex flex-col md:flex-row p-2 m-2">
+            <div className="flex flex-col md:flex-row p-2">
               <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full ${productDetails.logoURL || productDetails.imageFile ? "md:w-3/4" : "md:w-full"} p-4`}>
                 <span className="flex items-center gap-4 text-lg font-bold">
                   <div 
@@ -624,7 +624,7 @@ export default function ProductDetails({
               </div>
             </div>
 
-            <div className="flex justify-center p-2">
+            <div className="flex justify-center">
               <img src="/orIcon.svg" alt="" />
             </div>
             <form

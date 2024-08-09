@@ -20,7 +20,7 @@ const discountOptions = ["Price", "Percentage"];
 export default function AdProduct({ setIsNextSectionOpen }) {
   const [images, setImages] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null); // Track the selected image URL
   const [selectedImageType, setSelectedImageType] = useState(null); // 'uploaded' or 'generated'
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -85,7 +85,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
       const newFiles = Array.from(event.target.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
       if (newFiles.length === 1) {
-        setSelectedImageIndex(images.length);
+        setSelectedImageUrl(URL.createObjectURL(newFiles[0]));
         setSelectedImageType('uploaded');
         setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
       }
@@ -98,7 +98,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
       const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length);
       setImages([...images, ...newFiles]);
       if (newFiles.length === 1) {
-        setSelectedImageIndex(images.length);
+        setSelectedImageUrl(URL.createObjectURL(newFiles[0]));
         setSelectedImageType('uploaded');
         setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
         toast.success("Image uploaded successfully");
@@ -110,22 +110,24 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     event.preventDefault();
   };
 
-  const handleImageClick = (index, isGenerated = false) => {
-    setSelectedImageIndex(index);
+  const handleImageClick = (imageUrl, isGenerated = false) => {
+    setSelectedImageUrl(imageUrl);
     setSelectedImageType(isGenerated ? 'generated' : 'uploaded');
     if (isGenerated) {
-      setProductDetails({ ...productDetails, imageFile: null, logoURL: generatedImages[index].imgUrl });
+      setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
       toast.success("Image selected successfully");
     } else {
-      setProductDetails({ ...productDetails, imageFile: images[index], logoURL: "" });
+      setProductDetails({ ...productDetails, imageFile: images.find(img => URL.createObjectURL(img) === imageUrl), logoURL: "" });
       toast.success("Image uploaded successfully");
     }
   };
 
   const handleDeleteImage = (index) => {
+    const removedImage = images[index];
     setImages(images.filter((_, i) => i !== index));
-    if (selectedImageIndex === index && selectedImageType === 'uploaded') {
-      setSelectedImageIndex(null);
+    const imageUrl = URL.createObjectURL(removedImage);
+    if (selectedImageUrl === imageUrl && selectedImageType === 'uploaded') {
+      setSelectedImageUrl(null);
       setSelectedImageType(null);
       setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
     }
@@ -369,7 +371,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     <div
                       key={index}
                       className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
-                      onClick={() => handleImageClick(index)}
+                      onClick={() => handleImageClick(URL.createObjectURL(image))}
                     >
                       <img
                         src={URL.createObjectURL(image)}
@@ -385,7 +387,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                       >
                         <FaTrash />
                       </button>
-                      {selectedImageIndex === index && selectedImageType === 'uploaded' && (
+                      {selectedImageUrl === URL.createObjectURL(image) && selectedImageType === 'uploaded' && (
                         <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
                           <BiCheck size={16} />
                         </div>
@@ -481,14 +483,14 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   <div
                     key={index}
                     className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded`}
-                    onClick={() => handleImageClick(index, true)}
+                    onClick={() => handleImageClick(image.imgUrl, true)}
                   >
                     <img
                       src={image.imgUrl}
                       alt={`Generated ${index}`}
                       className="object-cover w-full h-48 rounded"
                     />
-                    {selectedImageIndex === index && selectedImageType === 'generated' && (
+                    {selectedImageUrl === image.imgUrl && selectedImageType === 'generated' && (
                       <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
                         <BiCheck size={16} />
                       </div>
@@ -678,7 +680,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                         background: "[#D9E9F2]",
                         backgroundPosition: "right 10px center",
                         backgroundRepeat: "no-repeat",
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                       }}
                     >
                       {discountOptions.map((discount, index) => (
