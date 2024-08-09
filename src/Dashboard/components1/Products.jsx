@@ -105,7 +105,7 @@ const Products = () => {
               <MagnifyingGlassIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 focus:text-blue-500" />
             </div>
           </div>
-          <div className="flex items-center justify-start bg-white rounded-xl">
+          <div className="flex items-center justify-start  rounded-xl">
             <select
               value={selectedBrand}
               onChange={handleBrandChange}
