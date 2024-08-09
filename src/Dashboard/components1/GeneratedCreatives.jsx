@@ -21,7 +21,7 @@ const GeneratedCreatives = ({
   const [products, setProducts] = useState([]);
   const [savedProducts, setSavedProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedTab, setSelectedTab] = useState("Brand Color");
   const [modelData, setModelData] = useState({
     model1: [],
     model2: [],
@@ -38,8 +38,6 @@ const GeneratedCreatives = ({
   const modelName1 = "PAS";
   const modelName2 = "AIDA";
   const modelName3 = "USP";
-
-  // console.log(modelData, "storedImageSize");
 
   const navigate = useNavigate();
 
@@ -72,8 +70,8 @@ const GeneratedCreatives = ({
     setSearchQuery(event.target.value);
   };
 
-  const handleBrandChange = (event) => {
-    setSelectedBrand(event.target.value);
+  const handleTabChange = (tab) => {
+    setSelectedTab(tab);
   };
 
   const handleSave = (product) => {
@@ -172,17 +170,12 @@ const GeneratedCreatives = ({
     modelName2,
     modelName3,
   ]);
-  
-  
 
   const FilteredData = ({ filteredModel }) => {
     const filteredProducts = filteredModel.filter((product) => {
       const matchesSearchQuery =
         product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description.toLowerCase().includes(searchQuery.toLowerCase());
-      // const matchesBrand = selectedBrand
-      //   ? product.brand === selectedBrand
-      //   : true;
       return matchesSearchQuery;
     });
 
@@ -201,17 +194,6 @@ const GeneratedCreatives = ({
             <div className="button-wrapper mt-1">
               <button
                 className="text-sm text-[#A8A8A8]"
-                // className={`text-sm ${
-                //   savedProducts.some(
-                //     (savedProduct) => savedProduct.name === product.name
-                //   )
-                //     ? "bg-gray-200 cursor-not-allowed"
-                //     : "text-[#A8A8A8]"
-                // } rounded-lg py-1 px-2 button-clear`}
-                // onClick={() => handleSave(product)}
-                // disabled={savedProducts.some(
-                //   (savedProduct) => savedProduct.name === product.name
-                // )}
               >
                 <div className="button-container">
                   <svg
@@ -361,20 +343,24 @@ const GeneratedCreatives = ({
                           <MagnifyingGlassIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 focus:text-blue-500" />
                         </div>
                       </div>
-                      <div className="flex items-center bg-white rounded-xl mr-4">
-                        <select
-                          value={selectedBrand}
-                          onChange={handleBrandChange}
-                          className="w-full text-sm leading-6 text-slate-900 placeholder-slate-400 rounded-md py-2 pl-3 pr-10 ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
-                        >
-                          <option value="">All Brands</option>
-                          {/* Add your brand options here */}
-                          <option value="Brand1">Brand1</option>
-                          <option value="Brand2">Brand2</option>
-                          <option value="Brand3">Brand3</option>
-                        </select>
-                      </div>
                     </div>
+                  </div>
+                  <div className="flex justify-center">
+                  <div className="tab-buttons flex justify-center items-center gap-12 w-4/6 mb-2  border-4 py-1 rounded-xl shadow-md">
+                    {["Brand Color", "Single Color", "Gradient Color", "Templates"].map((tab) => (
+                      <button
+                        key={tab}
+                        className={`px-5 py-2 rounded-lg ${
+                          selectedTab === tab
+                            ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
+                            : "bg-[#FCFCFC20] text-gray-700  border-2"
+                        }`}
+                        onClick={() => handleTabChange(tab)}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
                   </div>
                   <div style={{ maxHeight: "80vh" }}>
                     {loadingModel1 ? (

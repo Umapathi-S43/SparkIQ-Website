@@ -82,12 +82,19 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const handleFileChange = (event) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files).slice(0, 3 - images.length);
-      setImages([...images, ...newFiles]);
-      if (newFiles.length === 1) {
-        setSelectedImageUrl(URL.createObjectURL(newFiles[0]));
+      const newFiles = Array.from(event.target.files).slice(0, 3 - images.length).map((file, index) => ({
+        file,
+        id: `${file.name}-${file.size}-${index}`, // Create a unique ID
+        url: URL.createObjectURL(file)
+      }));
+
+      const newImages = [...images, ...newFiles];
+      setImages(newImages);
+
+      if (newFiles.length > 0) {
+        setSelectedImageUrl(url);
         setSelectedImageType('uploaded');
-        setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
+        setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
       }
     }
   };
@@ -95,12 +102,19 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const handleDrop = (event) => {
     event.preventDefault();
     if (event.dataTransfer.files) {
-      const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length);
-      setImages([...images, ...newFiles]);
-      if (newFiles.length === 1) {
-        setSelectedImageUrl(URL.createObjectURL(newFiles[0]));
+      const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length).map((file, index) => ({
+        file,
+        id: `${file.name}-${file.size}-${index}`, // Create a unique ID
+        url: URL.createObjectURL(file)
+      }));
+
+      const newImages = [...images, ...newFiles];
+      setImages(newImages);
+
+      if (newFiles.length > 0) {
+        setSelectedImageUrl(newFiles[0].url);
         setSelectedImageType('uploaded');
-        setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
+        setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
         toast.success("Image uploaded successfully");
       }
     }
@@ -117,7 +131,8 @@ export default function AdProduct({ setIsNextSectionOpen }) {
       setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
       toast.success("Image selected successfully");
     } else {
-      setProductDetails({ ...productDetails, imageFile: images.find(img => URL.createObjectURL(img) === imageUrl), logoURL: "" });
+      const selectedImage = images.find(img => img.url === imageUrl);
+      setProductDetails({ ...productDetails, imageFile: selectedImage.file, logoURL: "" });
       toast.success("Image uploaded successfully");
     }
   };
@@ -125,8 +140,8 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const handleDeleteImage = (index) => {
     const removedImage = images[index];
     setImages(images.filter((_, i) => i !== index));
-    const imageUrl = URL.createObjectURL(removedImage);
-    if (selectedImageUrl === imageUrl && selectedImageType === 'uploaded') {
+
+    if (selectedImageUrl === removedImage.url && selectedImageType === 'uploaded') {
       setSelectedImageUrl(null);
       setSelectedImageType(null);
       setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
@@ -178,7 +193,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   const uploadImage = async () => {
     const uploadData = new FormData();
-    uploadData.append("file", productDetails.imageFile);
     uploadData.append("customerId", "123");
 
     try {
@@ -319,23 +333,26 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     (productDetails.discount === "Percentage" &&
       parseFloat(productDetails.customDiscount) > 100);
 
+  const generatedImageSectionWidth = "w-full lg:w-2/6"; // Fixed width for generated images
+  const generatedImageContainerClass = "w-full"; // Fixed width for generated image container
+
   const imageContainerClass =
-    images.length === 2
+    images.length === 2 || (selectedImageType === 'generated' && images.length > 1)
       ? "w-full lg:w-1/2"
-      : images.length === 3
+      : images.length === 3 || (selectedImageType === 'generated' && images.length > 2)
       ? "w-full lg:w-1/3"
       : "w-full";
 
   const imageSectionWidth =
-    images.length === 1
-      ? "w-full lg:w-2/6"
-      : images.length === 2
+    images.length === 1 || (selectedImageType === 'generated' && images.length > 0)
+      ? generatedImageSectionWidth
+      : images.length === 2 || (selectedImageType === 'generated' && images.length === 1)
       ? "w-full lg:w-3/6"
       : "w-full lg:w-4/6";
 
   return (
     <div className="overflow-auto hide-scrollbar">
-      <section className="max-w-6xl flex justify-center lg:ml-8 mb-4 pb-4 border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] flex-col gap-6 relative z-10">
+      <div className="max-w-6xl flex justify-center lg:ml-12 mb-4 pb-4 border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] flex-col gap-6 relative z-10">
         <div className="flex justify-between items-center rounded-t-[32px] relative bg-[rgba(252,252,252,0.40)] h-28 p-6 m-0">
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon2.svg" alt="" />
@@ -359,11 +376,11 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           style={{ maxHeight: "55vh" }}
         >
           <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
-            {images.length > 0 && (
+            {images.length > 0 && selectedImageType !== 'generated' && (
               <div
                 className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}
               >
-                <h6 className="font-bold pb-4 mt-2 mb-4">
+                <h6 className="font-bold pb-2 mt-2 mb-4">
                   Select Your Desired Image
                 </h6>
                 <div className="flex gap-4 flex-wrap md:flex-nowrap">
@@ -371,12 +388,12 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     <div
                       key={index}
                       className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
-                      onClick={() => handleImageClick(URL.createObjectURL(image))}
+                      onClick={() => handleImageClick(image.url)}
                     >
                       <img
-                        src={URL.createObjectURL(image)}
+                        src={productDetails.logoURL || image.url}
                         alt={`Uploaded ${index}`}
-                        className="object-cover w-full h-48 rounded"
+                        className="object-cover w-full h-52 rounded"
                       />
                       <button
                         className="absolute top-1 left-1 text-red-500"
@@ -387,61 +404,86 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                       >
                         <FaTrash />
                       </button>
-                      {selectedImageUrl === URL.createObjectURL(image) && selectedImageType === 'uploaded' && (
-                        <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
-                          <BiCheck size={16} />
-                        </div>
+                      {selectedImageUrl === image.url && selectedImageType === 'uploaded' && (
+                        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                        <BiCheck size={16} />
+                      </div>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            <div
-              className={`bg-white rounded-[30px] shadow-md p-5 ${
-                images.length > 0
-                  ? images.length === 1
-                    ? "w-full md:w-5/6"
-                    : images.length === 2
-                    ? "w-full md:w-4/6"
-                    : "w-full md:w-3/6"
-                  : "w-full"
-              } lg:h-82`}
-            >
+            {selectedImageType === 'generated' && (
               <div
-                className="border border-[#605880] border-dashed rounded-[20px] flex items-center justify-center py-12 px-6"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
+                className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${generatedImageSectionWidth} h-auto lg:h-80`}
               >
-                <span className="flex flex-col items-center justify-center">
-                  <img src="/icon3.svg" alt="" className="w-10" />
-                  <h6 className="text-2xl font-bold">Upload a product Image</h6>
-                  <p>or drag and drop a product image here.</p>
-                  <p className="font-medium mt-2 mb-4">
-                    You can select a maximum of 3 photo(s)
-                  </p>
-                  <div>
-                    <label className="custom-button px-6 flex gap-[10px] text-white rounded-[32px] font-semibold items-center justify-between h-12 cursor-pointer shadow-2xl">
-                      Your Library <FaFolder />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={handleFileChange}
-                        disabled={images.length >= 3}
-                      />
-                    </label>
+                <h6 className="font-bold pb-4 mt-2 mb-2">
+                  Selected Image
+                </h6>
+                <div className="flex gap-4 flex-wrap md:flex-nowrap">
+                  <div
+                    className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${generatedImageContainerClass}`}
+                    onClick={() => handleImageClick(productDetails.logoURL, true)}
+                  >
+                    <img
+                      src={productDetails.logoURL}
+                      alt="Selected Generated Image"
+                      className="object-cover w-full h-52 rounded"
+                    />
+                    <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                      <BiCheck size={16} />
+                    </div>
                   </div>
-                </span>
+                </div>
               </div>
-            </div>
+            )}
+            <div className={`bg-white rounded-[30px] shadow-md p-5 ${
+                  selectedImageType === 'generated'
+                    ? "w-full md:w-5/6"
+                    : images.length > 0
+                    ? images.length === 1
+                      ? "w-full md:w-5/6"
+                      : images.length === 2
+                      ? "w-full md:w-4/6"
+                      : "w-full md:w-3/6"
+                    : "w-full"
+                } lg:h-82`}
+              >
+                <div
+                  className="border border-[#605880] border-dashed rounded-[20px] flex items-center justify-center py-12 px-6"
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                >
+                  <span className="flex flex-col items-center justify-center">
+                    <img src="/icon3.svg" alt="" className="w-10" />
+                    <h6 className="text-2xl font-bold">Upload a product Image</h6>
+                    <p>or drag and drop a product image here.</p>
+                    <p className="font-medium mt-2 mb-4">
+                      You can select a maximum of 3 photo(s)
+                    </p>
+                    <div>
+                      <label className="custom-button px-6 flex gap-[10px] text-white rounded-[32px] font-semibold items-center justify-between h-12 cursor-pointer shadow-2xl">
+                        Your Library <FaFolder />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleFileChange}
+                          disabled={images.length >= 3}
+                        />
+                      </label>
+                    </div>
+                  </span>
+                </div>
+              </div>
           </div>
           <div className="flex justify-center p-2">
             <img src="/orIcon.svg" alt="" />
           </div>
           <div className="flex flex-col md:flex-row p-2 m-2">
-            <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full ${productDetails.logoURL || productDetails.imageFile ? "md:w-3/4" : "md:w-full"} p-4`}>
+            <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-4`}>
               <span className="flex items-center gap-4 text-lg font-bold">
                 <div 
                   className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3 flex justify-center items-center"
@@ -464,15 +506,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                 </button>
               </span>
             </div>
-            {(productDetails.logoURL || productDetails.imageFile) && (
-              <div className="w-1/4 p-4 border border-[#FCFCFC] bg-[#FCFCFC60] ml-2 rounded-[12px]">
-                <img
-                  src={productDetails.logoURL || URL.createObjectURL(productDetails.imageFile)}
-                  alt="Selected"
-                  className="object-cover w-full h-40 rounded"
-                />
-              </div>
-            )}
+            
           </div>
 
           {generatedImages.length > 0 && (
@@ -488,7 +522,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     <img
                       src={image.imgUrl}
                       alt={`Generated ${index}`}
-                      className="object-cover w-full h-48 rounded"
+                      className="object-cover w-full h-52 rounded"
                     />
                     {selectedImageUrl === image.imgUrl && selectedImageType === 'generated' && (
                       <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
@@ -712,7 +746,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             </div>
           </form>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
