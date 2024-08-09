@@ -88,7 +88,7 @@ const BrandSetup = () => {
               showSubmitButton: true,
             });
             setCompletedSections({ 1: true, 2: true, 3: true });
-            setExpandedSection(1);
+            setExpandedSection(null);
           }
         }
       } catch (error) {
@@ -106,8 +106,14 @@ const BrandSetup = () => {
   }, [brandName]);
 
   useEffect(() => {
-    setImageSrc(formInputs.logoURL || gallery || formInputs.brandLogo);
-  }, [gallery, formInputs.logoURL, formInputs.brandLogo]);
+    if (formInputs.brandLogo) {
+      setImageSrc(formInputs.brandLogo);
+    } else if (formInputs.logoURL) {
+      setImageSrc(formInputs.logoURL);
+    } else {
+      setImageSrc(gallery);
+    }
+  }, [formInputs.brandLogo, formInputs.logoURL]);
 
   const handleLogoUpload = (event) => {
     const file = event.target.files[0];
@@ -140,6 +146,13 @@ const BrandSetup = () => {
   };
 
   const handleSaveAndContinue = (section) => {
+    if (
+      (section === 1 && (!formInputs.brandName || !formInputs.brandDescription)) ||
+      (section === 2 && !formInputs.brandLogo && !formInputs.logoURL)
+    ) {
+      toast.error("Please fill in all the required fields.");
+      return;
+    }
     const newCompletedSections = { ...completedSections };
     newCompletedSections[section] = true;
     setCompletedSections(newCompletedSections);
@@ -186,7 +199,9 @@ const BrandSetup = () => {
   };
 
   const toggleSection = (section) => {
-    setExpandedSection((prev) => (prev === section ? null : section));
+    if (section === 1 || completedSections[section - 1]) {
+      setExpandedSection((prev) => (prev === section ? null : section));
+    }
   };
 
   const truncateText = (text, maxLength) => {
@@ -197,6 +212,11 @@ const BrandSetup = () => {
   };
 
   const handleCreateBrand = async () => {
+    if (!formInputs.brandName || !formInputs.brandDescription || !formInputs.logoURL) {
+      toast.error("Please fill in all the required fields.");
+      return;
+    }
+
     const newBrand = {
       id: "123",
       name: formInputs.brandName,
@@ -219,6 +239,11 @@ const BrandSetup = () => {
   };
 
   const handleEditBrand = async () => {
+    if (!formInputs.brandName || !formInputs.brandDescription || !formInputs.logoURL) {
+      toast.error("Please fill in all the required fields.");
+      return;
+    }
+
     const editBrand = {
       id: formInputs.brandId,
       name: formInputs.brandName,
@@ -397,12 +422,10 @@ const BrandSetup = () => {
               )}
             </div>
             <div
-              onClick={() => toggleSection(2)}
+              onClick={() => (formInputs.isEdit || completedSections[1]) ? toggleSection(2) : null}
               className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${
                 expandedSection === 2 ? "bg-[rgba(252,252,252,0.25)]" : ""
-              } ${
-                formInputs.isEdit ? "" : !completedSections[1] ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              } ${!formInputs.isEdit && !completedSections[1] ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {completedSections[2] && (
                 <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
@@ -426,7 +449,7 @@ const BrandSetup = () => {
                 {completedSections[2] && (
                   <div className="flex items-center ml-auto bg-white rounded-lg p-1">
                     <img
-                      src={formInputs.logoURL || formInputs.brandLogo}
+                      src={formInputs.brandLogo || formInputs.logoURL}
                       alt="Brand Logo"
                       className="w-12 h-7 object-cover rounded-md"
                     />
@@ -482,12 +505,10 @@ const BrandSetup = () => {
               )}
             </div>
             <div
-              onClick={() => toggleSection(3)}
+              onClick={() => (formInputs.isEdit || completedSections[2]) ? toggleSection(3) : null}
               className={`relative items-center border border-[#fcfcfc] p-0 rounded-2xl cursor-pointer ${
                 expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
-              } ${
-                formInputs.isEdit ? "" : !completedSections[2] ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              } ${!formInputs.isEdit && !completedSections[2] ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {completedSections[3] && (
                 <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">

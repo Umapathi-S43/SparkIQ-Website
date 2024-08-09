@@ -186,7 +186,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         })
         .then((res) => {
           setProductDetails({ ...productDetails, logoURL: res.data.data.url });
-          toast.success("Image upload successful");
         });
     } catch (error) {
       console.log(error);
@@ -502,7 +501,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   className="w-fit custom-button rounded-[10px] text-white py-2 px-5 font-medium"
                   onClick={() => handlePageChange(currentPage > 1 ? currentPage - 1 : 1)}
                 >
-                  Prev {currentPage > 1 ? currentPage - 1 : ''}
+                  Prev 
                 </button>
                 <button
                   className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"

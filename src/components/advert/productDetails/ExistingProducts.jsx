@@ -14,13 +14,17 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   const [brands, setBrands] = useState(['All Brands']);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectedBrand, setSelectedBrand] = useState('All Brands');
+  const [selectedBrand, setSelectedBrand] = useState('all'); // Set 'all' as the default value
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (brandId) => {
     try {
       const response = await axios.get(`${baseUrl}/product`);
       console.log('Fetched Products:', response.data);
-      setProducts(response.data.data || []);
+      if (brandId) {
+        setProducts(response.data.data.filter(product => product.brandID === brandId));
+      } else {
+        setProducts(response.data.data);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -30,15 +34,15 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
     try {
       const response = await axios.get(`${baseUrl}/brand/company/${companyId}`);
       console.log('Fetched Brands:', response.data);
-      const brandNames = response.data.data.map(brand => brand.name);
-      setBrands(['All Brands', ...brandNames]);
+      const brandNames = response.data.data.map(brand => ({ id: brand.id, name: brand.name }));
+      setBrands([{ id: 'all', name: 'All Brands' }, ...brandNames]);
     } catch (error) {
       console.error('Error fetching brands:', error);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(); // Fetch all products initially
     fetchBrands();
   }, []);
 
@@ -51,11 +55,13 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   };
 
   const handleBrandChange = (event) => {
-    setSelectedBrand(event.target.value);
+    const brandId = event.target.value;
+    setSelectedBrand(brandId);
+    fetchProducts(brandId === 'all' ? null : brandId);
   };
 
   const filteredProducts = products.filter(product => {
-    return (selectedBrand === 'All Brands' || product.brand === selectedBrand) &&
+    return (selectedBrand === 'all' || product.brandID === selectedBrand) &&
       ((product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())));
   });
@@ -138,7 +144,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 style={{ maxHeight: '10vh', overflowY: 'auto' }}
               >
                 {brands.map((brand, index) => (
-                  <option key={index} value={brand}>{brand}</option>
+                  <option key={brand.id} value={brand.id}>{brand.name}</option>
                 ))}
               </select>
             </div>
