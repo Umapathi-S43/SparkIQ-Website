@@ -3,9 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import Loader from "../../components/advert/Loader";
-import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
-import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
-import defaultAdImage from "../../assets/dashboard_img/saved_products.svg"; // Adjust the path as needed
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 import "./GeneratedCreatives.css";
@@ -33,11 +30,14 @@ const GeneratedCreatives = ({
 
   const storedProductID = JSON.parse(localStorage.getItem("productId")) || null;
   const storedImageSize = JSON.parse(localStorage.getItem("imageSize")) || "";
-  const cleanedSize = storedImageSize.replace(/[()]/g, "");
+  const cleanedSize = storedImageSize.replace(/[()]/g, ""); // Ensure proper formatting of image size
 
-  const modelName1 = "PAS";
-  const modelName2 = "AIDA";
-  const modelName3 = "USP";
+  const templateColors = {
+    "Brand Color": "brand_color",
+    "Single Color": "plain_color",
+    "Gradient Color": "gradient_color",
+    "Templates": "template_color",
+  };
 
   const navigate = useNavigate();
 
@@ -102,54 +102,56 @@ const GeneratedCreatives = ({
     if (isLoading) {
       const fetchModels = async () => {
         try {
+          // API call to generate the first model
           const response1 = await axios.post(
-            `${baseUrl}/generate/{productId}/{imageSize}/{modelName}?productId=${storedProductID}&imageSize=${cleanedSize}&modelName=${modelName1}`
+            `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/unaware`
           );
           if (response1.data.message) {
+            // API call to fetch images for the generated model (e.g., PAS)
             const res1 = await axios.get(`${baseUrl}/generated-images/model/PAS`);
             setModelData((prevData) => ({
               ...prevData,
-              model1: res1.data,
+              model1: res1.data, // Update the model data with the fetched images
             }));
-            console.log(res1.data, 'data1');
           }
-          console.log(response1.data, 'datares1');
           setLoadingModel1(false);
         } catch (error) {
           console.error("Failed to fetch PAS model", error);
           setLoadingModel1(false);
         }
-  
+
         try {
+          // API call to generate the second model
           const response2 = await axios.post(
-            `${baseUrl}/generate/{productId}/{imageSize}/{modelName}?productId=${storedProductID}&imageSize=${cleanedSize}&modelName=${modelName2}`
+            `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/problem aware`
           );
           if (response2.data.message) {
+            // API call to fetch images for the generated model (e.g., AIDA)
             const res2 = await axios.get(`${baseUrl}/generated-images/model/AIDA`);
             setModelData((prevData) => ({
               ...prevData,
-              model2: res2.data,
+              model2: res2.data, // Update the model data with the fetched images
             }));
           }
-          console.log(response2.data.data);
           setLoadingModel2(false);
         } catch (error) {
           console.error("Failed to fetch AIDA model", error);
           setLoadingModel2(false);
         }
-  
+
         try {
+          // API call to generate the third model
           const response3 = await axios.post(
-            `${baseUrl}/generate/{productId}/{imageSize}/{modelName}?productId=${storedProductID}&imageSize=${cleanedSize}&modelName=${modelName3}`
+            `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/solution aware`
           );
           if (response3.data.message) {
+            // API call to fetch images for the generated model (e.g., USP)
             const res3 = await axios.get(`${baseUrl}/generated-images/model/USP`);
             setModelData((prevData) => ({
               ...prevData,
-              model3: res3.data,
+              model3: res3.data, // Update the model data with the fetched images
             }));
           }
-          console.log(response3.data.data);
           setLoadingModel3(false);
         } catch (error) {
           console.error("Failed to fetch USP model.", error);
@@ -158,17 +160,15 @@ const GeneratedCreatives = ({
           setIsLoading(false);
         }
       };
-  
+
       fetchModels();
     }
   }, [
     isLoading,
     baseUrl,
     storedProductID,
-    cleanedSize,
-    modelName1,
-    modelName2,
-    modelName3,
+    cleanedSize, // Ensure this cleanedSize is correctly used
+    selectedTab,
   ]);
 
   const FilteredData = ({ filteredModel }) => {
@@ -187,14 +187,12 @@ const GeneratedCreatives = ({
             className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 pb-1 flex flex-col items-center justify-between"
           >
             <img
-              src={product.imageURL}
+              src={product.imageURL || product.generatedImageURL} // Use the generatedImageURL
               alt={product.title}
               className="object-cover w-full rounded-lg"
             />
             <div className="button-wrapper mt-1">
-              <button
-                className="text-sm text-[#A8A8A8]"
-              >
+              <button className="text-sm text-[#A8A8A8]">
                 <div className="button-container">
                   <svg
                     width="20"
@@ -215,7 +213,9 @@ const GeneratedCreatives = ({
               </button>
               <button
                 className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                onClick={() => navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)}
+                onClick={() =>
+                  navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)
+                }
               >
                 <div className="button-container">
                   <svg

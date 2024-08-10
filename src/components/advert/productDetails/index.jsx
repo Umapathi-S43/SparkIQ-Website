@@ -120,6 +120,9 @@ export default function ProductDetails({
   };
 
   const handleImageClick = (url, isGenerated = false) => {
+    if (isGenerated) {
+      setImages([]);  // Clear any previously uploaded images
+    }
     setSelectedImageUrl(url);
     setSelectedImageType(isGenerated ? 'generated' : 'uploaded');
     if (isGenerated) {
@@ -133,8 +136,8 @@ export default function ProductDetails({
 
   const handleDeleteImage = (index) => {
     setImages(images.filter((_, i) => i !== index));
-    if (selectedImageIndex === index && selectedImageType === 'uploaded') {
-      setSelectedImageIndex(null);
+    if (selectedImageUrl === URL.createObjectURL(images[index]) && selectedImageType === 'uploaded') {
+      setSelectedImageUrl(null);
       setSelectedImageType(null);
       setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
     }
@@ -332,16 +335,20 @@ export default function ProductDetails({
     setIsOpen(!isOpen);
   };
 
+  const generatedImageSectionWidth = "w-full lg:w-2/6"; // Fixed width for generated images
+  const generatedImageContainerClass = "w-full"; // Fixed width for generated image container
+
   const imageContainerClass =
-    images.length === 2
+    images.length === 2 || (selectedImageType === 'generated' && images.length > 1)
       ? "w-full lg:w-1/2"
-      : images.length === 3
+      : images.length === 3 || (selectedImageType === 'generated' && images.length > 2)
       ? "w-full lg:w-1/3"
       : "w-full";
+
   const imageSectionWidth =
-    images.length === 1
-      ? "w-full lg:w-2/6"
-      : images.length === 2
+    images.length === 1 || (selectedImageType === 'generated' && images.length > 0)
+      ? generatedImageSectionWidth
+      : images.length === 2 || (selectedImageType === 'generated' && images.length === 1)
       ? "w-full lg:w-3/6"
       : "w-full lg:w-4/6";
 
@@ -396,7 +403,7 @@ export default function ProductDetails({
         {isOpen && (
           <>
             <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
-              {images.length > 0 && (
+              {selectedImageType !== 'generated' && images.length > 0 && (
                 <div
                   className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}
                 >
@@ -437,9 +444,39 @@ export default function ProductDetails({
                   </div>
                 </div>
               )}
+
+              {selectedImageType === 'generated' && (
+                <div
+                  className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${generatedImageSectionWidth} h-auto lg:h-80`}
+                >
+                  <h6 className="font-bold pb-4 mt-2 mb-4 text-sm md:text-base lg:text-lg">
+                    Selected Image
+                  </h6>
+                  <div className="flex gap-4 flex-wrap md:flex-nowrap">
+                    <div
+                      className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${generatedImageContainerClass}`}
+                      onClick={() => handleImageClick(productDetails.logoURL, true)}
+                    >
+                      <img
+                        src={productDetails.logoURL}
+                        alt="Selected Generated Image"
+                        className="object-cover w-full h-48 rounded"
+                      />
+                      {selectedImageUrl === productDetails.logoURL && (
+                        <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                          <BiCheck size={16} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div
                 className={`bg-white rounded-[30px] shadow-md p-5 ${
-                  images.length > 0
+                  selectedImageType === 'generated'
+                    ? "w-full md:w-5/6"
+                    : images.length > 0
                     ? images.length === 1
                       ? "w-full md:w-5/6"
                       : images.length === 2
@@ -477,11 +514,13 @@ export default function ProductDetails({
                 </div>
               </div>
             </div>
+
             <div className="flex justify-center">
               <img src="/orIcon.svg" alt="" />
             </div>
+
             <div className="flex flex-col md:flex-row p-2">
-              <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full ${productDetails.logoURL || productDetails.imageFile ? "md:w-3/4" : "md:w-full"} p-4`}>
+              <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-4`}>
                 <span className="flex items-center gap-4 text-lg font-bold">
                   <div 
                     className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3 flex justify-center items-center"
@@ -504,15 +543,6 @@ export default function ProductDetails({
                   </button>
                 </span>
               </div>
-              {(productDetails.logoURL || productDetails.imageFile) && (
-                <div className="w-1/4 p-4 border border-[#FCFCFC] bg-[#FCFCFC60] ml-2 rounded-[12px]">
-                  <img
-                    src={productDetails.logoURL || URL.createObjectURL(productDetails.imageFile)}
-                    alt="Selected"
-                    className="object-cover w-full h-40 rounded"
-                  />
-                </div>
-              )}
             </div>
 
             {generatedImages.length > 0 && (
@@ -557,76 +587,82 @@ export default function ProductDetails({
                 </div>
               </div>
             )}
-
             <div className="flex flex-col md:flex-row gap-5 p-2">
-              <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
-                <span className="flex items-center gap-4 text-lg font-bold">
-                  <img
-                    src={link2}
-                    className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
-                  />{" "}
-                  <h6>Product Page URL (Automatically get details)</h6>
-                </span>
-                <span className="flex flex-col md:flex-row items-center gap-5">
-                  <input
-                    type="text"
-                    placeholder="Your landing page or website (Example: spark.ai)"
-                    id="productURL"
-                    value={productDetails.productURL}
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                  />
-                  <button
-                    className="w-fit custom-button rounded-[20px] text-white py-4 px-10 whitespace-pre font-medium"
-                    onClick={handleScanUrl}
-                  >
-                    Scan the URL
-                  </button>
-                </span>
-              </div>
-              <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
-                <span className="flex items-center gap-4 text-lg font-bold">
-                  <img
-                    src={brandIcon}
-                    className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
-                  />
-                  <h6>Brand Name</h6>
-                </span>
-
-                <select
-                  className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                  style={{
-                    appearance: "none",
-                    background: "white",
-                    backgroundPosition: "right 10px center",
-                    backgroundRepeat: "no-repeat",
-                    backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                  }}
-                  id="brandName"
-                  onChange={(e) => {
-                    const selectedBrand = brands.find(
-                      (item) => item.id === e.target.value
-                    );
-                    setProductDetails({
-                      ...productDetails,
-                      brandID: selectedBrand.id,
-                      brandName: selectedBrand.name,
-                    });
-                  }}
+            <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
+              <span className="flex items-center gap-4 text-lg font-bold">
+                <img
+                  src={link2}
+                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+                />{" "}
+                <h6>Product Page URL (Automatically get details)</h6>
+              </span>
+              <span className="flex flex-col md:flex-row items-center gap-5">
+                <input
+                  type="text"
+                  placeholder="Your landing page or website (Example: spark.ai)"
+                  id="productURL"
+                  value={productDetails.productURL}
+                  onChange={handleOnChangeProductDetails}
+                  className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                />
+                <button
+                  className="w-fit custom-button rounded-[20px] text-white py-4 px-10 whitespace-pre font-medium"
+                  onClick={handleScanUrl}
                 >
-                  <option>Select brand name</option>
-                  {brands.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  Scan the URL
+                </button>
+              </span>
             </div>
+          <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
+            <span className="flex items-center gap-4 text-lg font-bold">
+              <img
+                src={brandIcon}
+                className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+              />
+              <h6>Brand Name</h6>
+            </span>
 
-            <div className="flex justify-center">
-              <img src="/orIcon.svg" alt="" />
-            </div>
+            {brands.length === 1 ? (
+              <input
+                type="text"
+                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none disabled cursor-not-allowed opacity-90"
+                value={brands[0].name}
+                readOnly
+              />
+            ) : (
+              <select
+                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                style={{
+                  appearance: "none",
+                  background: "white",
+                  backgroundPosition: "right 10px center",
+                  backgroundRepeat: "no-repeat",
+                  backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
+                }}
+                id="brandName"
+                onChange={(e) => {
+                  const selectedBrand = brands.find(
+                    (item) => item.id === e.target.value
+                  );
+                  setProductDetails({
+                    ...productDetails,
+                    brandID: selectedBrand.id,
+                    brandName: selectedBrand.name,
+                  });
+                }}
+              >
+                <option>Select brand name</option>
+                {brands.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          </div>
+
             <form
               onSubmit={
                 productDetails.isEdit ? handleEditProduct : handleAdProduct
@@ -723,7 +759,7 @@ export default function ProductDetails({
                           background: "[#D9E9F2]",
                           backgroundPosition: "right 10px center",
                           backgroundRepeat: "no-repeat",
-                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                         }}
                       >
                         {discountOptions.map((discount, index) => (

@@ -251,16 +251,45 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   };
 
   const handleEditProduct = async () => {
+  try {
+    // Assume productId is available in productDetails or passed as an argument
+    const { productId } = productDetails;
+
+    // Fetch product details by productId
+    const response = await fetch(`/api/products/${productId}`);
+    if (!response.ok) throw new Error("Failed to fetch product details");
+
+    const product = await response.json();
+
+    // Populate the fields
     const editProduct = {
-      brandID: productDetails.brandID,
-      name: productDetails.productName,
-      description: productDetails.productDescription,
-      productImagesList: [
-        {
-          imageURL: productDetails.logoURL,
-        },
+      brandID: product.brandID || productDetails.brandID,
+      name: product.name || productDetails.productName,
+      description: product.description || productDetails.productDescription,
+      productImagesList: product.productImagesList || [
+        { imageURL: product.logoURL || productDetails.logoURL },
       ],
+      price: product.price || productDetails.productPrice,
+      currency: product.currency || productDetails.currency,
+      discountType: product.discountType || productDetails.discount,
+      discountValue: product.discountValue || productDetails.customDiscount,
     };
+
+    // Perform the edit operation (e.g., update the product)
+    const updateResponse = await fetch(`/api/products/${productId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editProduct),
+    });
+
+    if (!updateResponse.ok) throw new Error("Failed to update product");
+
+    // Notify user or update UI accordingly
+    console.log("Product updated successfully");
+  } catch (error) {
+    console.error("Error editing product:", error);
+  };
+
 
     try {
       await axios.post(`${baseUrl}/product`, editProduct);
@@ -576,14 +605,22 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </span>
             </div>
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
-              <span className="flex items-center gap-4 text-lg font-bold">
-                <img
-                  src={brandIcon}
-                  className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
-                />
-                <h6>Brand Name</h6>
-              </span>
+            <span className="flex items-center gap-4 text-lg font-bold">
+              <img
+                src={brandIcon}
+                className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3"
+              />
+              <h6>Brand Name</h6>
+            </span>
 
+            {brands.length === 1 ? (
+              <input
+                type="text"
+                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none disabled cursor-not-allowed opacity-90"
+                value={brands[0].name}
+                readOnly
+              />
+            ) : (
               <select
                 className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 style={{
@@ -612,7 +649,8 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   </option>
                 ))}
               </select>
-            </div>
+            )}
+          </div>
           </div>
 
           <div className="flex justify-center p-2">
@@ -728,7 +766,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     type="text"
                     placeholder={`Enter Discount in terms of ${productDetails.discount}`}
                     id="customDiscount"
-                    value={productDetails.customDiscount}
+                    value={productDetails.productDiscount}
                     onChange={handleOnChangeProductDetails}
                     className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     autoComplete="off"
