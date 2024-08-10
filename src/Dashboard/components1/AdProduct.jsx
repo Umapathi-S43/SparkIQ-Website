@@ -51,25 +51,31 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
     const fetchProducts = async (id) => {
       try {
-        const response = await axios.get(`${baseUrl}/product`);
-        if (isMounted) {
-          const foundProduct = response.data.data.find(
-            (brand) => brand.id === id
-          );
-          if (foundProduct) {
-            setProductDetails({
-              productName: foundProduct.name,
-              productDescription: foundProduct.description,
-              productURL: foundProduct.productURL,
-              brandID: foundProduct.brandID,
-              isEdit: true,
-            });
+          const response = await axios.get(`${baseUrl}/product`);
+          if (isMounted) {
+              const foundProduct = response.data.data.find(
+                  (product) => product.id === id
+              );
+              if (foundProduct) {
+                  setProductDetails({
+                      productName: foundProduct.name,
+                      productDescription: foundProduct.description,
+                      productURL: foundProduct.productURL,
+                      brandID: foundProduct.brandID,
+                      logoURL: foundProduct.logoURL, // Add the logo URL
+                      discountType: foundProduct.discountType, // Add discount type
+                      discount: foundProduct.discount, // Add discount value
+                      price: foundProduct.price, // Add price
+                      priceType: foundProduct.priceType, // Add price
+                      isEdit: true,
+                  });
+              }
           }
-        }
       } catch (error) {
-        console.error(error);
+          console.error('Error fetching product details:', error);
       }
-    };
+  };
+  
 
     if (productID) {
       fetchProducts(productID);
@@ -387,7 +393,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             <img src="/icon2.svg" alt="" />
             <span className="flex flex-col">
               <h4 className="text-[#082A66] font-bold text-xl md:text-2xl lg:text-2xl">
-                Add Product Details
+              {productDetails.isEdit ? 'Edit Product Details' : 'Add Product Details'}
               </h4>
               <p className="text-[#374151] lg:text-sm text-xs">
                 Upload photos and details of your product
@@ -593,6 +599,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   placeholder="Your landing page or website (Example: spark.ai)"
                   id="productURL"
                   value={productDetails.productURL}
+                    
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
@@ -631,6 +638,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
                 }}
                 id="brandName"
+                value={productDetails.brandName}
                 onChange={(e) => {
                   const selectedBrand = brands.find(
                     (item) => item.id === e.target.value
@@ -709,7 +717,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     <select
                       id="currency"
                       onChange={handleOnChangeProductDetails}
-                      value={productDetails.currency}
+                      value={productDetails.priceType}
                       className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
                       style={{
                         background: "[#D9E9F2]",
@@ -729,7 +737,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     type="text"
                     placeholder="Enter Product Price"
                     id="productPrice"
-                    value={productDetails.productPrice}
+                    value={productDetails.price}
                     onChange={handleOnChangeProductDetails}
                     className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     autoComplete="off"
@@ -746,8 +754,8 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     <select
                       id="discount"
                       onChange={handleDiscountChange}
-                      value={productDetails.discount}
-                      className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                      value={productDetails.discountType}
+                    className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
                       style={{
                         background: "[#D9E9F2]",
                         backgroundPosition: "right 10px center",
@@ -766,7 +774,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     type="text"
                     placeholder={`Enter Discount in terms of ${productDetails.discount}`}
                     id="customDiscount"
-                    value={productDetails.productDiscount}
+                    value={productDetails.discount}
                     onChange={handleOnChangeProductDetails}
                     className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     autoComplete="off"
