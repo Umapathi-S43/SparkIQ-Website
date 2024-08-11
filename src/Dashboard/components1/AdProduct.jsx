@@ -5,8 +5,8 @@ import { GoTag } from "react-icons/go";
 import { useLocation, useNavigate } from "react-router-dom";
 import link2 from "../../assets/dashboard_img/linksvg1.svg";
 import facomment from "../../assets/dashboard_img/facomment.svg";
-import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
-import brandIcon from "../../assets/dashboard_img/brand_b1.svg"; // Adjust the path as needed
+import brandImage from "../../assets/dashboard_img/brand_img.png";
+import brandIcon from "../../assets/dashboard_img/brand_b1.svg";
 import { IoImageOutline } from "react-icons/io5";
 import toast from "react-hot-toast";
 import axios from "axios";
@@ -14,16 +14,19 @@ import { baseUrl } from "../../components/utils/Constant";
 import { CreditCardIcon } from "@heroicons/react/24/outline";
 import { RiDiscountPercentLine } from "react-icons/ri";
 
+// Define constants for currencies and discount options
 const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
 const discountOptions = ["Price", "Percentage"];
 
 export default function AdProduct({ setIsNextSectionOpen }) {
+  // State management for images and product details
   const [images, setImages] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
-  const [selectedImageUrl, setSelectedImageUrl] = useState(null); // Track the selected image URL
-  const [selectedImageType, setSelectedImageType] = useState(null); // 'uploaded' or 'generated'
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null);
+  const [selectedImageType, setSelectedImageType] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Extract the product ID from the URL if available
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
@@ -34,8 +37,8 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     productURL: "",
     brandName: "",
     productPrice: "",
-    currency: currencies[0],
-    discount: discountOptions[0],
+    currency: "USD", // Default to USD
+    discount: "Percentage", // Default to Percentage
     customDiscount: "",
     imageFile: null,
     logoURL: "",
@@ -43,39 +46,52 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     prompt: "",
     isEdit: false,
   });
+  
+  
   const [brands, setBrands] = useState([]);
   const navigate = useNavigate();
 
+  // Fetch product details if a product ID is provided
   useEffect(() => {
     let isMounted = true;
 
     const fetchProducts = async (id) => {
       try {
-          const response = await axios.get(`${baseUrl}/product`);
-          if (isMounted) {
-              const foundProduct = response.data.data.find(
-                  (product) => product.id === id
-              );
-              if (foundProduct) {
-                  setProductDetails({
-                      productName: foundProduct.name,
-                      productDescription: foundProduct.description,
-                      productURL: foundProduct.productURL,
-                      brandID: foundProduct.brandID,
-                      logoURL: foundProduct.logoURL, // Add the logo URL
-                      discountType: foundProduct.discountType, // Add discount type
-                      discount: foundProduct.discount, // Add discount value
-                      price: foundProduct.price, // Add price
-                      priceType: foundProduct.priceType, // Add price
-                      isEdit: true,
-                  });
-              }
+        const response = await axios.get(`${baseUrl}/product`);
+        if (isMounted) {
+          const foundProduct = response.data.data.find(
+            (product) => product.id === id
+          );
+          if (foundProduct) {
+            setProductDetails({
+              productName: foundProduct.name,
+              productDescription: foundProduct.description,
+              productURL: foundProduct.productURL,
+              brandID: foundProduct.brandID,
+              logoURL: foundProduct.productImagesList[0]?.imageURL || "", // Populate with the first image URL
+              discountType: foundProduct.discountType,
+              discount: foundProduct.discount,
+              price: foundProduct.price,
+              priceType: foundProduct.priceType,
+              isEdit: true,
+            });
+
+            // Populate the images array with existing product images
+            const existingImages = foundProduct.productImagesList.map((img, index) => ({
+              file: null, // Since these are existing images, the file is not available
+              id: img.id,
+              url: img.imageURL,
+              uploaded: true, // Mark as uploaded to differentiate from new uploads
+            }));
+            setImages(existingImages);
+            setSelectedImageUrl(existingImages[0]?.url || null);
+            setSelectedImageType(existingImages.length > 0 ? 'uploaded' : null);
           }
+        }
       } catch (error) {
-          console.error('Error fetching product details:', error);
+        console.error("Error fetching product details:", error);
       }
-  };
-  
+    };
 
     if (productID) {
       fetchProducts(productID);
@@ -84,33 +100,44 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     return () => {
       isMounted = false;
     };
-  }, [productID, baseUrl, setProductDetails]);
+  }, [productID]);
 
+  // Handle file selection and uploading images
   const handleFileChange = (event) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files).slice(0, 3 - images.length).map((file, index) => ({
-        file,
-        id: `${file.name}-${file.size}-${index}`, // Create a unique ID
-        url: URL.createObjectURL(file)
-      }));
+        const newFiles = Array.from(event.target.files).slice(0, 3 - images.length).map((file, index) => ({
+            file,
+            id: `${file.name}-${file.size}-${index}`,
+            url: URL.createObjectURL(file)
+        }));
 
-      const newImages = [...images, ...newFiles];
-      setImages(newImages);
+        const newImages = [...images, ...newFiles];
+        setImages(newImages);
 
-      if (newFiles.length > 0) {
-        setSelectedImageUrl(url);
-        setSelectedImageType('uploaded');
-        setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
-      }
+        if (newFiles.length === 1) {
+            // If only one image is uploaded, automatically upload it
+            setSelectedImageUrl(newFiles[0].url);
+            setSelectedImageType('uploaded');
+            setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
+            uploadImage(newFiles[0].file); // Upload image immediately after selection
+        } else if (newFiles.length > 1) {
+            // If multiple images are uploaded, show a message for the user to select one for upload
+            setSelectedImageUrl(null); // Clear any previous selection
+            setSelectedImageType('multiple-upload'); // Set type to indicate multiple uploads
+            setProductDetails({ ...productDetails, imageFile: null, logoURL: "" }); // Clear image file
+        }
     }
-  };
+};
 
+
+
+  // Handle drag-and-drop for image uploading
   const handleDrop = (event) => {
     event.preventDefault();
     if (event.dataTransfer.files) {
       const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length).map((file, index) => ({
         file,
-        id: `${file.name}-${file.size}-${index}`, // Create a unique ID
+        id: `${file.name}-${file.size}-${index}`,
         url: URL.createObjectURL(file)
       }));
 
@@ -121,28 +148,37 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         setSelectedImageUrl(newFiles[0].url);
         setSelectedImageType('uploaded');
         setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
+        uploadImage(newFiles[0].file); // Upload image immediately after drop
         toast.success("Image uploaded successfully");
       }
     }
   };
 
+  // Prevent default drag-over behavior
   const handleDragOver = (event) => {
     event.preventDefault();
   };
 
+  // Handle image click (uploaded or generated) and set it as the selected image
   const handleImageClick = (imageUrl, isGenerated = false) => {
-    setSelectedImageUrl(imageUrl);
-    setSelectedImageType(isGenerated ? 'generated' : 'uploaded');
     if (isGenerated) {
-      setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
-      toast.success("Image selected successfully");
+        setImages([]);  // Clear the uploaded images
+        setSelectedImageUrl(imageUrl);
+        setSelectedImageType('generated');
+        setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
+        toast.success("Image selected successfully");
     } else {
-      const selectedImage = images.find(img => img.url === imageUrl);
-      setProductDetails({ ...productDetails, imageFile: selectedImage.file, logoURL: "" });
-      toast.success("Image uploaded successfully");
+        const selectedImage = images.find(img => img.url === imageUrl);
+        setSelectedImageUrl(imageUrl);
+        setSelectedImageType('uploaded');
+        setProductDetails({ ...productDetails, imageFile: selectedImage.file, logoURL: selectedImage.uploaded ? selectedImage.url : "" });
+        if (!selectedImage.uploaded) {
+            uploadImage(selectedImage.file); // Upload image after user selection if it's a new file
+        }
     }
-  };
+};
 
+  // Handle image deletion
   const handleDeleteImage = (index) => {
     const removedImage = images[index];
     setImages(images.filter((_, i) => i !== index));
@@ -154,23 +190,50 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  // Handle change in product details
   const handleOnChangeProductDetails = (e) => {
     const { id, value } = e.target;
+    
     if (id === "customDiscount") {
-      setProductDetails({ ...productDetails, customDiscount: value });
+      const discountValue = parseFloat(value);
+      const productPrice = parseFloat(productDetails.productPrice);
+  
+      if (productDetails.discount === "Percentage") {
+        if (!isNaN(productPrice) && discountValue > 0 && discountValue <= 100) {
+          const discountAmount = (productPrice * discountValue) / 100;
+          if (discountAmount > productPrice) {
+            toast.error("The discount amount exceeds the product price.");
+          } else {
+            setProductDetails({ ...productDetails, customDiscount: value });
+          }
+        } else {
+          toast.error("Please enter a valid percentage between 1 and 100.");
+        }
+      } else if (productDetails.discount === "Price") {
+        if (!isNaN(discountValue) && discountValue <= productPrice) {
+          setProductDetails({ ...productDetails, customDiscount: value });
+        } else {
+          toast.error("The discount price must be less than or equal to the product price.");
+        }
+      }
     } else {
       setProductDetails({ ...productDetails, [id]: value });
     }
   };
+  
 
+  // Handle discount type change
   const handleDiscountChange = (e) => {
+    const discountType = e.target.value;
     setProductDetails({
       ...productDetails,
-      discount: e.target.value,
+      discount: discountType,
       customDiscount: "",
     });
   };
+  
 
+  // Fetch brand details when component mounts
   useEffect(() => {
     const fetchBrands = async () => {
       try {
@@ -183,37 +246,51 @@ export default function AdProduct({ setIsNextSectionOpen }) {
           };
         });
         setBrands(fetchedBrands);
+  
+        // Automatically select the brand if there's only one
+        if (fetchedBrands.length === 1) {
+          setProductDetails(prevDetails => ({
+            ...prevDetails,
+            brandID: fetchedBrands[0].id,
+            brandName: fetchedBrands[0].name,
+          }));
+        }
       } catch (error) {
         console.log(error);
       }
     };
-
+  
     fetchBrands();
   }, []);
+  
 
-  useEffect(() => {
-    if (productDetails.imageFile) {
-      uploadImage();
-    }
-  }, [productDetails.imageFile]);
-
-  const uploadImage = async () => {
+  // Upload image to the server
+  const uploadImage = async (imageFile) => {
     const uploadData = new FormData();
-    uploadData.append("customerId", "123");
-
+    uploadData.append("file", imageFile);
+  
     try {
-      await axios
-        .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
-        .then((res) => {
-          setProductDetails({ ...productDetails, logoURL: res.data.data.url });
-        });
+      const response = await axios.post(`${baseUrl}/sparkiq/image/upload?customerId=123`, uploadData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+  
+      if (response.status === 201) {
+        toast.success("Image uploaded successfully");
+        setProductDetails((prevDetails) => ({
+          ...prevDetails,
+          logoURL: response.data.data.url, // Make sure you use the correct key from the response
+        }));
+      } else {
+        toast.error("Failed to upload image");
+      }
     } catch (error) {
-      console.log(error);
+      toast.error("Error uploading image");
+      console.error(error);
     }
   };
+  
 
+  // Handle form submission for adding a new product
   const handleAdProduct = async (e) => {
     e.preventDefault();
     const newProduct = {
@@ -240,6 +317,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  // Update the product count for the selected brand
   const updateBrandProductCount = (brandID) => {
     setBrands((prevBrands) => {
       return prevBrands.map((brand) => {
@@ -256,49 +334,26 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     });
   };
 
+  // Handle form submission for editing an existing product
   const handleEditProduct = async () => {
-  try {
-    // Assume productId is available in productDetails or passed as an argument
-    const { productId } = productDetails;
-
-    // Fetch product details by productId
-    const response = await fetch(`/api/products/${productId}`);
-    if (!response.ok) throw new Error("Failed to fetch product details");
-
-    const product = await response.json();
-
-    // Populate the fields
     const editProduct = {
-      brandID: product.brandID || productDetails.brandID,
-      name: product.name || productDetails.productName,
-      description: product.description || productDetails.productDescription,
-      productImagesList: product.productImagesList || [
-        { imageURL: product.logoURL || productDetails.logoURL },
+      brandID: productDetails.brandID,
+      name: productDetails.productName,
+      description: productDetails.productDescription,
+      price: productDetails.productPrice,
+      currency: productDetails.currency,
+      discountType: productDetails.discount,
+      discountValue: productDetails.customDiscount,
+      productImagesList: [
+        {
+          imageURL: productDetails.logoURL,
+        },
       ],
-      price: product.price || productDetails.productPrice,
-      currency: product.currency || productDetails.currency,
-      discountType: product.discountType || productDetails.discount,
-      discountValue: product.discountValue || productDetails.customDiscount,
+      
     };
 
-    // Perform the edit operation (e.g., update the product)
-    const updateResponse = await fetch(`/api/products/${productId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editProduct),
-    });
-
-    if (!updateResponse.ok) throw new Error("Failed to update product");
-
-    // Notify user or update UI accordingly
-    console.log("Product updated successfully");
-  } catch (error) {
-    console.error("Error editing product:", error);
-  };
-
-
     try {
-      await axios.post(`${baseUrl}/product`, editProduct);
+      await axios.put(`${baseUrl}/product/${productDetails.id}`, editProduct);
       toast.success("Product edited successfully");
       navigate("/productspage");
     } catch (error) {
@@ -306,23 +361,26 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  // Handle scanning a URL to retrieve product details
   const handleScanUrl = async (e) => {
     try {
-      await axios
-        .get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`)
-        .then((res) => {
-          toast.success("Scan successful");
-          setProductDetails({
-            ...productDetails,
-            productName: res.data.productTitle,
-            productDescription: res.data.productDesc,
-          });
-        });
+        await axios
+            .get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`)
+            .then((res) => {
+                toast.success("Scan successful");
+                setProductDetails({
+                    ...productDetails,
+                    productName: res.data.productTitle,
+                    productDescription: res.data.productDesc,
+                });
+            });
     } catch (error) {
-      console.log(error);
+        console.log(error);
     }
-  };
+};
 
+
+  // Handle searching for generated images based on a prompt
   const handleSearchForImages = async () => {
     try {
       const response = await axios.get(`${baseUrl}/search/get-images`, {
@@ -339,6 +397,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  // Handle pagination for generated images
   const handlePageChange = async (page) => {
     setCurrentPage(page);
     try {
@@ -356,20 +415,39 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     }
   };
 
+  // Determine if the "Next Step" button should be disabled
   const isNextStepDisabled =
-    productDetails.productName === "" ||
-    productDetails.productDescription === "" ||
-    (!productDetails.logoURL && !productDetails.imageFile) ||
-    productDetails.brandName === "" ||
-    productDetails.productPrice === "" ||
-    productDetails.customDiscount === "" ||
-    (productDetails.discount === "Price" &&
-      parseFloat(productDetails.productPrice) <= parseFloat(productDetails.customDiscount)) ||
-    (productDetails.discount === "Percentage" &&
-      parseFloat(productDetails.customDiscount) > 100);
+  productDetails.productName === "" ||
+  productDetails.productDescription === "" ||
+  (!productDetails.logoURL && !productDetails.imageFile) ||
+  productDetails.brandName === "" ||
+  productDetails.productPrice === "" ||
+  productDetails.customDiscount === "" ||
+  (productDetails.discount === "Price" && 
+    (isNaN(parseFloat(productDetails.customDiscount)) || 
+     parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+  (productDetails.discount === "Percentage" && 
+    (isNaN(parseFloat(productDetails.customDiscount)) || 
+     parseFloat(productDetails.customDiscount) <= 0 ||
+     parseFloat(productDetails.customDiscount) > 100));
 
-  const generatedImageSectionWidth = "w-full lg:w-2/6"; // Fixed width for generated images
-  const generatedImageContainerClass = "w-full"; // Fixed width for generated image container
+
+    console.log('productName:', productDetails.productName);
+    console.log('productDescription:', productDetails.productDescription);
+    console.log('logoURL:', productDetails.logoURL);
+    console.log('imageFile:', productDetails.imageFile);
+    console.log('brandName:', productDetails.brandName);
+    console.log('productPrice:', productDetails.productPrice);
+    console.log('customDiscount:', productDetails.customDiscount);
+    console.log('discount:', productDetails.discount);
+    console.log('price condition:', parseFloat(productDetails.productPrice) <= parseFloat(productDetails.customDiscount));
+    console.log('percentage condition:', parseFloat(productDetails.customDiscount) > 100);
+    
+      console.log('isNextStepDisabled:', isNextStepDisabled);
+
+  // Define styling for image sections based on the number of images
+  const generatedImageSectionWidth = "w-full lg:w-2/6";
+  const generatedImageContainerClass = "w-full";
 
   const imageContainerClass =
     images.length === 2 || (selectedImageType === 'generated' && images.length > 1)
@@ -419,33 +497,34 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   Select Your Desired Image
                 </h6>
                 <div className="flex gap-4 flex-wrap md:flex-nowrap">
-                  {images.map((image, index) => (
-                    <div
-                      key={index}
-                      className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
-                      onClick={() => handleImageClick(image.url)}
-                    >
-                      <img
-                        src={productDetails.logoURL || image.url}
-                        alt={`Uploaded ${index}`}
-                        className="object-cover w-full h-52 rounded"
-                      />
-                      <button
-                        className="absolute top-1 left-1 text-red-500"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteImage(index);
-                        }}
-                      >
-                        <FaTrash />
-                      </button>
-                      {selectedImageUrl === image.url && selectedImageType === 'uploaded' && (
-                        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
-                        <BiCheck size={16} />
-                      </div>
-                      )}
-                    </div>
-                  ))}
+                {images.map((image, index) => (
+  <div
+    key={index}
+    className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
+    onClick={() => handleImageClick(image.url)} // This should trigger the handleImageClick function
+  >
+    <img
+      src={image.url} // Correctly display the image using the URL from state
+      alt={`Uploaded ${index}`} // Provide a unique alt text for each image
+      className="object-cover w-full h-52 rounded" // Ensure the image is displayed with the correct styles
+    />
+    <button
+      className="absolute top-1 left-1 text-red-500"
+      onClick={(e) => {
+        e.stopPropagation(); // Prevent the click event from triggering the handleImageClick
+        handleDeleteImage(index); // Handle image deletion
+      }}
+    >
+      <FaTrash />
+    </button>
+    {selectedImageUrl === image.url && selectedImageType === 'uploaded' && (
+      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+        <BiCheck size={16} />
+      </div>
+    )}
+  </div>
+))}
+
                 </div>
               </div>
             )}
@@ -619,45 +698,38 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               />
               <h6>Brand Name</h6>
             </span>
+{brands.length === 1 ? (
+    <input
+        type="text"
+        className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none disabled cursor-not-allowed opacity-90"
+        value={brands[0].name}
+        readOnly
+    />
+) : (
+    <select
+        className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+        id="brandName"
+        value={productDetails.brandName}
+        onChange={(e) => {
+            const selectedBrand = brands.find(
+                (item) => item.id === e.target.value
+            );
+            setProductDetails({
+                ...productDetails,
+                brandID: selectedBrand.id,
+                brandName: selectedBrand.name,
+            });
+        }}
+    >
+        <option>Select brand name</option>
+        {brands.map((item) => (
+            <option key={item.id} value={item.id}>
+                {item.name}
+            </option>
+        ))}
+    </select>
+)}
 
-            {brands.length === 1 ? (
-              <input
-                type="text"
-                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none disabled cursor-not-allowed opacity-90"
-                value={brands[0].name}
-                readOnly
-              />
-            ) : (
-              <select
-                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                style={{
-                  appearance: "none",
-                  background: "white",
-                  backgroundPosition: "right 10px center",
-                  backgroundRepeat: "no-repeat",
-                  backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                }}
-                id="brandName"
-                value={productDetails.brandName}
-                onChange={(e) => {
-                  const selectedBrand = brands.find(
-                    (item) => item.id === e.target.value
-                  );
-                  setProductDetails({
-                    ...productDetails,
-                    brandID: selectedBrand.id,
-                    brandName: selectedBrand.name,
-                  });
-                }}
-              >
-                <option>Select brand name</option>
-                {brands.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
           </div>
 
@@ -760,7 +832,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                         background: "[#D9E9F2]",
                         backgroundPosition: "right 10px center",
                         backgroundRepeat: "no-repeat",
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                       }}
                     >
                       {discountOptions.map((discount, index) => (
@@ -774,7 +846,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                     type="text"
                     placeholder={`Enter Discount in terms of ${productDetails.discount}`}
                     id="customDiscount"
-                    value={productDetails.discount}
+                    value={productDetails.customDiscount}
                     onChange={handleOnChangeProductDetails}
                     className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                     autoComplete="off"
