@@ -143,19 +143,49 @@ export default function ProductDetails({
     }
   };
 
+  // Handle change in product details
   const handleOnChangeProductDetails = (e) => {
     const { id, value } = e.target;
-    setProductDetails({ ...productDetails, [id]: value });
+    
+    if (id === "customDiscount") {
+      const discountValue = parseFloat(value);
+      const productPrice = parseFloat(productDetails.productPrice);
+  
+      if (productDetails.discount === "Percentage") {
+        if (!isNaN(productPrice) && discountValue > 0 && discountValue <= 100) {
+          const discountAmount = (productPrice * discountValue) / 100;
+          if (discountAmount > productPrice) {
+            toast.error("The discount amount exceeds the product price.");
+          } else {
+            setProductDetails({ ...productDetails, customDiscount: value });
+          }
+        } else {
+          toast.error("Please enter a valid percentage between 1 and 100.");
+        }
+      } else if (productDetails.discount === "Price") {
+        if (!isNaN(discountValue) && discountValue <= productPrice) {
+          setProductDetails({ ...productDetails, customDiscount: value });
+        } else {
+          toast.error("The discount price must be less than or equal to the product price.");
+        }
+      }
+    } else {
+      setProductDetails({ ...productDetails, [id]: value });
+    }
   };
+  
 
+  // Handle discount type change
   const handleDiscountChange = (e) => {
+    const discountType = e.target.value;
     setProductDetails({
       ...productDetails,
-      discount: e.target.value,
+      discount: discountType,
       customDiscount: "",
     });
   };
-
+  
+  // Fetch brand details when component mounts
   useEffect(() => {
     const fetchBrands = async () => {
       try {
@@ -168,11 +198,20 @@ export default function ProductDetails({
           };
         });
         setBrands(fetchedBrands);
+  
+        // Automatically select the brand if there's only one
+        if (fetchedBrands.length === 1) {
+          setProductDetails(prevDetails => ({
+            ...prevDetails,
+            brandID: fetchedBrands[0].id,
+            brandName: fetchedBrands[0].name,
+          }));
+        }
       } catch (error) {
         console.log(error);
       }
     };
-
+  
     fetchBrands();
   }, []);
 
@@ -319,17 +358,35 @@ export default function ProductDetails({
     setIsCompleted(true);
   };
 
-  const isNextStepDisabled =
+    // Determine if the "Next Step" button should be disabled
+    const isNextStepDisabled =
     productDetails.productName === "" ||
     productDetails.productDescription === "" ||
+    (!productDetails.logoURL && !productDetails.imageFile) ||
     productDetails.brandName === "" ||
     productDetails.productPrice === "" ||
     productDetails.customDiscount === "" ||
-    selectedImageUrl === null ||
-    (productDetails.discount === "Price" &&
-      parseFloat(productDetails.productPrice) <= parseFloat(productDetails.customDiscount)) ||
-    (productDetails.discount === "Percentage" &&
-      parseFloat(productDetails.customDiscount) > 100);
+    (productDetails.discount === "Price" && 
+      (isNaN(parseFloat(productDetails.customDiscount)) || 
+       parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+    (productDetails.discount === "Percentage" && 
+      (isNaN(parseFloat(productDetails.customDiscount)) || 
+       parseFloat(productDetails.customDiscount) <= 0 ||
+       parseFloat(productDetails.customDiscount) > 100));
+  
+  
+      console.log('productName:', productDetails.productName);
+      console.log('productDescription:', productDetails.productDescription);
+      console.log('logoURL:', productDetails.logoURL);
+      console.log('imageFile:', productDetails.imageFile);
+      console.log('brandName:', productDetails.brandName);
+      console.log('productPrice:', productDetails.productPrice);
+      console.log('customDiscount:', productDetails.customDiscount);
+      console.log('discount:', productDetails.discount);
+      console.log('price condition:', parseFloat(productDetails.productPrice) <= parseFloat(productDetails.customDiscount));
+      console.log('percentage condition:', parseFloat(productDetails.customDiscount) > 100);
+      
+        console.log('isNextStepDisabled:', isNextStepDisabled);
 
   const toggleAccordion = () => {
     setIsOpen(!isOpen);
