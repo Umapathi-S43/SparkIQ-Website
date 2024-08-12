@@ -66,21 +66,28 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
       (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())));
   });
 
-  const handleNextStep = () => {
-    setIsOpen(false);
-    setIsNextSectionOpen(true);
-    setIsCompleted(true);
-    localStorage.setItem('selectedProduct', JSON.stringify(selectedProduct));
-  };
+  
 
   const toggleAccordion = () => {
     setIsOpen(!isOpen);
   };
 
   const handleProductClick = (product) => {
+    console.log("Setting product:", product);
     setSelectedProduct(product);
-    handleNextStep();
+    handleNextStep(product);
   };
+  
+  const handleNextStep = (product) => {
+    console.log("Handling next step with product:", product);
+    setIsOpen(false);
+    setIsNextSectionOpen(true);
+    setIsCompleted(true);
+    localStorage.setItem('selectedProduct', JSON.stringify(product)); // Store entire product
+    localStorage.setItem('productId', JSON.stringify(product.id)); // Store product ID separately
+  };
+  
+  
 
   const isNextStepDisabled = selectedProduct === null;
 

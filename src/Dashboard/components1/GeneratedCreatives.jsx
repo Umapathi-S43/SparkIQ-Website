@@ -13,6 +13,7 @@ const GeneratedCreatives = ({
   setIsLoading,
   setPage,
   openModalCreativeSize,
+  isPreviousSectionsCompleted = true // Default to true or false if not provided
 }) => {
   const [products, setProducts] = useState([]);
   const [savedProducts, setSavedProducts] = useState([]);
@@ -21,9 +22,9 @@ const GeneratedCreatives = ({
   const [modelData, setModelData] = useState([]);
   const [loadingModel, setLoadingModel] = useState(true);
 
-  const storedProductID = localStorage.getItem("productID") || null;
-const storedImageSize = localStorage.getItem("imageSize") || "";
-const cleanedSize = storedImageSize.replace(/[()]/g, "");
+  const storedProductID = JSON.parse(localStorage.getItem("productId")) || null;
+  const storedImageSize = JSON.parse(localStorage.getItem("imageSize")) || "";
+  const cleanedSize = storedImageSize.replace(/[()]/g, "");
 
   const templateColors = {
     "Brand Color": "brand_color",
@@ -42,12 +43,13 @@ const cleanedSize = storedImageSize.replace(/[()]/g, "");
   const navigate = useNavigate();
 
   const fetchModelData = async (modelName) => {
+    const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
+    console.log("Generated URL:", url);
+
     const models = modelMapping[modelName];
     for (let i = 0; i < models.length; i++) {
       try {
-        const response = await axios.post(
-          `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`
-        );
+        const response = await axios.post(url);
         if (response.data.message) {
           const res = await axios.get(
             `${baseUrl}/generated-images/model/${models[i]}`
@@ -63,25 +65,27 @@ const cleanedSize = storedImageSize.replace(/[()]/g, "");
   };
 
   const loadCreatives = async () => {
+    // Check if the third section is open and previous sections are completed
+    if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
+      return; // Do not proceed if conditions are not met
+    }
+
     setLoadingModel(true);
     const models = ["unaware", "problem aware", "solution aware", "product aware", "most aware"];
-    const newModelData = [];
 
     for (let i = 0; i < models.length; i++) {
       const data = await fetchModelData(models[i]);
-      newModelData.push({
-        modelName: models[i],
-        creatives: data,
-      });
+      setModelData(prevData => [...prevData, { modelName: models[i], creatives: data }]);
     }
 
-    setModelData(newModelData);
     setLoadingModel(false);
   };
 
   useEffect(() => {
-    loadCreatives();
-  }, [selectedTab]);
+    if (isThirdSectionOpen && isPreviousSectionsCompleted) {
+      loadCreatives();
+    }
+  }, [selectedTab, isThirdSectionOpen, isPreviousSectionsCompleted]);
 
   const handleTabChange = (tab) => {
     setSelectedTab(tab);
