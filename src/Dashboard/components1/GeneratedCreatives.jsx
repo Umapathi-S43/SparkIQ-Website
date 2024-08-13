@@ -13,14 +13,22 @@ const GeneratedCreatives = ({
   setIsLoading,
   setPage,
   openModalCreativeSize,
-  isPreviousSectionsCompleted = true // Default to true or false if not provided
+  isPreviousSectionsCompleted = true, // Default to true or false if not provided
 }) => {
-  const [products, setProducts] = useState([]);
-  const [savedProducts, setSavedProducts] = useState([]);
+  const [unawareData, setUnawareData] = useState([]);
+  const [problemAwareData, setProblemAwareData] = useState([]);
+  const [solutionAwareData, setSolutionAwareData] = useState([]);
+  const [productAwareData, setProductAwareData] = useState([]);
+  const [mostAwareData, setMostAwareData] = useState([]);
+
+  const [loadingUnaware, setLoadingUnaware] = useState(true);
+  const [loadingProblemAware, setLoadingProblemAware] = useState(true);
+  const [loadingSolutionAware, setLoadingSolutionAware] = useState(true);
+  const [loadingProductAware, setLoadingProductAware] = useState(true);
+  const [loadingMostAware, setLoadingMostAware] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("Brand Color");
-  const [modelData, setModelData] = useState([]);
-  const [loadingModel, setLoadingModel] = useState(true);
 
   const storedProductID = JSON.parse(localStorage.getItem("productId")) || null;
   const storedImageSize = JSON.parse(localStorage.getItem("imageSize")) || "";
@@ -45,7 +53,7 @@ const GeneratedCreatives = ({
   const fetchModelData = async (modelName) => {
     const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
     console.log("Generated URL:", url);
-
+  
     const models = modelMapping[modelName];
     for (let i = 0; i < models.length; i++) {
       try {
@@ -63,22 +71,41 @@ const GeneratedCreatives = ({
     }
     return []; // Return empty if all models fail
   };
+  
 
   const loadCreatives = async () => {
-    // Check if the third section is open and previous sections are completed
     if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
-      return; // Do not proceed if conditions are not met
+      return;
     }
 
-    setLoadingModel(true);
-    const models = ["unaware", "problem aware", "solution aware", "product aware", "most aware"];
+    try {
+      // Fetch data for Unaware model
+      const unawareData = await fetchModelData("unaware");
+      setUnawareData(unawareData);
+      setLoadingUnaware(false);
 
-    for (let i = 0; i < models.length; i++) {
-      const data = await fetchModelData(models[i]);
-      setModelData(prevData => [...prevData, { modelName: models[i], creatives: data }]);
+      // Fetch data for Problem Aware model
+      const problemAwareData = await fetchModelData("problem aware");
+      setProblemAwareData(problemAwareData);
+      setLoadingProblemAware(false);
+
+      // Fetch data for Solution Aware model
+      const solutionAwareData = await fetchModelData("solution aware");
+      setSolutionAwareData(solutionAwareData);
+      setLoadingSolutionAware(false);
+
+      // Fetch data for Product Aware model
+      const productAwareData = await fetchModelData("product aware");
+      setProductAwareData(productAwareData);
+      setLoadingProductAware(false);
+
+      // Fetch data for Most Aware model
+      const mostAwareData = await fetchModelData("most aware");
+      setMostAwareData(mostAwareData);
+      setLoadingMostAware(false);
+    } catch (error) {
+      console.error("Error fetching model data:", error);
     }
-
-    setLoadingModel(false);
   };
 
   useEffect(() => {
@@ -89,9 +116,19 @@ const GeneratedCreatives = ({
 
   const handleTabChange = (tab) => {
     setSelectedTab(tab);
-    setModelData([]);
     setIsLoading(true);
+    setUnawareData([]); // Resetting data for each model
+    setProblemAwareData([]);
+    setSolutionAwareData([]);
+    setProductAwareData([]);
+    setMostAwareData([]);
+    setLoadingUnaware(true); // Setting loading states to true
+    setLoadingProblemAware(true);
+    setLoadingSolutionAware(true);
+    setLoadingProductAware(true);
+    setLoadingMostAware(true);
   };
+  
 
   const FilteredData = ({ filteredModel, modelName }) => {
     const filteredProducts = filteredModel.filter((product) => {
@@ -208,20 +245,6 @@ const GeneratedCreatives = ({
 
   return (
     <div className="container lg:mb-4 sm:mx-auto mb-4 lg:p-0 sm:p-4 flex-grow">
-      <svg width="0" height="0">
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%">
-            <stop
-              offset="0%"
-              style={{ stopColor: "#004367", stopOpacity: 1 }}
-            />
-            <stop
-              offset="100%"
-              style={{ stopColor: "#00A7FF", stopOpacity: 1 }}
-            />
-          </linearGradient>
-        </defs>
-      </svg>
       <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-2 sm:p-4 flex flex-col gap-6 relative z-10">
         <div
           className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] p-2 sm:p-4 relative cursor-pointer"
@@ -247,62 +270,71 @@ const GeneratedCreatives = ({
         </div>
         {isThirdSectionOpen && (
           <>
-            {loadingModel ? (
-              <div className="w-full py-8">
-                {[...Array(4)].map((_, index) => (
-                  <CardLoader key={index} />
+            <div className="flex justify-center">
+              <div className="tab-buttons flex justify-center items-center gap-12 w-4/6 mb-2 border-4 py-1 rounded-xl shadow-md">
+                {["Brand Color", "Single Color", "Gradient Color"].map((tab) => (
+                  <button
+                    key={tab}
+                    className={`px-5 py-2 rounded-lg ${
+                      selectedTab === tab
+                        ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
+                        : "bg-[#FCFCFC20] text-gray-700 border-2"
+                    }`}
+                    onClick={() => handleTabChange(tab)}
+                  >
+                    {tab}
+                  </button>
                 ))}
               </div>
-            ) : (
-              <div className="flex flex-col lg:flex-row w-full max-w-full">
-                <div className="lg:w-full mt-6 lg:mt-0 w-full max-w-full">
-                  <div className="flex justify-end w-full px-5 mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center bg-white rounded-xl mr-4">
-                        <div className="relative w-full">
-                          <input
-                            type="text"
-                            placeholder="Search"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full text-sm leading-6 text-slate-900 placeholder-slate-400 rounded-md py-2 pl-3 pr-10 ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
-                          />
-                          <MagnifyingGlassIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 focus:text-blue-500" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-center">
-                    <div className="tab-buttons flex justify-center items-center gap-12 w-4/6 mb-2 border-4 py-1 rounded-xl shadow-md">
-                      {["Brand Color", "Single Color", "Gradient Color"].map(
-                        (tab) => (
-                          <button
-                            key={tab}
-                            className={`px-5 py-2 rounded-lg ${
-                              selectedTab === tab
-                                ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
-                                : "bg-[#FCFCFC20] text-gray-700 border-2"
-                            }`}
-                            onClick={() => handleTabChange(tab)}
-                          >
-                            {tab}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-                  <div className="overflow-auto" style={{ maxHeight: "80vh" }}>
-                    {modelData.map((data, index) => (
-                      <FilteredData
-                        key={index}
-                        filteredModel={data.creatives}
-                        modelName={data.modelName}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
+            <div className="overflow-auto" style={{ maxHeight: "80vh" }}>
+              {/* Unaware Model */}
+              {loadingUnaware ? (
+                <CardLoader />
+              ) : (
+                <FilteredData filteredModel={unawareData} modelName="Unaware" />
+              )}
+
+              {/* Problem Aware Model */}
+              {loadingProblemAware ? (
+                <CardLoader />
+              ) : (
+                <FilteredData
+                  filteredModel={problemAwareData}
+                  modelName="Problem Aware"
+                />
+              )}
+
+              {/* Solution Aware Model */}
+              {loadingSolutionAware ? (
+                <CardLoader />
+              ) : (
+                <FilteredData
+                  filteredModel={solutionAwareData}
+                  modelName="Solution Aware"
+                />
+              )}
+
+              {/* Product Aware Model */}
+              {loadingProductAware ? (
+                <CardLoader />
+              ) : (
+                <FilteredData
+                  filteredModel={productAwareData}
+                  modelName="Product Aware"
+                />
+              )}
+
+              {/* Most Aware Model */}
+              {loadingMostAware ? (
+                <CardLoader />
+              ) : (
+                <FilteredData
+                  filteredModel={mostAwareData}
+                  modelName="Most Aware"
+                />
+              )}
+            </div>
           </>
         )}
       </section>
