@@ -291,7 +291,7 @@ const GeneratedCreatives = ({
                       )}
                     </div>
                   </div>
-                  <div style={{ maxHeight: "80vh" }}>
+                  <div className="overflow"style={{ maxHeight: "80vh" }}>
                     {modelData.map((data, index) => (
                       <FilteredData
                         key={index}
