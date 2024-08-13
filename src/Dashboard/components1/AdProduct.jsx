@@ -47,37 +47,35 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     isEdit: false,
   });
   
-  
   const [brands, setBrands] = useState([]);
   const navigate = useNavigate();
 
   // Fetch product details if a product ID is provided
   useEffect(() => {
     let isMounted = true;
-
+  
     const fetchProducts = async (id) => {
       try {
-        const response = await axios.get(`${baseUrl}/product`);
+        const response = await axios.get(`${baseUrl}/product/${id}`);
         if (isMounted) {
-          const foundProduct = response.data.data.find(
-            (product) => product.id === id
-          );
+          const foundProduct = response.data.data;
+  
           if (foundProduct) {
             setProductDetails({
-              productName: foundProduct.name,
-              productDescription: foundProduct.description,
-              productURL: foundProduct.productURL,
-              brandID: foundProduct.brandID,
-              logoURL: foundProduct.productImagesList[0]?.imageURL || "", // Populate with the first image URL
-              discountType: foundProduct.discountType,
-              discount: foundProduct.discount,
-              price: foundProduct.price,
-              priceType: foundProduct.priceType,
+              productName: foundProduct.name || "",
+              productDescription: foundProduct.description || "",
+              productURL: foundProduct.productURL || "",
+              brandID: foundProduct.brandID || "",
+              logoURL: foundProduct.productImagesList[0]?.imageURL || "",
+              discountType: foundProduct.discountType || "Percentage", // Ensure this maps correctly
+            customDiscount: foundProduct.discount || "", // Ensure the discount is mapped correctly
+            productPrice: foundProduct.price || "",
+              priceType: foundProduct.priceType || "USD", // Default to 'USD' if not provided
               isEdit: true,
             });
-
+  
             // Populate the images array with existing product images
-            const existingImages = foundProduct.productImagesList.map((img, index) => ({
+            const existingImages = foundProduct.productImagesList.map((img) => ({
               file: null, // Since these are existing images, the file is not available
               id: img.id,
               url: img.imageURL,
@@ -92,15 +90,16 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         console.error("Error fetching product details:", error);
       }
     };
-
+  
     if (productID) {
       fetchProducts(productID);
     }
-
+  
     return () => {
       isMounted = false;
     };
   }, [productID]);
+  
 
   // Handle file selection and uploading images
   const handleFileChange = (event) => {
@@ -127,9 +126,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             setProductDetails({ ...productDetails, imageFile: null, logoURL: "" }); // Clear image file
         }
     }
-};
-
-
+  };
 
   // Handle drag-and-drop for image uploading
   const handleDrop = (event) => {
@@ -176,7 +173,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             uploadImage(selectedImage.file); // Upload image after user selection if it's a new file
         }
     }
-};
+  };
 
   // Handle image deletion
   const handleDeleteImage = (index) => {
@@ -193,13 +190,19 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   // Handle change in product details
   const handleOnChangeProductDetails = (e) => {
     const { id, value } = e.target;
-    
+  
     if (id === "customDiscount") {
       const discountValue = parseFloat(value);
       const productPrice = parseFloat(productDetails.productPrice);
   
-      if (productDetails.discount === "Percentage") {
-        if (!isNaN(productPrice) && discountValue > 0 && discountValue <= 100) {
+      if (value === "") {
+        // If the input is being cleared, just update the state without any validation
+        setProductDetails({ ...productDetails, customDiscount: value });
+        return;
+      }
+  
+      if (productDetails.discountType === "Percentage") {
+        if (!isNaN(productPrice) && discountValue >= 0 && discountValue <= 100) {
           const discountAmount = (productPrice * discountValue) / 100;
           if (discountAmount > productPrice) {
             toast.error("The discount amount exceeds the product price.");
@@ -209,7 +212,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
         } else {
           toast.error("Please enter a valid percentage between 1 and 100.");
         }
-      } else if (productDetails.discount === "Price") {
+      } else if (productDetails.discountType === "Price") {
         if (!isNaN(discountValue) && discountValue <= productPrice) {
           setProductDetails({ ...productDetails, customDiscount: value });
         } else {
@@ -227,7 +230,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     const discountType = e.target.value;
     setProductDetails({
       ...productDetails,
-      discount: discountType,
+      discountType: discountType,
       customDiscount: "",
     });
   };
@@ -262,7 +265,6 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   
     fetchBrands();
   }, []);
-  
 
   // Upload image to the server
   const uploadImage = async (imageFile) => {
@@ -288,34 +290,48 @@ export default function AdProduct({ setIsNextSectionOpen }) {
       console.error(error);
     }
   };
-  
 
-  // Handle form submission for adding a new product
-  const handleAdProduct = async (e) => {
-    e.preventDefault();
-    const newProduct = {
-      brandID: productDetails.brandID,
-      name: productDetails.productName,
-      description: productDetails.productDescription,
-      price: productDetails.productPrice,
-      priceType: productDetails.currency,
-      discount: productDetails.customDiscount,
-      discountType: productDetails.discount,
-      productImagesList: [
-        {
-          imageURL: productDetails.logoURL,
-        },
-      ],
-    };
-    try {
-      await axios.post(`${baseUrl}/product`, newProduct);
-      updateBrandProductCount(productDetails.brandID);
-      toast.success("Product created successfully");
-      navigate("/productspage");
-    } catch (error) {
-      console.log(error);
-    }
+  // Handle form submission for adding or editing a product
+  const handleProductSubmission = async (e) => {
+  e.preventDefault();
+
+  // Check if we're editing an existing product
+  const isEditMode = productDetails.isEdit && productID;
+
+  const productPayload = {
+    id: isEditMode ? productID : undefined, // Include the ID only if editing
+    brandID: productDetails.brandID,
+    name: productDetails.productName,
+    description: productDetails.productDescription,
+    price: productDetails.productPrice,
+    priceType: productDetails.currency,
+    discount: productDetails.customDiscount,
+    discountType: productDetails.discount,
+    productImagesList: [
+      {
+        imageURL: productDetails.logoURL,
+      },
+    ],
   };
+
+
+  try {
+  
+    const response = await axios.post(`${baseUrl}/product`, productPayload);
+
+    if (isEditMode) {
+      toast.success("Product updated successfully");
+    } else {
+      toast.success("Product created successfully");
+    }
+
+    navigate("/productspage");
+  } catch (error) {
+    console.error("Error in product submission:", error);
+    toast.error("Failed to submit product");
+  }
+};
+
 
   // Update the product count for the selected brand
   const updateBrandProductCount = (brandID) => {
@@ -334,51 +350,21 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     });
   };
 
-  // Handle form submission for editing an existing product
-  const handleEditProduct = async () => {
-    const editProduct = {
-      brandID: productDetails.brandID,
-      name: productDetails.productName,
-      description: productDetails.productDescription,
-      price: productDetails.productPrice,
-      currency: productDetails.currency,
-      discountType: productDetails.discount,
-      discountValue: productDetails.customDiscount,
-      productImagesList: [
-        {
-          imageURL: productDetails.logoURL,
-        },
-      ],
-      
-    };
-
-    try {
-      await axios.put(`${baseUrl}/product/${productDetails.id}`, editProduct);
-      toast.success("Product edited successfully");
-      navigate("/productspage");
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   // Handle scanning a URL to retrieve product details
   const handleScanUrl = async (e) => {
     try {
-        await axios
-            .get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`)
-            .then((res) => {
-                toast.success("Scan successful");
-                setProductDetails({
-                    ...productDetails,
-                    productName: res.data.productTitle,
-                    productDescription: res.data.productDesc,
-                });
-            });
+      const response = await axios.get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`);
+      toast.success("Scan successful");
+      setProductDetails({
+        ...productDetails,
+        productName: response.data.productTitle,
+        productDescription: response.data.productDesc,
+      });
     } catch (error) {
-        console.log(error);
+      console.log(error);
+      toast.error("Failed to scan the URL.");
     }
-};
-
+  };
 
   // Handle searching for generated images based on a prompt
   const handleSearchForImages = async () => {
@@ -417,33 +403,19 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
   // Determine if the "Next Step" button should be disabled
   const isNextStepDisabled =
-  productDetails.productName === "" ||
-  productDetails.productDescription === "" ||
-  (!productDetails.logoURL && !productDetails.imageFile) ||
-  productDetails.brandName === "" ||
-  productDetails.productPrice === "" ||
-  productDetails.customDiscount === "" ||
-  (productDetails.discount === "Price" && 
-    (isNaN(parseFloat(productDetails.customDiscount)) || 
-     parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
-  (productDetails.discount === "Percentage" && 
-    (isNaN(parseFloat(productDetails.customDiscount)) || 
-     parseFloat(productDetails.customDiscount) <= 0 ||
-     parseFloat(productDetails.customDiscount) > 100));
-
-
-    console.log('productName:', productDetails.productName);
-    console.log('productDescription:', productDetails.productDescription);
-    console.log('logoURL:', productDetails.logoURL);
-    console.log('imageFile:', productDetails.imageFile);
-    console.log('brandName:', productDetails.brandName);
-    console.log('productPrice:', productDetails.productPrice);
-    console.log('customDiscount:', productDetails.customDiscount);
-    console.log('discount:', productDetails.discount);
-    console.log('price condition:', parseFloat(productDetails.productPrice) <= parseFloat(productDetails.customDiscount));
-    console.log('percentage condition:', parseFloat(productDetails.customDiscount) > 100);
-    
-      console.log('isNextStepDisabled:', isNextStepDisabled);
+    productDetails.productName === "" ||
+    productDetails.productDescription === "" ||
+    (!productDetails.logoURL && !productDetails.imageFile) ||
+    productDetails.brandName === "" ||
+    productDetails.productPrice === "" ||
+    productDetails.customDiscount === "" ||
+    (productDetails.discount === "Price" && 
+      (isNaN(parseFloat(productDetails.customDiscount)) || 
+      parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+    (productDetails.discount === "Percentage" && 
+      (isNaN(parseFloat(productDetails.customDiscount)) || 
+      parseFloat(productDetails.customDiscount) <= 0 ||
+      parseFloat(productDetails.customDiscount) > 100));
 
   // Define styling for image sections based on the number of images
   const generatedImageSectionWidth = "w-full lg:w-2/6";
@@ -471,7 +443,7 @@ export default function AdProduct({ setIsNextSectionOpen }) {
             <img src="/icon2.svg" alt="" />
             <span className="flex flex-col">
               <h4 className="text-[#082A66] font-bold text-xl md:text-2xl lg:text-2xl">
-              {productDetails.isEdit ? 'Edit Product Details' : 'Add Product Details'}
+                {productDetails.isEdit ? 'Edit Product Details' : 'Add Product Details'}
               </h4>
               <p className="text-[#374151] lg:text-sm text-xs">
                 Upload photos and details of your product
@@ -497,34 +469,33 @@ export default function AdProduct({ setIsNextSectionOpen }) {
                   Select Your Desired Image
                 </h6>
                 <div className="flex gap-4 flex-wrap md:flex-nowrap">
-                {images.map((image, index) => (
-  <div
-    key={index}
-    className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
-    onClick={() => handleImageClick(image.url)} // This should trigger the handleImageClick function
-  >
-    <img
-      src={image.url} // Correctly display the image using the URL from state
-      alt={`Uploaded ${index}`} // Provide a unique alt text for each image
-      className="object-cover w-full h-52 rounded" // Ensure the image is displayed with the correct styles
-    />
-    <button
-      className="absolute top-1 left-1 text-red-500"
-      onClick={(e) => {
-        e.stopPropagation(); // Prevent the click event from triggering the handleImageClick
-        handleDeleteImage(index); // Handle image deletion
-      }}
-    >
-      <FaTrash />
-    </button>
-    {selectedImageUrl === image.url && selectedImageType === 'uploaded' && (
-      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
-        <BiCheck size={16} />
-      </div>
-    )}
-  </div>
-))}
-
+                  {images.map((image, index) => (
+                    <div
+                      key={index}
+                      className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
+                      onClick={() => handleImageClick(image.url)} // This should trigger the handleImageClick function
+                    >
+                      <img
+                        src={image.url} // Correctly display the image using the URL from state
+                        alt={`Uploaded ${index}`} // Provide a unique alt text for each image
+                        className="object-cover w-full h-52 rounded" // Ensure the image is displayed with the correct styles
+                      />
+                      <button
+                        className="absolute top-1 left-1 text-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent the click event from triggering the handleImageClick
+                          handleDeleteImage(index); // Handle image deletion
+                        }}
+                      >
+                        <FaTrash />
+                      </button>
+                      {selectedImageUrl === image.url && selectedImageType === 'uploaded' && (
+                        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                          <BiCheck size={16} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -698,48 +669,46 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               />
               <h6>Brand Name</h6>
             </span>
-{brands.length === 1 ? (
-    <input
-        type="text"
-        className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none disabled cursor-not-allowed opacity-90"
-        value={brands[0].name}
-        readOnly
-    />
-) : (
-    <select
-        className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-        id="brandName"
-        value={productDetails.brandName}
-        onChange={(e) => {
-            const selectedBrand = brands.find(
-                (item) => item.id === e.target.value
-            );
-            setProductDetails({
-                ...productDetails,
-                brandID: selectedBrand.id,
-                brandName: selectedBrand.name,
-            });
-        }}
-    >
-        <option>Select brand name</option>
-        {brands.map((item) => (
-            <option key={item.id} value={item.id}>
-                {item.name}
-            </option>
-        ))}
-    </select>
-)}
+            {brands.length === 1 ? (
+              <input
+                type="text"
+                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none disabled cursor-not-allowed opacity-90"
+                value={brands[0].name}
+                readOnly
+              />
+            ) : (
+              <select
+                className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                id="brandID" // Change to match the ID of the brand
+                value={productDetails.brandID} // Bind value to brandID
+                onChange={(e) => {
+                  const selectedBrand = brands.find(
+                    (item) => item.id === e.target.value
+                  );
+                  setProductDetails({
+                    ...productDetails,
+                    brandID: selectedBrand.id,
+                    brandName: selectedBrand.name, // Also update the brandName
+                  });
+                }}
+              >
+                <option value="">Select brand name</option> {/* Ensure there's an empty value option */}
+                {brands.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
 
-          </div>
-          </div>
+        </div>
 
           <div className="flex justify-center p-2">
             <img src="/orIcon.svg" alt="" />
           </div>
           <form
-            onSubmit={
-              productDetails.isEdit ? handleEditProduct : handleAdProduct
-            }
+            onSubmit={handleProductSubmission} // Use the unified submission handler
             className="p-2"
           >
             <p className="text-lg pb-2 text-[#082A66] ml-2">
@@ -779,81 +748,88 @@ export default function AdProduct({ setIsNextSectionOpen }) {
               </div>
             </div>
             <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
-              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
-                <span className="flex items-center gap-4 text-lg">
-                  <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
-                  <h6>Product Price</h6>
-                </span>
-                <div className="relative w-full flex items-center">
-                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[90px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
-                    <select
-                      id="currency"
-                      onChange={handleOnChangeProductDetails}
-                      value={productDetails.priceType}
-                      className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
-                      style={{
-                        background: "[#D9E9F2]",
-                        backgroundPosition: "right 10px center",
-                        backgroundRepeat: "no-repeat",
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
-                      }}
-                    >
-                      {currencies.map((currency, index) => (
-                        <option key={index} value={currency}>
-                          {currency}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Enter Product Price"
-                    id="productPrice"
-                    value={productDetails.price}
+            <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
+              <span className="flex items-center gap-4 text-lg">
+                <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                <h6>Product Price</h6>
+              </span>
+              <div className="relative w-full flex items-center">
+                <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[90px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                  <select
+                    id="currency"
                     onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    autoComplete="off"
-                  />
+                    value={productDetails.currency}
+                    className="appearance-none bg-transparent pl-4 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                    style={{
+                      background: "[#D9E9F2]",
+                      backgroundPosition: "right 10px center",
+                      backgroundRepeat: "no-repeat",
+                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                    }}
+                  >
+                    {currencies.map((currency, index) => (
+                      <option key={index} value={currency}>
+                        {currency}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
-                <span className="flex items-center gap-4 text-lg">
-                  <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
-                  <h6>Discount</h6>
-                </span>
-                <div className="relative w-full flex items-center">
-                  <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
-                    <select
-                      id="discount"
-                      onChange={handleDiscountChange}
-                      value={productDetails.discountType}
-                    className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
-                      style={{
-                        background: "[#D9E9F2]",
-                        backgroundPosition: "right 10px center",
-                        backgroundRepeat: "no-repeat",
-                        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
-                      }}
-                    >
-                      {discountOptions.map((discount, index) => (
-                        <option key={index} value={discount}>
-                          {discount}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder={`Enter Discount in terms of ${productDetails.discount}`}
-                    id="customDiscount"
-                    value={productDetails.customDiscount}
-                    onChange={handleOnChangeProductDetails}
-                    className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                    autoComplete="off"
-                  />
-                </div>
+                <input
+                  type="number"
+                  placeholder="Enter Product Price"
+                  id="productPrice"
+                  min="0"
+                  value={productDetails.productPrice || ''}
+                  onChange={handleOnChangeProductDetails}
+                  className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  autoComplete="off"
+                />
               </div>
             </div>
+
+            <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
+              <span className="flex items-center gap-4 text-lg">
+                <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
+                <h6>Discount</h6>
+              </span>
+              <div className="relative w-full flex items-center">
+                <div className="absolute left-2 flex items-center justify-center rounded-[16px] w-[140px] h-[44px] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC]">
+                  <select
+                    id="discount"
+                    onChange={handleDiscountChange}
+                    value={productDetails.discount}
+                    className="appearance-none bg-transparent pl-2 w-full h-full flex items-center justify-center focus:outline-none z-10"
+                    style={{
+                      background: "[#D9E9F2]",
+                      backgroundPosition: "right 10px center",
+                      backgroundRepeat: "no-repeat",
+                      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                    }}
+                  >
+                    {discountOptions.map((discount, index) => (
+                      <option key={index} value={discount}>
+                        {discount}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  type="number"
+                  placeholder={`Enter Discount in ${productDetails.discountType || 'Percentage'}`}
+                  id="customDiscount"
+                  min="0"
+                  max={productDetails.discountType === "Percentage" ? "100" : undefined}
+                  value={productDetails.customDiscount || ''}
+                  onChange={handleOnChangeProductDetails}
+                  className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
+
+          </div>
+
             <div className="flex justify-center md:justify-start p-2">
               <button
                 className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"

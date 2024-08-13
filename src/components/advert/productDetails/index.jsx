@@ -5,8 +5,8 @@ import { GoTag } from "react-icons/go";
 import { useLocation, useNavigate } from "react-router-dom";
 import link2 from "../../../assets/dashboard_img/linksvg1.svg";
 import facomment from "../../../assets/dashboard_img/facomment.svg";
-import brandImage from "../../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
-import brandIcon from "../../../assets/dashboard_img/brand_b1.svg"; // Adjust the path as needed
+import brandImage from "../../../assets/dashboard_img/brand_img.png"; 
+import brandIcon from "../../../assets/dashboard_img/brand_b1.svg"; 
 import { IoImageOutline } from "react-icons/io5";
 import toast from "react-hot-toast";
 import axios from "axios";
@@ -29,8 +29,8 @@ export default function ProductDetails({
   const [isOpen, setIsOpen] = useState(true);
   const [images, setImages] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
-  const [selectedImageUrl, setSelectedImageUrl] = useState(null); // Track by URL
-  const [selectedImageType, setSelectedImageType] = useState(null); // 'uploaded' or 'generated'
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null); 
+  const [selectedImageType, setSelectedImageType] = useState(null); 
   const [currentPage, setCurrentPage] = useState(1);
 
   const location = useLocation();
@@ -43,8 +43,8 @@ export default function ProductDetails({
     productURL: "",
     brandName: "",
     productPrice: "",
-    currency: currencies[0],
-    discount: discountOptions[0],
+    currency: "USD", 
+    discount: "Percentage", 
     customDiscount: "",
     imageFile: null,
     logoURL: "",
@@ -57,33 +57,47 @@ export default function ProductDetails({
 
   useEffect(() => {
     let isMounted = true;
-
+  
     const fetchProducts = async (id) => {
       try {
-        const response = await axios.get(`${baseUrl}/product`);
+        const response = await axios.get(`${baseUrl}/product/${id}`);
         if (isMounted) {
-          const foundProduct = response.data.data.find(
-            (brand) => brand.id === id
-          );
+          const foundProduct = response.data.data;
+  
           if (foundProduct) {
             setProductDetails({
-              productName: foundProduct.name,
-              productDescription: foundProduct.description,
-              productURL: foundProduct.productURL,
-              brandID: foundProduct.brandID,
+              productName: foundProduct.name || "",
+              productDescription: foundProduct.description || "",
+              productURL: foundProduct.productURL || "",
+              brandID: foundProduct.brandID || "",
+              logoURL: foundProduct.productImagesList[0]?.imageURL || "",
+              discount: foundProduct.discountType || "Percentage", 
+              customDiscount: foundProduct.discount || "", 
+              productPrice: foundProduct.price || "",
+              currency: foundProduct.priceType || "INR", 
               isEdit: true,
             });
+  
+            const existingImages = foundProduct.productImagesList.map((img) => ({
+              file: null, 
+              id: img.id,
+              url: img.imageURL,
+              uploaded: true, 
+            }));
+            setImages(existingImages);
+            setSelectedImageUrl(existingImages[0]?.url || null);
+            setSelectedImageType(existingImages.length > 0 ? 'uploaded' : null);
           }
         }
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching product details:", error);
       }
     };
-
+  
     if (productID) {
       fetchProducts(productID);
     }
-
+  
     return () => {
       isMounted = false;
     };
@@ -91,25 +105,45 @@ export default function ProductDetails({
 
   const handleFileChange = (event) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files).slice(0, 3 - images.length);
-      setImages([...images, ...newFiles]);
-      if (newFiles.length === 1) {
-        setSelectedImageUrl(URL.createObjectURL(newFiles[0]));
-        setSelectedImageType('uploaded');
-        setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
-      }
+        const newFiles = Array.from(event.target.files).slice(0, 3 - images.length).map((file, index) => ({
+            file,
+            id: `${file.name}-${file.size}-${index}`,
+            url: URL.createObjectURL(file)
+        }));
+
+        const newImages = [...images, ...newFiles];
+        setImages(newImages);
+
+        if (newFiles.length === 1) {
+            setSelectedImageUrl(newFiles[0].url);
+            setSelectedImageType('uploaded');
+            setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
+            uploadImage(newFiles[0].file); 
+        } else if (newFiles.length > 1) {
+            setSelectedImageUrl(null); 
+            setSelectedImageType('multiple-upload'); 
+            setProductDetails({ ...productDetails, imageFile: null, logoURL: "" }); 
+        }
     }
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
     if (event.dataTransfer.files) {
-      const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length);
-      setImages([...images, ...newFiles]);
-      if (newFiles.length === 1) {
-        setSelectedImageUrl(URL.createObjectURL(newFiles[0]));
+      const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length).map((file, index) => ({
+        file,
+        id: `${file.name}-${file.size}-${index}`,
+        url: URL.createObjectURL(file)
+      }));
+
+      const newImages = [...images, ...newFiles];
+      setImages(newImages);
+
+      if (newFiles.length > 0) {
+        setSelectedImageUrl(newFiles[0].url);
         setSelectedImageType('uploaded');
-        setProductDetails({ ...productDetails, imageFile: newFiles[0], logoURL: "" });
+        setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
+        uploadImage(newFiles[0].file); 
         toast.success("Image uploaded successfully");
       }
     }
@@ -119,18 +153,21 @@ export default function ProductDetails({
     event.preventDefault();
   };
 
-  const handleImageClick = (url, isGenerated = false) => {
+  const handleImageClick = (imageUrl, isGenerated = false) => {
     if (isGenerated) {
-      setImages([]);  // Clear any previously uploaded images
-    }
-    setSelectedImageUrl(url);
-    setSelectedImageType(isGenerated ? 'generated' : 'uploaded');
-    if (isGenerated) {
-      setProductDetails({ ...productDetails, imageFile: null, logoURL: url });
-      toast.success("Generated image selected successfully");
+        setImages([]);  
+        setSelectedImageUrl(imageUrl);
+        setSelectedImageType('generated');
+        setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
+        toast.success("Image selected successfully");
     } else {
-      setProductDetails({ ...productDetails, imageFile: images.find(img => URL.createObjectURL(img) === url), logoURL: "" });
-      toast.success("Uploaded image selected successfully");
+        const selectedImage = images.find(img => img.url === imageUrl);
+        setSelectedImageUrl(imageUrl);
+        setSelectedImageType('uploaded');
+        setProductDetails({ ...productDetails, imageFile: selectedImage.file, logoURL: selectedImage.uploaded ? selectedImage.url : "" });
+        if (!selectedImage.uploaded) {
+            uploadImage(selectedImage.file); 
+        }
     }
   };
 
@@ -143,16 +180,20 @@ export default function ProductDetails({
     }
   };
 
-  // Handle change in product details
   const handleOnChangeProductDetails = (e) => {
     const { id, value } = e.target;
-    
+  
     if (id === "customDiscount") {
       const discountValue = parseFloat(value);
       const productPrice = parseFloat(productDetails.productPrice);
   
+      if (value === "") {
+        setProductDetails({ ...productDetails, customDiscount: value });
+        return;
+      }
+  
       if (productDetails.discount === "Percentage") {
-        if (!isNaN(productPrice) && discountValue > 0 && discountValue <= 100) {
+        if (!isNaN(productPrice) && discountValue >= 0 && discountValue <= 100) {
           const discountAmount = (productPrice * discountValue) / 100;
           if (discountAmount > productPrice) {
             toast.error("The discount amount exceeds the product price.");
@@ -173,19 +214,18 @@ export default function ProductDetails({
       setProductDetails({ ...productDetails, [id]: value });
     }
   };
-  
 
-  // Handle discount type change
   const handleDiscountChange = (e) => {
     const discountType = e.target.value;
-    setProductDetails({
-      ...productDetails,
+    console.log("Selected Discount Type:", discountType);
+    
+    setProductDetails((prevDetails) => ({
+      ...prevDetails,
       discount: discountType,
-      customDiscount: "",
-    });
+      customDiscount: "", 
+    }));
   };
   
-  // Fetch brand details when component mounts
   useEffect(() => {
     const fetchBrands = async () => {
       try {
@@ -199,7 +239,6 @@ export default function ProductDetails({
         });
         setBrands(fetchedBrands);
   
-        // Automatically select the brand if there's only one
         if (fetchedBrands.length === 1) {
           setProductDetails(prevDetails => ({
             ...prevDetails,
@@ -215,110 +254,8 @@ export default function ProductDetails({
     fetchBrands();
   }, []);
 
-  useEffect(() => {
-    if (productDetails.imageFile) {
-      uploadImage();
-    }
-  }, [productDetails.imageFile]);
-
-  const uploadImage = async () => {
-    const uploadData = new FormData();
-    uploadData.append("file", productDetails.imageFile);
-    uploadData.append("customerId", "123");
-
-    try {
-      await axios
-        .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
-        .then((res) => {
-          setProductDetails({ ...productDetails, logoURL: res.data.data.url });
-        });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const handleAdProduct = async (e) => {
-    e.preventDefault();
-    const newProduct = {
-      brandID: productDetails.brandID,
-      name: productDetails.productName,
-      description: productDetails.productDescription,
-      price: productDetails.productPrice,
-      priceType: productDetails.currency,
-      discount: productDetails.customDiscount,
-      discountType: productDetails.discount,
-      productImagesList: [
-        {
-          imageURL: productDetails.logoURL,
-        },
-      ],
-    };
-    try {
-      await axios.post(`${baseUrl}/product`, newProduct);
-      updateBrandProductCount(productDetails.brandID);
-      toast.success("Product created successfully");
-      handleNextStep();
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const updateBrandProductCount = (brandID) => {
-    setBrands((prevBrands) => {
-      return prevBrands.map((brand) => {
-        if (brand.id === brandID) {
-          const updatedCount = brand.productsCreated + 1;
-          localStorage.setItem(`brand_${brand.id}_count`, updatedCount);
-          return {
-            ...brand,
-            productsCreated: updatedCount,
-          };
-        }
-        return brand;
-      });
-    });
-  };
-
-  const handleEditProduct = async () => {
-    const editProduct = {
-      brandID: productDetails.brandID,
-      name: productDetails.productName,
-      description: productDetails.productDescription,
-      productImagesList: [
-        {
-          imageURL: productDetails.logoURL,
-        },
-      ],
-    };
-
-    try {
-      await axios.post(`${baseUrl}/product`, editProduct);
-      toast.success("Product edited successfully");
-      handleNextStep();
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const handleScanUrl = async (e) => {
-    try {
-      await axios
-        .get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`)
-        .then((res) => {
-          toast.success("Scan successful");
-          setProductDetails({
-            ...productDetails,
-            productName: res.data.productTitle,
-            productDescription: res.data.productDesc,
-          });
-        });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
+  
+  // Handle searching for generated images based on a prompt
   const handleSearchForImages = async () => {
     try {
       const response = await axios.get(`${baseUrl}/search/get-images`, {
@@ -335,31 +272,23 @@ export default function ProductDetails({
     }
   };
 
-  const handlePageChange = async (page) => {
-    setCurrentPage(page);
+  // Handle scanning a URL to retrieve product details
+  const handleScanUrl = async (e) => {
     try {
-      const response = await axios.get(`${baseUrl}/search/get-images`, {
-        params: {
-          prompt: productDetails.prompt,
-          page: page,
-          size: 10,
-        },
+      const response = await axios.get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`);
+      toast.success("Scan successful");
+      setProductDetails({
+        ...productDetails,
+        productName: response.data.productTitle,
+        productDescription: response.data.productDesc,
       });
-      setGeneratedImages(response.data.result.data);
     } catch (error) {
       console.log(error);
-      toast.error("Failed to generate images.");
+      toast.error("Failed to scan the URL.");
     }
   };
 
-  const handleNextStep = () => {
-    setIsOpen(false);
-    setIsNextSectionOpen(true);
-    setIsCompleted(true);
-  };
-
-    // Determine if the "Next Step" button should be disabled
-    const isNextStepDisabled =
+  const isNextStepDisabled =
     productDetails.productName === "" ||
     productDetails.productDescription === "" ||
     (!productDetails.logoURL && !productDetails.imageFile) ||
@@ -368,32 +297,84 @@ export default function ProductDetails({
     productDetails.customDiscount === "" ||
     (productDetails.discount === "Price" && 
       (isNaN(parseFloat(productDetails.customDiscount)) || 
-       parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+      parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
     (productDetails.discount === "Percentage" && 
       (isNaN(parseFloat(productDetails.customDiscount)) || 
-       parseFloat(productDetails.customDiscount) <= 0 ||
-       parseFloat(productDetails.customDiscount) > 100));
-  
-  
-      console.log('productName:', productDetails.productName);
-      console.log('productDescription:', productDetails.productDescription);
-      console.log('logoURL:', productDetails.logoURL);
-      console.log('imageFile:', productDetails.imageFile);
-      console.log('brandName:', productDetails.brandName);
-      console.log('productPrice:', productDetails.productPrice);
-      console.log('customDiscount:', productDetails.customDiscount);
-      console.log('discount:', productDetails.discount);
-      console.log('price condition:', parseFloat(productDetails.productPrice) <= parseFloat(productDetails.customDiscount));
-      console.log('percentage condition:', parseFloat(productDetails.customDiscount) > 100);
-      
-        console.log('isNextStepDisabled:', isNextStepDisabled);
+      parseFloat(productDetails.customDiscount) <= 0 ||
+      parseFloat(productDetails.customDiscount) > 100));
 
+  const uploadImage = async (imageFile) => {
+    const uploadData = new FormData();
+    uploadData.append("file", imageFile);
+  
+    try {
+      const response = await axios.post(`${baseUrl}/sparkiq/image/upload?customerId=123`, uploadData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+  
+      if (response.status === 201) {
+        toast.success("Image uploaded successfully");
+        setProductDetails((prevDetails) => ({
+          ...prevDetails,
+          logoURL: response.data.data.url, 
+        }));
+      } else {
+        toast.error("Failed to upload image");
+      }
+    } catch (error) {
+      toast.error("Error uploading image");
+      console.error(error);
+    }
+  };
+
+  const handleProductSubmission = async (e) => {
+    e.preventDefault();
+  
+    console.log("Submitting product...");
+    console.log("isEdit:", productDetails.isEdit);
+    console.log("productID:", productID);
+  
+    const isEditMode = productDetails.isEdit && productID;
+    const productPayload = {
+      id: isEditMode ? productID : undefined,
+      brandID: productDetails.brandID,
+      name: productDetails.productName,
+      description: productDetails.productDescription,
+      price: productDetails.productPrice,
+      priceType: productDetails.currency,
+      discount: productDetails.customDiscount,
+      discountType: productDetails.discount,
+      productImagesList: [
+        {
+          imageURL: productDetails.logoURL,
+        },
+      ],
+    };
+  
+    try {
+      const response = await axios.post(`${baseUrl}/product`, productPayload);
+  
+      if (isEditMode) {
+        toast.success("Product updated successfully");
+      } else {
+        toast.success("Product created successfully");
+      }
+  
+      setIsCompleted(true);
+      setIsNextSectionOpen(true);
+      setIsOpen(false); // Close current section
+    } catch (error) {
+      console.error("Error in product submission:", error);
+      toast.error("Failed to submit product");
+    }
+  };
+  
   const toggleAccordion = () => {
     setIsOpen(!isOpen);
   };
 
-  const generatedImageSectionWidth = "w-full lg:w-2/6"; // Fixed width for generated images
-  const generatedImageContainerClass = "w-full"; // Fixed width for generated image container
+  const generatedImageSectionWidth = "w-full lg:w-2/6"; 
+  const generatedImageContainerClass = "w-full"; 
 
   const imageContainerClass =
     images.length === 2 || (selectedImageType === 'generated' && images.length > 1)
@@ -460,77 +441,69 @@ export default function ProductDetails({
         {isOpen && (
           <>
             <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-4 p-2">
-              {selectedImageType !== 'generated' && images.length > 0 && (
-                <div
-                  className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}
-                >
-                  <h6 className="font-bold pb-4 mt-2 mb-4 text-sm md:text-base lg:text-lg">
-                    Select Your Desired Image
-                  </h6>
-                  <div className="flex gap-4 flex-wrap md:flex-nowrap">
-                    {images.map((image, index) => {
-                      const imageUrl = URL.createObjectURL(image);
-                      return (
-                        <div
-                          key={index}
-                          className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
-                          onClick={() => handleImageClick(imageUrl)}
-                        >
-                          <img
-                            src={imageUrl}
-                            alt={`Uploaded ${index}`}
-                            className="object-cover w-full h-48 rounded"
-                          />
-                          <button
-                            className="absolute top-1 left-1 text-red-500"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteImage(index);
-                            }}
-                          >
-                            <FaTrash />
-                          </button>
-                          {selectedImageUrl === imageUrl && selectedImageType === 'uploaded' && (
-                            <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
-                              <BiCheck size={16} />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {selectedImageType === 'generated' && (
-                <div
-                  className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${generatedImageSectionWidth} h-auto lg:h-80`}
-                >
-                  <h6 className="font-bold pb-4 mt-2 mb-4 text-sm md:text-base lg:text-lg">
-                    Selected Image
-                  </h6>
-                  <div className="flex gap-4 flex-wrap md:flex-nowrap">
+            {images.length > 0 && selectedImageType !== 'generated' && (
+              <div
+                className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${imageSectionWidth} h-auto lg:h-80`}
+              >
+                <h6 className="font-bold pb-2 mt-2 mb-4">
+                  Select Your Desired Image
+                </h6>
+                <div className="flex gap-4 flex-wrap md:flex-nowrap">
+                  {images.map((image, index) => (
                     <div
-                      className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${generatedImageContainerClass}`}
-                      onClick={() => handleImageClick(productDetails.logoURL, true)}
+                      key={index}
+                      className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${imageContainerClass}`}
+                      onClick={() => handleImageClick(image.url)} 
                     >
                       <img
-                        src={productDetails.logoURL}
-                        alt="Selected Generated Image"
-                        className="object-cover w-full h-48 rounded"
+                        src={image.url} 
+                        alt={`Uploaded ${index}`} 
+                        className="object-cover w-full h-52 rounded" 
                       />
-                      {selectedImageUrl === productDetails.logoURL && (
-                        <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                      <button
+                        className="absolute top-1 left-1 text-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation(); 
+                          handleDeleteImage(index); 
+                        }}
+                      >
+                        <FaTrash />
+                      </button>
+                      {selectedImageUrl === image.url && selectedImageType === 'uploaded' && (
+                        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
                           <BiCheck size={16} />
                         </div>
                       )}
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {selectedImageType === 'generated' && (
+              <div
+                className={`bg-[rgba(252,252,252,0.25)] rounded-[30px] border-2 border-[#FCFCFC] shadow-sm p-5 ${generatedImageSectionWidth} h-auto lg:h-80`}
+              >
+                <h6 className="font-bold pb-4 mt-2 mb-2">
+                  Selected Image
+                </h6>
+                <div className="flex gap-4 flex-wrap md:flex-nowrap">
+                  <div
+                    className={`relative cursor-pointer border-1 border-[#FCFCFC] rounded ${generatedImageContainerClass}`}
+                    onClick={() => handleImageClick(productDetails.logoURL, true)}
+                  >
+                    <img
+                      src={productDetails.logoURL}
+                      alt="Selected Generated Image"
+                      className="object-cover w-full h-52 rounded"
+                    />
+                    <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white bg-[#09AA09]">
+                      <BiCheck size={16} />
+                    </div>
                   </div>
                 </div>
-              )}
-
-              <div
-                className={`bg-white rounded-[30px] shadow-md p-5 ${
+              </div>
+            )}
+            <div className={`bg-white rounded-[30px] shadow-md p-5 ${
                   selectedImageType === 'generated'
                     ? "w-full md:w-5/6"
                     : images.length > 0
@@ -570,7 +543,7 @@ export default function ProductDetails({
                   </span>
                 </div>
               </div>
-            </div>
+          </div>
 
             <div className="flex justify-center">
               <img src="/orIcon.svg" alt="" />
@@ -629,22 +602,23 @@ export default function ProductDetails({
                   })}
                 </div>
                 <div className="flex justify-end items-end gap-4 m-4">
-                  <button
-                    className="w-fit custom-button rounded-[10px] text-white py-2 px-5 font-medium"
-                    onClick={() => handlePageChange(currentPage > 1 ? currentPage - 1 : 1)}
-                  >
-                    Prev 
-                  </button>
-                  <button
-                    className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  >
-                    Next
-                  </button>
-                </div>
+                <button
+                  className="w-fit custom-button rounded-[10px] text-white py-2 px-5 font-medium"
+                  onClick={() => handlePageChange(currentPage > 1 ? currentPage - 1 : 1)}
+                >
+                  Prev 
+                </button>
+                <button
+                  className="w-fit custom-button rounded-[10px] text-white py-2 px-4 font-medium"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                >
+                  Next
+                </button>
               </div>
-            )}
-            <div className="flex flex-col md:flex-row gap-5 p-2">
+            </div>
+          )}
+
+          <div className="flex flex-col md:flex-row gap-5 p-2">
             <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-4/6 p-4">
               <span className="flex items-center gap-4 text-lg font-bold">
                 <img
@@ -659,6 +633,7 @@ export default function ProductDetails({
                   placeholder="Your landing page or website (Example: spark.ai)"
                   id="productURL"
                   value={productDetails.productURL}
+                    
                   onChange={handleOnChangeProductDetails}
                   className="rounded-[20px] py-4 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
@@ -670,7 +645,7 @@ export default function ProductDetails({
                 </button>
               </span>
             </div>
-          <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
+            <div className="bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full md:w-2/6 p-4">
             <span className="flex items-center gap-4 text-lg font-bold">
               <img
                 src={brandIcon}
@@ -678,7 +653,6 @@ export default function ProductDetails({
               />
               <h6>Brand Name</h6>
             </span>
-
             {brands.length === 1 ? (
               <input
                 type="text"
@@ -689,14 +663,8 @@ export default function ProductDetails({
             ) : (
               <select
                 className="rounded-[20px] py-4 pl-6 pr-8 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                style={{
-                  appearance: "none",
-                  background: "white",
-                  backgroundPosition: "right 10px center",
-                  backgroundRepeat: "no-repeat",
-                  backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" stroke-width="2" d="M7 10l5 5l5-5"/></svg>')`,
-                }}
-                id="brandName"
+                id="brandID" 
+                value={productDetails.brandID} 
                 onChange={(e) => {
                   const selectedBrand = brands.find(
                     (item) => item.id === e.target.value
@@ -704,11 +672,11 @@ export default function ProductDetails({
                   setProductDetails({
                     ...productDetails,
                     brandID: selectedBrand.id,
-                    brandName: selectedBrand.name,
+                    brandName: selectedBrand.name, 
                   });
                 }}
               >
-                <option>Select brand name</option>
+                <option value="">Select brand name</option> 
                 {brands.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -721,10 +689,8 @@ export default function ProductDetails({
           </div>
 
             <form
-              onSubmit={
-                productDetails.isEdit ? handleEditProduct : handleAdProduct
-              }
-              className="p-2"
+             onSubmit={handleProductSubmission} 
+            className="p-2"
             >
               <p className="text-lg pb-2 text-[#082A66] ml-2">
                 Enter Product Details Manually
@@ -762,8 +728,8 @@ export default function ProductDetails({
                   />
                 </div>
               </div>
-              <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
-                <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
+            <div className="flex flex-col md:flex-row gap-5 lg:h-56 mt-6">
+              <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
                   <span className="flex items-center gap-4 text-lg">
                     <CreditCardIcon className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
                     <h6>Product Price</h6>
@@ -779,7 +745,7 @@ export default function ProductDetails({
                           background: "[#D9E9F2]",
                           backgroundPosition: "right 10px center",
                           backgroundRepeat: "no-repeat",
-                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                         }}
                       >
                         {currencies.map((currency, index) => (
@@ -790,16 +756,18 @@ export default function ProductDetails({
                       </select>
                     </div>
                     <input
-                      type="text"
+                      type="number"
                       placeholder="Enter Product Price"
                       id="productPrice"
-                      value={productDetails.productPrice}
+                      min="0"
+                      value={productDetails.productPrice || ''}
                       onChange={handleOnChangeProductDetails}
                       className="rounded-[20px] py-4 pl-28 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                       autoComplete="off"
                     />
                   </div>
                 </div>
+
                 <div className="bg-[#FCFCFC66] shadow-md p-4 rounded-[20px] border border-[#FCFCFC] w-full lg:w-1/2 flex flex-col gap-[18px] relative">
                   <span className="flex items-center gap-4 text-lg">
                     <RiDiscountPercentLine className="bg-[#00279926] rounded-[10px] w-10 h-10 px-3" />
@@ -816,7 +784,7 @@ export default function ProductDetails({
                           background: "[#D9E9F2]",
                           backgroundPosition: "right 10px center",
                           backgroundRepeat: "no-repeat",
-                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="none" stroke="currentColor" strokeWidth="2" d="M7 10l5 5l5-5"/></svg>')`,
                         }}
                       >
                         {discountOptions.map((discount, index) => (
@@ -827,14 +795,17 @@ export default function ProductDetails({
                       </select>
                     </div>
                     <input
-                      type="text"
-                      placeholder={`Enter Discount in terms of ${productDetails.discount}`}
-                      id="customDiscount"
-                      value={productDetails.customDiscount}
-                      onChange={handleOnChangeProductDetails}
-                      className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                      autoComplete="off"
-                    />
+                  type="number"
+                  placeholder={`Enter Discount in ${productDetails.discount || 'Percentage'}`}
+                  id="customDiscount"
+                  min="0"
+                  max={productDetails.discount === "Percentage" ? "100" : undefined}
+                  value={productDetails.customDiscount || ''}
+                  onChange={handleOnChangeProductDetails}
+                  className="rounded-[20px] py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  autoComplete="off"
+                />
+
                   </div>
                 </div>
               </div>
