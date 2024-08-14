@@ -47,6 +47,10 @@ const LoginPage = () => {
       setErrorMessage('Invalid username or password');
     }
   };
+ 
+  const handleSignUpNavigation = () => {
+    navigate('/signup'); // Navigate to the signup page
+  };
 
   return (
     <div className="flex items-center justify-end min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4 lg:pr-40">
@@ -113,7 +117,7 @@ const LoginPage = () => {
         </form>
         {errorMessage && <p className="mt-4 text-red-500 text-center">{errorMessage}</p>}
         <p className="mt-4 text-black-900 text-center">
-          <span className="text-[#082A66] font-bold">Don’t have an account?</span> <a href="/signup" className="text-blue-600">Sign up</a>
+          <span className="text-[#082A66] font-bold">Don’t have an account?</span> <button onClick={handleSignUpNavigation} className="text-blue-600">Sign up</button>
         </p>
       </div>
     </div>

@@ -27,6 +27,7 @@ import EditTemplate from './Dashboard/components1/Edit/EditTemplate';
 import AdCreatives from './Dashboard/components1/Edit/AdCreatives';
 import TextFormat from './Dashboard/components1/Edit/Textformat';
 import { Toaster } from 'react-hot-toast';
+import SignUpPage from './components/Dashboard/SignUp';
 
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
           <Route path='/edit_template' element={<EditTemplate/>}/>
           <Route path='/ad_creatives' element={<AdCreatives/>}/>
           <Route path="/text_format" element={<TextFormat/>}/>
+          <Route path="/signup" element={<SignUpPage/>}/>
         </Routes>
       </div>
     </Router>
