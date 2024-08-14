@@ -51,54 +51,54 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   const navigate = useNavigate();
 
   // Fetch product details if a product ID is provided
-  useEffect(() => {
-    let isMounted = true;
-  
-    const fetchProducts = async (id) => {
+  // Use Effect to Fetch Product Details for Editing
+useEffect(() => {
+  let isMounted = true;
+
+  const fetchProducts = async (id) => {
       try {
-        const response = await axios.get(`${baseUrl}/product/${id}`);
-        if (isMounted) {
-          const foundProduct = response.data.data;
-  
-          if (foundProduct) {
-            setProductDetails({
-              productName: foundProduct.name || "",
-              productDescription: foundProduct.description || "",
-              productURL: foundProduct.productURL || "",
-              brandID: foundProduct.brandID || "",
-              logoURL: foundProduct.productImagesList[0]?.imageURL || "",
-              discountType: foundProduct.discountType || "Percentage", // Ensure this maps correctly
-            customDiscount: foundProduct.discount || "", // Ensure the discount is mapped correctly
-            productPrice: foundProduct.price || "",
-              priceType: foundProduct.priceType || "USD", // Default to 'USD' if not provided
-              isEdit: true,
-            });
-  
-            // Populate the images array with existing product images
-            const existingImages = foundProduct.productImagesList.map((img) => ({
-              file: null, // Since these are existing images, the file is not available
-              id: img.id,
-              url: img.imageURL,
-              uploaded: true, // Mark as uploaded to differentiate from new uploads
-            }));
-            setImages(existingImages);
-            setSelectedImageUrl(existingImages[0]?.url || null);
-            setSelectedImageType(existingImages.length > 0 ? 'uploaded' : null);
+          const response = await axios.get(`${baseUrl}/product/${id}`);
+          if (isMounted) {
+              const foundProduct = response.data.data;
+
+              if (foundProduct) {
+                  setProductDetails({
+                      productName: foundProduct.name || "",
+                      productDescription: foundProduct.description || "",
+                      productURL: foundProduct.productURL || "",
+                      brandID: foundProduct.brandID || "",
+                      logoURL: foundProduct.productImagesList[0]?.imageURL || "",
+                      discount: foundProduct.discountType || "Percentage", 
+                      customDiscount: foundProduct.discount || "", 
+                      productPrice: foundProduct.price || "",
+                      currency: foundProduct.priceType || "USD", 
+                      isEdit: true,
+                  });
+
+                  const existingImages = foundProduct.productImagesList.map((img) => ({
+                      file: null, 
+                      id: img.id,
+                      url: img.imageURL,
+                      uploaded: true, 
+                  }));
+                  setImages(existingImages);
+                  setSelectedImageUrl(existingImages[0]?.url || null);
+                  setSelectedImageType(existingImages.length > 0 ? 'uploaded' : null);
+              }
           }
-        }
       } catch (error) {
-        console.error("Error fetching product details:", error);
+          console.error("Error fetching product details:", error);
       }
-    };
-  
-    if (productID) {
+  };
+
+  if (productID) {
       fetchProducts(productID);
-    }
-  
-    return () => {
+  }
+
+  return () => {
       isMounted = false;
-    };
-  }, [productID]);
+  };
+}, [productID]);
   
 
   // Handle file selection and uploading images
@@ -188,52 +188,56 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   };
 
   // Handle change in product details
-  const handleOnChangeProductDetails = (e) => {
-    const { id, value } = e.target;
-  
-    if (id === "customDiscount") {
+  // Handle change in product details
+const handleOnChangeProductDetails = (e) => {
+  const { id, value } = e.target;
+
+  if (id === "customDiscount") {
       const discountValue = parseFloat(value);
       const productPrice = parseFloat(productDetails.productPrice);
-  
+
       if (value === "") {
-        // If the input is being cleared, just update the state without any validation
-        setProductDetails({ ...productDetails, customDiscount: value });
-        return;
-      }
-  
-      if (productDetails.discountType === "Percentage") {
-        if (!isNaN(productPrice) && discountValue >= 0 && discountValue <= 100) {
-          const discountAmount = (productPrice * discountValue) / 100;
-          if (discountAmount > productPrice) {
-            toast.error("The discount amount exceeds the product price.");
-          } else {
-            setProductDetails({ ...productDetails, customDiscount: value });
-          }
-        } else {
-          toast.error("Please enter a valid percentage between 1 and 100.");
-        }
-      } else if (productDetails.discountType === "Price") {
-        if (!isNaN(discountValue) && discountValue <= productPrice) {
+          // If the input is being cleared, just update the state without any validation
           setProductDetails({ ...productDetails, customDiscount: value });
-        } else {
-          toast.error("The discount price must be less than or equal to the product price.");
-        }
+          return;
       }
-    } else {
+
+      if (productDetails.discount === "Percentage") {
+          if (!isNaN(discountValue) && discountValue >= 0 && discountValue <= 100) {
+              const discountAmount = (productPrice * discountValue) / 100;
+              if (discountAmount > productPrice) {
+                  toast.error("The discount amount exceeds the product price.");
+              } else {
+                  setProductDetails({ ...productDetails, customDiscount: value });
+              }
+          } else {
+              toast.error("Please enter a valid percentage between 0 and 100.");
+          }
+      } else if (productDetails.discount === "Price") {
+          if (!isNaN(discountValue) && discountValue <= productPrice) {
+              setProductDetails({ ...productDetails, customDiscount: value });
+          } else {
+              toast.error("The discount price must be less than or equal to the product price.");
+          }
+      }
+  } else {
       setProductDetails({ ...productDetails, [id]: value });
-    }
-  };
-  
+  }
+};
+
 
   // Handle discount type change
-  const handleDiscountChange = (e) => {
-    const discountType = e.target.value;
-    setProductDetails({
-      ...productDetails,
-      discountType: discountType,
-      customDiscount: "",
-    });
-  };
+  // Handle discount type change
+const handleDiscountChange = (e) => {
+  const discountType = e.target.value;
+  console.log("Selected Discount Type:", discountType);
+
+  setProductDetails((prevDetails) => ({
+      ...prevDetails,
+      discount: discountType,
+      customDiscount: "", // Reset the custom discount value when the type changes
+  }));
+};
   
 
   // Fetch brand details when component mounts
