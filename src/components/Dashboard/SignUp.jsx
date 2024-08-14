@@ -212,49 +212,46 @@ const SignUpPage = () => {
                 </button>
               </div>
             )}
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
-                value={password}
-                onChange={handlePasswordChange}
-                className={`w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none ${!otpValidated && 'cursor-not-allowed'}`}
-                disabled={!otpValidated}
-                style={{
-                  backgroundColor: !otpValidated ? '#f3f4f6' : 'white', // Grey out when disabled
-                }}
-              />
-              <span
-                className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
-                onClick={toggleShowPassword}
-              >
-                {showPassword ? <FaEyeSlash /> : <PiEyeLight />}
-              </span>
-            </div>
-            {passwordError && (
-              <p className="text-red-500 text-sm">{passwordError}</p>
-            )}
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={handleConfirmPasswordChange}
-                className={`w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none ${!otpValidated && 'cursor-not-allowed'}`}
-                disabled={!otpValidated}
-                style={{
-                  backgroundColor: !otpValidated ? '#f3f4f8' : 'white', // Grey out when disabled
-                }}
-              />
-              <span
-                className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
-                onClick={toggleShowConfirmPassword}
-              >
-                {showConfirmPassword ? <FaEyeSlash /> : <PiEyeLight />}
-              </span>
-            </div>
-            {confirmPasswordError && (
-              <p className="text-red-500 text-sm">{confirmPasswordError}</p>
+            {/* Conditionally Render Password Fields */}
+            {otpValidated && (
+              <>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                    className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  />
+                  <span
+                    className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                    onClick={toggleShowPassword}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <PiEyeLight />}
+                  </span>
+                </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm">{passwordError}</p>
+                )}
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={handleConfirmPasswordChange}
+                    className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  />
+                  <span
+                    className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                    onClick={toggleShowConfirmPassword}
+                  >
+                    {showConfirmPassword ? <FaEyeSlash /> : <PiEyeLight />}
+                  </span>
+                </div>
+                {confirmPasswordError && (
+                  <p className="text-red-500 text-sm">{confirmPasswordError}</p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -262,6 +259,7 @@ const SignUpPage = () => {
           <button
             className="custom-button text-white py-2 px-6 rounded-md shadow-lg"
             onClick={handleSignUp}
+            disabled={!otpValidated} // Disable sign-up button until OTP is validated
           >
             Sign Up
           </button>

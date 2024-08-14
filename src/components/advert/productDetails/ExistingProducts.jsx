@@ -84,7 +84,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
     setIsNextSectionOpen(true);
     setIsCompleted(true);
     localStorage.setItem('selectedProduct', JSON.stringify(product)); // Store entire product
-    localStorage.setItem('productId', JSON.stringify(product.id)); // Store product ID separately
+    localStorage.setItem('productID', JSON.stringify(product.id)); // Store product ID separately
   };
   
   

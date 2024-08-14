@@ -30,7 +30,7 @@ const GeneratedCreatives = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("Brand Color");
 
-  const storedProductID = JSON.parse(localStorage.getItem("productId")) || null;
+  const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
   const storedImageSize = JSON.parse(localStorage.getItem("imageSize")) || "";
   const cleanedSize = storedImageSize.replace(/[()]/g, "");
 
@@ -244,8 +244,8 @@ const GeneratedCreatives = ({
   };
 
   return (
-    <div className="container lg:mb-4 sm:mx-auto mb-4 lg:p-0 flex-grow">
-      <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-2 sm:p-4 flex flex-col gap-6 relative z-10">
+    <div className="container mb-4 lg:p-0 flex-grow">
+      <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-4 flex flex-col gap-6 relative z-10">
         <div
           className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] p-2 sm:p-4 relative cursor-pointer"
           onClick={toggleThirdSectionAccordion}
