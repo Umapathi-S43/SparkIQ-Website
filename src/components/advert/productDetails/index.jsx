@@ -35,7 +35,7 @@ export default function ProductDetails({
 
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const productID = params.get("id");
+  const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
 
   const [productDetails, setProductDetails] = useState({
     productName: "",
@@ -50,20 +50,20 @@ export default function ProductDetails({
     logoURL: "",
     brandID: "",
     prompt: "",
-    isEdit: false,
+    isEdit: storedProductID ? true : false,  // Set isEdit based on the presence of productID in local storage
   });
   const [brands, setBrands] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
-  
+    
     const fetchProducts = async (id) => {
       try {
         const response = await axios.get(`${baseUrl}/product/${id}`);
         if (isMounted) {
           const foundProduct = response.data.data;
-  
+
           if (foundProduct) {
             setProductDetails({
               productName: foundProduct.name || "",
@@ -75,9 +75,9 @@ export default function ProductDetails({
               customDiscount: foundProduct.discount || "", 
               productPrice: foundProduct.price || "",
               currency: foundProduct.priceType || "INR", 
-              isEdit: true,
+              isEdit: true,  // Set isEdit to true when product is found
             });
-  
+
             const existingImages = foundProduct.productImagesList.map((img) => ({
               file: null, 
               id: img.id,
@@ -93,15 +93,15 @@ export default function ProductDetails({
         console.error("Error fetching product details:", error);
       }
     };
-  
-    if (productID) {
-      fetchProducts(productID);
+
+    if (storedProductID) {
+      fetchProducts(storedProductID);  // Use the stored product ID to fetch the product details
     }
   
     return () => {
       isMounted = false;
     };
-  }, [productID]);
+  }, [storedProductID]);
 
   const handleFileChange = (event) => {
     if (event.target.files) {
@@ -172,8 +172,10 @@ export default function ProductDetails({
   };
 
   const handleDeleteImage = (index) => {
+    const removedImage = images[index];
     setImages(images.filter((_, i) => i !== index));
-    if (selectedImageUrl === URL.createObjectURL(images[index]) && selectedImageType === 'uploaded') {
+
+    if (selectedImageUrl === removedImage.url && selectedImageType === 'uploaded') {
       setSelectedImageUrl(null);
       setSelectedImageType(null);
       setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
@@ -254,6 +256,24 @@ export default function ProductDetails({
     fetchBrands();
   }, []);
 
+  // Handle pagination for generated images
+  const handlePageChange = async (page) => {
+    setCurrentPage(page);
+    try {
+      const response = await axios.get(`${baseUrl}/search/get-images`, {
+        params: {
+          prompt: productDetails.prompt,
+          page: page,
+          size: 10,
+        },
+      });
+      setGeneratedImages(response.data.result.data);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to generate images.");
+    }
+  };
+
   
   // Handle searching for generated images based on a prompt
   const handleSearchForImages = async () => {
@@ -332,11 +352,11 @@ export default function ProductDetails({
   
     console.log("Submitting product...");
     console.log("isEdit:", productDetails.isEdit);
-    console.log("productID:", productID);
+    console.log("productID:", storedProductID);
   
-    const isEditMode = productDetails.isEdit && productID;
+    const isEditMode = productDetails.isEdit && storedProductID;
     const productPayload = {
-      id: isEditMode ? productID : undefined,
+      id: isEditMode ? storedProductID : undefined,
       brandID: productDetails.brandID,
       name: productDetails.productName,
       description: productDetails.productDescription,
@@ -358,6 +378,7 @@ export default function ProductDetails({
         toast.success("Product updated successfully");
       } else {
         toast.success("Product created successfully");
+        localStorage.setItem("productID", JSON.stringify(response.data.data.id));  // Store new product ID in local storage
       }
   
       setIsCompleted(true);
@@ -399,7 +420,7 @@ export default function ProductDetails({
         <RiArrowGoBackLine /> back
       </span>
       <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-2 lg:p-4 flex flex-col gap-6 relative z-10">
-        <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] lg:p-4 p-4 relative cursor-pointer">
+        <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] lg:p-4 p-4 relative cursor-pointer" onClick={toggleAccordion} >
           {isCompleted && (
             <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
               Completed <BiCheck size={20} />
@@ -813,8 +834,12 @@ export default function ProductDetails({
                 <button
                   className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"
                   disabled={isNextStepDisabled}
+                  onClick={() => setProductDetails(prevDetails => ({
+                    ...prevDetails,
+                    isEdit: true,  // Ensure isEdit is true before proceeding to the next step
+                  }))}
                 >
-                  {productDetails.isEdit ? "Edit Product" : "Next Step"}
+                  {!productDetails.isEdit ? "Next Step":"Edit Product"}
                 </button>
               </div>
             </form>

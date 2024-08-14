@@ -47,6 +47,9 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   }, []);
 
   const handleCreateProduct = () => {
+    localStorage.removeItem('productID');
+    localStorage.removeItem('selectedProduct');
+    
     setShowProductDetails(true);
   };
 
