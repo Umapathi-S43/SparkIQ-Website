@@ -155,62 +155,65 @@ const SignUpPage = () => {
       />
     );
   }
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4">
       <ToastContainer position="top-center" />
       <div className="flex flex-col items-center w-full max-w-md p-4 pt-0">
         <img src={logo} alt="Logo" className="w-40 h-22 mb-3" />
-        <div className="w-full p-8 pt-4 rounded-xl shadow-md border border-white" style={{ background: 'rgba(255,255,255,0.30)' }}>
+        <div className={`w-full p-8 pt-4 rounded-xl shadow-md border border-white ${otpValidated ? 'pt-6 pb-12 max-w-sm ' : ''}`} style={{ background: 'rgba(255,255,255,0.30)' }}>
           <h2 className="text-3xl text-[#082A66] font-bold pt-0 text-center mb-1">Sign Up</h2>
-          <p className="text-center text-md text-[#0A3580] mb-6">Join the future of marketing.</p>
+          <p className={`text-center text-md text-[#0A3580] mb-6 ${otpValidated ? 'pb-3 ' : ''}`}>Join the future of marketing.</p>
           <div className="flex flex-col gap-4">
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-            />
-            <div className="flex items-center gap-2">
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                className="p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none overflow-auto"
-                style={{ maxHeight: '60px'}} // Limit height to 8 items and add scrollbar
-              >
-                {countries.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.code} ({country.name})
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Mobile Number"
-                value={mobile}
-                onChange={handleMobileChange}
-                className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-              />
-            </div>
-            {mobileError && <p className="text-red-500 text-sm">{mobileError}</p>}
-            {!otpValidated && (
-              <div className="flex justify-start items-start w-full">
-                <button
-                  onClick={handleSendOtp}
-                  className={`custom-button mt-4 text-white py-2 w-full rounded-md shadow-lg ${(!mobile || mobileError) && 'cursor-not-allowed opacity-50'}`}
-                  disabled={!mobile || mobileError} // Disable button if mobile number is invalid
-                >
-                  Send OTP
-                </button>
-              </div>
+          {!otpValidated && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                />
+                <div className="flex items-center gap-2">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none overflow-auto"
+                    style={{ maxHeight: '60px'}} // Limit height to 8 items and add scrollbar
+                  >
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.code} ({country.name})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Mobile Number"
+                    value={mobile}
+                    onChange={handleMobileChange}
+                    className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  />
+                </div>
+                {mobileError && <p className="text-red-500 text-sm">{mobileError}</p>}
+                <div className="flex justify-start items-start w-full">
+                  <button
+                    onClick={handleSendOtp}
+                    className={`custom-button mt-4 text-white py-2 w-full rounded-md shadow-lg ${(!mobile || mobileError) && 'cursor-not-allowed opacity-50'}`}
+                    disabled={!mobile || mobileError} // Disable button if mobile number is invalid
+                  >
+                    Send OTP
+                  </button>
+                </div>
+              </>
             )}
             {/* Conditionally Render Password Fields */}
             {otpValidated && (
