@@ -36,7 +36,6 @@ const LoginPage = () => {
 
       toast.success("Login successful!");
       navigate("/homepage");
-      console.log("JWT Token saved:", jwtToken);
     } catch (error) {
       console.error(error);
       toast.error("Login failed!");

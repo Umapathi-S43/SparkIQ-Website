@@ -13,7 +13,7 @@ import { baseUrl } from "../../components/utils/Constant";
 import { CreditCardIcon } from "@heroicons/react/24/outline";
 import { RiDiscountPercentLine } from "react-icons/ri";
 import axios from "axios";
-import { jwtToken } from "../../constant/jwtToken";
+import { jwtToken } from "../../components/utils/jwtToken";
 
 // Define constants for currencies and discount options
 const currencies = [

@@ -17,7 +17,7 @@ import "./EditTemplate.css";
 import { baseUrl } from "../../../components/utils/Constant";
 import axios from "axios";
 import Draggable from "react-draggable";
-import { jwtToken } from "../../../constant/jwtToken";
+import { jwtToken } from "../../../components/utils/jwtToken";
 
 const initialElements = [
   {

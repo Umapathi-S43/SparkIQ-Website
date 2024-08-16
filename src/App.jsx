@@ -1,3 +1,5 @@
+// App.tsx
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
@@ -28,7 +30,7 @@ import AdCreatives from './Dashboard/components1/Edit/AdCreatives';
 import TextFormat from './Dashboard/components1/Edit/Textformat';
 import { Toaster } from 'react-hot-toast';
 import SignUpPage from './components/Dashboard/SignUp';
-
+import ProtectedRoute from './components/utils/withAuth';
 
 function App() {
   return (
@@ -40,29 +42,95 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/homepage" element={<HomePage/>} />
-          <Route path="/socialmedia" element={<SocialMedia/>} />
-         <Route path="/brandsetup" element={<BrandSetupPage/>} />
-          <Route path="/campaigns" element={<AdCampaign/>} />     
-          <Route path="/brandspage" element={<BrandsPage/>} />            
-          <Route path="/productspage" element={<ProductsPage/>} />   
-          <Route path="/productdetails" element={<ProductDetailsPage/>}/>
-          <Route path="/profile" element={<ProfilePage/>} />
-          <Route path="/congrats" element={<Congrats/>}/>          
-          <Route path="/samplepage" element={<Samplepage />}/>
-          <Route path="/savedproductspage" element={<SavedProductsPage />}/>
-          <Route path="/generatedcreativespage" element={<GeneratedCreativesPage />}/>
-          <Route path="/customizationadspage" element={< CustomizationAdsPage/>}/>
-          <Route path="/viewplans" element={<ViewPlans/>}/>
-          <Route path="/ECampaigns" element={<ExistingCampaignsPage/>}/>
-          <Route path="/campaign-insights/:id" element={<CampaignInsightsPage />} />
-          <Route path="/customsample" element={<CustomSample/>}/>
-          <Route path="/adPreview" element={<AdPreviewPage/>}/> {/* Ensure the path matches exactly */}
-          <Route path="/launchCampaign1" element={<LaunchCampaignPage/>}/>
-          <Route path='/edit_template' element={<EditTemplate/>}/>
-          <Route path='/ad_creatives' element={<AdCreatives/>}/>
-          <Route path="/text_format" element={<TextFormat/>}/>
-          <Route path="/signup" element={<SignUpPage/>}/>
+          <Route
+            path="/homepage"
+            element={<ProtectedRoute element={<HomePage />} />}
+          />
+          <Route
+            path="/socialmedia"
+            element={<ProtectedRoute element={<SocialMedia />} />}
+          />
+          <Route
+            path="/brandsetup"
+            element={<ProtectedRoute element={<BrandSetupPage />} />}
+          />
+          <Route
+            path="/campaigns"
+            element={<ProtectedRoute element={<AdCampaign />} />}
+          />
+          <Route
+            path="/brandspage"
+            element={<ProtectedRoute element={<BrandsPage />} />}
+          />
+          <Route
+            path="/productspage"
+            element={<ProtectedRoute element={<ProductsPage />} />}
+          />
+          <Route
+            path="/productdetails"
+            element={<ProtectedRoute element={<ProductDetailsPage />} />}
+          />
+          <Route
+            path="/profile"
+            element={<ProtectedRoute element={<ProfilePage />} />}
+          />
+          <Route
+            path="/congrats"
+            element={<ProtectedRoute element={<Congrats />} />}
+          />
+          <Route
+            path="/samplepage"
+            element={<ProtectedRoute element={<Samplepage />} />}
+          />
+          <Route
+            path="/savedproductspage"
+            element={<ProtectedRoute element={<SavedProductsPage />} />}
+          />
+          <Route
+            path="/generatedcreativespage"
+            element={<ProtectedRoute element={<GeneratedCreativesPage />} />}
+          />
+          <Route
+            path="/customizationadspage"
+            element={<ProtectedRoute element={<CustomizationAdsPage />} />}
+          />
+          <Route
+            path="/viewplans"
+            element={<ProtectedRoute element={<ViewPlans />} />}
+          />
+          <Route
+            path="/ECampaigns"
+            element={<ProtectedRoute element={<ExistingCampaignsPage />} />}
+          />
+          <Route
+            path="/campaign-insights/:id"
+            element={<ProtectedRoute element={<CampaignInsightsPage />} />}
+          />
+          <Route
+            path="/customsample"
+            element={<ProtectedRoute element={<CustomSample />} />}
+          />
+          <Route
+            path="/adPreview"
+            element={<ProtectedRoute element={<AdPreviewPage />} />}
+          />
+          <Route
+            path="/launchCampaign1"
+            element={<ProtectedRoute element={<LaunchCampaignPage />} />}
+          />
+          <Route
+            path="/edit_template"
+            element={<ProtectedRoute element={<EditTemplate />} />}
+          />
+          <Route
+            path="/ad_creatives"
+            element={<ProtectedRoute element={<AdCreatives />} />}
+          />
+          <Route
+            path="/text_format"
+            element={<ProtectedRoute element={<TextFormat />} />}
+          />
+          <Route path="/signup" element={<SignUpPage />} />
         </Routes>
       </div>
     </Router>

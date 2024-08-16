@@ -6,7 +6,7 @@ import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
-import { jwtToken } from "../../constant/jwtToken";
+import { jwtToken } from "../../components/utils/jwtToken";
 
 const Products = () => {
   const [products, setProducts] = useState([]);

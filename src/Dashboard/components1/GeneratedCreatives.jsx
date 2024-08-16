@@ -5,7 +5,7 @@ import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 import "./GeneratedCreatives.css";
-import { jwtToken } from "../../constant/jwtToken";
+import { jwtToken } from "../../components/utils/jwtToken";
 
 const GeneratedCreatives = ({
   isThirdSectionOpen,

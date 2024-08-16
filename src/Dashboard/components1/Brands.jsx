@@ -7,7 +7,7 @@ import picon from "../../assets/dashboard_img/picon.svg";
 import SvgBackground from "../../components/Dashboard/SvgBackground";
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
 import { baseUrl } from "../../components/utils/Constant";
-import { jwtToken } from "../../constant/jwtToken";
+import { jwtToken } from "../../components/utils/jwtToken";
 import axios from "axios";
 
 const Brands = () => {

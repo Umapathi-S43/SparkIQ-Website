@@ -17,7 +17,7 @@ import "./brandsetup.css"; // Import the CSS file
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { baseUrl } from "../../components/utils/Constant";
-import { jwtToken } from "../../constant/jwtToken";
+import { jwtToken } from "../../components/utils/jwtToken";
 
 const BrandSetup = () => {
   const location = useLocation();
