@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { FaArrowLeft } from 'react-icons/fa';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect } from "react";
+import { FaArrowLeft } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import logo from "../../assets/logo.png";
+import axios from "axios";
+import { baseUrl } from "../utils/Constant";
 
-const OTPVerification = ({ onBack, userEmail, userMobile, onOtpValidated }) => {
-  const [otp, setOtp] = useState(['', '', '', '']);
+const OTPVerification = ({
+  onBack,
+  submitData,
+  userMobile,
+  onOtpValidated,
+}) => {
+  const [otp, setOtp] = useState(["", "", "", ""]);
   const [timer, setTimer] = useState(30);
   const [resendEnabled, setResendEnabled] = useState(false);
 
@@ -29,7 +36,8 @@ const OTPVerification = ({ onBack, userEmail, userMobile, onOtpValidated }) => {
   const handleChangeOtp = (e, index) => {
     const value = e.target.value;
 
-    if (/^\d$/.test(value)) { // Allow only digits
+    if (/^\d$/.test(value)) {
+      // Allow only digits
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
@@ -38,10 +46,13 @@ const OTPVerification = ({ onBack, userEmail, userMobile, onOtpValidated }) => {
       if (index < 3) {
         document.getElementById(`otp-${index + 1}`).focus();
       }
-    } else if (value === '' && e.nativeEvent.inputType === 'deleteContentBackward') {
+    } else if (
+      value === "" &&
+      e.nativeEvent.inputType === "deleteContentBackward"
+    ) {
       // Handle backspace and move focus to the previous input box
       const newOtp = [...otp];
-      newOtp[index] = '';
+      newOtp[index] = "";
       setOtp(newOtp);
 
       if (index > 0) {
@@ -51,8 +62,8 @@ const OTPVerification = ({ onBack, userEmail, userMobile, onOtpValidated }) => {
   };
 
   const handlePasteOtp = (e) => {
-    const paste = e.clipboardData.getData('text');
-    const newOtp = paste.split('').slice(0, 4);
+    const paste = e.clipboardData.getData("text");
+    const newOtp = paste.split("").slice(0, 4);
     setOtp(newOtp);
 
     // Focus on the last input field if all inputs are filled
@@ -62,24 +73,29 @@ const OTPVerification = ({ onBack, userEmail, userMobile, onOtpValidated }) => {
     }
   };
 
-  const handleVerifyOtp = () => {
-    const enteredOtp = otp.join('');
+  const handleVerifyOtp = async () => {
+    const enteredOtp = otp.join("");
 
     // Check if any OTP field is empty
-    if (otp.includes('')) {
+    if (otp.includes("")) {
       toast.error("Please enter the complete OTP");
       return;
     }
-
-    // Simulate OTP validation logic
-    const OTPvalidate = enteredOtp === '1234'; // Simulate OTP validation logic (replace '1234' with actual logic)
-    if (OTPvalidate) {
-      toast.success("OTP validated successfully");
-      setTimeout(() => {
-        onOtpValidated(); // Notify parent component of OTP validation
-      }, 1500);
-    } else {
+    try {
+      await axios
+        .post(`${baseUrl}/user/validateOtp/${enteredOtp}`, submitData)
+        .then(() => {
+          toast.success("OTP validated successfully");
+          setTimeout(() => {
+            onOtpValidated(); // Notify parent component of OTP validation
+          }, 1500);
+        });
+    } catch (error) {
+      console.error(error);
       toast.error("Invalid OTP");
+      //  setTimeout(() => {
+      //       onOtpValidated(); // Notify parent component of OTP validation
+      //     }, 1500);
     }
   };
 
@@ -88,15 +104,25 @@ const OTPVerification = ({ onBack, userEmail, userMobile, onOtpValidated }) => {
       <ToastContainer position="top-center" />
       <div className="flex flex-col items-center w-full max-w-md p-4 mt-[-10vh]">
         <img src={logo} alt="Logo" className="w-40 h-20 mb-6" />
-        <div className="w-full p-8 rounded-xl shadow-2xl border border-white" style={{ background: 'rgba(255,255,255,0.30)' }}>
+        <div
+          className="w-full p-8 rounded-xl shadow-2xl border border-white"
+          style={{ background: "rgba(255,255,255,0.30)" }}
+        >
           <div className="flex items-center justify-between mb-4">
-            <button onClick={onBack} className="text-blue-600 text-sm flex items-center">
+            <button
+              onClick={onBack}
+              className="text-blue-600 text-sm flex items-center"
+            >
               <FaArrowLeft className="mr-1" /> Back
             </button>
-            <button onClick={handleResendOtp}
-              className={`text-blue-600 text-sm ${resendEnabled ? '' : 'opacity-50'}`}
-              disabled={!resendEnabled}>
-              Resend OTP {timer > 0 ? `in ${timer} seconds` : ''}
+            <button
+              onClick={handleResendOtp}
+              className={`text-blue-600 text-sm ${
+                resendEnabled ? "" : "opacity-50"
+              }`}
+              disabled={!resendEnabled}
+            >
+              Resend OTP {timer > 0 ? `in ${timer} seconds` : ""}
             </button>
           </div>
           <div className="text-xl text-[#0A3580] mb-6 text-center font-medium">
@@ -107,7 +133,10 @@ const OTPVerification = ({ onBack, userEmail, userMobile, onOtpValidated }) => {
             <br />
             Please check your mobile and enter the code below.
           </div>
-          <div className="flex justify-center gap-3 mb-6" onPaste={handlePasteOtp}>
+          <div
+            className="flex justify-center gap-3 mb-6"
+            onPaste={handlePasteOtp}
+          >
             {[...Array(4)].map((_, index) => (
               <input
                 key={index}
