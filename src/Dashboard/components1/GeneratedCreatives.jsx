@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
+import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 import "./GeneratedCreatives.css";
-import api from "../../utils/axiosFetch";
+import { jwtToken } from "../../constant/jwtToken";
 
 const GeneratedCreatives = ({
   isThirdSectionOpen,
@@ -40,7 +42,7 @@ const GeneratedCreatives = ({
   };
 
   const modelMapping = {
-    "unaware": ["PAS"],
+    unaware: ["PAS"],
     "problem aware": ["PAS"],
     "solution aware": ["AIDA", "FAB"],
     "product aware": ["AIDA", "FAB", "USP"],
@@ -52,14 +54,21 @@ const GeneratedCreatives = ({
   const fetchModelData = async (modelName) => {
     const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
     console.log("Generated URL:", url);
-  
+
     const models = modelMapping[modelName];
     for (let i = 0; i < models.length; i++) {
       try {
-        const response = await api.post(url);
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
+        }
+        const response = await axios.post(url, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         if (response.data.message) {
-          const res = await api.get(
-            `${baseUrl}/generated-images/model/${models[i]}`
+          const res = await axios.get(
+            `${baseUrl}/generated-images/models/${models[i]}`
           );
           return res.data;
         }
@@ -70,7 +79,6 @@ const GeneratedCreatives = ({
     }
     return []; // Return empty if all models fail
   };
-  
 
   const loadCreatives = async () => {
     if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
@@ -127,7 +135,6 @@ const GeneratedCreatives = ({
     setLoadingProductAware(true);
     setLoadingMostAware(true);
   };
-  
 
   const FilteredData = ({ filteredModel, modelName }) => {
     const filteredProducts = filteredModel.filter((product) => {
@@ -174,7 +181,9 @@ const GeneratedCreatives = ({
                 <button
                   className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
                   onClick={() =>
-                    navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)
+                    navigate(
+                      `/edit_template?id=${encodeURIComponent(product.id)}`
+                    )
                   }
                 >
                   <div className="button-container">
@@ -271,19 +280,21 @@ const GeneratedCreatives = ({
           <>
             <div className="flex justify-center">
               <div className="tab-buttons flex justify-center items-center gap-12 w-4/6 mb-2 border-4 py-1 rounded-xl shadow-md">
-                {["Brand Color", "Single Color", "Gradient Color"].map((tab) => (
-                  <button
-                    key={tab}
-                    className={`px-5 py-2 rounded-lg ${
-                      selectedTab === tab
-                        ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
-                        : "bg-[#FCFCFC20] text-gray-700 border-2"
-                    }`}
-                    onClick={() => handleTabChange(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                {["Brand Color", "Single Color", "Gradient Color"].map(
+                  (tab) => (
+                    <button
+                      key={tab}
+                      className={`px-5 py-2 rounded-lg ${
+                        selectedTab === tab
+                          ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
+                          : "bg-[#FCFCFC20] text-gray-700 border-2"
+                      }`}
+                      onClick={() => handleTabChange(tab)}
+                    >
+                      {tab}
+                    </button>
+                  )
+                )}
               </div>
             </div>
             <div className="overflow-auto" style={{ maxHeight: "80vh" }}>

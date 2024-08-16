@@ -17,6 +17,7 @@ import "./EditTemplate.css";
 import { baseUrl } from "../../../components/utils/Constant";
 import axios from "axios";
 import Draggable from "react-draggable";
+import { jwtToken } from "../../../constant/jwtToken";
 
 const initialElements = [
   {
@@ -125,8 +126,16 @@ export default function EditTemplate() {
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
+        }
         const response = await axios.get(
-          `${baseUrl}/generated-images/${productID}`
+          `${baseUrl}/generated-images/${productID}`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
         );
         setProductDetails(response.data);
       } catch (error) {

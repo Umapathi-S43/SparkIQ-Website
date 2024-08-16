@@ -17,7 +17,7 @@ import "./brandsetup.css"; // Import the CSS file
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { baseUrl } from "../../components/utils/Constant";
-import api from "../../utils/axiosFetch";
+import { jwtToken } from "../../constant/jwtToken";
 
 const BrandSetup = () => {
   const location = useLocation();
@@ -63,7 +63,14 @@ const BrandSetup = () => {
 
     const fetchBrands = async (name) => {
       try {
-        const response = await api.get(`${baseUrl}/brand/company/123`);
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
+        }
+        const response = await axios.get(`${baseUrl}/brand/company/123`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         console.log(response.data);
         if (isMounted) {
           const foundBrand = response.data.data.find(
@@ -147,7 +154,8 @@ const BrandSetup = () => {
 
   const handleSaveAndContinue = (section) => {
     if (
-      (section === 1 && (!formInputs.brandName || !formInputs.brandDescription)) ||
+      (section === 1 &&
+        (!formInputs.brandName || !formInputs.brandDescription)) ||
       (section === 2 && !formInputs.brandLogo && !formInputs.logoURL)
     ) {
       toast.error("Please fill in all the required fields.");
@@ -165,7 +173,10 @@ const BrandSetup = () => {
     uploadData.append("customerId", "123");
 
     try {
-      await api
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      await axios
         .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -183,8 +194,19 @@ const BrandSetup = () => {
 
   const dominantColor = async (url) => {
     try {
-      await api
-        .post(`${baseUrl}/sparkiq/ai/product/dominant-colors`, { url: url })
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      await axios
+        .post(
+          `${baseUrl}/sparkiq/ai/product/dominant-colors`,
+          { url: url },
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
+        )
         .then((res) => {
           setFormInputs({
             ...formInputs,
@@ -212,7 +234,11 @@ const BrandSetup = () => {
   };
 
   const handleCreateBrand = async () => {
-    if (!formInputs.brandName || !formInputs.brandDescription || !formInputs.logoURL) {
+    if (
+      !formInputs.brandName ||
+      !formInputs.brandDescription ||
+      !formInputs.logoURL
+    ) {
       toast.error("Please fill in all the required fields.");
       return;
     }
@@ -225,21 +251,34 @@ const BrandSetup = () => {
       brandColours: JSON.stringify(formInputs.domColors),
     };
     try {
-      await api.post(`${baseUrl}/brand`, newBrand).then((res) => {
-        toast.success("Brand created successfully");
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      await axios
+        .post(`${baseUrl}/brand`, newBrand, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        })
+        .then((res) => {
+          toast.success("Brand created successfully");
 
-        localStorage.setItem("task1Completed", "true");
+          localStorage.setItem("task1Completed", "true");
 
-        navigate("/homepage");
-        console.log(res);
-      });
+          navigate("/homepage");
+          console.log(res);
+        });
     } catch (error) {
       console.log(error);
     }
   };
 
   const handleEditBrand = async () => {
-    if (!formInputs.brandName || !formInputs.brandDescription || !formInputs.logoURL) {
+    if (
+      !formInputs.brandName ||
+      !formInputs.brandDescription ||
+      !formInputs.logoURL
+    ) {
       toast.error("Please fill in all the required fields.");
       return;
     }
@@ -254,13 +293,22 @@ const BrandSetup = () => {
     };
 
     try {
-      await api.post(`${baseUrl}/brand`, editBrand).then((res) => {
-        toast.success("Brand edited successfully");
-        localStorage.setItem("task1Completed", "true");
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      await axios
+        .post(`${baseUrl}/brand`, editBrand, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        })
+        .then((res) => {
+          toast.success("Brand edited successfully");
+          localStorage.setItem("task1Completed", "true");
 
-        navigate("/homepage");
-        console.log(res);
-      });
+          navigate("/homepage");
+          console.log(res);
+        });
     } catch (error) {
       console.log(error);
     }
@@ -422,10 +470,18 @@ const BrandSetup = () => {
               )}
             </div>
             <div
-              onClick={() => (formInputs.isEdit || completedSections[1]) ? toggleSection(2) : null}
+              onClick={() =>
+                formInputs.isEdit || completedSections[1]
+                  ? toggleSection(2)
+                  : null
+              }
               className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${
                 expandedSection === 2 ? "bg-[rgba(252,252,252,0.25)]" : ""
-              } ${!formInputs.isEdit && !completedSections[1] ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${
+                !formInputs.isEdit && !completedSections[1]
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
             >
               {completedSections[2] && (
                 <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
@@ -505,10 +561,18 @@ const BrandSetup = () => {
               )}
             </div>
             <div
-              onClick={() => (formInputs.isEdit || completedSections[2]) ? toggleSection(3) : null}
+              onClick={() =>
+                formInputs.isEdit || completedSections[2]
+                  ? toggleSection(3)
+                  : null
+              }
               className={`relative items-center border border-[#fcfcfc] p-0 rounded-2xl cursor-pointer ${
                 expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
-              } ${!formInputs.isEdit && !completedSections[2] ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${
+                !formInputs.isEdit && !completedSections[2]
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
             >
               {completedSections[3] && (
                 <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">

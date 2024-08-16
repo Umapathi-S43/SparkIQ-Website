@@ -12,7 +12,8 @@ import toast from "react-hot-toast";
 import { baseUrl } from "../../components/utils/Constant";
 import { CreditCardIcon } from "@heroicons/react/24/outline";
 import { RiDiscountPercentLine } from "react-icons/ri";
-import api from "../../utils/axiosFetch";
+import axios from "axios";
+import { jwtToken } from "../../constant/jwtToken";
 
 // Define constants for currencies and discount options
 const currencies = [
@@ -73,7 +74,14 @@ export default function AdProduct({ setIsNextSectionOpen }) {
 
     const fetchProducts = async (id) => {
       try {
-        const response = await api.get(`${baseUrl}/product/${id}`);
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
+        }
+        const response = await axios.get(`${baseUrl}/product/${id}`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         if (isMounted) {
           const foundProduct = response.data.data;
 
@@ -288,7 +296,14 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const response = await api.get(`${baseUrl}/brand/company/123`);
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
+        }
+        const response = await axios.get(`${baseUrl}/brand/company/123`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         const fetchedBrands = response.data.data.map((brand) => {
           const storedCount = localStorage.getItem(`brand_${brand.id}_count`);
           return {
@@ -320,11 +335,17 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     uploadData.append("file", imageFile);
 
     try {
-      const response = await api.post(
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      const response = await axios.post(
         `${baseUrl}/sparkiq/image/upload?customerId=123`,
         uploadData,
         {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${jwtToken}`,
+          },
         }
       );
 
@@ -367,7 +388,14 @@ export default function AdProduct({ setIsNextSectionOpen }) {
     };
 
     try {
-      await api.post(`${baseUrl}/product`, productPayload);
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      await axios.post(`${baseUrl}/product`, productPayload, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
 
       if (isEditMode) {
         toast.success("Product updated successfully");
@@ -402,8 +430,16 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   // Handle scanning a URL to retrieve product details
   const handleScanUrl = async (e) => {
     try {
-      const response = await api.get(
-        `${baseUrl}/scrap/product?url=${productDetails.productURL}`
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      const response = await axios.get(
+        `${baseUrl}/scrap/product?url=${productDetails.productURL}`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
       );
       toast.success("Scan successful");
       setProductDetails({
@@ -420,13 +456,24 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   // Handle searching for generated images based on a prompt
   const handleSearchForImages = async () => {
     try {
-      const response = await api.get(`${baseUrl}/search/get-images`, {
-        params: {
-          prompt: productDetails.prompt,
-          page: currentPage,
-          size: 10,
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      const response = await axios.get(
+        `${baseUrl}/search/get-images`,
+        {
+          params: {
+            prompt: productDetails.prompt,
+            page: currentPage,
+            size: 10,
+          },
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
+      );
       setGeneratedImages(response.data.result.data);
     } catch (error) {
       console.log(error);

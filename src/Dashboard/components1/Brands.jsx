@@ -7,7 +7,7 @@ import picon from "../../assets/dashboard_img/picon.svg";
 import SvgBackground from "../../components/Dashboard/SvgBackground";
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
 import { baseUrl } from "../../components/utils/Constant";
-import api from "../../utils/axiosFetch";
+import { jwtToken } from "../../constant/jwtToken";
 
 const Brands = () => {
   const [brands, setBrands] = useState([]);
@@ -33,7 +33,14 @@ const Brands = () => {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const response = await api.get(`${baseUrl}/brand/company/123`);
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
+        }
+        const response = await axios.get(`${baseUrl}/brand/company/123`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         setBrands(response.data.data);
       } catch (error) {
         console.log(error);
@@ -42,7 +49,14 @@ const Brands = () => {
 
     const fetchProducts = async () => {
       try {
-        const response = await api.get(`${baseUrl}/product`);
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
+        }
+        const response = await aaxiospi.get(`${baseUrl}/product`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         setProducts(response.data.data);
       } catch (error) {
         console.log(error);
@@ -56,7 +70,9 @@ const Brands = () => {
   useEffect(() => {
     if (brands.length > 0 && products.length > 0) {
       const updatedBrands = brands.map((brand) => {
-        const productCount = products.filter(product => product.brandID === brand.id).length;
+        const productCount = products.filter(
+          (product) => product.brandID === brand.id
+        ).length;
         return {
           ...brand,
           productsCreated: productCount,

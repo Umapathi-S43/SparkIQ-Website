@@ -4,8 +4,9 @@ import { FaPlus } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import brandImage from "../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
+import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
-import api from "../../utils/axiosFetch";
+import { jwtToken } from "../../constant/jwtToken";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -17,12 +18,10 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
-      const jwtToken = localStorage.getItem("jwtToken");
       if (!jwtToken) {
         throw new Error("No JWT token found. Please log in.");
       }
-
-      const response = await api.get(`${baseUrl}/product`, {
+      const response = await axios.get(`${baseUrl}/product`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${jwtToken}`,
@@ -37,7 +36,14 @@ const Products = () => {
 
   const fetchBrands = async () => {
     try {
-      const response = await api.get(`${baseUrl}/brand/company/123`);
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      const response = await axios.get(`${baseUrl}/brand/company/123`, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
       setBrands(response.data.data);
     } catch (error) {
       console.log(error);
