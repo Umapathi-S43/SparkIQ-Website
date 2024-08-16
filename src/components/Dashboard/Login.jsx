@@ -6,6 +6,8 @@ import logo from "../../assets/logo.png";
 import googleLogo from "../../assets/dashboard_img/glogosvg.svg";
 import metaLogo from "../../assets/dashboard_img/metasvg.svg";
 import axios from "axios";
+import { baseUrl } from "../utils/Constant";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -20,46 +22,25 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const data = {
       email: email,
       password: password,
     };
+
     try {
-      await axios.post(`${baseUrl}/user/login`, data).then((res) => {
-        toast.success("Login successful!");
-        console.log(res.data);
-        
-      });
+      const response = await axios.post(`${baseUrl}/user/login`, data);
+      const jwtToken = response.data.data.jwt;
+
+      localStorage.setItem("jwtToken", jwtToken);
+
+      toast.success("Login successful!");
+      navigate("/");
+      console.log("JWT Token saved:", jwtToken);
     } catch (error) {
       console.error(error);
+      toast.error("Login failed!");
     }
-
-    // Replace the following code with your API call to authenticate the user with PostgreSQL
-    // const response = await fetch('your-backend-api-url', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ email, password }),
-    // });
-
-    // const data = await response.json();
-    // if (data.success) {
-    //   // Authentication successful
-    //   console.log('Login successful');
-    //   navigate('/homepage');
-    // } else {
-    //   // Authentication failed
-    //   setErrorMessage('Invalid username or password');
-    // }
-
-    // Simulating backend logic for demonstration
-    // if (email === "umapathi@gmail.com" && password === "Password#000") {
-    //   console.log("Login successful");
-    //   navigate("/homepage");
-    // } else {
-    //   setErrorMessage("Invalid username or password");
-    // }
   };
 
   const handleSignUpNavigation = () => {

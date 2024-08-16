@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FaArrowLeft } from "react-icons/fa";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import logo from "../../assets/logo.png";
 import axios from "axios";
 import { baseUrl } from "../utils/Constant";
+import toast from "react-hot-toast";
 
 const OTPVerification = ({
   onBack,
@@ -43,7 +42,7 @@ const OTPVerification = ({
       setOtp(newOtp);
 
       // Automatically move focus to the next input box
-      if (index < 3) {
+      if (index < 5) {
         document.getElementById(`otp-${index + 1}`).focus();
       }
     } else if (
@@ -63,12 +62,12 @@ const OTPVerification = ({
 
   const handlePasteOtp = (e) => {
     const paste = e.clipboardData.getData("text");
-    const newOtp = paste.split("").slice(0, 4);
+    const newOtp = paste.split("").slice(0, 6);
     setOtp(newOtp);
 
     // Focus on the last input field if all inputs are filled
     const lastFilledIndex = newOtp.length - 1;
-    if (lastFilledIndex < 4) {
+    if (lastFilledIndex < 6) {
       document.getElementById(`otp-${lastFilledIndex}`).focus();
     }
   };
@@ -92,8 +91,6 @@ const OTPVerification = ({
       setTimeout(() => {
         onOtpValidated();
       }, 1500);
-
-      console.log(response.data);
     } catch (error) {
       console.error(error);
       toast.error("Invalid OTP");
@@ -102,7 +99,6 @@ const OTPVerification = ({
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4">
-      <ToastContainer position="top-center" />
       <div className="flex flex-col items-center w-full max-w-md p-4 mt-[-10vh]">
         <img src={logo} alt="Logo" className="w-40 h-20 mb-6" />
         <div
@@ -138,7 +134,7 @@ const OTPVerification = ({
             className="flex justify-center gap-3 mb-6"
             onPaste={handlePasteOtp}
           >
-            {[...Array(4)].map((_, index) => (
+            {[...Array(6)].map((_, index) => (
               <input
                 key={index}
                 id={`otp-${index}`}

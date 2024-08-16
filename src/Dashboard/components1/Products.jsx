@@ -17,9 +17,15 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
+      const jwtToken = localStorage.getItem("jwtToken");
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+
       const response = await axios.get(`${baseUrl}/product`, {
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${jwtToken}`,
         },
       });
       setProducts(response.data.data);
@@ -58,8 +64,10 @@ const Products = () => {
 
   const filteredProducts = products?.filter((product) => {
     const matchesSearchQuery =
-      (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      (product.name &&
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (product.description &&
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesBrand =
       selectedBrand === "AllBrands" || product.brandID === selectedBrand;
     return matchesSearchQuery && matchesBrand;
@@ -148,9 +156,7 @@ const Products = () => {
               key={index}
               className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 lg:w-80 lg:h-80 md:w-80 md:h-80 w-72 h-72 flex flex-col items-center justify-between hover:transition-colors duration-200 glass-gradient-hover cursor-pointer"
               onClick={() =>
-                navigate(
-                  `/productdetails?id=${encodeURIComponent(product.id)}`
-                )
+                navigate(`/productdetails?id=${encodeURIComponent(product.id)}`)
               }
             >
               {product.productImagesList?.map((item) => (

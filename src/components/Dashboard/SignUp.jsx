@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEyeSlash } from "react-icons/fa";
 import { PiEyeLight } from "react-icons/pi";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import OTPVerification from "./OTP";
 import logo from "../../assets/logo.png";
 import axios from "axios";
 import { baseUrl } from "../utils/Constant";
+import toast from "react-hot-toast";
 
 const SignUpPage = () => {
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -131,24 +130,23 @@ const SignUpPage = () => {
       toast.error("Please fill all fields correctly before signing up.");
       return;
     }
-  
+
     const data = {
       name: username,
       email: email,
       phoneNumber: `${countryCode}-${mobile}`,
       password: password,
     };
-  
+
     try {
-      const response = await axios.post(`${baseUrl}/user/setpassword`, data);
+      await axios.post(`${baseUrl}/user/setpassword`, data);
       toast.success("Sign Up successful!");
-      console.log(response.data);
+      navigate("/login");
     } catch (error) {
       console.error(error);
       toast.error("Error creating signup");
     }
   };
-  
 
   const countries = [
     { code: "+91", name: "India" },
@@ -204,7 +202,6 @@ const SignUpPage = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4">
-      <ToastContainer position="top-center" />
       <div className="flex flex-col items-center w-full max-w-md p-4 pt-0">
         <img src={logo} alt="Logo" className="w-40 h-22 mb-3" />
         <div
