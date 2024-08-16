@@ -8,6 +8,7 @@ import SvgBackground from "../../components/Dashboard/SvgBackground";
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../constant/jwtToken";
+import axios from "axios";
 
 const Brands = () => {
   const [brands, setBrands] = useState([]);
@@ -52,7 +53,7 @@ const Brands = () => {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
-        const response = await aaxiospi.get(`${baseUrl}/product`, {
+        const response = await axios.get(`${baseUrl}/product`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
           },
