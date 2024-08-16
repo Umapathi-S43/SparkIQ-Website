@@ -76,26 +76,27 @@ const OTPVerification = ({
   const handleVerifyOtp = async () => {
     const enteredOtp = otp.join("");
 
-    // Check if any OTP field is empty
     if (otp.includes("")) {
       toast.error("Please enter the complete OTP");
       return;
     }
+
     try {
-      await axios
-        .post(`${baseUrl}/user/validateOtp/${enteredOtp}`, submitData)
-        .then(() => {
-          toast.success("OTP validated successfully");
-          setTimeout(() => {
-            onOtpValidated(); // Notify parent component of OTP validation
-          }, 1500);
-        });
+      const response = await axios.post(
+        `${baseUrl}/user/validateOtp/${enteredOtp}`,
+        submitData
+      );
+      toast.success("OTP validated successfully");
+
+      // Notify parent component of OTP validation after a short delay
+      setTimeout(() => {
+        onOtpValidated();
+      }, 1500);
+
+      console.log(response.data);
     } catch (error) {
       console.error(error);
       toast.error("Invalid OTP");
-      //  setTimeout(() => {
-      //       onOtpValidated(); // Notify parent component of OTP validation
-      //     }, 1500);
     }
   };
 

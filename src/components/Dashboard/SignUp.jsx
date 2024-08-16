@@ -33,17 +33,19 @@ const SignUpPage = () => {
   };
 
   const handleSendOtp = async () => {
-    try {
-      await axios.post(`${baseUrl}/user/register`, submitData).then((res) => {
-        toast.success("success");
-        setShowOtpModal(true);
-      });
-    } catch (error) {
-      console.error(error);
+    if (!validateMobile(mobile)) {
+      toast.error("Invalid mobile number");
+      return;
     }
 
-    if (validateMobile(mobile)) {
+    try {
+      const response = await axios.post(`${baseUrl}/user/register`, submitData);
+      toast.success("Success");
       setShowOtpModal(true);
+      console.log(response.data);
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to send OTP");
     }
   };
 
@@ -127,24 +129,26 @@ const SignUpPage = () => {
       confirmPasswordError
     ) {
       toast.error("Please fill all fields correctly before signing up.");
+      return;
     }
-    
+  
     const data = {
       name: username,
       email: email,
       phoneNumber: `${countryCode}-${mobile}`,
       password: password,
     };
+  
     try {
-      await axios.post(`${baseUrl}/user/setpassword`, data).then(() => {
-        toast.success("Sign Up successful!");
-       
-      });
+      const response = await axios.post(`${baseUrl}/user/setpassword`, data);
+      toast.success("Sign Up successful!");
+      console.log(response.data);
     } catch (error) {
       console.error(error);
-      toast.error("error creating signup");
+      toast.error("Error creating signup");
     }
   };
+  
 
   const countries = [
     { code: "+91", name: "India" },

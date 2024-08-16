@@ -54,12 +54,12 @@ const LoginPage = () => {
     // }
 
     // Simulating backend logic for demonstration
-    if (email === "umapathi@gmail.com" && password === "Password#000") {
-      console.log("Login successful");
-      navigate("/homepage");
-    } else {
-      setErrorMessage("Invalid username or password");
-    }
+    // if (email === "umapathi@gmail.com" && password === "Password#000") {
+    //   console.log("Login successful");
+    //   navigate("/homepage");
+    // } else {
+    //   setErrorMessage("Invalid username or password");
+    // }
   };
 
   const handleSignUpNavigation = () => {
