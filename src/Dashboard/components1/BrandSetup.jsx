@@ -181,6 +181,9 @@ const BrandSetup = () => {
         .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
           headers: {
             "Content-Type": "multipart/form-data",
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
           },
         })
         .then((res) => {
