@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
-import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 import "./GeneratedCreatives.css";
+import api from "../../utils/axiosFetch";
 
 const GeneratedCreatives = ({
   isThirdSectionOpen,
@@ -57,9 +56,9 @@ const GeneratedCreatives = ({
     const models = modelMapping[modelName];
     for (let i = 0; i < models.length; i++) {
       try {
-        const response = await axios.post(url);
+        const response = await api.post(url);
         if (response.data.message) {
-          const res = await axios.get(
+          const res = await api.get(
             `${baseUrl}/generated-images/model/${models[i]}`
           );
           return res.data;

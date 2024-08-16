@@ -14,10 +14,10 @@ import gallery from "../../assets/dashboard_img/gallerylogo.png";
 import sound from "../../assets/dashboard_img/sound.png";
 import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path as needed
 import "./brandsetup.css"; // Import the CSS file
-import axios from "axios";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { baseUrl } from "../../components/utils/Constant";
+import api from "../../utils/axiosFetch";
 
 const BrandSetup = () => {
   const location = useLocation();
@@ -63,7 +63,7 @@ const BrandSetup = () => {
 
     const fetchBrands = async (name) => {
       try {
-        const response = await axios.get(`${baseUrl}/brand/company/123`);
+        const response = await api.get(`${baseUrl}/brand/company/123`);
         console.log(response.data);
         if (isMounted) {
           const foundBrand = response.data.data.find(
@@ -165,7 +165,7 @@ const BrandSetup = () => {
     uploadData.append("customerId", "123");
 
     try {
-      await axios
+      await api
         .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -183,7 +183,7 @@ const BrandSetup = () => {
 
   const dominantColor = async (url) => {
     try {
-      await axios
+      await api
         .post(`${baseUrl}/sparkiq/ai/product/dominant-colors`, { url: url })
         .then((res) => {
           setFormInputs({
@@ -225,7 +225,7 @@ const BrandSetup = () => {
       brandColours: JSON.stringify(formInputs.domColors),
     };
     try {
-      await axios.post(`${baseUrl}/brand`, newBrand).then((res) => {
+      await api.post(`${baseUrl}/brand`, newBrand).then((res) => {
         toast.success("Brand created successfully");
 
         localStorage.setItem("task1Completed", "true");
@@ -254,7 +254,7 @@ const BrandSetup = () => {
     };
 
     try {
-      await axios.post(`${baseUrl}/brand`, editBrand).then((res) => {
+      await api.post(`${baseUrl}/brand`, editBrand).then((res) => {
         toast.success("Brand edited successfully");
         localStorage.setItem("task1Completed", "true");
 
