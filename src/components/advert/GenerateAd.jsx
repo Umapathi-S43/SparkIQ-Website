@@ -81,8 +81,8 @@ export default function GenerateAd({ setPage, pages }) {
   }, [isThirdSectionOpen]);
 
   return (
-    <div className="flex-grow mr-8">
-      <div className="max-w-7xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-135px)]">
+    <div className="flex-grow mr-8 overflow-auto">
+      <div className="max-w-7xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0  relative">
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon1.svg" alt="" className="w-10 lg:w-12" />
@@ -101,7 +101,7 @@ export default function GenerateAd({ setPage, pages }) {
             className="absolute bottom-0 right-24 w-28 lg:w-36 hidden md:block"
           />
         </div>
-        <div className="px-4 lg:px-6 flex flex-col gap-4 overflow-y-auto " style={{ maxHeight: '80vh' }}>
+        <div className="px-4 lg:px-6 flex flex-col gap-4 ">
           {showProductDetails ? (
             <>
               <ProductDetails
