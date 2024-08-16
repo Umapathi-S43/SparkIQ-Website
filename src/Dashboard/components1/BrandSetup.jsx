@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
+import axios from "axios";
 
 const BrandSetup = () => {
   const location = useLocation();
