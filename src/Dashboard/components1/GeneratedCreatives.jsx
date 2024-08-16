@@ -245,10 +245,9 @@ const GeneratedCreatives = ({
 
   return (
     <div className="container mb-4 lg:p-0 flex-grow">
-      <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-4 flex flex-col gap-6 relative z-10">
-        <div
-          className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] p-2 sm:p-4 relative cursor-pointer"
-          onClick={toggleThirdSectionAccordion}
+      <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${isThirdSectionOpen ? 'p-0' : 'p-3'} flex flex-col gap-6 relative z-10`}>
+      <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isThirdSectionOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] p-2'}  relative cursor-pointer`} 
+        onClick={toggleThirdSectionAccordion}
         >
           <span className="flex items-center gap-4">
             <img src="/icon5.svg" alt="Icon" />
@@ -256,7 +255,7 @@ const GeneratedCreatives = ({
               <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">
                 Generated Creatives
               </h4>
-              <p className="text-[#374151] text-xs lg:text-base">
+              <p className="text-[#374151] text-xs lg:text-sm">
                 Choose one for your ad. If you are happy with more than one save
                 it for future!
               </p>

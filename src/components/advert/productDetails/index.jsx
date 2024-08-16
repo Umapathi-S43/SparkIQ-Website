@@ -414,13 +414,13 @@ export default function ProductDetails({
   return (
     <div>
       <span
-        className="flex gap-1 cursor-pointer items-center pb-4"
+        className="flex cursor-pointer items-center pb-2 pt-0 mt-0"
         onClick={() => setShowProductDetails(false)}
       >
         <RiArrowGoBackLine /> back
       </span>
-      <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-2 lg:p-4 flex flex-col gap-6 relative z-10">
-        <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] lg:p-4 p-4 relative cursor-pointer" onClick={toggleAccordion} >
+      <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${isOpen ? 'p-0' : 'p-3'} flex flex-col gap-6 relative z-10`}>
+        <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'} relative cursor-pointer`} onClick={toggleAccordion} >
           {isCompleted && (
             <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
               Completed <BiCheck size={20} />
@@ -432,7 +432,7 @@ export default function ProductDetails({
               <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">
                 Add Product Details
               </h4>
-              <p className="text-[#374151] text-xs lg:text-base">
+              <p className="text-[#374151] text-xs lg:text-sm">
                 Upload photos and details of your product
               </p>
             </span>

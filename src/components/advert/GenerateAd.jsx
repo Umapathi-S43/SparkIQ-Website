@@ -81,16 +81,16 @@ export default function GenerateAd({ setPage, pages }) {
   }, [isThirdSectionOpen]);
 
   return (
-    <div className="flex-grow">
-      <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-180px)]">
-        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-6 relative">
+    <div className="flex-grow mr-8">
+      <div className="max-w-7xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-135px)]">
+        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0  relative">
           <span className="flex items-center gap-2 lg:gap-4">
-            <img src="/icon1.svg" alt="" className="w-10 lg:w-14" />
+            <img src="/icon1.svg" alt="" className="w-10 lg:w-12" />
             <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold text-xl lg:text-2xl">
+              <h4 className="text-[#082A66] font-bold text-lg lg:text-2xl">
                 Generate an Ad Creatives
               </h4>
-              <p className="text-[#374151] text-xs lg:text-base">
+              <p className="text-[#374151] text-xs lg:text-sm">
                 Generate conversion-focused ad creatives using our unique AI.
               </p>
             </span>
@@ -98,10 +98,10 @@ export default function GenerateAd({ setPage, pages }) {
           <img
             src="/image1.png"
             alt=""
-            className="absolute bottom-0 right-24 w-32 lg:w-44 hidden md:block"
+            className="absolute bottom-0 right-24 w-28 lg:w-36 hidden md:block"
           />
         </div>
-        <div className="px-4 lg:px-6 flex flex-col gap-6 overflow-y-auto " style={{ maxHeight: '70vh' }}>
+        <div className="px-4 lg:px-6 flex flex-col gap-4 overflow-y-auto " style={{ maxHeight: '80vh' }}>
           {showProductDetails ? (
             <>
               <ProductDetails
