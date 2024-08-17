@@ -42,7 +42,7 @@ const GeneratedCreatives = ({
   };
 
   const modelMapping = {
-    unaware: ["PAS"],
+    "unaware": ["PAS"],
     "problem aware": ["PAS"],
     "solution aware": ["AIDA", "FAB"],
     "product aware": ["AIDA", "FAB", "USP"],
@@ -54,7 +54,7 @@ const GeneratedCreatives = ({
   const fetchModelData = async (modelName) => {
     const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
     console.log("Generated URL:", url);
-
+  
     const models = modelMapping[modelName];
     for (let i = 0; i < models.length; i++) {
       try {
@@ -68,7 +68,7 @@ const GeneratedCreatives = ({
         });
         if (response.data.message) {
           const res = await axios.get(
-            `${baseUrl}/generated-images/models/${models[i]}`
+             `${baseUrl}/generated-images/models/${models[i]}`
           );
           return res.data;
         }
@@ -79,6 +79,7 @@ const GeneratedCreatives = ({
     }
     return []; // Return empty if all models fail
   };
+  
 
   const loadCreatives = async () => {
     if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
@@ -135,6 +136,7 @@ const GeneratedCreatives = ({
     setLoadingProductAware(true);
     setLoadingMostAware(true);
   };
+  
 
   const FilteredData = ({ filteredModel, modelName }) => {
     const filteredProducts = filteredModel.filter((product) => {
@@ -253,10 +255,9 @@ const GeneratedCreatives = ({
 
   return (
     <div className="container mb-4 lg:p-0 flex-grow">
-      <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-4 flex flex-col gap-6 relative z-10">
-        <div
-          className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] p-2 sm:p-4 relative cursor-pointer"
-          onClick={toggleThirdSectionAccordion}
+      <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${isThirdSectionOpen ? 'p-0' : 'p-3'} flex flex-col gap-6 relative z-10`}>
+      <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isThirdSectionOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] p-2'}  relative cursor-pointer`} 
+        onClick={toggleThirdSectionAccordion}
         >
           <span className="flex items-center gap-4">
             <img src="/icon5.svg" alt="Icon" />
@@ -264,7 +265,7 @@ const GeneratedCreatives = ({
               <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">
                 Generated Creatives
               </h4>
-              <p className="text-[#374151] text-xs lg:text-base">
+              <p className="text-[#374151] text-xs lg:text-sm">
                 Choose one for your ad. If you are happy with more than one save
                 it for future!
               </p>
@@ -280,21 +281,19 @@ const GeneratedCreatives = ({
           <>
             <div className="flex justify-center">
               <div className="tab-buttons flex justify-center items-center gap-12 w-4/6 mb-2 border-4 py-1 rounded-xl shadow-md">
-                {["Brand Color", "Single Color", "Gradient Color"].map(
-                  (tab) => (
-                    <button
-                      key={tab}
-                      className={`px-5 py-2 rounded-lg ${
-                        selectedTab === tab
-                          ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
-                          : "bg-[#FCFCFC20] text-gray-700 border-2"
-                      }`}
-                      onClick={() => handleTabChange(tab)}
-                    >
-                      {tab}
-                    </button>
-                  )
-                )}
+                {["Brand Color", "Single Color", "Gradient Color"].map((tab) => (
+                  <button
+                    key={tab}
+                    className={`px-5 py-2 rounded-lg ${
+                      selectedTab === tab
+                        ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
+                        : "bg-[#FCFCFC20] text-gray-700 border-2"
+                    }`}
+                    onClick={() => handleTabChange(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="overflow-auto" style={{ maxHeight: "80vh" }}>

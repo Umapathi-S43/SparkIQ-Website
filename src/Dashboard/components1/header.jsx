@@ -22,29 +22,29 @@ const Header = ({ toggleSidebar }) => {
   };
 
   return (
-    <div className="flex justify-between items-center p-4 pt-3 relative w-full z-10 lg:relative lg:w-auto ">
+    <div className="flex justify-between items-center p-2 pt-2 relative w-full z-10 lg:relative lg:w-auto">
       <div className="flex items-center">
         <button onClick={toggleSidebar} className="lg:hidden p-2 focus:outline-none">
-          <FaBars size={24} />
+          <FaBars size={20} />
         </button>
-        <img src={logo} alt="Logo" className="w-[120px] h-[70px] object-contain lg:w-[167px] lg:h-[98px] lg:ml-4" />
+        <img src={logo} alt="Logo" className="w-[100px] h-[60px] object-contain lg:w-[140px] lg:h-[80px] lg:ml-4" />
       </div>
-      <div className="flex items-center space-x-2 lg:space-x-4 mr-1 lg:mr-10">
-        <div className="relative flex items-center justify-center border border-[#FCFCFC] w-[50px] h-[50px] max-sm:w-[44px]  max-sm:h-[44px] lg:w-[60px] lg:h-[60px] bg-[rgba(252, 252, 252, 0.25)] shadow-md rounded-2xl">
-          <div className="w-[30px] h-[32px] lg:w-[38px] lg:h-[40px] bg-[#00A0F5]  max-sm:w-[28px] max-sm:h-[28px] shadow-lg rounded-xl flex items-center justify-center">
+      <div className="flex items-center space-x-2 lg:space-x-3 mr-1 lg:mr-8">
+        <div className="relative flex items-center justify-center border border-[#FCFCFC] w-[40px] h-[40px] max-sm:w-[36px]  max-sm:h-[36px] lg:w-[50px] lg:h-[50px] bg-[rgba(252, 252, 252, 0.25)] shadow-md rounded-2xl">
+          <div className="w-[24px] h-[24px] lg:w-[30px] lg:h-[30px] bg-[#00A0F5] max-sm:w-[22px] max-sm:h-[22px] shadow-lg rounded-xl flex items-center justify-center">
             <FaBell className="text-white" />
             {notificationCount > 0 && (
-              <div className="absolute top-0 right-0 bg-[#1138AC] text-white border border-[#FCFCFC] rounded-full w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center text-xs">
+              <div className="absolute top-0 right-0 bg-[#1138AC] text-white border border-[#FCFCFC] rounded-full w-3 h-3 lg:w-4 lg:h-4 flex items-center justify-center text-xs">
                 {notificationCount}
               </div>
             )}
           </div>
         </div>
         <div 
-          className="relative flex items-center justify-center border border-[#FCFCFC] w-[50px] h-[50px] max-sm:w-[44px]  max-sm:h-[44px] lg:w-[60px] lg:h-[60px] bg-[rgba(252, 252, 252, 0.25)] shadow-md rounded-2xl cursor-pointer"
+          className="relative flex items-center justify-center border border-[#FCFCFC] w-[40px] h-[40px] max-sm:w-[36px]  max-sm:h-[36px] lg:w-[50px] lg:h-[50px] bg-[rgba(252, 252, 252, 0.25)] shadow-md rounded-2xl cursor-pointer"
           onClick={handleProfileClick}
         >
-          <div className="w-[32px] h-[32px] max-sm:w-[30px] max-sm:h-[28px] lg:w-[40px] lg:h-[40px] bg-[#FCFCFC] shadow-lg rounded-xl flex items-center justify-center text-[#082A66] font-bold">
+          <div className="w-[24px] h-[24px] max-sm:w-[22px] max-sm:h-[22px] lg:w-[30px] lg:h-[30px] bg-[#FCFCFC] shadow-lg rounded-xl flex items-center justify-center text-[#082A66] font-bold">
             {getProfileInitials(userName)}
           </div>
         </div>

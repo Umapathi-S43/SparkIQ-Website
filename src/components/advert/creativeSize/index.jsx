@@ -64,9 +64,9 @@ export default function CreativeSize({
 
   return (
     <div ref={sectionRef}>
-      <section className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-2 lg:p-4 flex flex-col gap-6 relative z-10">
+       <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${!isNextSectionOpen ? 'p-2 lg:p-3' : 'p-0'} flex flex-col gap-6 relative z-10`}>
         <div
-          className="flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] lg:p-4 p-4 relative cursor-pointer"
+          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? 'rounded-[20px] p-2' : 'rounded-t-[20px] p-4'}  relative cursor-pointer`}
           onClick={() =>
             openModalProductDetails ? toggleNextSectionAccordion() : null
           }
@@ -82,7 +82,7 @@ export default function CreativeSize({
               <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">
                 Select Creative Size
               </h4>
-              <p className="text-[#374151] text-xs lg:text-base">
+              <p className="text-[#374151] text-xs lg:text-sm">
                 Select your creative size below depending on the platform you
                 want to advertise on.
               </p>
