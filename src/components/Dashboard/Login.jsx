@@ -35,7 +35,7 @@ const LoginPage = () => {
       localStorage.setItem("jwtToken", jwtToken);
 
       toast.success("Login successful!");
-      navigate("/homepage");
+      window.location.href = "/homepage";
     } catch (error) {
       console.error(error);
       toast.error("Login failed!");

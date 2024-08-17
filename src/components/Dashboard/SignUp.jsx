@@ -139,11 +139,13 @@ const SignUpPage = () => {
     };
 
     try {
-      await axios.post(`${baseUrl}/user/setpassword`, data);
+      const response = await axios.post(`${baseUrl}/user/setpassword`, data);
       toast.success("Sign Up successful!");
       const jwtToken = response.data.data.jwt;
       localStorage.setItem("jwtToken", jwtToken);
-      navigate("/homepage");
+      window.location.href = "/homepage";
+      console.log(response);
+      
     } catch (error) {
       console.error(error);
       toast.error("Error creating signup");
