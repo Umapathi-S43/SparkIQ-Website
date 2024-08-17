@@ -45,7 +45,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const handleSignOut = () => {
     localStorage.removeItem("jwtToken");
 
-    navigate("/login");
+    window.location.href = "/login";
   };
 
   return (
