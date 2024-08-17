@@ -5,6 +5,7 @@ import { BiCheck } from 'react-icons/bi';
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import axios from 'axios';
 import { baseUrl } from '../../utils/Constant'; // Update this path as needed
+import { jwtToken } from "../../utils/jwtToken";
 
 const companyId = '123'; // Replace with your actual company ID
 
@@ -16,28 +17,38 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedBrand, setSelectedBrand] = useState('all'); // Set 'all' as the default value
 
-  const fetchProducts = async (brandId) => {
+  const fetchProducts = async () => {
     try {
-      const response = await axios.get(`${baseUrl}/product`);
-      console.log('Fetched Products:', response.data);
-      if (brandId) {
-        setProducts(response.data.data.filter(product => product.brandID === brandId));
-      } else {
-        setProducts(response.data.data);
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
       }
+      const response = await axios.get(`${baseUrl}/product`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+      setProducts(response.data.data);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.log(error);
+      setError("Failed to fetch products.");
     }
   };
-
+  
   const fetchBrands = async () => {
     try {
-      const response = await axios.get(`${baseUrl}/brand/company/${companyId}`);
-      console.log('Fetched Brands:', response.data);
-      const brandNames = response.data.data.map(brand => ({ id: brand.id, name: brand.name }));
-      setBrands([{ id: 'all', name: 'All Brands' }, ...brandNames]);
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+      const response = await axios.get(`${baseUrl}/brand/company/123`, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+      setBrands(response.data.data);
     } catch (error) {
-      console.error('Error fetching brands:', error);
+      console.log(error);
+      setError("Failed to fetch brands.");
     }
   };
 
@@ -95,10 +106,10 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   const isNextStepDisabled = selectedProduct === null;
 
   return (
-    <div className="border border-white bg-[rgba(252,252,252,0.25)] rounded-[32px] p-2 lg:p-4 flex flex-col gap-6 relative z-10">
-      <div
-        className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-[32px] lg:p-4 p-4 relative cursor-pointer"
-        onClick={toggleAccordion}
+    <div className={`border border-[#FCFCFC] bg-[rgba(252,252,252,0.25)] rounded-[24px] ${isOpen ? 'p-0' : 'p-3'} flex flex-col gap-6 relative z-10`}>
+
+<div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'}  relative cursor-pointer`}
+      onClick={toggleAccordion}
       >
         {isCompleted && (
           <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
@@ -109,7 +120,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
           <img src="/icon2.svg" alt="" />
           <span className="flex flex-col">
             <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">Add Product Details</h4>
-            <p className="text-[#374151] text-xs lg:text-base">Choose an existing product to proceed or Create a new Product</p>
+            <p className="text-[#374151] text-xs lg:text-sm">Choose an existing product to proceed or Create a new Product</p>
           </span>
         </div>
         <div className="flex items-center gap-6">
@@ -134,23 +145,23 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
       {isOpen && (
         <>
           <div className="flex justify-end w-full px-5">
-            <div className="flex items-center justify-end bg-white rounded-xl mr-10">
-              <div className="relative w-full">
+            <div className="flex items-center justify-end rounded-xl mr-10">
+              <div className="relative w-[170px]">
                 <input
                   type="text"
                   placeholder="Search"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="w-full text-sm leading-6 text-slate-900 placeholder-slate-400 rounded-md py-2 pl-3 pr-10 ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
+                  className="w-full text-sm leading-6 text-slate-900 placeholder-slate-400 rounded-md py-1 pl-3 pr-10 ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
                 />
-                <MagnifyingGlassIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 focus:text-blue-500" />
+                <MagnifyingGlassIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 focus:text-blue-500" />
               </div>
             </div>
             <div className="relative">
               <select
                 value={selectedBrand}
                 onChange={handleBrandChange}
-                className="ml-4 p-2 rounded-md text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="ml-4 p-2 py-1 rounded-md text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 style={{ maxHeight: '10vh', overflowY: 'auto' }}
               >
                 {brands.map((brand, index) => (
@@ -161,7 +172,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
           </div>
 
           <div className="flex flex-wrap gap-5 ml-2 pl-2 justify-start" >
-            <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
+            <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 mt-0 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
               <div
                 onClick={handleCreateProduct}
                 className="relative cursor-pointer bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-xl shadow-cyan-100 shadow-2xl p-4 w-full h-full flex flex-col items-center justify-center"
