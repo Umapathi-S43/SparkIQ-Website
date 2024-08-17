@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaTrash } from "react-icons/fa";
 import { BiCheck } from "react-icons/bi";
 import { RiArrowGoBackLine } from "react-icons/ri";
 import { IoImageOutline } from "react-icons/io5";
 import { MdArrowDropUp, MdArrowDropDown } from "react-icons/md";
-import { FaChevronDown, FaChevronRight } from "react-icons/fa"; // Added Chevron Icons
+import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { PiFileArrowUpDuotone } from "react-icons/pi";
 import axios from "axios";
-import { toast } from "react-toastify"; // Assuming you're using react-toastify for notifications
+import { toast } from "react-toastify"; 
+import { baseUrl } from "../../utils/Constant";
+import { useLocation, useNavigate } from "react-router-dom";
+
+const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
+const discountOptions = ["Price", "Percentage"];
 
 const ProductDetails = ({ setShowProductDetails }) => {
     const [expandedSection, setExpandedSection] = useState(1);
@@ -24,31 +29,90 @@ const ProductDetails = ({ setShowProductDetails }) => {
         discount: "Percentage",
         customDiscount: "",
         brandName: "",
+        brandID: "",
+        prompt: "",
+        isEdit: false,
     });
     const [imageSrc, setImageSrc] = useState(null);
     const [brands, setBrands] = useState([]);
     const [images, setImages] = useState([]);
-    const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
-    const discountOptions = ["Price", "Percentage"];
+    const [generatedImages, setGeneratedImages] = useState([]);
+    const [selectedImageUrl, setSelectedImageUrl] = useState(null);
+    const [selectedImageType, setSelectedImageType] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
     const [completedSections, setCompletedSections] = useState({
         1: false,
         2: false,
     });
 
-    const fetchBrands = async () => {
-        const fetchedBrands = [
-            { id: 1, name: "Brand A" },
-            { id: 2, name: "Brand B" },
-        ];
-        setBrands(fetchedBrands);
-        if (fetchedBrands.length === 1) {
-            setProductDetails(prev => ({
-                ...prev,
-                brandName: fetchedBrands[0].name
-            }));
+    const location = useLocation();
+    const navigate = useNavigate();
+    const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
+
+    useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                const response = await axios.get(`${baseUrl}/brand/company/123`);
+                const fetchedBrands = response.data.data.map((brand) => ({
+                    ...brand,
+                    productsCreated: 0,
+                }));
+                setBrands(fetchedBrands);
+
+                if (fetchedBrands.length === 1) {
+                    setProductDetails(prevDetails => ({
+                        ...prevDetails,
+                        brandID: fetchedBrands[0].id,
+                        brandName: fetchedBrands[0].name,
+                    }));
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        };
+
+        fetchBrands();
+    }, []);
+
+    useEffect(() => {
+        const fetchProducts = async (id) => {
+            try {
+                const response = await axios.get(`${baseUrl}/product/${id}`);
+                const foundProduct = response.data.data;
+
+                if (foundProduct) {
+                    setProductDetails({
+                        productName: foundProduct.name || "",
+                        productDescription: foundProduct.description || "",
+                        productURL: foundProduct.productURL || "",
+                        brandID: foundProduct.brandID || "",
+                        logoURL: foundProduct.productImagesList[0]?.imageURL || "",
+                        discount: foundProduct.discountType || "Percentage",
+                        customDiscount: foundProduct.discount || "",
+                        productPrice: foundProduct.price || "",
+                        currency: foundProduct.priceType || "INR",
+                        isEdit: true,
+                    });
+
+                    const existingImages = foundProduct.productImagesList.map((img) => ({
+                        file: null,
+                        id: img.id,
+                        url: img.imageURL,
+                        uploaded: true,
+                    }));
+                    setImages(existingImages);
+                    setSelectedImageUrl(existingImages[0]?.url || null);
+                    setSelectedImageType(existingImages.length > 0 ? 'uploaded' : null);
+                }
+            } catch (error) {
+                console.error("Error fetching product details:", error);
+            }
+        };
+
+        if (storedProductID) {
+            fetchProducts(storedProductID);
         }
-    };
-    useState(() => fetchBrands(), []);
+    }, [storedProductID]);
 
     const handleOnChange = (e) => {
         const { name, value } = e.target;
@@ -56,8 +120,24 @@ const ProductDetails = ({ setShowProductDetails }) => {
     };
 
     const handleOnChangeProductDetails = (e) => {
-        const { name, value } = e.target;
-        setProductDetails(prev => ({ ...prev, [name]: value }));
+        const { id, value } = e.target;
+
+        if (id === "customDiscount") {
+            const discountValue = parseFloat(value);
+            const productPrice = parseFloat(productDetails.productPrice);
+
+            if (productDetails.discount === "Percentage") {
+                if (value === "" || (discountValue >= 0 && discountValue <= 100)) {
+                    setProductDetails({ ...productDetails, customDiscount: value });
+                }
+            } else if (productDetails.discount === "Price") {
+                if (value === "" || (!isNaN(discountValue) && discountValue <= productPrice)) {
+                    setProductDetails({ ...productDetails, customDiscount: value });
+                }
+            }
+        } else {
+            setProductDetails({ ...productDetails, [id]: value });
+        }
     };
 
     const handleImageUpload = (e) => {
@@ -72,67 +152,60 @@ const ProductDetails = ({ setShowProductDetails }) => {
         }
     };
 
-    const handleDeleteImage = () => {
-        setProductDetails(prev => ({ ...prev, imageFile: null, logoURL: "" }));
-        setImageSrc(null);
-    };
-
-    const handleScanUrl = () => {
-        console.log("Scanning URL:", productDetails.productURL);
-    };
-
     const handleDiscountChange = (e) => {
         const discountType = e.target.value;
-        setProductDetails(prevDetails => ({
+        console.log("Selected Discount Type:", discountType);
+ 
+        setProductDetails((prevDetails) => ({
             ...prevDetails,
             discount: discountType,
-            customDiscount: "",
+            customDiscount: "", // Reset the discount value when the type changes
         }));
     };
 
-    const handleSaveAndContinue = (section) => {
-        const newCompletedSections = { ...completedSections };
-        newCompletedSections[section] = true;
-        setCompletedSections(newCompletedSections);
-        setExpandedSection(section + 1); // Automatically open the next section
-    };
+    const handleFileChange = (event) => {
+        if (event.target.files) {
+            const newFiles = Array.from(event.target.files).slice(0, 3 - images.length).map((file, index) => ({
+                file,
+                id: `${file.name}-${file.size}-${index}`,
+                url: URL.createObjectURL(file)
+            }));
 
-    const handleSearchForImages = async () => {
-        try {
-            const response = await axios.get(`${baseUrl}/search/get-images`, {
-                params: {
-                    prompt: productDetails.productDescription, // Use the correct key for prompt if it differs
-                    page: 1,
-                    size: 10,
-                },
-            });
-            setImages(response.data.result.data);
-        } catch (error) {
-            console.log(error);
-            toast.error("Failed to generate images.");
+            const newImages = [...images, ...newFiles];
+            setImages(newImages);
+
+            if (newFiles.length === 1) {
+                setSelectedImageUrl(newFiles[0].url);
+                setSelectedImageType('uploaded');
+                setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
+                uploadImage(newFiles[0].file);
+            } else if (newFiles.length > 1) {
+                setSelectedImageUrl(null);
+                setSelectedImageType('multiple-upload');
+                setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
+            }
         }
     };
 
     const handleDrop = (event) => {
         event.preventDefault();
-        event.stopPropagation();
-
-        const { files } = event.dataTransfer;
-
-        if (files && files.length > 0) {
-            const file = files[0];
-            const newImage = {
+        if (event.dataTransfer.files) {
+            const newFiles = Array.from(event.dataTransfer.files).slice(0, 3 - images.length).map((file, index) => ({
                 file,
-                url: URL.createObjectURL(file),
-            };
+                id: `${file.name}-${file.size}-${index}`,
+                url: URL.createObjectURL(file)
+            }));
 
-            setImages([newImage]);
-            setImageSrc(newImage.url);
-            setProductDetails({
-                ...productDetails,
-                imageFile: newImage.file,
-                logoURL: "",
-            });
+            const newImages = [...images, ...newFiles];
+            setImages(newImages);
+
+            if (newFiles.length > 0) {
+                setSelectedImageUrl(newFiles[0].url);
+                setSelectedImageType('uploaded');
+                setProductDetails({ ...productDetails, imageFile: newFiles[0].file, logoURL: "" });
+                uploadImage(newFiles[0].file);
+                toast.success("Image uploaded successfully");
+            }
         }
     };
 
@@ -140,15 +213,186 @@ const ProductDetails = ({ setShowProductDetails }) => {
         event.preventDefault();
     };
 
-    const handleImageClick = (imageUrl) => {
-        setImages([]);
-        setImageSrc(imageUrl);
-        setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
+    const handleImageClick = (imageUrl, isGenerated = false) => {
+        if (isGenerated) {
+            setImages([]);
+            setSelectedImageUrl(imageUrl);
+            setSelectedImageType('generated');
+            setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
+            toast.success("Image selected successfully");
+        } else {
+            const selectedImage = images.find(img => img.url === imageUrl);
+            setSelectedImageUrl(imageUrl);
+            setSelectedImageType('uploaded');
+            setProductDetails({ ...productDetails, imageFile: selectedImage.file, logoURL: selectedImage.uploaded ? selectedImage.url : "" });
+            if (!selectedImage.uploaded) {
+                uploadImage(selectedImage.file);
+            }
+        }
+    };
+
+    const handleDeleteImage = (index) => {
+        const removedImage = images[index];
+        setImages(images.filter((_, i) => i !== index));
+
+        if (selectedImageUrl === removedImage.url && selectedImageType === 'uploaded') {
+            setSelectedImageUrl(null);
+            setSelectedImageType(null);
+            setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
+        }
+    };
+
+    const handleScanUrl = async () => {
+        try {
+            const response = await axios.get(`${baseUrl}/scrap/product?url=${productDetails.productURL}`);
+            toast.success("Scan successful");
+            setProductDetails({
+                ...productDetails,
+                productName: response.data.productTitle,
+                productDescription: response.data.productDesc,
+            });
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to scan the URL.");
+        }
+    };
+
+    const handleSaveAndContinue = (section) => {
+        if (section === 1) {
+            const isNextStepDisabled =
+                productDetails.productName === "" ||
+                productDetails.productDescription === "" ||
+                productDetails.brandName === "" ||
+                productDetails.productPrice === "" ||
+                productDetails.customDiscount === "" ||
+                (productDetails.discount === "Price" &&
+                    (isNaN(parseFloat(productDetails.customDiscount)) ||
+                        parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+                (productDetails.discount === "Percentage" &&
+                    (isNaN(parseFloat(productDetails.customDiscount)) ||
+                        parseFloat(productDetails.customDiscount) <= 0 ||
+                        parseFloat(productDetails.customDiscount) > 100));
+            
+            if (isNextStepDisabled) {
+                toast.error("Please fill in all the required fields correctly.");
+                return;
+            }
+        }
+
+        const newCompletedSections = { ...completedSections };
+        newCompletedSections[section] = true;
+        setCompletedSections(newCompletedSections);
+        setExpandedSection(section + 1);
+    };
+
+    const handlePageChange = async (page) => {
+        setCurrentPage(page);
+        try {
+            const response = await axios.get(`${baseUrl}/search/get-images`, {
+                params: {
+                    prompt: productDetails.prompt,
+                    page: page,
+                    size: 10,
+                },
+            });
+            setGeneratedImages(response.data.result.data);
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to generate images.");
+        }
+    };
+
+    const handleSearchForImages = async () => {
+        try {
+            const response = await axios.get(`${baseUrl}/search/get-images`, {
+                params: {
+                    prompt: productDetails.prompt,
+                    page: currentPage,
+                    size: 10,
+                },
+            });
+            setGeneratedImages(response.data.result.data);
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to generate images.");
+        }
+    };
+
+    const uploadImage = async (imageFile) => {
+        const uploadData = new FormData();
+        uploadData.append("file", imageFile);
+
+        try {
+            const response = await axios.post(`${baseUrl}/sparkiq/image/upload?customerId=123`, uploadData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            if (response.status === 201) {
+                toast.success("Image uploaded successfully");
+                setProductDetails((prevDetails) => ({
+                    ...prevDetails,
+                    logoURL: response.data.data.url,
+                }));
+            } else {
+                toast.error("Failed to upload image");
+            }
+        } catch (error) {
+            toast.error("Error uploading image");
+            console.error(error);
+        }
+    };
+
+    const handleProductSubmission = async (e) => {
+        e.preventDefault();
+
+        const isEditMode = productDetails.isEdit && storedProductID;
+        const productPayload = {
+            id: isEditMode ? storedProductID : undefined,
+            brandID: productDetails.brandID,
+            name: productDetails.productName,
+            description: productDetails.productDescription,
+            price: productDetails.productPrice,
+            priceType: productDetails.currency,
+            discount: productDetails.customDiscount,
+            discountType: productDetails.discount,
+            productImagesList: [
+                {
+                    imageURL: productDetails.logoURL,
+                },
+            ],
+        };
+
+        try {
+            const response = await axios.post(`${baseUrl}/product`, productPayload);
+
+            if (isEditMode) {
+                toast.success("Product updated successfully");
+            } else {
+                toast.success("Product created successfully");
+                localStorage.setItem("productID", JSON.stringify(response.data.data.id));
+            }
+        } catch (error) {
+            console.error("Error in product submission:", error);
+            toast.error("Failed to submit product");
+        }
+    };
+
+    const toggleAccordionSection1 = (event) => {
+        // Prevent toggling when clicking inside input elements
+        if (event.target.tagName !== "INPUT" && event.target.tagName !== "TEXTAREA" && event.target.tagName !== "SELECT" && event.target.tagName !== "BUTTON") {
+            setExpandedSubsection1(!expandedSubsection1);
+        }
+    };
+
+    const toggleAccordionSection2 = (event) => {
+        // Prevent toggling when clicking inside input elements
+        if (event.target.tagName !== "INPUT" && event.target.tagName !== "TEXTAREA" && event.target.tagName !== "SELECT" && event.target.tagName !== "BUTTON") {
+            setExpandedSubsection2(!expandedSubsection2);
+        }
     };
 
     return (
         <div>
-            {/* Header */}
             <span
                 className="flex cursor-pointer items-center pb-2 pt-0 mt-0"
                 onClick={() => setShowProductDetails(false)}
@@ -174,22 +418,23 @@ const ProductDetails = ({ setShowProductDetails }) => {
                             </p>
                         </span>
                     </span>
-                    <div onClick={() => setExpandedSection(expandedSection === 1 ? 0 : 1)}>
-                        {expandedSection === 1 ? <MdArrowDropUp /> : <MdArrowDropDown />}
-                    </div>
+                    {expandedSection === 1 ? (
+                        <MdArrowDropUp size={32} className="cursor-pointer" onClick={() => setExpandedSection(0)} />
+                    ) : (
+                        <MdArrowDropDown size={32} className="cursor-pointer" onClick={() => setExpandedSection(1)} />
+                    )}
                 </div>
 
                 {expandedSection === 1 && (
                     <div className="flex flex-col lg:flex-row p-8 w-full">
-                        {/* Left Side: Image Display */}
                         <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
                             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-gradient-to-r from-[#F0F4F8] via-[#D9E9F2] to-[#F0F4F8] rounded-3xl flex items-center justify-center shadow-2xl transition-transform transform hover:scale-105 hover:rotate-2 duration-300">
                                 <div className="absolute w-[85%] h-[85%] sm:w-[90%] sm:h-[90%] md:w-[95%] md:h-[95%] bg-white rounded-3xl flex items-center justify-center shadow-inner overflow-hidden">
                                     {imageSrc ? (
-                                        <img 
-                                            src={imageSrc} 
-                                            alt="Product" 
-                                            className="object-cover rounded-2xl w-full h-full transition-opacity duration-300" 
+                                        <img
+                                            src={imageSrc}
+                                            alt="Product"
+                                            className="object-cover rounded-2xl w-full h-full transition-opacity duration-300"
                                             style={{
                                                 backgroundColor: "white",
                                                 borderRadius: "20px",
@@ -205,7 +450,7 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                 {imageSrc && (
                                     <button
                                         className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition duration-200 transform hover:scale-110"
-                                        onClick={handleDeleteImage}
+                                        onClick={() => handleDeleteImage(images.findIndex(img => img.url === imageSrc))}
                                     >
                                         <FaTrash />
                                     </button>
@@ -213,11 +458,9 @@ const ProductDetails = ({ setShowProductDetails }) => {
                             </div>
                         </div>
 
-                        {/* Right Side: Sections */}
                         <div className="flex-grow pr-1">
-                            {/* Section 1: Product Details */}
                             <div
-                                onClick={() => setExpandedSubsection1(!expandedSubsection1)}
+                                onClick={toggleAccordionSection1}
                                 className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection1 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
                             >
                                 <div className={`flex items-center justify-between ${expandedSubsection1 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
@@ -233,7 +476,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                 </div>
                                 {expandedSubsection1 && (
                                     <div className="p-4">
-                                        {/* 1st Row: Scan URL */}
                                         <div className="flex flex-col md:flex-row items-center gap-5 mb-4">
                                             <input
                                                 type="text"
@@ -251,7 +493,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                             </button>
                                         </div>
 
-                                        {/* 2nd Row: Product Name & Brand Name */}
                                         <div className="flex flex-col md:flex-row gap-5 mb-4">
                                             <input
                                                 type="text"
@@ -281,7 +522,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                             </select>
                                         </div>
 
-                                        {/* 3rd Row: Product Description */}
                                         <div className="mb-4">
                                             <textarea
                                                 name="productDescription"
@@ -293,7 +533,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                             />
                                         </div>
 
-                                        {/* 4th Row: Price and Discount */}
                                         <div className="flex flex-col md:flex-row gap-5 mb-4">
                                             <div className="relative w-full md:w-1/2">
                                                 <input
@@ -331,7 +570,7 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                                     placeholder={`Enter Discount `}
                                                     name="customDiscount"
                                                     value={productDetails.customDiscount}
-                                                    onChange={handleOnChange}
+                                                    onChange={handleOnChangeProductDetails}
                                                     className="rounded-md py-4 pl-40 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                                                     autoComplete="off"
                                                 />
@@ -357,7 +596,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                             </div>
                                         </div>
 
-                                        {/* Save and Continue */}
                                         <div className="flex justify-end mt-4">
                                             <button
                                                 className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
@@ -370,10 +608,10 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                 )}
                             </div>
 
-                            {/* Section 2: Upload Product Image and Search for Images */}
                             <div
-                                onClick={() => setExpandedSubsection2(!expandedSubsection2)}
-                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}>
+                                onClick={toggleAccordionSection2}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                            >
                                 <div className={`flex items-center justify-between ${expandedSubsection2 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
                                     <div className="flex items-center">
                                         <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
@@ -415,7 +653,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                             </div>
                                         </div>
 
-                                        {/* Search for Images */}
                                         <div className="flex flex-col md:flex-row p-2">
                                             <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-4`}>
                                                 <span className="flex items-center gap-4 text-lg font-bold">
@@ -455,7 +692,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                     </div>
                                 )}
                             </div>
-
                         </div>
                     </div>
                 )}
