@@ -171,7 +171,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-5 ml-2 pl-2 justify-start" >
+          <div className="flex flex-wrap gap-5 ml-2 pl-2 justify-start mb-4" >
             <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 mt-0 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
               <div
                 onClick={handleCreateProduct}
@@ -208,7 +208,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 )}
                 <div className="text-center flex justify-between w-full px-2">
                   <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">{product.name}</h3>
-                  <span className="font-semibold text-[#082A66] group-hover:text-white">{product.price} {product.priceType}</span>
+                  <span className="font-semibold text-[#082A66] group-hover:text-white text-nowrap mt-4">{product.price} {product.priceType}</span>
                 </div>
                 <div className="text-justify w-full px-2 line-clamp-3">
                   <p className="text-sm text-[#374151] group-hover:text-white">{product.description}</p>
