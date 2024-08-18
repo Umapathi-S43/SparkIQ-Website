@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { FaTrash } from "react-icons/fa";
-import { BiCheck } from "react-icons/bi";
+import { FaTrash, FaChevronRight, FaChevronDown, FaCheck } from "react-icons/fa";
 import { RiArrowGoBackLine } from "react-icons/ri";
 import { IoImageOutline } from "react-icons/io5";
-import { MdArrowDropUp, MdArrowDropDown } from "react-icons/md";
-import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { PiFileArrowUpDuotone } from "react-icons/pi";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import { MdArrowDropUp, MdArrowDropDown } from "react-icons/md";
 import 'react-toastify/dist/ReactToastify.css';
 import { baseUrl } from "../../utils/Constant";
 import { useLocation } from "react-router-dom";
@@ -201,8 +199,10 @@ const ProductDetails = ({ setShowProductDetails }) => {
     };
 
     const handleImageClick = (imageUrl, isGenerated = false) => {
+        console.log("Image clicked, URL:", imageUrl);
+        // Ensure this code does not trigger any auto-toggling
         if (isGenerated) {
-            setImages([]);
+            setImages([]); // Clear any previous uploads if selecting from generated images
             setSelectedImageUrl(imageUrl);
             setSelectedImageType('generated');
             setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
@@ -219,9 +219,10 @@ const ProductDetails = ({ setShowProductDetails }) => {
             setImageSrc(imageUrl);
         }
     };
+    
+    
 
     const handleDeleteImage = (index) => {
-        // Ensure the image exists at the provided index
         if (images[index]) {
             const removedImage = images[index];
             const newImages = images.filter((_, i) => i !== index);
@@ -237,7 +238,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
             console.error("Image does not exist at index:", index);
         }
     };
-    
 
     const handleScanUrl = async () => {
         try {
@@ -277,7 +277,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
             customDiscount: "",
         });
     };
-
 
     const handlePageChange = async (page) => {
         setCurrentPage(page);
@@ -404,9 +403,14 @@ const ProductDetails = ({ setShowProductDetails }) => {
                 (isNaN(parseFloat(productDetails.customDiscount)) ||
                     parseFloat(productDetails.customDiscount) <= 0 ||
                     parseFloat(productDetails.customDiscount) > 100));
-    
+        
         if (isNextStepDisabled) {
             toast.error("Please fill in all the required fields correctly.");
+            return;
+        }
+    
+        if (section === 2 && !productDetails.logoURL) {
+            toast.error("Please upload or select an image before proceeding.");
             return;
         }
     
@@ -414,12 +418,15 @@ const ProductDetails = ({ setShowProductDetails }) => {
         newCompletedSections[section] = true;
         setCompletedSections(newCompletedSections);
     
-        // Toggle only the relevant subsections, keeping the main section open
         if (section === 1) {
             setExpandedSubsection1(false);
             setExpandedSubsection2(true);
         }
+        if (section === 2) {
+            setExpandedSubsection2(false);
+        }
     };
+    
     
     const toggleAccordionSection2 = (event) => {
         if (!completedSections[1]) {
@@ -432,7 +439,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
         }
     };
     
-
     const isNextStepDisabled =
         productDetails.productName === "" ||
         productDetails.productDescription === "" ||
@@ -452,9 +458,9 @@ const ProductDetails = ({ setShowProductDetails }) => {
 
             <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10`}>
                 <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-4 relative cursor-pointer`}>
-                    {completedSections[1] && (
+                    {completedSections[2] && (
                         <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
-                            Completed <BiCheck size={20} />
+                            Completed <FaCheck size={20} />
                         </span>
                     )}
                     <span className="flex items-center gap-4">
@@ -520,6 +526,13 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                         </div>
                                         <p className="ml-3 text-lg font-semibold mt-0 pt-0">Product Details</p>
                                     </div>
+                                    {completedSections[1] && (
+                                        <div className="flex items-end rounded-xl shadow-xl bg-white border-2 p-1 px-6">
+                                            <p className="m-0 text-sm sm:text-base md:text-lg">
+                                                {productDetails.productName.split(' ')}
+                                            </p>
+                                        </div>
+                                    )}
                                     <div>
                                         {expandedSubsection1 ? <FaChevronDown /> : <FaChevronRight />}
                                     </div>
@@ -648,7 +661,7 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-end mt-4">
+                                        <div className="flex justify-start mt-4">
                                             <button
                                                 className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
                                                 onClick={() => handleSaveAndContinue(1)}
@@ -674,8 +687,21 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                         </div>
                                         <p className="ml-3 text-lg font-semibold">Upload or Select Product Image</p>
                                     </div>
-                                    <div>
-                                        {expandedSubsection2 ? <FaChevronDown /> : <FaChevronRight />}
+                                    {completedSections[2] && (
+                                        <div className="flex items-center ml-auto bg-white rounded-lg p-1">
+                                            <img
+                                                src={productDetails.logoURL}
+                                                alt="Product Image"
+                                                className="w-12 h-7 object-cover rounded-md"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="ml-4">
+                                        {expandedSubsection2 ? (
+                                            <FaChevronDown />
+                                        ) : (
+                                            <FaChevronRight />
+                                        )}
                                     </div>
                                 </div>
 
@@ -701,21 +727,23 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                                         className="flex flex-col items-center justify-center h-full cursor-pointer"
                                                     >
                                                         <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
-                                                        <span className="text-gray-500 text-nowrap">
-                                                            Upload a product image here
+                                                        <span className="text-gray-500 text-nowrap sm:text-xs">
+                                                            Upload a product image here or or drag and drop a product image here.
                                                         </span>
                                                     </label>
                                                 </div>
                                             </div>
                                         </div>
-
+                                        <div className="flex justify-center">
+                                        <img src="/orIcon.svg" alt="" />
+                                        </div>
                                         <div className="flex flex-col md:flex-row p-2">
                                             <div className={`bg-[#FCFCFC40] shadow-md rounded-md border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-2`}>
                                                 
                                                 <span className="flex flex-col md:flex-row items-center gap-5">
                                                     <input
                                                         type="text"
-                                                        placeholder="Your prompt (Example: Tuition classes for kids)"
+                                                        placeholder="Enter Your prompt for images (e.g: Tuition classes)"
                                                         id="prompt"
                                                         name="prompt"
                                                         value={productDetails.prompt}
@@ -731,66 +759,71 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                                 </span>
                                             </div>
                                         </div>
-
-                                        <div className="flex justify-center mt-4">
-                                            <div className="relative w-full overflow-x-scroll p-2 hide-scrollbar">
-                                                <div className="flex space-x-4">
-                                                    {generatedImages.map((image, index) => (
-                                                        <div key={index} className="relative flex-shrink-0 border rounded-lg">
-                                                            <img
-                                                                src={image.imgUrl}
-                                                                alt={image.description}
-                                                                className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
-                                                                onClick={() => handleImageClick(image.imgUrl, true)}
-                                                            />
+                                        <div className="flex-row">
+                                            {generatedImages.length > 0 && (
+                                                <div>
+                                                    <div className="relative w-full overflow-x-scroll border border-[#FCFCFC] p-1 rounded-md">
+                                                        <div className="flex space-x-4">
+                                                            {generatedImages.map((image, index) => (
+                                                                <div key={index} className="relative flex-shrink-0 border rounded-lg">
+                                                                    <img
+                                                                        src={image.imgUrl}
+                                                                        alt={image.description}
+                                                                        className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
+                                                                        onClick={() => handleImageClick(image.imgUrl, true)}
+                                                                    />
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
-                                                {generatedImages.length > 0 && (
-                                                    <div className="flex justify-between mt-4">
+                                                    </div>
+                                                    <div className="flex justify-end gap-4 mt-2">
                                                         <button
-                                                            className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
+                                                            className="custom-button px-5 text-white rounded-md shadow-2xl"
                                                             onClick={() => handlePageChange(currentPage - 1)}
                                                             disabled={currentPage === 1}
                                                         >
-                                                            Previous
+                                                            Prev
                                                         </button>
                                                         <button
-                                                            className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
+                                                            className="custom-button py-1 pl-4 pr-4 text-white rounded-md shadow-2xl"
                                                             onClick={() => handlePageChange(currentPage + 1)}
                                                         >
                                                             Next
                                                         </button>
-                                                        <button
-                                                            className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
-                                                            onClick={() => handleSaveAndContinue(2)}
-                                                        >
-                                                            Save and Continue
-                                                        </button>
                                                     </div>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex justify-start mt-0">
+                                            <button
+                                                className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
+                                                onClick={() => handleSaveAndContinue(2)}
+                                            >
+                                                Save and Continue
+                                            </button>
                                         </div>
                                     </div>
                                 )}
                             </div>
+                            <div className="flex justify-start items-center">
+                        {completedSections[1] && completedSections[2] && (
+                        <div className="flex justify-start p-4 pl-2">
+                            <button
+                                className="w-fit rounded-xl text-white py-3 px-10 font-medium custom-button"
+                                disabled={isNextStepDisabled}
+                                onClick={handleProductSubmission}
+                            >
+                                {!productDetails.isEdit ? "Next Step" : "Edit Product"}
+                            </button>
+                        </div>
+                    )}
+                    </div>
                         </div>
                     </div>
                 )}
             </section>
             <ToastContainer /> 
-
-            {completedSections[1] && completedSections[2] && (
-                <div className="flex justify-center md:justify-start p-2">
-                    <button
-                        className="w-fit rounded-[20px] text-white py-3 px-10 font-medium custom-button mb-4 ml-1 mt-4"
-                        disabled={isNextStepDisabled}
-                        onClick={handleProductSubmission}
-                    >
-                        {!productDetails.isEdit ? "Next Step" : "Edit Product"}
-                    </button>
-                </div>
-            )}
         </div>
     );
 };
