@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaBars, FaBell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/dashboard_img/logo.png';
 
 const Header = ({ toggleSidebar }) => {
-  const [notificationCount, setNotificationCount] = React.useState(2);
-  const [userName, setUserName] = React.useState('Umapathi Sakirevulapalli');
+  const [notificationCount, setNotificationCount] = useState(2);
+  const [userName, setUserName] = useState(''); // Initially empty
   const navigate = useNavigate();
 
+  // Retrieve the userName from localStorage when the component mounts
+  useEffect(() => {
+    const storedUserName = localStorage.getItem('username'); // Use 'username' with lowercase 'n'
+    if (storedUserName) {
+      setUserName(storedUserName); // Set the retrieved userName to the state
+    } else {
+      console.log("No userName found in localStorage");
+    }
+  }, []); // Empty dependency array ensures this runs once when the component mounts
+
   const getProfileInitials = (name) => {
+    if (!name) return ''; // Handle case where name is undefined or empty
     const nameParts = name.split(' ');
     if (nameParts.length === 1) {
       return nameParts[0].charAt(0).toUpperCase();

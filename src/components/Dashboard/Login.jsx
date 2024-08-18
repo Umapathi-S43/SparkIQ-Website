@@ -33,6 +33,8 @@ const LoginPage = () => {
       const jwtToken = response.data.data.jwt;
 
       localStorage.setItem("jwtToken", jwtToken);
+      localStorage.setItem("username",email)
+
 
       toast.success("Login successful!");
       window.location.href = "/homepage";
@@ -107,6 +109,7 @@ const LoginPage = () => {
             <div className="flex flex-col gap-4">
               <input
                 type="email"
+                id="username"
                 placeholder="umapathi@gmail.com"
                 value={email}
                 onChange={handleEmailChange}
