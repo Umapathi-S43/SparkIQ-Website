@@ -221,16 +221,23 @@ const ProductDetails = ({ setShowProductDetails }) => {
     };
 
     const handleDeleteImage = (index) => {
-        const removedImage = images[index];
-        setImages(images.filter((_, i) => i !== index));
-
-        if (selectedImageUrl === removedImage.url && selectedImageType === 'uploaded') {
-            setSelectedImageUrl(null);
-            setSelectedImageType(null);
-            setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
-            setImageSrc(null);
+        // Ensure the image exists at the provided index
+        if (images[index]) {
+            const removedImage = images[index];
+            const newImages = images.filter((_, i) => i !== index);
+            setImages(newImages);
+    
+            if (selectedImageUrl === removedImage.url && selectedImageType === 'uploaded') {
+                setSelectedImageUrl(null);
+                setSelectedImageType(null);
+                setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
+                setImageSrc(null);
+            }
+        } else {
+            console.error("Image does not exist at index:", index);
         }
     };
+    
 
     const handleScanUrl = async () => {
         try {
@@ -271,36 +278,6 @@ const ProductDetails = ({ setShowProductDetails }) => {
         });
     };
 
-    const handleSaveAndContinue = (section) => {
-        const isNextStepDisabled =
-            productDetails.productName === "" ||
-            productDetails.productDescription === "" ||
-            productDetails.brandName === "" ||
-            productDetails.productPrice === "" ||
-            productDetails.customDiscount === "" ||
-            (productDetails.discount === "Price" &&
-                (isNaN(parseFloat(productDetails.customDiscount)) ||
-                    parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
-            (productDetails.discount === "Percentage" &&
-                (isNaN(parseFloat(productDetails.customDiscount)) ||
-                    parseFloat(productDetails.customDiscount) <= 0 ||
-                    parseFloat(productDetails.customDiscount) > 100));
-
-        if (isNextStepDisabled) {
-            toast.error("Please fill in all the required fields correctly.");
-            return;
-        }
-
-        const newCompletedSections = { ...completedSections };
-        newCompletedSections[section] = true;
-        setCompletedSections(newCompletedSections);
-        setExpandedSection(section + 1);
-
-        if (section === 1) {
-            setExpandedSubsection1(false);
-            setExpandedSubsection2(true);
-        }
-    };
 
     const handlePageChange = async (page) => {
         setCurrentPage(page);
@@ -413,11 +390,48 @@ const ProductDetails = ({ setShowProductDetails }) => {
         }
     };
 
+    const handleSaveAndContinue = (section) => {
+        const isNextStepDisabled =
+            productDetails.productName === "" ||
+            productDetails.productDescription === "" ||
+            productDetails.brandName === "" ||
+            productDetails.productPrice === "" ||
+            productDetails.customDiscount === "" ||
+            (productDetails.discount === "Price" &&
+                (isNaN(parseFloat(productDetails.customDiscount)) ||
+                    parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+            (productDetails.discount === "Percentage" &&
+                (isNaN(parseFloat(productDetails.customDiscount)) ||
+                    parseFloat(productDetails.customDiscount) <= 0 ||
+                    parseFloat(productDetails.customDiscount) > 100));
+    
+        if (isNextStepDisabled) {
+            toast.error("Please fill in all the required fields correctly.");
+            return;
+        }
+    
+        const newCompletedSections = { ...completedSections };
+        newCompletedSections[section] = true;
+        setCompletedSections(newCompletedSections);
+    
+        // Toggle only the relevant subsections, keeping the main section open
+        if (section === 1) {
+            setExpandedSubsection1(false);
+            setExpandedSubsection2(true);
+        }
+    };
+    
     const toggleAccordionSection2 = (event) => {
+        if (!completedSections[1]) {
+            toast.error("Please complete the first section before proceeding.");
+            return;
+        }
+    
         if (event.target.tagName !== "INPUT" && event.target.tagName !== "TEXTAREA" && event.target.tagName !== "SELECT" && event.target.tagName !== "BUTTON") {
             setExpandedSubsection2(!expandedSubsection2);
         }
     };
+    
 
     const isNextStepDisabled =
         productDetails.productName === "" ||
@@ -648,7 +662,10 @@ const ProductDetails = ({ setShowProductDetails }) => {
 
                             <div
                                 onClick={toggleAccordionSection2}
-                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${!completedSections[1] ? "opacity-50 cursor-not-allowed" : ""} ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                                style={{
+                                    pointerEvents: !completedSections[1] ? "none" : "auto"
+                                }}
                             >
                                 <div className={`flex items-center justify-between ${expandedSubsection2 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
                                     <div className="flex items-center">
@@ -661,6 +678,7 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                         {expandedSubsection2 ? <FaChevronDown /> : <FaChevronRight />}
                                     </div>
                                 </div>
+
                                 {expandedSubsection2 && (
                                     <div className="p-4 hide-scrollbar">
                                         <div className="border-2 border-[#fcfcfc] rounded-2xl m-2 p-1">
@@ -692,13 +710,8 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                         </div>
 
                                         <div className="flex flex-col md:flex-row p-2">
-                                            <div className={`bg-[#FCFCFC40] shadow-md rounded-[20px] border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-4`}>
-                                                <span className="flex items-center gap-4 text-lg font-bold">
-                                                    <div 
-                                                        className="bg-[#00279926] rounded-[10px] w-12 h-12 px-3 flex justify-center items-center"
-                                                    ><IoImageOutline /></div>{" "}
-                                                    <h6>Enter the prompt to get images for your service/product</h6>
-                                                </span>
+                                            <div className={`bg-[#FCFCFC40] shadow-md rounded-md border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-2`}>
+                                                
                                                 <span className="flex flex-col md:flex-row items-center gap-5">
                                                     <input
                                                         type="text"
