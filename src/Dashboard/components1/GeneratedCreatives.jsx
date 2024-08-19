@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import axios from "axios";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { baseUrl } from "../../components/utils/Constant";
 import "./GeneratedCreatives.css";
 import { jwtToken } from "../../components/utils/jwtToken";
@@ -14,19 +15,15 @@ const GeneratedCreatives = ({
   setIsLoading,
   setPage,
   openModalCreativeSize,
-  isPreviousSectionsCompleted = true, // Default to true or false if not provided
+  isPreviousSectionsCompleted = true,
 }) => {
-  const [unawareData, setUnawareData] = useState([]);
-  const [problemAwareData, setProblemAwareData] = useState([]);
-  const [solutionAwareData, setSolutionAwareData] = useState([]);
-  const [productAwareData, setProductAwareData] = useState([]);
-  const [mostAwareData, setMostAwareData] = useState([]);
+  const [brandAwarenessData, setBrandAwarenessData] = useState([]);
+  const [saleData, setSaleData] = useState([]);
+  const [retargetingData, setRetargetingData] = useState([]);
 
-  const [loadingUnaware, setLoadingUnaware] = useState(true);
-  const [loadingProblemAware, setLoadingProblemAware] = useState(true);
-  const [loadingSolutionAware, setLoadingSolutionAware] = useState(true);
-  const [loadingProductAware, setLoadingProductAware] = useState(true);
-  const [loadingMostAware, setLoadingMostAware] = useState(true);
+  const [loadingBrandAwareness, setLoadingBrandAwareness] = useState(true);
+  const [loadingSale, setLoadingSale] = useState(true);
+  const [loadingRetargeting, setLoadingRetargeting] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("Brand Color");
@@ -44,99 +41,153 @@ const GeneratedCreatives = ({
   const modelMapping = {
     "unaware": ["PAS"],
     "problem aware": ["PAS"],
-    "solution aware": ["AIDA", "FAB"],
+    "solution aware": ["AIDA", "FAB", "USP"],
     "product aware": ["AIDA", "FAB", "USP"],
-    "most aware": ["FAB", "USP"],
+    "most aware": ["USP"],
+  };
+
+  const modelLabels = {
+    "PAS": "Brand Awareness",
+    "AIDA": "Sale",
+    "FAB": "Sale",
+    "USP": "Retargeting Audience",
   };
 
   const navigate = useNavigate();
 
-  const fetchModelData = async (modelName) => {
+  const fetchModelData = async (modelName, appendToData, setLoading, apiCallsRef) => {
     const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
     console.log("Generated URL:", url);
-  
+
     const models = modelMapping[modelName];
-    for (let i = 0; i < models.length; i++) {
-      try {
-        if (!jwtToken) {
-          throw new Error("No JWT token found. Please log in.");
-        }
-        const response = await axios.post(url, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        });
-        if (response.data.message) {
-          const res = await axios.get(
-             `${baseUrl}/generated-images/models/${models[i]}`
-          );
-          return res.data;
-        }
-      } catch (error) {
-        console.error(`Failed to fetch ${models[i]} model`, error);
-        continue; // Try the next model if the current one fails
-      }
-    }
-    return []; // Return empty if all models fail
-  };
-  
-
-  const loadCreatives = async () => {
-    if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
-      return;
-    }
-
     try {
-      // Fetch data for Unaware model
-      const unawareData = await fetchModelData("unaware");
-      setUnawareData(unawareData);
-      setLoadingUnaware(false);
-
-      // Fetch data for Problem Aware model
-      const problemAwareData = await fetchModelData("problem aware");
-      setProblemAwareData(problemAwareData);
-      setLoadingProblemAware(false);
-
-      // Fetch data for Solution Aware model
-      const solutionAwareData = await fetchModelData("solution aware");
-      setSolutionAwareData(solutionAwareData);
-      setLoadingSolutionAware(false);
-
-      // Fetch data for Product Aware model
-      const productAwareData = await fetchModelData("product aware");
-      setProductAwareData(productAwareData);
-      setLoadingProductAware(false);
-
-      // Fetch data for Most Aware model
-      const mostAwareData = await fetchModelData("most aware");
-      setMostAwareData(mostAwareData);
-      setLoadingMostAware(false);
+        for (let i = 0; i < models.length; i++) {
+            if (!jwtToken) {
+                throw new Error("No JWT token found. Please log in.");
+            }
+            const response = await axios.post(url, {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+            });
+            if (response.data.message) {
+                const res = await axios.get(
+                    `${baseUrl}/generated-images/models/${models[i]}`
+                );
+                const labeledData = res.data.map(item => ({
+                    ...item,
+                    label: modelLabels[models[i]] || modelName,
+                }));
+                appendToData(prevData => [...prevData, ...labeledData]);
+                setLoading(false);
+                apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+                return; // Exit the loop if the call was successful
+            }
+        }
     } catch (error) {
-      console.error("Error fetching model data:", error);
+        console.error(`Failed to fetch ${models.join(", ")} model`, error);
     }
-  };
+};
 
-  useEffect(() => {
-    if (isThirdSectionOpen && isPreviousSectionsCompleted) {
-      loadCreatives();
+const loadCreatives = async () => {
+    if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
+        return;
     }
-  }, [selectedTab, isThirdSectionOpen, isPreviousSectionsCompleted]);
+
+    const apiCallsRef = { current: false }; // Using an object to pass by reference
+
+    await fetchModelData("unaware", setBrandAwarenessData, setLoadingBrandAwareness, apiCallsRef);
+    await fetchModelData("problem aware", setBrandAwarenessData, setLoadingBrandAwareness, apiCallsRef);
+    await fetchModelData("solution aware", setSaleData, setLoadingSale, apiCallsRef);
+    await fetchModelData("product aware", setSaleData, setLoadingSale, apiCallsRef);
+    await fetchModelData("most aware", setRetargetingData, setLoadingRetargeting, apiCallsRef);
+
+    // Show the error message only once after all API calls if none succeeded
+    if (!apiCallsRef.current) {
+        showToast("Action failed: please try after some time", "error");
+    }
+};
+
+useEffect(() => {
+    if (isThirdSectionOpen && isPreviousSectionsCompleted) {
+        loadCreatives();
+    }
+}, [selectedTab, isThirdSectionOpen, isPreviousSectionsCompleted]);
+
 
   const handleTabChange = (tab) => {
     setSelectedTab(tab);
     setIsLoading(true);
-    setUnawareData([]); // Resetting data for each model
-    setProblemAwareData([]);
-    setSolutionAwareData([]);
-    setProductAwareData([]);
-    setMostAwareData([]);
-    setLoadingUnaware(true); // Setting loading states to true
-    setLoadingProblemAware(true);
-    setLoadingSolutionAware(true);
-    setLoadingProductAware(true);
-    setLoadingMostAware(true);
+    setBrandAwarenessData([]);
+    setSaleData([]);
+    setRetargetingData([]);
+    setLoadingBrandAwareness(true);
+    setLoadingSale(true);
+    setLoadingRetargeting(true);
   };
-  
+
+  const showToast = (message, type) => {
+    toast(message, {
+      position: "top-center",
+      type: type,
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  };
+
+  const retryLoading = () => {
+    loadCreatives();
+  };
+
+  const CardLoaderRow = ({ label, delay, rows = 1 }) => {
+    const [visible, setVisible] = useState(false);
+    const [loadedCards, setLoadedCards] = useState([]);
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setVisible(true);
+        let cardLoadDelay = 0;
+        const totalCards = rows * 4; // number of rows * 4 cards per row
+        const cards = [...Array(totalCards)].map((_, index) => {
+          cardLoadDelay += 300; // delay between each card
+          return setTimeout(() => {
+            setLoadedCards((prev) => [...prev, index]);
+          }, cardLoadDelay);
+        });
+        return () => cards.forEach(clearTimeout);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }, [delay, rows]);
+
+    if (!visible) {
+      return null;
+    }
+
+    return (
+      <div className="mb-4">
+        <h3 className="font-bold text-lg mb-2">{label}</h3>
+        {[...Array(rows)].map((_, rowIndex) => (
+          <div key={rowIndex} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {[...Array(4)].map((_, index) => (
+              <div
+                key={index}
+                className={`animate-slide-in rounded-lg shadow-md flex flex-col items-center justify-center h-64 bg-[#F2F4F8] ${
+                  loadedCards.includes(rowIndex * 4 + index) ? 'opacity-100' : 'opacity-0'
+                } transition-opacity duration-300 ease-in-out`}
+              >
+                <div className="h-48 w-full bg-[#E8ECF2] rounded-lg loading-animation"></div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const FilteredData = ({ filteredModel, modelName }) => {
     const filteredProducts = filteredModel.filter((product) => {
@@ -149,7 +200,7 @@ const GeneratedCreatives = ({
     return (
       <>
         <h3 className="font-bold text-lg mb-2">{modelName}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:px-5 pb-2 w-full overflow-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {filteredProducts.map((product, index) => (
             <div
               key={index}
@@ -245,19 +296,19 @@ const GeneratedCreatives = ({
     );
   };
 
-  const CardLoader = () => {
-    return (
-      <div className="animate-pulse rounded-lg shadow-md">
-        <div className="h-48 bg-gray-300 rounded-lg mb-4"></div>
-      </div>
-    );
-  };
-
   return (
     <div className="container mb-4 lg:p-0 flex-grow">
-      <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${isThirdSectionOpen ? 'p-0' : 'p-3'} flex flex-col gap-6 relative z-10`}>
-      <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isThirdSectionOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] p-2'}  relative cursor-pointer`} 
-        onClick={toggleThirdSectionAccordion}
+      <ToastContainer />
+      <section
+        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${
+          isThirdSectionOpen ? "p-0" : "p-3"
+        } flex flex-col gap-6 relative z-10`}
+      >
+        <div
+          className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${
+            isThirdSectionOpen ? "rounded-t-[20px] p-4" : "rounded-[20px] p-2"
+          } relative cursor-pointer`}
+          onClick={toggleThirdSectionAccordion}
         >
           <span className="flex items-center gap-4">
             <img src="/icon5.svg" alt="Icon" />
@@ -281,10 +332,10 @@ const GeneratedCreatives = ({
           <>
             <div className="flex justify-center">
               <div className="tab-buttons flex justify-center items-center gap-12 w-4/6 mb-2 border-4 py-1 rounded-xl shadow-md">
-                {["Brand Color", "Single Color", "Gradient Color"].map((tab) => (
+                {["Brand Color", "Single Color", "Gradient Color","Templates"].map((tab) => (
                   <button
                     key={tab}
-                    className={`px-5 py-2 rounded-lg ${
+                    className={`px-6 py-2 rounded-lg ${
                       selectedTab === tab
                         ? "bg-gradient-to-r from-[#004367] to-[#00A7FF] text-white"
                         : "bg-[#FCFCFC20] text-gray-700 border-2"
@@ -296,52 +347,26 @@ const GeneratedCreatives = ({
                 ))}
               </div>
             </div>
-            <div className="overflow-auto" style={{ maxHeight: "80vh" }}>
-              {/* Unaware Model */}
-              {loadingUnaware ? (
-                <CardLoader />
+            <div className="mx-4">
+              {/* Brand Awareness */}
+              {loadingBrandAwareness ? (
+                <CardLoaderRow label="Brand Awareness" delay={1000} rows={2} />
               ) : (
-                <FilteredData filteredModel={unawareData} modelName="Unaware" />
+                <FilteredData filteredModel={brandAwarenessData} modelName="Brand Awareness" />
               )}
 
-              {/* Problem Aware Model */}
-              {loadingProblemAware ? (
-                <CardLoader />
+              {/* Sale */}
+              {loadingSale ? (
+                <CardLoaderRow label="Sale" delay={2000} rows={2} />
               ) : (
-                <FilteredData
-                  filteredModel={problemAwareData}
-                  modelName="Problem Aware"
-                />
+                <FilteredData filteredModel={saleData} modelName="Sale" />
               )}
 
-              {/* Solution Aware Model */}
-              {loadingSolutionAware ? (
-                <CardLoader />
+              {/* Retargeting Audience */}
+              {loadingRetargeting ? (
+                <CardLoaderRow label="Retargeting Audience" delay={3000} rows={1} />
               ) : (
-                <FilteredData
-                  filteredModel={solutionAwareData}
-                  modelName="Solution Aware"
-                />
-              )}
-
-              {/* Product Aware Model */}
-              {loadingProductAware ? (
-                <CardLoader />
-              ) : (
-                <FilteredData
-                  filteredModel={productAwareData}
-                  modelName="Product Aware"
-                />
-              )}
-
-              {/* Most Aware Model */}
-              {loadingMostAware ? (
-                <CardLoader />
-              ) : (
-                <FilteredData
-                  filteredModel={mostAwareData}
-                  modelName="Most Aware"
-                />
+                <FilteredData filteredModel={retargetingData} modelName="Retargeting Audience" />
               )}
             </div>
           </>
