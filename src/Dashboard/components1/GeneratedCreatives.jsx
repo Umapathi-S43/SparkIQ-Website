@@ -146,7 +146,7 @@ useEffect(() => {
   const CardLoaderRow = ({ label, delay, rows = 1 }) => {
     const [visible, setVisible] = useState(false);
     const [loadedCards, setLoadedCards] = useState([]);
-
+  
     useEffect(() => {
       const timer = setTimeout(() => {
         setVisible(true);
@@ -160,14 +160,14 @@ useEffect(() => {
         });
         return () => cards.forEach(clearTimeout);
       }, delay);
-
+  
       return () => clearTimeout(timer);
     }, [delay, rows]);
-
+  
     if (!visible) {
       return null;
     }
-
+  
     return (
       <div className="mb-4">
         <h3 className="font-bold text-lg mb-2">{label}</h3>
@@ -176,11 +176,12 @@ useEffect(() => {
             {[...Array(4)].map((_, index) => (
               <div
                 key={index}
-                className={`animate-slide-in rounded-lg shadow-md flex flex-col items-center justify-center h-64 bg-[#F2F4F8] ${
-                  loadedCards.includes(rowIndex * 4 + index) ? 'opacity-100' : 'opacity-0'
-                } transition-opacity duration-300 ease-in-out`}
+                className={`card-shimmer rounded-lg shadow-md flex flex-col items-center justify-center h-64 bg-[#F2F4F8] 
+                ${loadedCards.includes(rowIndex * 4 + index) ? 'opacity-100' : 'opacity-0'} 
+                transition-opacity duration-300 ease-in-out`}
+                style={{ transitionDelay: `${index * 300}ms` }} // Adds delay to each card's animation
               >
-                <div className="h-48 w-full bg-[#E8ECF2] rounded-lg loading-animation"></div>
+                <div className="h-48 w-full bg-[#E8ECF2] rounded-lg"></div>
               </div>
             ))}
           </div>
@@ -188,7 +189,7 @@ useEffect(() => {
       </div>
     );
   };
-
+  
   const FilteredData = ({ filteredModel, modelName }) => {
     const filteredProducts = filteredModel.filter((product) => {
       return (
