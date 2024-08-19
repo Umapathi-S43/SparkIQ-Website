@@ -4,9 +4,8 @@ import { RiArrowGoBackLine } from "react-icons/ri";
 import { IoImageOutline } from "react-icons/io5";
 import { PiFileArrowUpDuotone } from "react-icons/pi";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import toast from "react-hot-toast";
 import { MdArrowDropUp, MdArrowDropDown } from "react-icons/md";
-import 'react-toastify/dist/ReactToastify.css';
 import { baseUrl } from "../../utils/Constant";
 import { useLocation } from "react-router-dom";
 import { jwtToken } from '../../utils/jwtToken';
@@ -52,6 +51,7 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
     useEffect(() => {
         const fetchBrands = async () => {
             try {
+                console.log("Fetching brands...");
                 if (!jwtToken) {
                     throw new Error("No JWT token found. Please log in.");
                 }
@@ -65,7 +65,7 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
                     productsCreated: 0,
                 }));
                 setBrands(fetchedBrands);
-
+    
                 if (fetchedBrands.length === 1) {
                     setProductDetails(prevDetails => ({
                         ...prevDetails,
@@ -78,9 +78,10 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
                 toast.error("Failed to fetch brands");
             }
         };
-
+    
         fetchBrands();
     }, []);
+    
 
     useEffect(() => {
         const fetchProducts = async (id) => {
@@ -210,6 +211,7 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
             setSelectedImageType('generated');
             setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
             setImageSrc(imageUrl);
+            console.log("image selected successfully");
             toast.success("Image selected successfully");
         } else {
             const selectedImage = images.find(img => img.url === imageUrl);
@@ -246,31 +248,35 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
             if (!jwtToken) {
                 throw new Error("No JWT token found. Please log in.");
             }
-
+    
+            console.log("Starting scan for URL:", productDetails.productURL);
+    
             const response = await axios.get(`${baseUrl}/scrap/product?url=${encodeURIComponent(productDetails.productURL)}`, {
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
                 },
             });
-
+    
             if (response.status === 200) {
+                console.log("Scan successful:", response.data);
                 toast.success("Scan successful");
-
+    
                 setProductDetails({
                     ...productDetails,
                     productName: response.data.productTitle || productDetails.productName,
                     productDescription: response.data.productDesc || productDetails.productDescription,
                 });
             } else {
+                console.log("Scan failed with status:", response.status);
                 toast.error("Scan failed. Please try again.");
             }
-
+    
         } catch (error) {
             console.log("Error scanning URL:", error);
             toast.error("Failed to scan the URL.");
         }
     };
-
+    
     const handleDiscountChange = (e) => {
         const discountType = e.target.value;
         setProductDetails({
@@ -295,7 +301,7 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
             });
             setGeneratedImages(response.data.result.data);
         } catch (error) {
-            console.log(error);
+            console.log("failed to generate images next page",error);
             toast.error("Failed to generate images.");
         }
     };
@@ -348,46 +354,53 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
 
     const handleProductSubmission = async (e) => {
         e.preventDefault();
-      
-        const isEditMode = productDetails.isEdit && storedProductID;
-        const productPayload = {
-          id: isEditMode ? storedProductID : undefined,
-          brandID: productDetails.brandID,
-          name: productDetails.productName,
-          description: productDetails.productDescription,
-          price: productDetails.productPrice,
-          priceType: productDetails.currency,
-          discount: productDetails.customDiscount,
-          discountType: productDetails.discount,
-          productImagesList: [
-            {
-              imageURL: productDetails.logoURL,
-            },
-          ],
-        };
-      
+        
         try {
-          const response = await axios.post(`${baseUrl}/product`, productPayload, {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          });
-      
-          if (isEditMode) {
-            toast.success("Product updated successfully");
-          } else {
-            toast.success("Product created successfully");
-            localStorage.setItem("productID", JSON.stringify(response.data.data.id));
-          }
-      
-          setIsCompleted(true);
-          setIsNextSectionOpen(true);
-          setIsOpen(false); // Close current section
+            console.log("Product submission initiated...");
+    
+            const isEditMode = productDetails.isEdit && storedProductID;
+            const productPayload = {
+                id: isEditMode ? storedProductID : undefined,
+                brandID: productDetails.brandID,
+                name: productDetails.productName,
+                description: productDetails.productDescription,
+                price: productDetails.productPrice,
+                priceType: productDetails.currency,
+                discount: productDetails.customDiscount,
+                discountType: productDetails.discount,
+                productImagesList: [
+                    {
+                        imageURL: productDetails.logoURL,
+                    },
+                ],
+            };
+    
+            console.log("Payload:", productPayload);
+    
+            const response = await axios.post(`${baseUrl}/product`, productPayload, {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+            });
+    
+            console.log("Response received:", response);
+    
+            if (isEditMode) {
+                toast.success("Product updated successfully");
+            } else {
+                toast.success("Product created successfully");
+                localStorage.setItem("productID", JSON.stringify(response.data.data.id));
+            }
+    
+            setIsCompleted(true);
+            setIsNextSectionOpen(true);
+            setIsOpen(false); // Close current section
+    
         } catch (error) {
-          console.error("Error in product submission:", error);
-          toast.error("Failed to submit product");
+            console.error("Error during product submission:", error);
+            toast.error("Failed to submit product");
         }
-      };
+    };
     
       const toggleAccordion = () => {
         setIsOpen(!isOpen);
@@ -490,7 +503,7 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
                                 <p className="text-[#1E1154] font-medium">Created Product</p>
                             </div>
                             <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
-                                <p className="text-[#1E1154] font-medium">{productName}</p>
+                                <p className="text-[#1E1154] font-medium">{productDetails.productName}</p>
                             </div>
                             </div>
                         )}
@@ -844,7 +857,7 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
                     </div>
                 )}
             </section>
-            <ToastContainer /> 
+            
         </div>
     );
 };
