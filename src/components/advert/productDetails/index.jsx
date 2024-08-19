@@ -14,8 +14,9 @@ import { jwtToken } from '../../utils/jwtToken';
 const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
 const discountOptions = ["Price", "Percentage"];
 
-const ProductDetails = ({ setShowProductDetails }) => {
+const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, setShowProductDetails }) => {
     const [expandedSection, setExpandedSection] = useState(1);
+    const [isOpen, setIsOpen] = useState(true);
     const [expandedSubsection1, setExpandedSubsection1] = useState(true);
     const [expandedSubsection2, setExpandedSubsection2] = useState(false);
     const [productDetails, setProductDetails] = useState({
@@ -198,9 +199,11 @@ const ProductDetails = ({ setShowProductDetails }) => {
         event.preventDefault();
     };
 
-    const handleImageClick = (imageUrl, isGenerated = false) => {
+    const handleImageClick = (imageUrl, isGenerated = false, event) => {
+        event.stopPropagation(); // Stop the event from propagating up to the parent
+    
         console.log("Image clicked, URL:", imageUrl);
-        // Ensure this code does not trigger any auto-toggling
+    
         if (isGenerated) {
             setImages([]); // Clear any previous uploads if selecting from generated images
             setSelectedImageUrl(imageUrl);
@@ -220,14 +223,13 @@ const ProductDetails = ({ setShowProductDetails }) => {
         }
     };
     
-    
 
     const handleDeleteImage = (index) => {
         if (images[index]) {
             const removedImage = images[index];
             const newImages = images.filter((_, i) => i !== index);
             setImages(newImages);
-    
+
             if (selectedImageUrl === removedImage.url && selectedImageType === 'uploaded') {
                 setSelectedImageUrl(null);
                 setSelectedImageType(null);
@@ -346,42 +348,50 @@ const ProductDetails = ({ setShowProductDetails }) => {
 
     const handleProductSubmission = async (e) => {
         e.preventDefault();
-
+      
         const isEditMode = productDetails.isEdit && storedProductID;
         const productPayload = {
-            id: isEditMode ? storedProductID : undefined,
-            brandID: productDetails.brandID,
-            name: productDetails.productName,
-            description: productDetails.productDescription,
-            price: productDetails.productPrice,
-            priceType: productDetails.currency,
-            discount: productDetails.customDiscount,
-            discountType: productDetails.discount,
-            productImagesList: [
-                {
-                    imageURL: productDetails.logoURL,
-                },
-            ],
+          id: isEditMode ? storedProductID : undefined,
+          brandID: productDetails.brandID,
+          name: productDetails.productName,
+          description: productDetails.productDescription,
+          price: productDetails.productPrice,
+          priceType: productDetails.currency,
+          discount: productDetails.customDiscount,
+          discountType: productDetails.discount,
+          productImagesList: [
+            {
+              imageURL: productDetails.logoURL,
+            },
+          ],
         };
-
+      
         try {
-            const response = await axios.post(`${baseUrl}/product`, productPayload, {
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
-                },
-            });
-
-            if (isEditMode) {
-                toast.success("Product updated successfully");
-            } else {
-                toast.success("Product created successfully");
-                localStorage.setItem("productID", JSON.stringify(response.data.data.id));
-            }
+          const response = await axios.post(`${baseUrl}/product`, productPayload, {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          });
+      
+          if (isEditMode) {
+            toast.success("Product updated successfully");
+          } else {
+            toast.success("Product created successfully");
+            localStorage.setItem("productID", JSON.stringify(response.data.data.id));
+          }
+      
+          setIsCompleted(true);
+          setIsNextSectionOpen(true);
+          setIsOpen(false); // Close current section
         } catch (error) {
-            console.error("Error in product submission:", error);
-            toast.error("Failed to submit product");
+          console.error("Error in product submission:", error);
+          toast.error("Failed to submit product");
         }
-    };
+      };
+    
+      const toggleAccordion = () => {
+        setIsOpen(!isOpen);
+      };
 
     const toggleAccordionSection1 = (event) => {
         if (event.target.tagName !== "INPUT" && event.target.tagName !== "TEXTAREA" && event.target.tagName !== "SELECT" && event.target.tagName !== "BUTTON") {
@@ -426,8 +436,7 @@ const ProductDetails = ({ setShowProductDetails }) => {
             setExpandedSubsection2(false);
         }
     };
-    
-    
+
     const toggleAccordionSection2 = (event) => {
         if (!completedSections[1]) {
             toast.error("Please complete the first section before proceeding.");
@@ -456,8 +465,8 @@ const ProductDetails = ({ setShowProductDetails }) => {
                 <RiArrowGoBackLine /> back
             </span>
 
-            <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10`}>
-                <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-4 relative cursor-pointer`}>
+            <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 ${isOpen ? 'p-0' : 'p-3'}`}>
+                <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'} relative cursor-pointer`} onClick={toggleAccordion}>
                     {completedSections[2] && (
                         <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
                             Completed <FaCheck size={20} />
@@ -474,14 +483,26 @@ const ProductDetails = ({ setShowProductDetails }) => {
                             </p>
                         </span>
                     </span>
-                    {expandedSection === 1 ? (
-                        <MdArrowDropUp size={32} className="cursor-pointer" onClick={() => setExpandedSection(0)} />
-                    ) : (
-                        <MdArrowDropDown size={32} className="cursor-pointer" onClick={() => setExpandedSection(1)} />
-                    )}
+                    <div className="flex items-center gap-6">
+                        {isCompleted && (
+                            <div className="flex items-center gap-2">
+                            <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
+                                <p className="text-[#1E1154] font-medium">Created Product</p>
+                            </div>
+                            <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
+                                <p className="text-[#1E1154] font-medium">{productName}</p>
+                            </div>
+                            </div>
+                        )}
+                        {isOpen ? (
+                            <MdArrowDropUp size={32} className="cursor-pointer" />
+                        ) : (
+                            <MdArrowDropDown size={32} className="cursor-pointer" />
+                        )}
+                    </div>
                 </div>
 
-                {expandedSection === 1 && (
+                {isOpen && expandedSection === 1 && (
                     <div className="flex flex-col lg:flex-row p-8 w-full">
                         <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
                             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-gradient-to-r from-[#F0F4F8] via-[#D9E9F2] to-[#F0F4F8] rounded-3xl flex items-center justify-center shadow-2xl transition-transform transform hover:scale-105 hover:rotate-2 duration-300">
@@ -764,16 +785,16 @@ const ProductDetails = ({ setShowProductDetails }) => {
                                                 <div>
                                                     <div className="relative w-full overflow-x-scroll border border-[#FCFCFC] p-1 rounded-md">
                                                         <div className="flex space-x-4">
-                                                            {generatedImages.map((image, index) => (
-                                                                <div key={index} className="relative flex-shrink-0 border rounded-lg">
-                                                                    <img
-                                                                        src={image.imgUrl}
-                                                                        alt={image.description}
-                                                                        className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
-                                                                        onClick={() => handleImageClick(image.imgUrl, true)}
-                                                                    />
-                                                                </div>
-                                                            ))}
+                                                        {generatedImages.map((image, index) => (
+                                                            <div key={index} className="relative flex-shrink-0 border rounded-lg">
+                                                                <img
+                                                                    src={image.imgUrl}
+                                                                    alt={image.description}
+                                                                    className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
+                                                                    onClick={(event) => handleImageClick(image.imgUrl, true, event)} // Pass the event here
+                                                                />
+                                                            </div>
+                                                        ))}
                                                         </div>
                                                     </div>
                                                     <div className="flex justify-end gap-4 mt-2">
