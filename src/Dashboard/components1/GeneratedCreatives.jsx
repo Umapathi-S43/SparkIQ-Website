@@ -351,7 +351,7 @@ useEffect(() => {
             <div className="mx-4">
               {/* Brand Awareness */}
               {loadingBrandAwareness ? (
-                <CardLoaderRow label="Brand Awareness" delay={1000} rows={2} />
+                <CardLoaderRow label="Brand Awareness" delay={100} rows={2} />
               ) : (
                 <FilteredData filteredModel={brandAwarenessData} modelName="Brand Awareness" />
               )}
