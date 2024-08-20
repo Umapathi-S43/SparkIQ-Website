@@ -13,7 +13,7 @@ import { jwtToken } from '../../utils/jwtToken';
 const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
 const discountOptions = ["Price", "Percentage"];
 
-const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, setShowProductDetails }) => {
+const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCompleted, setShowProductDetails }) => {
     const [expandedSection, setExpandedSection] = useState(1);
     const [isOpen, setIsOpen] = useState(true);
     const [expandedSubsection1, setExpandedSubsection1] = useState(true);
@@ -475,7 +475,7 @@ const ProductDetails = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, set
                 className="flex cursor-pointer items-center pb-2 pt-0 mt-0"
                 onClick={() => setShowProductDetails(false)}
             >
-                <RiArrowGoBackLine /> back
+                <span onClick={handleBack}><RiArrowGoBackLine /> back</span>
             </span>
 
             <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 ${isOpen ? 'p-0' : 'p-3'}`}>

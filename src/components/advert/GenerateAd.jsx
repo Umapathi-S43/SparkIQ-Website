@@ -59,13 +59,28 @@ export default function GenerateAd({ setPage, pages }) {
   };
 
   const handleNextSection = () => {
-    setIsNextSectionOpen(false);
-    setIsThirdSectionOpen(true);
+    if (openModalProductDetails) {  // Ensure the product details step is completed
+      setIsNextSectionOpen(false);
+      setIsThirdSectionOpen(true);
+      scrollToGeneratedCreatives(); // Scroll to GeneratedCreatives when both sections are completed
+    }
   };
 
   const handleBack = () => {
-    setShowProductDetails(false);
-    setIsNextSectionOpen(false);
+    setShowProductDetails(false);  // Show the ExistingProducts component
+    setIsNextSectionOpen(false);  // Ensure the next section is not open
+    setOpenModalProductDetails(false);  // Mark the ProductDetails step as incomplete
+  };
+
+  const handleShowProductDetails = () => {
+    setShowProductDetails(true);
+    setIsNextSectionOpen(false); // Ensure the next section is not open when moving to ProductDetails
+  };
+
+  const scrollToGeneratedCreatives = () => {
+    if (generatedCreativesRef.current) {
+      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -73,12 +88,6 @@ export default function GenerateAd({ setPage, pages }) {
       creativeSizeRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [isNextSectionOpen]);
-
-  useEffect(() => {
-    if (isThirdSectionOpen && generatedCreativesRef.current) {
-      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [isThirdSectionOpen]);
 
   return (
     <div className="flex-grow mr-8 overflow-auto">
@@ -101,7 +110,7 @@ export default function GenerateAd({ setPage, pages }) {
             className="absolute bottom-0 right-24 w-28 lg:w-36 hidden md:block"
           />
         </div>
-        <div className="px-4 lg:px-6 flex flex-col gap-4 ">
+        <div className="px-4 lg:px-6 flex flex-col gap-4 mb-4">
           {showProductDetails ? (
             <>
               <ProductDetails
@@ -110,6 +119,7 @@ export default function GenerateAd({ setPage, pages }) {
                 setIsCompleted={setOpenModalProductDetails}
                 setShowProductDetails={setShowProductDetails}
                 isNewUser={true}
+                handleBack={handleBack}  // Passing handleBack to ProductDetails
               />
             </>
           ) : (
@@ -117,7 +127,7 @@ export default function GenerateAd({ setPage, pages }) {
               setIsNextSectionOpen={setIsNextSectionOpen}
               isCompleted={openModalProductDetails}
               setIsCompleted={setOpenModalProductDetails}
-              setShowProductDetails={setShowProductDetails} // Pass the new prop
+              setShowProductDetails={handleShowProductDetails} // Pass handleShowProductDetails to reset isNextSectionOpen
             />
           )}
           <div ref={creativeSizeRef}>
@@ -131,17 +141,19 @@ export default function GenerateAd({ setPage, pages }) {
               setIsCompleted={setOpenModalCreativeSize}
             />
           </div>
-          <div ref={generatedCreativesRef}>
-            <GeneratedCreatives
-              isThirdSectionOpen={isThirdSectionOpen}
-              toggleThirdSectionAccordion={toggleThirdSectionAccordion}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-              setPage={setPage}
-              openModalCreativeSize={openModalCreativeSize}
-            />
-          </div>
         </div>
+      </div>
+
+      {/* GeneratedCreatives Section */}
+      <div ref={generatedCreativesRef} className="mt-4">
+        <GeneratedCreatives
+          isThirdSectionOpen={isThirdSectionOpen}
+          toggleThirdSectionAccordion={toggleThirdSectionAccordion}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          setPage={setPage}
+          openModalCreativeSize={openModalCreativeSize}
+        />
       </div>
     </div>
   );

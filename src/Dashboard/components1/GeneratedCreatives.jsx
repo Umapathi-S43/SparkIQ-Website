@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import axios from "axios";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast from "react-hot-toast";
 import { baseUrl } from "../../components/utils/Constant";
 import "./GeneratedCreatives.css";
 import { jwtToken } from "../../components/utils/jwtToken";
@@ -61,37 +60,61 @@ const GeneratedCreatives = ({
 
     const models = modelMapping[modelName];
     try {
-        for (let i = 0; i < models.length; i++) {
-            if (!jwtToken) {
-                throw new Error("No JWT token found. Please log in.");
-            }
-            const response = await axios.post(url, {
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
-                },
-            });
-            if (response.data.message) {
-                const res = await axios.get(
-                    `${baseUrl}/generated-images/models/${models[i]}`
-                );
-                const labeledData = res.data.map(item => ({
-                    ...item,
-                    label: modelLabels[models[i]] || modelName,
-                }));
-                appendToData(prevData => [...prevData, ...labeledData]);
-                setLoading(false);
-                apiCallsRef.current = true; // Set the reference to true if any API call succeeds
-                return; // Exit the loop if the call was successful
-            }
+      for (let i = 0; i < models.length; i++) {
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
         }
-    } catch (error) {
-        console.error(`Failed to fetch ${models.join(", ")} model`, error);
-    }
-};
 
-const loadCreatives = async () => {
+        // Log token to check if it's valid
+        console.log('JWT Token:', jwtToken);
+
+        // Perform the POST request
+        const response = await axios.post(url, {}, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
+
+        // Log response status and data for debugging
+        console.log('Response status:', response.status);
+        console.log('Response data:', response.data);
+
+        if (response.data.message) {
+          // Perform the GET request with Authorization header
+          const res = await axios.get(
+            `${baseUrl}/generated-images/models/${models[i]}`, 
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
+          
+          const labeledData = res.data.map(item => ({
+            ...item,
+            label: modelLabels[models[i]] || modelName,
+          }));
+          appendToData(prevData => [...prevData, ...labeledData]);
+          setLoading(false);
+          apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+          return; // Exit the loop if the call was successful
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch ${models.join(", ")} model`, error);
+
+      // Additional error handling
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      }
+    }
+  };
+
+
+  const loadCreatives = async () => {
     if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
-        return;
+      return;
     }
 
     const apiCallsRef = { current: false }; // Using an object to pass by reference
@@ -104,15 +127,15 @@ const loadCreatives = async () => {
 
     // Show the error message only once after all API calls if none succeeded
     if (!apiCallsRef.current) {
-        showToast("Action failed: please try after some time", "error");
+      showToast("Action failed: please try after some time", "error");
     }
-};
+  };
 
-useEffect(() => {
+  useEffect(() => {
     if (isThirdSectionOpen && isPreviousSectionsCompleted) {
-        loadCreatives();
+      loadCreatives();
     }
-}, [selectedTab, isThirdSectionOpen, isPreviousSectionsCompleted]);
+  }, [selectedTab, isThirdSectionOpen, isPreviousSectionsCompleted]);
 
 
   const handleTabChange = (tab) => {
@@ -143,6 +166,7 @@ useEffect(() => {
     loadCreatives();
   };
 
+  // Updated to display 3 cards per row
   const CardLoaderRow = ({ label, delay, rows = 1 }) => {
     const [visible, setVisible] = useState(false);
     const [loadedCards, setLoadedCards] = useState([]);
@@ -151,7 +175,7 @@ useEffect(() => {
       const timer = setTimeout(() => {
         setVisible(true);
         let cardLoadDelay = 0;
-        const totalCards = rows * 4; // number of rows * 4 cards per row
+        const totalCards = rows * 3; // number of rows * 3 cards per row
         const cards = [...Array(totalCards)].map((_, index) => {
           cardLoadDelay += 300; // delay between each card
           return setTimeout(() => {
@@ -172,16 +196,17 @@ useEffect(() => {
       <div className="mb-4">
         <h3 className="font-bold text-lg mb-2">{label}</h3>
         {[...Array(rows)].map((_, rowIndex) => (
-          <div key={rowIndex} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {[...Array(4)].map((_, index) => (
+          <div key={rowIndex} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            {[...Array(3)].map((_, index) => (
               <div
                 key={index}
-                className={`card-shimmer rounded-lg shadow-md flex flex-col items-center justify-center h-64 bg-[#F2F4F8] 
-                ${loadedCards.includes(rowIndex * 4 + index) ? 'opacity-100' : 'opacity-0'} 
+                className={`card-shimmer rounded-lg shadow-md flex flex-col items-center justify-center bg-[#F2F4F8] 
+              w-full p-4 mb-4 
+                ${loadedCards.includes(rowIndex * 3 + index) ? 'opacity-100' : 'opacity-0'} 
                 transition-opacity duration-300 ease-in-out`}
-                style={{ transitionDelay: `${index * 300}ms` }} // Adds delay to each card's animation
+                style={{ transitionDelay: `${index * 300}ms`,height: "24rem" }} // Adds delay to each card's animation
               >
-                <div className="h-48 w-full bg-[#E8ECF2] rounded-lg"></div>
+                <div className="h-56 w-full bg-[#E8ECF2] rounded-lg"></div>
               </div>
             ))}
           </div>
@@ -190,6 +215,7 @@ useEffect(() => {
     );
   };
   
+  // Updated to display 3 cards per row
   const FilteredData = ({ filteredModel, modelName }) => {
     const filteredProducts = filteredModel.filter((product) => {
       return (
@@ -201,16 +227,17 @@ useEffect(() => {
     return (
       <>
         <h3 className="font-bold text-lg mb-2">{modelName}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map((product, index) => (
             <div
               key={index}
-              className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-3 pb-1 flex flex-col items-center justify-between"
+              className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-4 pb-1 flex flex-col items-center justify-between"
+              style={{ height: "18rem", width: "18rem" }} // Adjust height and width here
             >
               <img
                 src={product.imageURL || product.generatedImageURL}
                 alt={product.title}
-                className="object-cover w-full rounded-lg"
+                className="object-cover w-full rounded-lg h-56" // Adjust height here
               />
               <div className="button-wrapper mt-1">
                 <button className="text-sm text-[#A8A8A8]">
@@ -299,7 +326,6 @@ useEffect(() => {
 
   return (
     <div className="container mb-4 lg:p-0 flex-grow">
-      <ToastContainer />
       <section
         className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${
           isThirdSectionOpen ? "p-0" : "p-3"
