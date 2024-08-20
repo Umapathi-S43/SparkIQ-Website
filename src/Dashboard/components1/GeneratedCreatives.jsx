@@ -82,7 +82,7 @@ const GeneratedCreatives = ({
         if (response.data.message) {
           // Perform the GET request with Authorization header
           const res = await axios.get(
-            `${baseUrl}/generated-images/models/${models[i]}`, 
+            `${baseUrl}/generated-images/model/${models[i]}`, 
             {
               headers: {
                 Authorization: `Bearer ${jwtToken}`,
@@ -232,14 +232,14 @@ const GeneratedCreatives = ({
             <div
               key={index}
               className="group border border-[#FCFCFC] rounded-xl m-1 bg-[rgba(252,252,252,0.25)] p-4 pb-1 flex flex-col items-center justify-between"
-              style={{ height: "18rem", width: "18rem" }} // Adjust height and width here
+               // Adjust height and width here
             >
               <img
                 src={product.imageURL || product.generatedImageURL}
                 alt={product.title}
-                className="object-cover w-full rounded-lg h-56" // Adjust height here
+                className="object-cover w-full rounded-lg h-full" // Adjust height here
               />
-              <div className="button-wrapper mt-1">
+              <div className="button-wrapper mt-1 gap-2">
                 <button className="text-sm text-[#A8A8A8]">
                   <div className="button-container">
                     <svg
@@ -329,7 +329,7 @@ const GeneratedCreatives = ({
       <section
         className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${
           isThirdSectionOpen ? "p-0" : "p-3"
-        } flex flex-col gap-6 relative z-10`}
+        } flex flex-col gap-2 relative z-10`}
       >
         <div
           className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${
@@ -358,7 +358,7 @@ const GeneratedCreatives = ({
         {isThirdSectionOpen && (
           <>
             <div className="flex justify-center">
-              <div className="tab-buttons flex justify-center items-center gap-12 w-4/6 mb-2 border-4 py-1 rounded-xl shadow-md">
+              <div className="tab-buttons flex justify-center items-center gap-2 px-2 mb-0 w-fit border-4 py-1 rounded-xl shadow-md">
                 {["Brand Color", "Single Color", "Gradient Color","Templates"].map((tab) => (
                   <button
                     key={tab}

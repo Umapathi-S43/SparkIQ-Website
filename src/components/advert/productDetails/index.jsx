@@ -134,8 +134,19 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
 
     const handleOnChange = (e) => {
         const { name, value } = e.target;
-        setProductDetails(prev => ({ ...prev, [name]: value }));
+    
+        if (name === "brandName") {
+            const selectedBrand = brands.find((brand) => brand.name === value);
+            setProductDetails(prev => ({
+                ...prev,
+                brandName: value,
+                brandID: selectedBrand ? selectedBrand.id : "",
+            }));
+        } else {
+            setProductDetails(prev => ({ ...prev, [name]: value }));
+        }
     };
+    
 
     const handleOnChangeProductDetails = (e) => {
         const { id, value } = e.target;
@@ -600,7 +611,7 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                 className=" w-full p-2 py-3 rounded-lg shadow-xl border border-[#fcfcfc] bg-[#FCFCFC] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                                             />
                                             <select
-                                                className=" w-full p-2 rounded-lg shadow-xl border border-[#fcfcfc] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                                                className="w-full p-2 rounded-lg shadow-xl border border-[#fcfcfc] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                                                 name="brandName"
                                                 value={productDetails.brandName}
                                                 onChange={handleOnChange}
@@ -617,6 +628,7 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                     </option>
                                                 ))}
                                             </select>
+
                                         </div>
 
                                         <div className="mb-4">
