@@ -61,8 +61,10 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
     localStorage.removeItem('productID');
     localStorage.removeItem('selectedProduct');
     
-    setShowProductDetails(true);
-  };
+    setIsNextSectionOpen(false); // Reset the next section state
+    setIsCompleted(false);
+    setShowProductDetails(true); // Proceed to product creation
+};
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);

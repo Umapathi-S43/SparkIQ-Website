@@ -127,8 +127,9 @@ export default function GenerateAd({ setPage, pages }) {
               setIsNextSectionOpen={setIsNextSectionOpen}
               isCompleted={openModalProductDetails}
               setIsCompleted={setOpenModalProductDetails}
-              setShowProductDetails={handleShowProductDetails} // Pass handleShowProductDetails to reset isNextSectionOpen
+              setShowProductDetails={setShowProductDetails}
             />
+
           )}
           <div ref={creativeSizeRef}>
             <CreativeSize
