@@ -82,7 +82,7 @@ const GeneratedCreatives = ({
         if (response.data.message) {
           // Perform the GET request with Authorization header
           const res = await axios.get(
-            `${baseUrl}/generated-images/model/${models[i]}`, 
+            `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`, 
             {
               headers: {
                 Authorization: `Bearer ${jwtToken}`,
