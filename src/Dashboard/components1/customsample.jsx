@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from 'react-router-dom';
 import { FaFacebook } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
@@ -16,6 +17,7 @@ export default function CustomSample({
 }) {
   const location = useLocation();
   const { state } = location;
+  const [generatedImageURL, setgeneratedImageURL] = useState(state?.image || null);
   const [selectedImage, setSelectedImage] = useState(state?.image || null);
   const [tabIndex, setTabIndex] = useState(0);
   const [selectedCaption, setSelectedCaption] = useState(
@@ -28,6 +30,8 @@ export default function CustomSample({
   });
 
   const [randomPhrase, setRandomPhrase] = useState("");
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -37,8 +41,18 @@ export default function CustomSample({
     return () => clearTimeout(timer);
   }, [isLoading]);
 
+  const handleBackClick = () => {
+    navigate('/campaigns', {
+      state: {
+        fromSection: state?.fromSection || 3,  // Returning to the third section
+        image: selectedImage,  // Passing back the generated image URL
+      },
+    });
+  };
+
+
   return (
-    <div className="min-h-screen p-3 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
+    <div className="min-h-screen p-3 py-1 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
       <div className="border-2 border-white rounded-[32px] w-full">
         <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[32px] p-5 w-full">
           <span className="flex items-center gap-4">
@@ -56,10 +70,10 @@ export default function CustomSample({
         </div>
         <div className="flex flex-col lg:flex-row gap-6 p-4">
           <div className="lg:w-1/2 flex flex-col gap-6">
-            <div className="adCustomizationBg rounded-2xl flex flex-col relative items-center justify-left px-4 py-6 w-full" style={{ background: "linear-gradient(315.4deg, rgba(76, 161, 175, 0.2) 0.35%, rgba(196, 224, 229, 0.4) 99.65%)" }}>
+            <div className="adCustomizationBg rounded-2xl flex flex-col relative items-center justify-left px-4 py-2 w-full" style={{ background: "linear-gradient(315.4deg, rgba(76, 161, 175, 0.2) 0.35%, rgba(196, 224, 229, 0.4) 99.65%)" }}>
               <div className="border border-white rounded-[24px] p-3 relative flex justify-center max-w-xs">
                 <div className="flex justify-center absolute -top-7">
-                  <button className="text-white rounded-[8px] rounded-b-none text-sm py-1 px-4" style={{ background: "linear-gradient(115deg, #004367 0%, #00A7FF 100%)" }}>
+                  <button className="text-white rounded-[8px] rounded-b-none text-sm py-1 px-4 mt-3" style={{ background: "linear-gradient(115deg, #004367 0%, #00A7FF 100%)" }}>
                     Preview
                   </button>
                 </div>
@@ -78,9 +92,20 @@ export default function CustomSample({
                           {selectedCaption}
                         </p>
                         {selectedImage ? (
-                          <img src={selectedImage} alt="Ad Image" className="w-[18rem] h-[210px] rounded-md mb-4 object-cover" />
+                          <img src={selectedImage} alt="Ad Image" className="w-[20rem] rounded-md mb-4 object-cover" />
                         ) : (
-                          <img src="/image3.png" alt="Ad Image" className="w-[18rem] h-[210px] rounded-md mb-4 object-cover" />
+                          <div className="w-[20rem] flex justify-center items-center rounded-md mb-4 bg-gray-100">
+                              <img 
+                                src={generatedImageURL} 
+                                alt="Ad Image" 
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '100%',
+                                  objectFit: 'contain',
+                                }} 
+                              />
+                            </div>
+
                         )}
                         <div className="flex items-center justify-between mt-4 gap-4">
                           <p className="text-sm">
@@ -95,7 +120,7 @@ export default function CustomSample({
                   </div>
                 </div>
               </div>
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-2">
                 <span className="h-4 w-4 bg-blue-600 rounded-full mx-1"></span>
                 <span className="h-4 w-4 bg-yellow-600 rounded-full mx-1"></span>
                 <span className="h-4 w-4 bg-red-600 rounded-full mx-1"></span>
@@ -126,6 +151,7 @@ export default function CustomSample({
                   randomPhrase={randomPhrase}
                   captionDetails={captionDetails}
                   setPage={setPage}
+                  handleBackClick={handleBackClick}
                 />
               </TabPanel>
               <TabPanel className="pt-4 px-2 sm:px-6">
@@ -133,6 +159,7 @@ export default function CustomSample({
                   setPage={setPage}
                   setSelectedCaption={setSelectedCaption}
                   selectedCaption={selectedCaption}
+                  handleBackClick={handleBackClick}
                 />
               </TabPanel>
             </Tabs>

@@ -10,43 +10,66 @@ export default function GenerateAd({ setPage, pages }) {
   const [isLoading, setIsLoading] = useState(true);
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
   const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
-  const [showProductDetails, setShowProductDetails] = useState(false); // New state
+  const [showProductDetails, setShowProductDetails] = useState(false);
+
+  // State for storing data from each section
+  const [brandAwarenessData, setBrandAwarenessData] = useState([]);
+  const [saleData, setSaleData] = useState([]);
+  const [retargetingData, setRetargetingData] = useState([]);
+  const [selectedTab, setSelectedTab] = useState("Brand Color");
+  const [productDetails, setProductDetails] = useState(null);
+  const [creativeSize, setCreativeSize] = useState(null);
 
   const creativeSizeRef = useRef(null);
   const generatedCreativesRef = useRef(null);
 
+  // Restore state from localStorage on mount
   useEffect(() => {
-    // Restore state from localStorage
-    const savedIsNextSectionOpen = JSON.parse(localStorage.getItem("isNextSectionOpen"));
-    const savedIsThirdSectionOpen = JSON.parse(localStorage.getItem("isThirdSectionOpen"));
-    const savedOpenModalProductDetails = JSON.parse(localStorage.getItem("openModalProductDetails"));
-    const savedOpenModalCreativeSize = JSON.parse(localStorage.getItem("openModalCreativeSize"));
+    const savedState = JSON.parse(localStorage.getItem("generateAdState"));
+    if (savedState) {
+      setIsNextSectionOpen(savedState.isNextSectionOpen);
+      setIsThirdSectionOpen(savedState.isThirdSectionOpen);
+      setSelectedTab(savedState.selectedTab);
+      setOpenModalProductDetails(savedState.openModalProductDetails);
+      setOpenModalCreativeSize(savedState.openModalCreativeSize);
+      setBrandAwarenessData(savedState.brandAwarenessData);
+      setSaleData(savedState.saleData);
+      setRetargetingData(savedState.retargetingData);
+      setProductDetails(savedState.productDetails);
+      setCreativeSize(savedState.creativeSize);
+      setShowProductDetails(savedState.showProductDetails);
 
-    if (savedIsNextSectionOpen !== null) setIsNextSectionOpen(savedIsNextSectionOpen);
-    if (savedIsThirdSectionOpen !== null) setIsThirdSectionOpen(savedIsThirdSectionOpen);
-    if (savedOpenModalProductDetails !== null) setOpenModalProductDetails(savedOpenModalProductDetails);
-    if (savedOpenModalCreativeSize !== null) setOpenModalCreativeSize(savedOpenModalCreativeSize);
+      // Scroll to GeneratedCreatives if the third section was previously open
+      if (savedState.isThirdSectionOpen) {
+        setTimeout(() => {
+          if (generatedCreativesRef.current) {
+            generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 100); // Adding a slight delay to ensure that the component has fully rendered
+      }
+
+      // Clear the saved state once restored
+      localStorage.removeItem("generateAdState");
+    }
   }, []);
 
-  useEffect(() => {
-    // Save state to localStorage
-    localStorage.setItem("isNextSectionOpen", JSON.stringify(isNextSectionOpen));
-  }, [isNextSectionOpen]);
-
-  useEffect(() => {
-    // Save state to localStorage
-    localStorage.setItem("isThirdSectionOpen", JSON.stringify(isThirdSectionOpen));
-  }, [isThirdSectionOpen]);
-
-  useEffect(() => {
-    // Save state to localStorage
-    localStorage.setItem("openModalProductDetails", JSON.stringify(openModalProductDetails));
-  }, [openModalProductDetails]);
-
-  useEffect(() => {
-    // Save state to localStorage
-    localStorage.setItem("openModalCreativeSize", JSON.stringify(openModalCreativeSize));
-  }, [openModalCreativeSize]);
+  // Save the state when necessary
+  const saveCurrentState = () => {
+    const currentState = {
+      isNextSectionOpen,
+      isThirdSectionOpen,
+      selectedTab,
+      openModalProductDetails,
+      openModalCreativeSize,
+      brandAwarenessData,
+      saleData,
+      retargetingData,
+      productDetails,
+      creativeSize,
+      showProductDetails,
+    };
+    localStorage.setItem("generateAdState", JSON.stringify(currentState));
+  };
 
   const toggleNextSectionAccordion = () => {
     setIsNextSectionOpen(!isNextSectionOpen);
@@ -59,22 +82,19 @@ export default function GenerateAd({ setPage, pages }) {
   };
 
   const handleNextSection = () => {
-    if (openModalProductDetails) {  // Ensure the product details step is completed
+    if (openModalProductDetails) {
       setIsNextSectionOpen(false);
       setIsThirdSectionOpen(true);
       scrollToGeneratedCreatives(); // Scroll to GeneratedCreatives when both sections are completed
     }
+    saveCurrentState(); // Save state before navigating
   };
 
   const handleBack = () => {
-    setShowProductDetails(false);  // Show the ExistingProducts component
-    setIsNextSectionOpen(false);  // Ensure the next section is not open
-    setOpenModalProductDetails(false);  // Mark the ProductDetails step as incomplete
-  };
-
-  const handleShowProductDetails = () => {
-    setShowProductDetails(true);
-    setIsNextSectionOpen(false); // Ensure the next section is not open when moving to ProductDetails
+    setShowProductDetails(false); // Show the ExistingProducts component
+    setIsNextSectionOpen(false); // Ensure the next section is not open
+    setOpenModalProductDetails(false); // Mark the ProductDetails step as incomplete
+    saveCurrentState(); // Save state before navigating back
   };
 
   const scrollToGeneratedCreatives = () => {
@@ -119,7 +139,8 @@ export default function GenerateAd({ setPage, pages }) {
                 setIsCompleted={setOpenModalProductDetails}
                 setShowProductDetails={setShowProductDetails}
                 isNewUser={true}
-                handleBack={handleBack}  // Passing handleBack to ProductDetails
+                handleBack={handleBack}
+                productDetails={productDetails} // Pass restored product details
               />
             </>
           ) : (
@@ -129,7 +150,6 @@ export default function GenerateAd({ setPage, pages }) {
               setIsCompleted={setOpenModalProductDetails}
               setShowProductDetails={setShowProductDetails}
             />
-
           )}
           <div ref={creativeSizeRef}>
             <CreativeSize
@@ -140,6 +160,7 @@ export default function GenerateAd({ setPage, pages }) {
               openModalProductDetails={openModalProductDetails}
               isCompleted={openModalCreativeSize}
               setIsCompleted={setOpenModalCreativeSize}
+              creativeSize={creativeSize} // Pass restored creative size
             />
           </div>
         </div>
@@ -154,6 +175,10 @@ export default function GenerateAd({ setPage, pages }) {
           setIsLoading={setIsLoading}
           setPage={setPage}
           openModalCreativeSize={openModalCreativeSize}
+          initialBrandAwarenessData={brandAwarenessData} // Pass restored data
+          initialSaleData={saleData} // Pass restored data
+          initialRetargetingData={retargetingData} // Pass restored data
+          initialSelectedTab={selectedTab} // Pass restored selected tab
         />
       </div>
     </div>

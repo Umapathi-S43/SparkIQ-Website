@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"; // Import useNavigate
 import { initialCaptions, initialSuggestions } from "./Data";
 
 export default function Caption({
+  handleBackClick,
   setPage,
   setSelectedCaption,
   selectedCaption,
@@ -35,8 +36,8 @@ export default function Caption({
     setSelectedSuggestion("");
   };
 
-  const handleSave = () => {
-    navigate('/campaigns'); // Redirect to GeneratedCreatives
+  const handleBack = () => {
+    handleBackClick();
   };
 
   const handleNext = () => {
@@ -116,9 +117,9 @@ export default function Caption({
       <div className="flex justify-end mt-6 mr-4 gap-4">
         <button
           className="w-fit custom-button rounded-[18px] text-white py-2 sm:py-2 px-8 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
-          onClick={handleSave}
+          onClick={handleBack}
         >
-          Save
+          Back
         </button>
         <button
           className="w-fit custom-button rounded-[18px] text-white py-2 sm:py-2 px-8 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"

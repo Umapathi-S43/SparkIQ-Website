@@ -15,18 +15,24 @@ const GeneratedCreatives = ({
   setPage,
   openModalCreativeSize,
   isPreviousSectionsCompleted = true,
-}) => {
-  const [brandAwarenessData, setBrandAwarenessData] = useState([]);
-  const [saleData, setSaleData] = useState([]);
-  const [retargetingData, setRetargetingData] = useState([]);
+  initialBrandAwarenessData = [],  // Add these props
+  initialSaleData = [],            // Add these props
+  initialRetargetingData = [],     // Add these props
+  initialSelectedTab = "Brand Color",  // Add this prop
 
+}) => {
+  const [brandAwarenessData, setBrandAwarenessData] = useState(initialBrandAwarenessData.length > 0 ? initialBrandAwarenessData : []);
+  const [saleData, setSaleData] = useState(initialSaleData.length > 0 ? initialSaleData : []);
+  const [retargetingData, setRetargetingData] = useState(initialRetargetingData.length > 0 ? initialRetargetingData : []);
+  
   const [loadingBrandAwareness, setLoadingBrandAwareness] = useState(true);
   const [loadingSale, setLoadingSale] = useState(true);
   const [loadingRetargeting, setLoadingRetargeting] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTab, setSelectedTab] = useState("Brand Color");
-
+  // The selectedTab can be directly assigned from the initialSelectedTab
+  const [selectedTab, setSelectedTab] = useState(initialSelectedTab);
+  
   const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
   const storedImageSize = JSON.parse(localStorage.getItem("imageSize")) || "";
   const cleanedSize = storedImageSize.replace(/[()]/g, "");
@@ -69,6 +75,8 @@ const GeneratedCreatives = ({
         console.log('JWT Token:', jwtToken);
 
         // Perform the POST request
+        // Commented out as per your request
+        /*
         const response = await axios.post(url, {}, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
@@ -78,27 +86,26 @@ const GeneratedCreatives = ({
         // Log response status and data for debugging
         console.log('Response status:', response.status);
         console.log('Response data:', response.data);
+        */
 
-        if (response.data.message) {
-          // Perform the GET request with Authorization header
-          const res = await axios.get(
-            `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`, 
-            {
-              headers: {
-                Authorization: `Bearer ${jwtToken}`,
-              },
-            }
-          );
-          
-          const labeledData = res.data.map(item => ({
-            ...item,
-            label: modelLabels[models[i]] || modelName,
-          }));
-          appendToData(prevData => [...prevData, ...labeledData]);
-          setLoading(false);
-          apiCallsRef.current = true; // Set the reference to true if any API call succeeds
-          return; // Exit the loop if the call was successful
-        }
+        // Directly perform the GET request with Authorization header
+        const res = await axios.get(
+          `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`, 
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
+        );
+
+        const labeledData = res.data.map(item => ({
+          ...item,
+          label: modelLabels[models[i]] || modelName,
+        }));
+        appendToData(prevData => [...prevData, ...labeledData]);
+        setLoading(false);
+        apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+        return; // Exit the loop if the call was successful
       }
     } catch (error) {
       console.error(`Failed to fetch ${models.join(", ")} model`, error);
@@ -217,6 +224,26 @@ const GeneratedCreatives = ({
   
   // Updated to display 3 cards per row
   const FilteredData = ({ filteredModel, modelName }) => {
+
+    const handlePreviewClick = (imageUrl) => {
+      const currentState = {
+        isThirdSectionOpen,
+        brandAwarenessData,
+        saleData,
+        retargetingData,
+        selectedTab
+      };
+      localStorage.setItem('generateAdState', JSON.stringify(currentState));
+      
+      navigate('/customsample', {
+        state: {
+          image: imageUrl,
+        },
+      });
+    };
+    
+    
+
     const filteredProducts = filteredModel.filter((product) => {
       return (
         product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -294,9 +321,9 @@ const GeneratedCreatives = ({
                   </div>
                 </button>
                 <button
-                  className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                  onClick={() => navigate("/customsample")}
-                >
+                className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
+                onClick={() => handlePreviewClick(product.imageURL || product.generatedImageURL)} // Pass the image URL on preview click
+              >
                   <div className="button-container">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { images, initialPhrases } from "./Data";
 import Picker from "../../../Dashboard/components1/colorPicker";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 
 export default function Creative({
+  handleBackClick,
   setRandomPhrase,
   setCaptionDetails,
   setSelectedImage,
@@ -21,7 +22,9 @@ export default function Creative({
   const [phrases, setPhrases] = useState(initialPhrases);
   const dropdownRef = useRef(null);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
+
+  // Initialize navigate
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleResize = () => {
@@ -29,7 +32,7 @@ export default function Creative({
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Call on mount
+    handleResize(); 
 
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -62,7 +65,7 @@ export default function Creative({
     }
     setIsDragging(false);
   };
-  
+
   const handleRemoveImage = () => {
     setUploadedImage(null);
     setSelectedImage(null);
@@ -71,7 +74,7 @@ export default function Creative({
   const handleAddColor = () => {
     if (colors.length < 10) {
       setShowColorPicker(true);
-      setCurrentColorIndex(null); // Setting null for new color
+      setCurrentColorIndex(null);
     }
   };
 
@@ -81,12 +84,10 @@ export default function Creative({
 
   const handleSaveAdditionalColor = () => {
     if (currentColorIndex !== null) {
-      // Replace existing color
       const newColors = [...colors];
       newColors[currentColorIndex] = currentColor;
       setColors(newColors);
     } else {
-      // Add new color
       if (!colors.includes(currentColor) && colors.length < 10) {
         setColors([...colors, currentColor]);
       }
@@ -104,16 +105,7 @@ export default function Creative({
 
   const handleOnchange = (e) => {
     const { id, value } = e.target;
-    if (id === "cta") {
-      const truncatedValue = truncateText(value, 20);
-      setCaptionDetails({ ...captionDetails, [id]: truncatedValue });
-    } else {
-      setCaptionDetails({ ...captionDetails, [id]: value });
-    }
-  };
-
-  const truncateText = (text, maxLength) => {
-    return text.length > maxLength ? text.substring(0, maxLength) : text;
+    setCaptionDetails({ ...captionDetails, [id]: value });
   };
 
   const toggleDropdown = () => {
@@ -130,16 +122,16 @@ export default function Creative({
     const shuffledPhrases = [...initialPhrases].sort(() => Math.random() - 0.5);
     setPhrases(shuffledPhrases);
     if (dropdownRef.current) {
-      dropdownRef.current.scrollTop = 0; // Scroll to the top of the dropdown
+      dropdownRef.current.scrollTop = 0;
     }
   };
 
-  const handleSave = () => {
-    navigate('/campaigns'); // Redirect to GeneratedCreatives
+  const handleBack = () => {
+    handleBackClick();
   };
 
   const handleNext = () => {
-    navigate('/adPreview'); // Redirect to adPreview
+    navigate('/adPreview');
   };
 
   return (
@@ -330,15 +322,15 @@ export default function Creative({
         <div className="flex justify-end mt-6 mr-2 gap-4">
           <button
             className="w-fit custom-button rounded-[14px] text-white py-2 sm:py-2 px-10 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
-            onClick={handleSave}
+            onClick={handleBack}
           >
-            Save
+            Back
           </button>
           <button
             className="w-fit custom-button rounded-[14px] text-white py-2 sm:py-2 px-10 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
             onClick={handleNext}
           >
-            Next
+            Save and Next
           </button>
         </div>
       </div>
