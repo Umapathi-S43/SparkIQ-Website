@@ -37,7 +37,6 @@ export default function GenerateAd({ setPage, pages }) {
       setRetargetingData(savedState.retargetingData);
       setProductDetails(savedState.productDetails);
       setCreativeSize(savedState.creativeSize);
-      setShowProductDetails(savedState.showProductDetails);
 
       // Scroll to GeneratedCreatives if the third section was previously open
       if (savedState.isThirdSectionOpen) {
@@ -66,7 +65,6 @@ export default function GenerateAd({ setPage, pages }) {
       retargetingData,
       productDetails,
       creativeSize,
-      showProductDetails,
     };
     localStorage.setItem("generateAdState", JSON.stringify(currentState));
   };
