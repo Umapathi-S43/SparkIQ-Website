@@ -154,13 +154,14 @@ const GeneratedCreatives = ({
   const handleTabChange = (tab) => {
     setSelectedTab(tab);
     setIsLoading(true);
-    setBrandAwarenessData([]);
+    setBrandAwarenessData([]); // Clear data to prevent old data from showing
     setSaleData([]);
     setRetargetingData([]);
     setLoadingBrandAwareness(true);
     setLoadingSale(true);
     setLoadingRetargeting(true);
-  };
+};
+
 
   const showToast = (message, type) => {
     toast(message, {
@@ -251,12 +252,13 @@ const GeneratedCreatives = ({
     
 
     const filteredProducts = filteredModel.filter((product) => {
-          return (
-              (product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              product.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
-              product.templateColor === templateColors[selectedTab]  // Filter by template color
-          );
-      });
+      return (
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase())
+         && product.templateColor === templateColors[selectedTab] // Ensure matching template color
+        
+      );
+    });
 
     return (
       <>

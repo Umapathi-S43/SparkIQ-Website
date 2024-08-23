@@ -27,16 +27,12 @@ export default function GenerateAd({ setPage, pages }) {
   useEffect(() => {
     const savedState = JSON.parse(localStorage.getItem("generateAdState"));
     if (savedState) {
-      setIsNextSectionOpen(savedState.isNextSectionOpen);
       setIsThirdSectionOpen(savedState.isThirdSectionOpen);
       setSelectedTab(savedState.selectedTab);
-      setOpenModalProductDetails(savedState.openModalProductDetails);
       setOpenModalCreativeSize(savedState.openModalCreativeSize);
       setBrandAwarenessData(savedState.brandAwarenessData);
       setSaleData(savedState.saleData);
       setRetargetingData(savedState.retargetingData);
-      setProductDetails(savedState.productDetails);
-      setCreativeSize(savedState.creativeSize);
 
       // Scroll to GeneratedCreatives if the third section was previously open
       if (savedState.isThirdSectionOpen) {
@@ -138,7 +134,6 @@ export default function GenerateAd({ setPage, pages }) {
                 setShowProductDetails={setShowProductDetails}
                 isNewUser={true}
                 handleBack={handleBack}
-                productDetails={productDetails} // Pass restored product details
               />
             </>
           ) : (
@@ -158,7 +153,6 @@ export default function GenerateAd({ setPage, pages }) {
               openModalProductDetails={openModalProductDetails}
               isCompleted={openModalCreativeSize}
               setIsCompleted={setOpenModalCreativeSize}
-              creativeSize={creativeSize} // Pass restored creative size
             />
           </div>
         </div>
