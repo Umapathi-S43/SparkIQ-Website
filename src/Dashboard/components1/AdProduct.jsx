@@ -454,50 +454,47 @@ export default function AdProduct({ setIsNextSectionOpen }) {
   };
 
   // Handle searching for generated images based on a prompt
-  const handleSearchForImages = async () => {
-    try {
-      if (!jwtToken) {
-        throw new Error("No JWT token found. Please log in.");
-      }
-      const response = await axios.get(
-        `${baseUrl}/search/get-images`,
-        {
-          params: {
-            prompt: productDetails.prompt,
-            page: currentPage,
-            size: 10,
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        }
-      );
-      setGeneratedImages(response.data.result.data);
-    } catch (error) {
-      console.log(error);
-      toast.error("Failed to generate images.");
-    }
-  };
-
-  // Handle pagination for generated images
   const handlePageChange = async (page) => {
     setCurrentPage(page);
     try {
-      const response = await api.get(`${baseUrl}/search/get-images`, {
-        params: {
-          prompt: productDetails.prompt,
-          page: page,
-          size: 10,
-        },
-      });
-      setGeneratedImages(response.data.result.data);
+        const response = await axios.get(`${baseUrl}/search/get-images`, {
+            params: {
+                prompt: productDetails.prompt,
+                page: page,
+                size: 10,
+            },
+            headers: {
+                Authorization: `Bearer ${jwtToken}`,
+            },
+        });
+        setGeneratedImages(response.data.result.data);
     } catch (error) {
-      console.log(error);
-      toast.error("Failed to generate images.");
+        console.log("failed to generate images next page",error);
+        toast.error("Failed to generate images.");
     }
-  };
+};
+
+const handleSearchForImages = async () => {
+    try {
+        const response = await axios.get(`${baseUrl}/search/get-images`, {
+            params: {
+                prompt: productDetails.prompt,
+                page: currentPage,
+                size: 10,
+            },
+            headers: {
+                Authorization: `Bearer ${jwtToken}`,
+            },
+        });
+        setGeneratedImages(response.data.result.data);
+    } catch (error) {
+        console.log(error);
+        toast.error("Failed to generate images.");
+    }
+};
+
+
+  
 
   // Determine if the "Next Step" button should be disabled
   const isNextStepDisabled =

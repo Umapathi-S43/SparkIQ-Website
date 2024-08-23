@@ -239,6 +239,26 @@ hr {
 	margin-right: 6px;
   }
   
+  .tooltip {
+	position: absolute;
+	top: -10px; /* Adjust this value to position the tooltip above the product name */
+	left: 18%;
+	transform: translateX(0%);
+	background-color: #333;
+	color: #fff;
+	text-align: center;
+	padding: 5px;
+	border-radius: 4px;
+	opacity: 0;
+	transition: opacity 0.3s ease-in-out;
+	white-space: nowrap;
+	z-index: 100;
+  }
+  
+  .group:hover .tooltip {
+	opacity: 1;
+  }
+  
   
   
 /* Hide scrollbar for Firefox */

@@ -102,10 +102,16 @@ const GeneratedCreatives = ({
           ...item,
           label: modelLabels[models[i]] || modelName,
         }));
-        appendToData(prevData => [...prevData, ...labeledData]);
-        setLoading(false);
-        apiCallsRef.current = true; // Set the reference to true if any API call succeeds
-        return; // Exit the loop if the call was successful
+
+
+         if (labeledData.length > 0) {
+            appendToData(prevData => [...prevData, ...labeledData]);
+            setLoading(false);  // Only set loading to false if data is not empty
+            apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+            return; // Exit the loop if the call was successful
+          } else {
+            console.log('Received empty data array, keeping loading state active.');
+          }
       }
     } catch (error) {
       console.error(`Failed to fetch ${models.join(", ")} model`, error);
@@ -245,11 +251,12 @@ const GeneratedCreatives = ({
     
 
     const filteredProducts = filteredModel.filter((product) => {
-      return (
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    });
+          return (
+              (product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              product.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
+              product.templateColor === templateColors[selectedTab]  // Filter by template color
+          );
+      });
 
     return (
       <>

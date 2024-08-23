@@ -173,10 +173,17 @@ const Products = () => {
                   className="object-cover w-full h-48 rounded-lg"
                 />
               ))}
-              <div className="text-center flex justify-between w-full px-2">
-                <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">
-                  {product.name}
+              <div className="text-center flex justify-between w-full px-2 relative">
+                <h3
+                  className="text-xl font-bold text-[#082A66] group-hover:text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[15ch]"
+                >
+                  {product.name.length > 15 ? `${product.name.slice(0, 15)}...` : product.name}
                 </h3>
+                {product.name.length > 15 && (
+                  <span className="tooltip absolute top-[-20px] left-0 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 whitespace-normal z-10">
+                    {product.name}
+                  </span>
+                )}
                 <span className="font-semibold text-[#082A66] group-hover:text-white">
                   {product.price} {product.priceType}
                 </span>
