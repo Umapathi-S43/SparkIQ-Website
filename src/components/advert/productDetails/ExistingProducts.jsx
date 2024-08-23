@@ -173,7 +173,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-5 ml-2 pl-2 justify-start mb-4" >
+          <div className="flex flex-wrap gap-6 ml-12 pl-2 justify-start mb-4" >
             <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 mt-0 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
               <div
                 onClick={handleCreateProduct}
@@ -208,10 +208,21 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                     <span className="text-gray-500">No Image</span>
                   </div>
                 )}
-                <div className="text-center flex justify-between w-full px-2">
-                  <h3 className="text-xl font-bold text-[#082A66] group-hover:text-white">{product.name}</h3>
-                  <span className="font-semibold text-[#082A66] group-hover:text-white text-nowrap mt-4">{product.price} {product.priceType}</span>
-                </div>
+                <div className="text-center flex justify-between w-full px-2 relative">
+                <h3
+                  className="text-xl font-bold text-[#082A66] group-hover:text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[15ch]"
+                >
+                  {product.name.length > 15 ? `${product.name.slice(0, 15)}...` : product.name}
+                </h3>
+                {product.name.length > 15 && (
+                  <span className="tooltip absolute top-[-20px] left-0 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 whitespace-normal z-10">
+                    {product.name}
+                  </span>
+                )}
+                <span className="font-semibold text-[#082A66] group-hover:text-white">
+                  {product.price} {product.priceType}
+                </span>
+              </div>
                 <div className="text-justify w-full px-2 line-clamp-3">
                   <p className="text-sm text-[#374151] group-hover:text-white">{product.description}</p>
                 </div>
