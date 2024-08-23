@@ -173,7 +173,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-5 ml-2 pl-2 justify-start mb-4" >
+          <div className="flex flex-wrap gap-6 ml-14 pl-2 justify-start mb-4" >
             <div className="border border-[#FCFCFC] bg-[rgba(252,252,252,0.70)] rounded-2xl m-1 mt-0 flex items-center justify-center p-2 lg:w-80 lg:h-80 w-72 h-72 hover:bg-[rgba(252,252,252,0.10)]">
               <div
                 onClick={handleCreateProduct}
