@@ -457,8 +457,8 @@ const AdProduct = () => {
   
 
     return (
-        <div className="overflow-auto" style={{maxHeight:'80vh'}}>
-           <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 overflow-auto ${isOpen ? 'p-0' : 'p-3'}`}>
+        <div className="overflow-auto flex-grow mr-8">
+           <section className={`border border-white max-w-7xl bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 overflow-auto ${isOpen ? 'p-0' : 'p-3'}`}>
                 <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'} relative cursor-pointer`} onClick={() => setIsOpen(!isOpen)}>
                     
                     <span className="flex items-center gap-4">
@@ -681,9 +681,10 @@ const AdProduct = () => {
 
                             <div
                                 onClick={toggleAccordionSection2}
-                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${!completedSections[1] ? "opacity-50 cursor-not-allowed" : ""} ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer overflow-auto hide-scrollbar ${!completedSections[1] ? "opacity-50 cursor-not-allowed" : ""} ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
                                 style={{
-                                    pointerEvents: !completedSections[1] ? "none" : "auto"
+                                    pointerEvents: !completedSections[1] ? "none" : "auto",
+                                    maxHeight:'51vh'
                                 }}
                             >
                                 <div className={`flex items-center justify-between ${expandedSubsection2 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
