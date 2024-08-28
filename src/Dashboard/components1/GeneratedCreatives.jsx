@@ -65,6 +65,7 @@ const GeneratedCreatives = ({
     console.log("Generated URL:", url);
   
     const models = modelMapping[modelName];
+  
     try {
       for (let i = 0; i < models.length; i++) {
         if (!jwtToken) {
@@ -74,7 +75,32 @@ const GeneratedCreatives = ({
         // Log token to check if it's valid
         console.log('JWT Token:', jwtToken);
   
-        // Perform the POST request
+        // Step 1: Try the GET request first
+        const res = await axios.get(
+          `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
+        );
+  
+        const labeledData = res.data.map(item => ({
+          ...item,
+          label: modelLabels[models[i]] || modelName,
+        }));
+  
+        if (labeledData.length > 0) {
+          // If data exists, render it and return
+          appendToData(prevData => [...prevData, ...labeledData]);
+          setLoading(false);  // Only set loading to false if data is not empty
+          apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+          return; // Exit the loop since data is already available
+        } else {
+          console.log('GET call returned empty data array, proceeding to POST call.');
+        }
+  
+        // Step 2: If no data, proceed with the POST request
         const postResponse = await axios.post(url, {}, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
@@ -82,13 +108,13 @@ const GeneratedCreatives = ({
         });
   
         // Log response status and data for debugging
-        console.log('Response status:', postResponse.status);
-        console.log('Response data:', postResponse.data);
+        console.log('POST Response status:', postResponse.status);
+        console.log('POST Response data:', postResponse.data);
   
         // Check if POST was successful
         if (postResponse.status === 200 || postResponse.status === 201) {
-          // Perform the GET request only after successful POST
-          const res = await axios.get(
+          // Step 3: Perform the GET request again after successful POST
+          const resAfterPost = await axios.get(
             `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`, 
             {
               headers: {
@@ -97,18 +123,18 @@ const GeneratedCreatives = ({
             }
           );
   
-          const labeledData = res.data.map(item => ({
+          const labeledDataAfterPost = resAfterPost.data.map(item => ({
             ...item,
             label: modelLabels[models[i]] || modelName,
           }));
   
-          if (labeledData.length > 0) {
-            appendToData(prevData => [...prevData, ...labeledData]);
+          if (labeledDataAfterPost.length > 0) {
+            appendToData(prevData => [...prevData, ...labeledDataAfterPost]);
             setLoading(false);  // Only set loading to false if data is not empty
             apiCallsRef.current = true; // Set the reference to true if any API call succeeds
             return; // Exit the loop if the call was successful
           } else {
-            console.log('Received empty data array, keeping loading state active.');
+            console.log('Received empty data array even after POST, keeping loading state active.');
           }
         } else {
           console.log(`POST request failed with status: ${postResponse.status}`);
@@ -124,6 +150,138 @@ const GeneratedCreatives = ({
       }
     }
   };
+  
+  const refreshCreatives = async () => {
+    setIsLoading(true); // Start loading animation
+
+    const apiCallsRef = { current: false };
+
+    // Define the models to be refreshed based on your application logic
+    const modelsToRefresh = ["unaware", "problem aware", "solution aware", "product aware", "most aware"];
+
+    try {
+        // Clear the existing data before refreshing
+        setBrandAwarenessData([]);
+        setSaleData([]);
+        setRetargetingData([]);
+        setLoadingBrandAwareness(true);
+        setLoadingSale(true);
+        setLoadingRetargeting(true);
+
+        // Loop through each model and call refreshModelData
+        for (const modelName of modelsToRefresh) {
+            await refreshModelData(modelName, appendToDataBasedOnModel(modelName), setLoadingBasedOnModel(modelName), apiCallsRef);
+        }
+
+        if (!apiCallsRef.current) {
+            showToast("Error refreshing creatives. Please try again later.", "error");
+        }
+    } catch (error) {
+        console.error("Error during refresh:", error);
+        showToast("Error refreshing creatives. Please try again later.", "error");
+    } finally {
+        setIsLoading(false); // Stop loading animation
+    }
+};
+
+// This is similar to fetchModelData but will always perform POST followed by GET
+const refreshModelData = async (modelName, appendToData, setLoading, apiCallsRef) => {
+    const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
+    console.log("Generated URL:", url);
+
+    const models = modelMapping[modelName];
+    try {
+        for (let i = 0; i < models.length; i++) {
+            if (!jwtToken) {
+                throw new Error("No JWT token found. Please log in.");
+            }
+
+            // Log token to check if it's valid
+            console.log('JWT Token:', jwtToken);
+
+            // Perform the POST request
+            const postResponse = await axios.post(url, {}, {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+            });
+
+            // Log response status and data for debugging
+            console.log('Response status:', postResponse.status);
+            console.log('Response data:', postResponse.data);
+
+            // Check if POST was successful
+            if (postResponse.status === 200 || postResponse.status === 201) {
+                // Perform the GET request only after successful POST
+                const res = await axios.get(
+                    `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${jwtToken}`,
+                        },
+                    }
+                );
+
+                const labeledData = res.data.map(item => ({
+                    ...item,
+                    label: modelLabels[models[i]] || modelName,
+                }));
+
+                if (labeledData.length > 0) {
+                    appendToData(prevData => [...prevData, ...labeledData]);
+                    setLoading(false);  // Only set loading to false if data is not empty
+                    apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+                    return; // Exit the loop if the call was successful
+                } else {
+                    console.log('Received empty data array, keeping loading state active.');
+                }
+            } else {
+                console.log(`POST request failed with status: ${postResponse.status}`);
+            }
+        }
+    } catch (error) {
+        console.error(`Failed to fetch ${models.join(", ")} model`, error);
+
+        // Additional error handling
+        if (error.response) {
+            console.error('Error response data:', error.response.data);
+            console.error('Error response status:', error.response.status);
+        }
+    }
+};
+
+// Helper function to determine which state to update based on the modelName
+const appendToDataBasedOnModel = (modelName) => {
+    switch (modelName) {
+        case "unaware":
+        case "problem aware":
+            return setBrandAwarenessData;
+        case "solution aware":
+        case "product aware":
+            return setSaleData;
+        case "most aware":
+            return setRetargetingData;
+        default:
+            return () => {}; // Default to no-op if the modelName doesn't match
+    }
+};
+
+// Helper function to determine which loading state to update based on the modelName
+const setLoadingBasedOnModel = (modelName) => {
+    switch (modelName) {
+        case "unaware":
+        case "problem aware":
+            return setLoadingBrandAwareness;
+        case "solution aware":
+        case "product aware":
+            return setLoadingSale;
+        case "most aware":
+            return setLoadingRetargeting;
+        default:
+            return () => {}; // Default to no-op if the modelName doesn't match
+    }
+};
+
   
 
   const loadCreatives = async () => {
@@ -409,7 +567,17 @@ const GeneratedCreatives = ({
                     {tab}
                   </button>
                 ))}
+                
+                <img 
+                  src="/icon7.svg" 
+                  alt="Refresh Icon" 
+                  className="border-2 p-2 py-1 rounded-lg"
+                  onClick={refreshCreatives} // Call the refreshCreatives function on click
+                  style={{ cursor: 'pointer' }} // Ensure the icon is clickable
+                />
               </div>
+
+
             </div>
             <div className="mx-4">
               {/* Brand Awareness */}
