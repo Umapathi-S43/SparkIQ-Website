@@ -18,7 +18,7 @@ const GeneratedCreatives = ({
   initialBrandAwarenessData = [],  // Add these props
   initialSaleData = [],            // Add these props
   initialRetargetingData = [],     // Add these props
-  initialSelectedTab = "Brand Color",  // Add this prop
+  initialSelectedTab,  // No default value here
 
 }) => {
   const [brandAwarenessData, setBrandAwarenessData] = useState(initialBrandAwarenessData.length > 0 ? initialBrandAwarenessData : []);
@@ -30,8 +30,11 @@ const GeneratedCreatives = ({
   const [loadingRetargeting, setLoadingRetargeting] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
-  // The selectedTab can be directly assigned from the initialSelectedTab
-  const [selectedTab, setSelectedTab] = useState(initialSelectedTab);
+  const [selectedTab, setSelectedTab] = useState(initialSelectedTab);  // This should set the correct tab
+
+  useEffect(() => {
+    setSelectedTab(initialSelectedTab);  // Ensure it updates on prop change
+  }, [initialSelectedTab]);
   
   const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
   const storedImageSize = JSON.parse(localStorage.getItem("imageSize")) || "";
@@ -74,7 +77,7 @@ const GeneratedCreatives = ({
   
         // Log token to check if it's valid
         console.log('JWT Token:', jwtToken);
-  
+ 
         // Step 1: Try the GET request first
         const res = await axios.get(
           `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`,
@@ -90,6 +93,8 @@ const GeneratedCreatives = ({
           label: modelLabels[models[i]] || modelName,
         }));
   
+          // Clear the UI data before fetching new data
+          appendToData(() => []);
         if (labeledData.length > 0) {
           // If data exists, render it and return
           appendToData(prevData => [...prevData, ...labeledData]);
@@ -366,7 +371,7 @@ const setLoadingBasedOnModel = (modelName) => {
     }
   
     return (
-      <div className="mb-4">
+      <div className="mt-4">
         <h3 className="font-bold text-lg mb-2">{label}</h3>
         {[...Array(rows)].map((_, rowIndex) => (
           <div key={rowIndex} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -421,7 +426,7 @@ const setLoadingBasedOnModel = (modelName) => {
 
     return (
       <>
-        <h3 className="font-bold text-lg mb-2">{modelName}</h3>
+        <h3 className="font-bold text-lg mb-3 mt-6 ml-2">{modelName}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map((product, index) => (
             <div
@@ -520,10 +525,10 @@ const setLoadingBasedOnModel = (modelName) => {
   };
 
   return (
-    <div className="container mb-4 lg:p-0 flex-grow">
+    <div className="container lg:p-0 flex-grow">
       <section
         className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${
-          isThirdSectionOpen ? "p-0" : "p-3"
+          isThirdSectionOpen ? "p-0 pb-6" : "p-3"
         } flex flex-col gap-2 relative z-10`}
       >
         <div

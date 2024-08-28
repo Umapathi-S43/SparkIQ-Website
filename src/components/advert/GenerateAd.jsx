@@ -24,16 +24,18 @@ export default function GenerateAd({ setPage, pages }) {
   const generatedCreativesRef = useRef(null);
 
   // Restore state from localStorage on mount
+  // Restore state from localStorage on mount
   useEffect(() => {
     const savedState = JSON.parse(localStorage.getItem("generateAdState"));
     if (savedState) {
       setIsThirdSectionOpen(savedState.isThirdSectionOpen);
-      setSelectedTab(savedState.selectedTab);
+      setSelectedTab(savedState.selectedTab);  // Restore the selected tab
+      console.log(savedState.selectedTab);  // This should show 'Single Color' when that's what you selected
       setOpenModalCreativeSize(savedState.openModalCreativeSize);
       setBrandAwarenessData(savedState.brandAwarenessData);
       setSaleData(savedState.saleData);
       setRetargetingData(savedState.retargetingData);
-
+  
       // Scroll to GeneratedCreatives if the third section was previously open
       if (savedState.isThirdSectionOpen) {
         setTimeout(() => {
@@ -42,12 +44,12 @@ export default function GenerateAd({ setPage, pages }) {
           }
         }, 100); // Adding a slight delay to ensure that the component has fully rendered
       }
-
+  
       // Clear the saved state once restored
       localStorage.removeItem("generateAdState");
     }
   }, []);
-
+  
   // Save the state when necessary
   const saveCurrentState = () => {
     const currentState = {
@@ -160,18 +162,18 @@ export default function GenerateAd({ setPage, pages }) {
 
       {/* GeneratedCreatives Section */}
       <div ref={generatedCreativesRef} className="mt-4">
-        <GeneratedCreatives
-          isThirdSectionOpen={isThirdSectionOpen}
-          toggleThirdSectionAccordion={toggleThirdSectionAccordion}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          setPage={setPage}
-          openModalCreativeSize={openModalCreativeSize}
-          initialBrandAwarenessData={brandAwarenessData} // Pass restored data
-          initialSaleData={saleData} // Pass restored data
-          initialRetargetingData={retargetingData} // Pass restored data
-          initialSelectedTab={selectedTab} // Pass restored selected tab
-        />
+      <GeneratedCreatives
+        isThirdSectionOpen={isThirdSectionOpen}
+        toggleThirdSectionAccordion={toggleThirdSectionAccordion}
+        isLoading={isLoading}
+        setIsLoading={setIsLoading}
+        setPage={setPage}
+        openModalCreativeSize={openModalCreativeSize}
+        initialBrandAwarenessData={brandAwarenessData}
+        initialSaleData={saleData}
+        initialRetargetingData={retargetingData}
+        initialSelectedTab={selectedTab}  // Pass the restored selected tab
+      />
       </div>
     </div>
   );
