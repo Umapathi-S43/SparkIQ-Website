@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import axios from "axios";
@@ -21,6 +21,8 @@ const GeneratedCreatives = ({
   initialSelectedTab,  // No default value here
 
 }) => {
+
+  const generatedCreativesRef = useRef(null);
   const [brandAwarenessData, setBrandAwarenessData] = useState(initialBrandAwarenessData.length > 0 ? initialBrandAwarenessData : []);
   const [saleData, setSaleData] = useState(initialSaleData.length > 0 ? initialSaleData : []);
   const [retargetingData, setRetargetingData] = useState(initialRetargetingData.length > 0 ? initialRetargetingData : []);
@@ -163,6 +165,11 @@ const GeneratedCreatives = ({
 
     // Define the models to be refreshed based on your application logic
     const modelsToRefresh = ["unaware", "problem aware", "solution aware", "product aware", "most aware"];
+
+     // Scroll to the top of the section when the component mounts
+     if (generatedCreativesRef.current) {
+      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+  }
 
     try {
         // Clear the existing data before refreshing
@@ -324,6 +331,11 @@ const setLoadingBasedOnModel = (modelName) => {
     setLoadingBrandAwareness(true);
     setLoadingSale(true);
     setLoadingRetargeting(true);
+     // Scroll to the top of the section when the component mounts
+     if (generatedCreativesRef.current) {
+      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+  }
+    
 };
 
 
@@ -525,7 +537,7 @@ const setLoadingBasedOnModel = (modelName) => {
   };
 
   return (
-    <div className="container lg:p-0 flex-grow">
+    <div ref={generatedCreativesRef} className="container lg:p-0 flex-grow">
       <section
         className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${
           isThirdSectionOpen ? "p-0 pb-6" : "p-3"
