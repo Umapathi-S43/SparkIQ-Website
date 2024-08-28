@@ -5,23 +5,23 @@ import { FaFacebookF, FaGoogle } from "react-icons/fa";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 
 const mediaSizes = [
-  { name: "Post Size", size: "(1080x1080)" },
-  { name: "Landscape Size", size: "(1200x628)" },
-  { name: "Story Size", size: "(1080X1920)" },
-  { name: "Portrait Size", size: "(1080x1350)" },
-  { name: "Pin Size", size: "(1000X1500)" },
+  { name: "Post Size", size: "(1080*1080)" },
+  { name: "Landscape Size", size: "(1200*628)" },
+  { name: "Story Size", size: "(1080*1920)" },
+  { name: "Portrait Size", size: "(1080*1350)" },
+  { name: "Pin Size", size: "(1000*1500)" },
 ];
 
 const facebookSizes = [
-  { name: "Post Size", size: "(1080x1080)" },
-  { name: "Landscape Size", size: "(1200x628)" },
-  { name: "Story Size", size: "(1080X1920)" },
+  { name: "Post Size", size: "(1080*1080)" },
+  { name: "Landscape Size", size: "(1200*628)" },
+  { name: "Story Size", size: "(1080*1920)" },
 ];
 
 const googleSizes = [
-  { name: "Story Size", size: "(1080X1920)" },
-  { name: "Portrait Size", size: "(1080x1350)" },
-  { name: "Pin Size", size: "(1000X1500)" },
+  { name: "Story Size", size: "(1080*1920)" },
+  { name: "Portrait Size", size: "(1080*1350)" },
+  { name: "Pin Size", size: "(1000*1500)" },
 ];
 
 export default function CreativeSize({
