@@ -63,48 +63,46 @@ const GeneratedCreatives = ({
   const fetchModelData = async (modelName, appendToData, setLoading, apiCallsRef) => {
     const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
     console.log("Generated URL:", url);
-
+  
     const models = modelMapping[modelName];
     try {
       for (let i = 0; i < models.length; i++) {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
-
+  
         // Log token to check if it's valid
         console.log('JWT Token:', jwtToken);
-
+  
         // Perform the POST request
-        // Commented out as per your request
-        /*
-        const response = await axios.post(url, {}, {
+        const postResponse = await axios.post(url, {}, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
           },
         });
-
+  
         // Log response status and data for debugging
-        console.log('Response status:', response.status);
-        console.log('Response data:', response.data);
-        */
-
-        // Directly perform the GET request with Authorization header
-        const res = await axios.get(
-          `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`, 
-          {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
-
-        const labeledData = res.data.map(item => ({
-          ...item,
-          label: modelLabels[models[i]] || modelName,
-        }));
-
-
-         if (labeledData.length > 0) {
+        console.log('Response status:', postResponse.status);
+        console.log('Response data:', postResponse.data);
+  
+        // Check if POST was successful
+        if (postResponse.status === 200 || postResponse.status === 201) {
+          // Perform the GET request only after successful POST
+          const res = await axios.get(
+            `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`, 
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
+  
+          const labeledData = res.data.map(item => ({
+            ...item,
+            label: modelLabels[models[i]] || modelName,
+          }));
+  
+          if (labeledData.length > 0) {
             appendToData(prevData => [...prevData, ...labeledData]);
             setLoading(false);  // Only set loading to false if data is not empty
             apiCallsRef.current = true; // Set the reference to true if any API call succeeds
@@ -112,10 +110,13 @@ const GeneratedCreatives = ({
           } else {
             console.log('Received empty data array, keeping loading state active.');
           }
+        } else {
+          console.log(`POST request failed with status: ${postResponse.status}`);
+        }
       }
     } catch (error) {
       console.error(`Failed to fetch ${models.join(", ")} model`, error);
-
+  
       // Additional error handling
       if (error.response) {
         console.error('Error response data:', error.response.data);
@@ -123,7 +124,7 @@ const GeneratedCreatives = ({
       }
     }
   };
-
+  
 
   const loadCreatives = async () => {
     if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
