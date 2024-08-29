@@ -408,19 +408,21 @@ const setLoadingBasedOnModel = (modelName) => {
   // Updated to display 3 cards per row
   const FilteredData = ({ filteredModel, modelName }) => {
 
-    const handlePreviewClick = (imageUrl) => {
+    const handlePreviewClick = (imageUrl,model) => {
       const currentState = {
         isThirdSectionOpen,
         brandAwarenessData,
         saleData,
         retargetingData,
-        selectedTab
+        selectedTab,
+        aimodel: model, // Store the model name
       };
       localStorage.setItem('generateAdState', JSON.stringify(currentState));
       
       navigate('/customsample', {
         state: {
           image: imageUrl,
+          aimodel: model,
         },
       });
     };
@@ -516,7 +518,7 @@ const setLoadingBasedOnModel = (modelName) => {
               <button
                 className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
                 onClick={() =>
-                  handlePreviewClick(product.imageURL || product.generatedImageURL)
+                  handlePreviewClick(product.imageURL || product.generatedImageURL,modelName)
                 }
               >
                 <div className="button-container">

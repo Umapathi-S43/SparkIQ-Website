@@ -5,8 +5,7 @@ import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import { BiBookmark, BiComment, BiLike } from "react-icons/bi";
 import { GoShare } from "react-icons/go";
-import { useNavigate } from "react-router-dom";
-import brandImage from "../../assets/dashboard_img/brand_img.png";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const textCaption = "🎨 Explore Infinite Creativity with fdg adfwerw 🌈🌟 Discover a Hint of Enigma, Infused with Grace💖 Embrace the Magic of tr5vy5✨ Elevate Your Sensory Journey for Just BDT 500 🌟";
 
@@ -14,7 +13,11 @@ const AdPreview = ({ setPage }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [tabIndex, setTabIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const location = useLocation();
   const navigate = useNavigate();
+
+  // Extract the passed preview image from location state
+  const previewImage = location.state?.preview_img || "/image3.png"; // Default image if none is passed
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -31,7 +34,7 @@ const AdPreview = ({ setPage }) => {
   }, []);
 
   const renderFacebookAd = (size, highlighted = false) => (
-    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] ml-4 p-3 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-1/5' : 'lg:w-1/5'}`}>
+    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] ml-4 p-3 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-2/6' : 'lg:w-1/5'}`}>
       <div className="bg-white shadow-lg rounded-[20px] ">
         <div className="p-2">
           <div className="flex items-center mb-1">
@@ -41,13 +44,13 @@ const AdPreview = ({ setPage }) => {
               <p className="text-xs text-gray-500">Sponsored</p>
             </div>
           </div>
-          <p className={`mb-2 text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'} max-w-[18rem]`}>
+          <p className={`mb-2 text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'}`}>
             {textCaption}
           </p>
           <img
-            src="/image3.png"
+            src={previewImage} // Use the passed image here
             alt="Ad Image"
-            className={`rounded-lg mb-2 object-cover w-full ${size === 'large' ? 'h-[100px]' : 'h-[70px]'}`}
+            className={`rounded-lg mb-2 object-cover w-full h-full ${size === 'large' ? 'lg:w-3/6' : 'lg:w-1/5'}`}
           />
           <div className="flex items-center justify-between mt-3 gap-1">
             <p className={`text-${size === 'large' ? 'xs' : '[10px]'}`}>
@@ -74,7 +77,7 @@ const AdPreview = ({ setPage }) => {
             </div>
           </div>
           <img
-            src="/image3.png"
+            src={previewImage} // Use the passed image here
             alt="Ad Image"
             className={`rounded-lg mb-2 object-cover w-full ${size === 'large' ? 'h-[120px]' : 'h-[90px]'}`}
           />
@@ -94,10 +97,18 @@ const AdPreview = ({ setPage }) => {
     </div>
   );
 
+  const handleCustomizeAds = () => {
+    navigate("/customsample", { state: { preview_img: previewImage } });
+  };
+
+  const handleNextStep = () => {
+    navigate("/launchCampaign1", { state: { preview_img: previewImage } });
+  };
+
   return (
-    <div className="flex-grow overflow-auto">
-      <div className="max-w-6xl w-full mx-auto flex flex-col gap-2 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-170px)]">
-        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-6 relative pb-4">
+    <div className="flex-grow mr-8 overflow-auto">
+      <div className="max-w-7xl w-full mx-auto flex flex-col gap-4 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-140px)]">
+        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0 relative">
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon1.svg" alt="" className="w-10 lg:w-14" />
             <span className="flex flex-col">
@@ -112,15 +123,14 @@ const AdPreview = ({ setPage }) => {
           <img
             src="/image1.png"
             alt=""
-            className="absolute bottom-0 lg:right-24 right-28 w-32 lg:w-44 hidden md:block"
+            className="absolute bottom-0 lg:right-24 right-28 w-32 lg:w-40 hidden md:block"
           />
         </div>
-        
+
         {isLoading ? (
           <div className="overflow-auto hide-scrollbar mb-4 pb-6" style={{ maxHeight: '70vh' }}>
             <Loader />
-            </div>
-          
+          </div>
         ) : (
           <div className="sticky overflow-auto">
             <Tabs
@@ -156,13 +166,13 @@ const AdPreview = ({ setPage }) => {
                     <div className="flex justify-center mt-2 gap-4">
                       <button
                         className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-1 px-3 whitespace-pre font-medium border border-[#0086CD80]"
-                        onClick={() => navigate("/customsample")}
+                        onClick={handleCustomizeAds}
                       >
                         Customize Ads
                       </button>
                       <button
                         className="w-fit custom-button rounded-[10px] text-white py-1 px-3 whitespace-pre font-medium"
-                        onClick={() => navigate("/launchCampaign1")} // Corrected the spelling here
+                        onClick={handleNextStep}
                       >
                         Next Step
                       </button>
@@ -171,7 +181,7 @@ const AdPreview = ({ setPage }) => {
                 </div>
               </TabPanel>
               <TabPanel>
-              <div className="py-3 lg:m-0 m-2">
+                <div className="py-3 lg:m-0 m-2">
                   <div className="rounded-[30px]">
                     <div className={`flex items-center justify-center gap-8 ${windowWidth < 750 ? 'flex-col' : ''}`}>
                       {windowWidth < 750 ? (
@@ -189,13 +199,13 @@ const AdPreview = ({ setPage }) => {
                     <div className="flex justify-center mt-2 gap-4">
                       <button
                         className="w-fit bg-[#00A0F51A] rounded-[10px] text-[#007FC2] py-1 px-3 whitespace-pre font-medium border border-[#0086CD80]"
-                        onClick={() => navigate("/customsample")}
+                        onClick={handleCustomizeAds}
                       >
                         Customize Ads
                       </button>
                       <button
                         className="w-fit custom-button rounded-[10px] text-white py-1 px-3 whitespace-pre font-medium"
-                        onClick={() => navigate("/launchCampaign1")} // Corrected the spelling here
+                        onClick={handleNextStep}
                       >
                         Next Step
                       </button>

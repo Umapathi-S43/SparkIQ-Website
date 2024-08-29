@@ -5,7 +5,7 @@ import { GoLocation } from "react-icons/go";
 import { MdOutlineDateRange } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 
-export default function CampaignSetting({ setPage }) {
+export default function CampaignSetting({ setPage,handleGoBack }) {
   const navigate = useNavigate();
 
   const handleLaunch_Campaign = () => {
@@ -13,7 +13,7 @@ export default function CampaignSetting({ setPage }) {
     navigate('/Congrats', { state: { task3Completed: true } });
   };
   const handle_Goback = () => {
-    navigate('/adPreview'); // Redirect to adPreview
+    handleGoBack();
   };
 
   return (

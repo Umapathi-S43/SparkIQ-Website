@@ -1,12 +1,22 @@
 import React, { useState } from "react";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-
+import { useNavigate, useLocation } from 'react-router-dom'; // Import the useNavigate and useLocation hooks
 import Targetting from "./Targetting";
 import CampaignSetting from "./CampaignSetting";
 import brandImage from '../../../assets/dashboard_img/brand_img.png';
 
 export default function LaunchCampaign({ setPage }) {
   const [tabIndex, setTabIndex] = useState(0);
+  const navigate = useNavigate(); // Initialize the navigate function
+  const location = useLocation(); // Initialize the location function
+
+  const handleGoBack = () => {
+    navigate("/adPreview", {
+      state: {
+        preview_img: location.state?.preview_img || '/defaultImage.png' // Pass the existing preview image or a default one
+      }
+    });
+  };
 
   return (
     <div className="flex-grow">
@@ -46,10 +56,16 @@ export default function LaunchCampaign({ setPage }) {
               <img src="/Border.png" alt="" className="w-full max-w-full lg:w-1/2" />
               <div className="w-full lg:w-1/2 px-3">
                 <TabPanel>
-                  <CampaignSetting setPage={setPage} />
+                  <CampaignSetting 
+                    setPage={setPage}
+                    handleGoBack={handleGoBack} // Pass the go back handler
+                  />
                 </TabPanel>
                 <TabPanel>
-                  <Targetting setPage={setPage} />
+                  <Targetting 
+                    setPage={setPage}
+                    handleGoBack={handleGoBack} // Pass the go back handler
+                  />
                 </TabPanel>
               </div>
             </div>

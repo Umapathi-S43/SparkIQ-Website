@@ -4,6 +4,7 @@ import { initialCaptions, initialSuggestions } from "./Data";
 
 export default function Caption({
   handleBackClick,
+  handleNextClick,
   setPage,
   setSelectedCaption,
   selectedCaption,
@@ -41,7 +42,7 @@ export default function Caption({
   };
 
   const handleNext = () => {
-    navigate('/adPreview'); // Redirect to adPreview
+    handleNextClick();
   };
 
   return (

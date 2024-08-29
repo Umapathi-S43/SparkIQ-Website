@@ -1,24 +1,22 @@
 import { useEffect, useState } from "react";
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaFacebook } from "react-icons/fa";
-import { useNavigate } from 'react-router-dom';
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
-import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
+import brandImage from '../../assets/dashboard_img/brand_img.png';
 import Creative from "../../components/advert/customization/Creative";
 import Caption from "../../components/advert/customization/Caption";
 import '../../components/advert/index.css';
 
 export default function CustomSample({
   isLoading,
-  setIsLoading,
   setPage,
   openModalCreativeSize,
 }) {
   const location = useLocation();
   const { state } = location;
-  const [generatedImageURL, setgeneratedImageURL] = useState(state?.image || null);
-  const [selectedImage, setSelectedImage] = useState(state?.image || null);
+  const [generatedImageURL, setGeneratedImageURL] = useState(state?.image ||state?.preview_img|| null);
+  const [selectedImage, setSelectedImage] = useState(state?.image ||state?.preview_img|| null);
   const [tabIndex, setTabIndex] = useState(0);
   const [selectedCaption, setSelectedCaption] = useState(
     "🎨 Discover Uniqueness with Ashiqur Rahman: A Blend of Abstract and Precision  🧩 Thought-Provoking Artistry 💲 Priced at USD 400 A Touch of Elegance to Your Collection."
@@ -32,24 +30,22 @@ export default function CustomSample({
   const [randomPhrase, setRandomPhrase] = useState("");
   const navigate = useNavigate();
 
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [isLoading]);
-
   const handleBackClick = () => {
     navigate('/campaigns', {
       state: {
-        fromSection: state?.fromSection || 3,  // Returning to the third section
-        image: selectedImage,  // Passing back the generated image URL
+        fromSection: state?.fromSection || 3,
+        image: selectedImage,
       },
     });
   };
 
+  const handleNextClick = () => {
+    navigate('/adPreview', {
+      state: {
+        preview_img: selectedImage || generatedImageURL, // Pass the selected or generated image as preview_img
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen p-3 py-1 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
@@ -73,7 +69,10 @@ export default function CustomSample({
             <div className="adCustomizationBg rounded-2xl flex flex-col relative items-center justify-left px-4 py-2 w-full" style={{ background: "linear-gradient(315.4deg, rgba(76, 161, 175, 0.2) 0.35%, rgba(196, 224, 229, 0.4) 99.65%)" }}>
               <div className="border border-white rounded-[24px] p-3 relative flex justify-center max-w-xs">
                 <div className="flex justify-center absolute -top-7">
-                  <button className="text-white rounded-[8px] rounded-b-none text-sm py-1 px-4 mt-3" style={{ background: "linear-gradient(115deg, #004367 0%, #00A7FF 100%)" }}>
+                  <button
+                    className="text-white rounded-[8px] rounded-b-none text-sm py-1 px-4 mt-3"
+                    style={{ background: "linear-gradient(115deg, #004367 0%, #00A7FF 100%)" }}
+                  >
                     Preview
                   </button>
                 </div>
@@ -95,17 +94,16 @@ export default function CustomSample({
                           <img src={selectedImage} alt="Ad Image" className="w-[20rem] rounded-md mb-4 object-cover" />
                         ) : (
                           <div className="w-[20rem] flex justify-center items-center rounded-md mb-4 bg-gray-100">
-                              <img 
-                                src={generatedImageURL} 
-                                alt="Ad Image" 
-                                style={{
-                                  maxWidth: '100%',
-                                  maxHeight: '100%',
-                                  objectFit: 'contain',
-                                }} 
-                              />
-                            </div>
-
+                            <img
+                              src={generatedImageURL}
+                              alt="Ad Image"
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                              }}
+                            />
+                          </div>
                         )}
                         <div className="flex items-center justify-between mt-4 gap-4">
                           <p className="text-sm">
@@ -152,6 +150,8 @@ export default function CustomSample({
                   captionDetails={captionDetails}
                   setPage={setPage}
                   handleBackClick={handleBackClick}
+                  aimodel={state?.aimodel}
+                  handleNextClick={handleNextClick} // Pass handleNextClick to Creative
                 />
               </TabPanel>
               <TabPanel className="pt-4 px-2 sm:px-6">
@@ -160,6 +160,7 @@ export default function CustomSample({
                   setSelectedCaption={setSelectedCaption}
                   selectedCaption={selectedCaption}
                   handleBackClick={handleBackClick}
+                  handleNextClick={handleNextClick} // Pass handleNextClick to Caption
                 />
               </TabPanel>
             </Tabs>

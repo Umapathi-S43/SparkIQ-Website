@@ -10,7 +10,7 @@ const suggestions = [
   "Plumbing Repairs",
 ];
 
-export default function Targetting({ setPage }) {
+export default function Targetting({ setPage,handleGoBack }) {
   const [duration, setDuration] = useState(null);
   const [estimatedAudience, setEstimatedAudience] = useState("N/A");
   const [gender, setGender] = useState("Male");
@@ -74,7 +74,7 @@ export default function Targetting({ setPage }) {
     navigate('/Congrats', { state: { task3Completed: true } });
   };
   const handle_Goback = () => {
-    navigate('/adPreview'); // Redirect to adPreview
+    handleGoBack();
   };
   
   return (

@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { images, initialPhrases } from "./Data";
-import Picker from "../../../Dashboard/components1/colorPicker";
 import { useNavigate } from "react-router-dom";
+import Picker from "../../../Dashboard/components1/colorPicker";
+import axios from "axios";
+import { jwtToken } from "../../utils/jwtToken";
+import { baseUrl } from "../../utils/Constant";
 
 export default function Creative({
   handleBackClick,
+  handleNextClick,
   setRandomPhrase,
   setCaptionDetails,
   setSelectedImage,
@@ -19,25 +22,91 @@ export default function Creative({
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [phrases, setPhrases] = useState(initialPhrases);
+  const [phrases, setPhrases] = useState([]);
+  const [adImages, setAdImages] = useState([]);
   const dropdownRef = useRef(null);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   // Initialize navigate
   const navigate = useNavigate();
+ // Fetch aimodel from localStorage
+ const aimodel = JSON.parse(localStorage.getItem("generateAdState"))?.aimodel || "Brand Awareness";
 
   useEffect(() => {
+    // Fetch initial phrases or handle it if it's already defined elsewhere
+    const initialPhrases = [
+      "Boost your brand with our service!",
+      "Discover the future of advertising.",
+      "Take your business to the next level.",
+      // Add more phrases as needed
+    ];
+    setPhrases(initialPhrases);
+
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth <= 540);
     };
 
-    window.addEventListener('resize', handleResize);
-    handleResize(); 
+    window.addEventListener("resize", handleResize);
+    handleResize();
 
+    // Cleanup on unmount
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    console.log("ai model from use effect", aimodel);
+    fetchGeneratedImages();
+  }, [aimodel]); // Add aimodel as a dependency
+
+  const fetchGeneratedImages = async () => {
+    const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
+
+    // Define model mapping based on aimodel
+    const modelMapping = {
+      "Brand Awareness": "PAS",
+      "Sale": ["AIDA", "FAB"], // Include both AIDA and FAB for Sale
+      "Retargeting Audience": "USP",
+    };
+    console.log("Ai model passed is :",aimodel);
+    const selectedModels = modelMapping[aimodel];
+    const imagesData = [];
+    console.log("Selected model",selectedModels);
+
+    try {
+      if (Array.isArray(selectedModels)) {
+        // If the model is an array, fetch images for each model (AIDA, FAB) for Sale
+        for (let model of selectedModels) {
+          const res = await axios.get(
+            `${baseUrl}/generated-images/model/${model}/${storedProductID}`,
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
+          imagesData.push(...res.data);
+          if (imagesData.length >= 6) break; // Stop if we have 6 images
+        }
+      } else {
+        // If it's a single model, fetch images directly
+        const res = await axios.get(
+          `${baseUrl}/generated-images/model/${selectedModels}/${storedProductID}`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
+        );
+        imagesData.push(...res.data);
+      }
+
+      setAdImages(imagesData.slice(0, 6)); // Only take up to 6 images
+    } catch (error) {
+      console.error("Error fetching images:", error);
+    }
+  };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -119,7 +188,7 @@ export default function Creative({
   };
 
   const refreshPhrases = () => {
-    const shuffledPhrases = [...initialPhrases].sort(() => Math.random() - 0.5);
+    const shuffledPhrases = [...phrases].sort(() => Math.random() - 0.5);
     setPhrases(shuffledPhrases);
     if (dropdownRef.current) {
       dropdownRef.current.scrollTop = 0;
@@ -131,11 +200,11 @@ export default function Creative({
   };
 
   const handleNext = () => {
-    navigate('/adPreview');
+    handleNextClick();
   };
 
   return (
-    <div className="flex flex-col gap-4 pt-4 px-4 sm:px-6 md:px-8 lg:px-10 overflow-auto" style={{maxHeight:'68vh'}}>
+    <div className="flex flex-col gap-4 pt-4 px-4 sm:px-6 md:px-8 lg:px-10 overflow-auto" style={{ maxHeight: "68vh" }}>
       <div className="flex flex-col items-center justify-center bg-white shadow-md rounded-[20px] p-2">
         {uploadedImage ? (
           <div className="border border-[#605880] border-dotted rounded-[20px] w-full flex gap-4 p-6 items-center justify-between">
@@ -193,12 +262,12 @@ export default function Creative({
               rows={1}
               id="content"
               onChange={handleOnchange}
-              value={
-                captionDetails.content ? captionDetails.content : randomPhrase
-              }
+              value={captionDetails.content ? captionDetails.content : randomPhrase}
             />
             <span
-              className={`flex items-center gap-2 bg-white h-full cursor-pointer shadow-sm px-2 py-1 rounded-2xl sm:absolute sm:right-0 z-10 ${isSmallScreen ? 'mt-2' : ''}`}
+              className={`flex items-center gap-2 bg-white h-full cursor-pointer shadow-sm px-2 py-1 rounded-2xl sm:absolute sm:right-0 z-10 ${
+                isSmallScreen ? "mt-2" : ""
+              }`}
               onClick={toggleDropdown}
             >
               <img src="/icon7.svg" alt="" onClick={refreshPhrases} />
@@ -309,13 +378,13 @@ export default function Creative({
         </div>
         <p className="text-xs sm:text-sm text-[#989BA0] pb-2">Ad templates</p>
         <div className="grid lg:grid-cols-3 grid-cols-1 gap-4">
-          {images.map((image) => (
+          {adImages.map((image, index) => (
             <img
-              src={image.img}
+              src={image.imageURL || image.generatedImageURL}
               alt=""
-              key={image.id}
-              className="w-full object-cover cursor-pointer"
-              onClick={() => setSelectedImage(image.img)}
+              key={index}
+              className="w-full object-cover cursor-pointer rounded-md"
+              onClick={() => setSelectedImage(image.imageURL || image.generatedImageURL)}
             />
           ))}
         </div>
@@ -330,7 +399,7 @@ export default function Creative({
             className="w-fit custom-button rounded-[14px] text-white py-2 sm:py-2 px-10 sm:px-10 whitespace-pre font-medium text-xs sm:text-sm md:text-base lg:text-lg"
             onClick={handleNext}
           >
-            Save and Next
+          Next
           </button>
         </div>
       </div>
