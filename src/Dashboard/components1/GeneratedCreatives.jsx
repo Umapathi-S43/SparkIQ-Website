@@ -461,7 +461,7 @@ const setLoadingBasedOnModel = (modelName) => {
               alt={product.title}
               className="object-cover w-full rounded-lg h-full"
             />
-            <div className="button-wrapper mt-2 gap-2 mb-2">
+            <div className="button-wrapper mt-2 gap-2 mb-1">
               <button className="text-sm text-[#A8A8A8]">
                 <div className="button-container">
                   <svg
@@ -721,13 +721,19 @@ const setLoadingBasedOnModel = (modelName) => {
                   </button>
                 ))}
                 
-                <img 
-                  src="/icon7.svg" 
-                  alt="Refresh Icon" 
-                  className="border-2 p-2 py-1 rounded-lg"
-                  onClick={refreshCreatives} // Call the refreshCreatives function on click
-                  style={{ cursor: 'pointer' }} // Ensure the icon is clickable
-                />
+                <div className="relative group">
+                  <img 
+                    src="/icon7.svg" 
+                    alt="Refresh Icon" 
+                    className="border-2 p-2 py-1 rounded-lg cursor-pointer"
+                    onClick={refreshCreatives}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <div className="absolute -bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-500 text-white text-nowrap text-sm rounded py-1 px-2">
+                    Regenerate Creatives
+                  </div>
+                </div>
+
               </div>
 
 
