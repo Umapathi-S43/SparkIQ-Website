@@ -3,8 +3,11 @@ import { FaFacebook, FaFacebookF, FaInstagram } from "react-icons/fa";
 import Loader from "./Loader";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
+import { FaRegHeart } from "react-icons/fa6";
+import { FaRegComment } from "react-icons/fa6";
+import { LuSend } from "react-icons/lu";
+import { PiShareFat } from "react-icons/pi";
 import { BiBookmark, BiComment, BiLike } from "react-icons/bi";
-import { GoShare } from "react-icons/go";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const textCaption = "🎨 Explore Infinite Creativity with fdg adfwerw 🌈🌟 Discover a Hint of Enigma, Infused with Grace💖 Embrace the Magic of tr5vy5✨ Elevate Your Sensory Journey for Just BDT 500 🌟";
@@ -33,69 +36,108 @@ const AdPreview = ({ setPage }) => {
     };
   }, []);
 
-  const renderFacebookAd = (size, highlighted = false) => (
-    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] ml-4 p-3 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-2/6' : 'lg:w-1/5'}`}>
-      <div className="bg-white shadow-lg rounded-[20px] ">
-        <div className="p-2">
+  
+  const renderFacebookAd = (size, highlighted = false) => {
+    // Set the width based on the size prop
+    const widthClass = size === 'large' ? 'w-[265px]' : size === 'medium' ? 'w-[300px]' : 'w-[210px]';
+  
+    return (
+      <div className={`bg-white border border-[#e0e0e0] rounded-[12px] ml-0 p-2 shadow-sm ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${widthClass}`}>
+        <div className="p-2 pt-0 pb-0">
           <div className="flex items-center mb-1">
-            <FaFacebook className={`text-blue-600 ${size === 'large' ? 'text-3xl' : 'text-xl'}`} />
-            <div className="ml-3">
-              <h3 className="font-semibold text-xs">Brand</h3>
+            <FaFacebook className={`text-blue-600 ${size === 'large' ? 'text-2xl' : 'text-xl'}`} />
+            <div className="ml-2">
+              <h3 className="font-semibold text-sm text-[#082A66]">Brand</h3>
               <p className="text-xs text-gray-500">Sponsored</p>
             </div>
           </div>
-          <p className={`mb-2 text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'}`}>
+  
+          {/* Top text with ellipses */}
+          <p className={`mb-2 text-[#082A66] ${size === 'large' ? 'text-sm' : 'text-xs'}`} 
+            style={{ 
+                display: '-webkit-box', 
+                WebkitLineClamp: 1, 
+                WebkitBoxOrient: 'vertical', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                whiteSpace: 'normal',
+            }}>
             {textCaption}
-          </p>
+          </p>  
           <img
             src={previewImage} // Use the passed image here
             alt="Ad Image"
-            className={`rounded-lg mb-2 object-cover w-full h-full ${size === 'large' ? 'lg:w-3/6' : 'lg:w-1/5'}`}
+            className={`rounded-[10px] mb-1 object-cover w-full h-auto`}
           />
-          <div className="flex items-center justify-between mt-3 gap-1">
-            <p className={`text-${size === 'large' ? 'xs' : '[10px]'}`}>
-              Ashiqur Rahman artwork for sale - Only BDT 500!
+          <div className="flex items-center justify-between bg-[#f0f0f0] p-1 gap-1 -mx-4 mb-2">
+            {/* Bottom text with ellipses */}
+            <p className={`text-${size === 'large' ? 'xs' : 'xs'} text-gray-800 truncate`} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              Ashiqur Rahman art work for sale - Only BDT 500!
             </p>
-            <button className={`text-${size === 'large' ? 'xs' : '[10px]'} px-2 py-1 whitespace-pre rounded-lg border border-[#605880]`}>
+            <button className={`text-${size === 'large' ? 'xs' : 'xs'} px-3 py-1 whitespace-pre rounded-md border border-[#605880] bg-[#e5e7eb]`}>
               Learn More
+            </button>
+          </div>
+          <div className="flex justify-between items-center border-t border-gray-300 pt-1">
+            <button className="flex items-center text-gray-600 gap-1">
+              <BiLike className="w-4 h-4" />
+              <span className="text-xs">Like</span>
+            </button>
+            <button className="flex items-center text-gray-600 text-sm gap-1">
+              <FaRegComment className="w-4 h-4" />
+              <span className="text-xs">Comment</span>
+            </button>
+            <button className="flex items-center text-gray-600 text-sm gap-1">
+              <PiShareFat className="w-4 h-4" />
+              <span className="text-xs">Share</span>
             </button>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };  
 
-  const renderInstagramAd = (size, highlighted = false) => (
-    <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[20px] ml-0 p-2 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${size === 'large' ? 'lg:w-1/5' : 'lg:w-1/5'}`}>
-      <div className="bg-white shadow-lg rounded-[20px]">
-        <div className="p-2">
-          <div className="flex items-center mb-2">
-            <FaInstagram className={`text-pink-600 ${size === 'large' ? 'text-3xl' : 'text-xl'}`} />
-            <div className="ml-3">
-              <h3 className="font-semibold text-xs">Brand</h3>
-              <p className="text-xs text-gray-500">Sponsored</p>
+  const renderInstagramAd = (size, highlighted = false) => {
+    // Set the width and height based on the size prop
+    const widthClass = highlighted ? 'w-[270px]' : 'w-[200px]';
+  
+    return (
+      <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[16px] ml-0 p-2 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${widthClass}`}>
+        <div className="bg-white shadow-lg rounded-[16px]">
+          <div className="p-2">
+            <div className="flex items-center mb-2">
+              <FaInstagram className={`text-pink-600 ${size === 'large' ? 'text-3xl' : 'text-xl'}`} />
+              <div className="ml-3">
+                <h3 className="font-semibold text-xs">Brand</h3>
+                <p className="text-xs text-gray-500">Sponsored</p>
+              </div>
             </div>
+
+            <img
+              src={previewImage} // Use the passed image here
+              alt="Ad Image"
+              className={`rounded-lg mb-2 object-cover w-full h-auto`}
+            />
+
+            <div className="flex gap-2 justify-between pb-2">
+              <span className="flex gap-2">
+                <FaRegHeart className="cursor-pointer" />{" "}
+                <FaRegComment className="cursor-pointer" />{" "}
+                <LuSend className="cursor-pointer" />
+              </span>{" "}
+              <BiBookmark className="cursor-pointer" />
+            </div>
+
+            {/* Bottom text with ellipses */}
+            <p className={`mb-1 text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'}`} 
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {textCaption}
+            </p>
           </div>
-          <img
-            src={previewImage} // Use the passed image here
-            alt="Ad Image"
-            className={`rounded-lg mb-2 object-cover w-full ${size === 'large' ? 'h-[120px]' : 'h-[90px]'}`}
-          />
-          <div className="flex gap-2 justify-between pb-2">
-            <span className="flex gap-2">
-              <BiLike className="cursor-pointer" />{" "}
-              <BiComment className="cursor-pointer" />{" "}
-              <GoShare className="cursor-pointer" />
-            </span>{" "}
-            <BiBookmark className="cursor-pointer" />
-          </div>
-          <p className={`mb-2 text-justify text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'} max-w-[20rem]`}>
-            {textCaption}
-          </p>
         </div>
       </div>
-    </div>
-  );
+    );
+};
 
   const handleCustomizeAds = () => {
     navigate("/customsample", { state: { preview_img: previewImage } });
@@ -106,8 +148,8 @@ const AdPreview = ({ setPage }) => {
   };
 
   return (
-    <div className="flex-grow mr-8 mt-0 overflow-auto">
-      <div className="max-w-7xl w-full mx-auto mt-0 flex flex-col gap-4 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-140px)]">
+    <div className="flex-grow mr-8 -mt-3 overflow-auto">
+      <div className="max-w-7xl w-full mx-auto mt-0 flex flex-col gap-4 border border-[#FCFCFC] rounded-3xl h-[calc(100vh-135px)]">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0 relative">
           <span className="flex items-center gap-2 lg:gap-4">
             <img src="/icon1.svg" alt="" className="w-10 lg:w-12" />
@@ -138,12 +180,12 @@ const AdPreview = ({ setPage }) => {
               selectedIndex={tabIndex}
               onSelect={(index) => setTabIndex(index)}
             >
-              <TabList className="border border-[#FCFCFC] rounded-[20px] shadow-sm px-2 py-1 bg-[#FCFCFC40] w-fit mx-auto flex">
-                <Tab className="cursor-pointer flex items-center px-3 py-2 font-bold text-sm gap-1">
+              <TabList className="border border-[#FCFCFC] rounded-xl shadow-sm px-1 py-1 bg-[#FCFCFC40] w-fit mx-auto flex">
+                <Tab className="cursor-pointer flex items-center px-3 py-2 font-bold text-sm gap-1 rounded-lg">
                   <FaFacebookF className="bg-[#1977F3] text-white rounded-full w-5 h-5" />{" "}
                   Facebook
                 </Tab>
-                <Tab className="cursor-pointer flex items-center px-3 py-2 font-bold text-sm gap-1">
+                <Tab className="cursor-pointer flex items-center px-3 py-2 font-bold text-sm gap-1 rounded-lg">
                   <FaInstagram className="rounded-full w-5 h-5" /> Instagram
                 </Tab>
               </TabList>
