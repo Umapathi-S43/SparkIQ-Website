@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaFacebook } from "react-icons/fa";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
+import { RiArrowGoBackLine } from "react-icons/ri";
 import "react-tabs/style/react-tabs.css";
 import brandImage from '../../assets/dashboard_img/brand_img.png';
 import Creative from "../../components/advert/customization/Creative";
@@ -67,8 +68,12 @@ export default function CustomSample({
         <div className="flex flex-col lg:flex-row gap-6 p-4">
           <div className="lg:w-1/2 flex flex-col gap-6">
             <div className="adCustomizationBg rounded-2xl flex flex-col relative items-center justify-left px-4 py-2 w-full" style={{ background: "linear-gradient(315.4deg, rgba(76, 161, 175, 0.2) 0.35%, rgba(196, 224, 229, 0.4) 99.65%)" }}>
+            <div className="absolute top-0 left-0 m-4 mt-0">
+              {/* Your top-left content here */}
+              <span className="text-base font-bold" onClick={handleBackClick}><RiArrowGoBackLine />back</span>
+            </div>
               <div className="border border-white rounded-[24px] p-3 relative flex justify-center max-w-xs">
-                <div className="flex justify-center absolute -top-7">
+                <div className="flex-col justify-center absolute -top-7">
                   <button
                     className="text-white rounded-[8px] rounded-b-none text-sm py-1 px-4 mt-3"
                     style={{ background: "linear-gradient(115deg, #004367 0%, #00A7FF 100%)" }}
@@ -126,7 +131,7 @@ export default function CustomSample({
             </div>
           </div>
           <div className="lg:w-1/2 flex flex-col gap-6">
-            <Tabs
+           <Tabs
               selectedTabClassName="outline-none bg-white text-[#082A66] font-bold rounded-[20px] shadow"
               selectedIndex={tabIndex}
               onSelect={(index) => setTabIndex(index)}
