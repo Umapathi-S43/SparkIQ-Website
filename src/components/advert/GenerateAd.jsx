@@ -106,7 +106,7 @@ export default function GenerateAd({ setPage, pages }) {
   }, [isNextSectionOpen]);
 
   return (
-    <div className="flex-grow mr-8 overflow-auto">
+    <div className="flex-grow lg:mr-8 lg:ml-0 ml-2 mx-auto overflow-auto">
       <div className="max-w-7xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0  relative">
           <span className="flex items-center gap-2 lg:gap-4">

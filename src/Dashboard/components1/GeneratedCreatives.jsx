@@ -588,7 +588,8 @@ const setLoadingBasedOnModel = (modelName) => {
   };
 
   return (
-    <div ref={generatedCreativesRef} className="container lg:p-0 flex-grow">
+    <div ref={generatedCreativesRef} className="container max-w-7xl lg:p-0 flex-grow mx-auto">
+      <div className="w-full">
        <style>{`
         .button-container {
           display: flex;
@@ -765,6 +766,7 @@ const setLoadingBasedOnModel = (modelName) => {
           </>
         )}
       </section>
+      </div>
     </div>
   );
 };
