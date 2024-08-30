@@ -5,7 +5,7 @@ import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import brandIcon from '../../assets/dashboard_img/brand.svg'; // Adjust the path as needed
 import defaultAdImage from '../../assets/dashboard_img/saved_products.svg'; // Adjust the path as needed
-import comingSoonImage from '/coming-soon-sparkiq.png'; // Provide the correct path for the "Coming Soon" image
+import comingSoonImage from '/work-in-progress.png'; // Provide the correct path for the "Coming Soon" image
 
 const SavedProducts = () => {
   const [products, setProducts] = useState([]);
@@ -53,9 +53,30 @@ const SavedProducts = () => {
   });
 
   return (
-    <div className="coming-soon p-2 border-2 w-fit lg:ml-10 flex justify-center items-center rounded-xl">
-    <img src={comingSoonImage} alt="Coming Soon" className='rounded-lg flex justify-center items-center' style={{ height: '75vh' }} />
+    <div className='flex justify-center items-center lg:mr-4'>
+  <div className="coming-soon rounded-xl w-full lg:w-1/2 lg:-ml-20 lg:mr-24 flex flex-col items-center text-center">
+    <div>
+      <img 
+        src={comingSoonImage} 
+        alt="Coming Soon" 
+        className='rounded-lg mt-16' 
+        style={{ height: '30vh' }} 
+      />
+    </div>
+    <div className="w-full">
+      <span 
+        className='font-semibold text-xl mt-8 block text-nowrap' 
+        style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
+      >
+        We are preparing this page to display your saved creatives.
+      </span>
+      <span className='mt-2 block'>
+      Soon, your wishlisted or saved AI-generated creatives will be showcased here, making it easy to access and manage your favorite designs. Stay tuned for updates!
+      </span>
+    </div>
   </div>
+</div>
+
 );
 };
 export default SavedProducts;
