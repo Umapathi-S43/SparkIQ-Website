@@ -2,8 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import fileIcon from '../../assets/dashboard_img/file_c.svg'; // Adjust the path as needed
+import comingSoonImage from '/coming-soon-sparkiq.png'; // Provide the correct path for the "Coming Soon" image
 
-const ExistingCampaigns = () => {
+const ExistingCampaigns =()=>{
+  return(
+    <div className="coming-soon p-2 border-2 w-fit lg:ml-10 flex justify-center items-center rounded-xl">
+       <img src={comingSoonImage} alt="Coming Soon" className='rounded-lg flex justify-center items-center' style={{ height: '75vh' }} />
+     </div>
+   );
+   };
+   export default ExistingCampaigns;
+   
+  {/*
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(3);
   const navigate = useNavigate();
@@ -220,5 +230,4 @@ const campaigns = [
     status: 'Pending'
   }
 ];
-
-export default ExistingCampaigns;
+ */}

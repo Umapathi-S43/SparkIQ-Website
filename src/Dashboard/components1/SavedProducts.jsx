@@ -5,6 +5,7 @@ import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import brandIcon from '../../assets/dashboard_img/brand.svg'; // Adjust the path as needed
 import defaultAdImage from '../../assets/dashboard_img/saved_products.svg'; // Adjust the path as needed
+import comingSoonImage from '/coming-soon-sparkiq.png'; // Provide the correct path for the "Coming Soon" image
 
 const SavedProducts = () => {
   const [products, setProducts] = useState([]);
@@ -52,6 +53,14 @@ const SavedProducts = () => {
   });
 
   return (
+    <div className="coming-soon p-2 border-2 w-fit lg:ml-10 flex justify-center items-center rounded-xl">
+    <img src={comingSoonImage} alt="Coming Soon" className='rounded-lg flex justify-center items-center' style={{ height: '75vh' }} />
+  </div>
+);
+};
+export default SavedProducts;
+
+{/*
     <div className="flex-grow overflow-y-auto hide-scrollbar">      
       <div className="max-w-6xl w-full mx-auto flex flex-col gap-8 border border-[#FCFCFC] rounded-3xl pb-4">
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-7 relative">
@@ -98,7 +107,7 @@ const SavedProducts = () => {
                 className="w-full text-sm leading-6 text-slate-900 placeholder-slate-400 rounded-md py-2 pl-3 pr-10 ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
               >
                 <option value="">All Brands</option>
-                {/* Add your brand options here */}
+                {/* Add your brand options here 
                 <option value="Brand1">Brand1</option>
                 <option value="Brand2">Brand2</option>
                 <option value="Brand3">Brand3</option>
@@ -141,8 +150,6 @@ const SavedProducts = () => {
           ))}
         </div>
       </div>
-    </div>
+  </div>
   );
-};
-
-export default SavedProducts;
+};*/}

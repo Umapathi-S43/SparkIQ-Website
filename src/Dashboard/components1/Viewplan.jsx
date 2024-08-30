@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import brandImage from '../../assets/dashboard_img/brand_img.png'; // Adjust the path as needed
 import congratsBg from '../../assets/dashboard_img/congrats_bg.svg'; // Adjust the path as needed
 import aiImg from '../../assets/dashboard_img/ai_img.svg'; // Adjust the path as needed
+import comingSoonImage from '/coming-soon-sparkiq.png'; // Provide the correct path for the "Coming Soon" image
+
 
 const PlanCard = ({ planType, price, billingCycle, features, isProPlan }) => {
   return (
@@ -91,7 +93,17 @@ const Viewplan = () => {
   ];
 
   return (
+    <div className="coming-soon p-2 border-2 w-fit lg:ml-10 flex justify-center items-center rounded-xl">
+    <img src={comingSoonImage} alt="Coming Soon" className='rounded-lg flex justify-center items-center' style={{ height: '75vh' }} />
+  </div>
+);
+};
+
+export default Viewplan;
+
+    {/*
     <div className="max-w-6xl w-full mx-auto flex flex-col border border-[#FCFCFC] rounded-3xl">
+      
       <div className="flex justify-between items-center rounded-t-3xl relative bg-[rgba(252,252,252,0.40)] h-28 p-6 w-full">
         <span className="flex items-center gap-2 lg:gap-4">
           <img src="icon1.svg" alt="icon1" className="w-14 h-14" />
@@ -106,6 +118,7 @@ const Viewplan = () => {
           className="absolute bottom-0 right-24 w-44 hidden lg:block"
         />
       </div>
+      
       <div className="border border-[#FCFCFC] m-4 p-4 rounded-xl hide-scrollbar" style={{ overflow: 'auto', maxHeight: '55vh' }}>
         <div className="flex justify-center mb-8">
           <div className="flex gap-2 border border-[#FCFCFC] p-3 rounded-3xl">
@@ -145,7 +158,5 @@ const Viewplan = () => {
         </div>
       </div>
     </div>
-  );
-};
-
-export default Viewplan;
+      */}
+     
