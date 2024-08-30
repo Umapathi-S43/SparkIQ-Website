@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'; // Import the useNa
 import Targetting from "./Targetting";
 import CampaignSetting from "./CampaignSetting";
 import brandImage from '../../../assets/dashboard_img/brand_img.png';
+import comingSoonImage from '/work-in-progress.png'; // Provide the correct path for the "Coming Soon" image
 
 export default function LaunchCampaign({ setPage }) {
   const [tabIndex, setTabIndex] = useState(0);
@@ -19,7 +20,32 @@ export default function LaunchCampaign({ setPage }) {
   };
 
   return (
-    <div className="flex-grow">
+    <div className='flex justify-center items-center lg:mr-4'>
+  <div className="coming-soon rounded-xl w-full lg:w-1/2 lg:-ml-20 lg:mr-24 flex flex-col items-center text-center">
+    <div>
+      <img 
+        src={comingSoonImage} 
+        alt="Coming Soon" 
+        className='rounded-lg mt-16' 
+        style={{ height: '30vh' }} 
+      />
+    </div>
+    <div className="w-full">
+    <span 
+  className='font-semibold text-xl mt-8 block text-nowrap' 
+  style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
+>
+  Launch Campaign Page in Progress
+</span>
+      <span className='mt-2 block'>
+      We are currently preparing this page to help you finalise your campaign settings. We appreciate your patience and look forward to providing you with a streamlined setup experience. Stay tuned for updates!
+ </span>
+    </div>
+  </div>
+</div>
+);
+}
+    {/*<div className="flex-grow">
       <div className="w-full max-w-6xl mx-auto border border-[#fcfcfc] rounded-3xl flex flex-col items-center">
         <div className="w-full bg-[rgba(252,252,252,0.40)] rounded-t-3xl p-4 lg:p-1 mb-4">
           <span className="flex items-center ml-2 gap-4">
@@ -72,6 +98,4 @@ export default function LaunchCampaign({ setPage }) {
           </Tabs>
         </div>
       </div>
-    </div>
-  );
-}
+    </div>*/}
