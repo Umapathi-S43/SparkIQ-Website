@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { FaFacebook, FaFacebookF, FaInstagram } from "react-icons/fa";
 import Loader from "./Loader";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
+import { FiMoreVertical } from 'react-icons/fi';
 import "react-tabs/style/react-tabs.css";
-import { FaRegHeart } from "react-icons/fa6";
-import { FaRegComment } from "react-icons/fa6";
+import { FaRegHeart, FaRegComment } from "react-icons/fa6";
 import { LuSend } from "react-icons/lu";
 import { PiShareFat } from "react-icons/pi";
 import { BiBookmark, BiComment, BiLike } from "react-icons/bi";
@@ -16,6 +16,7 @@ const AdPreview = ({ setPage }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [tabIndex, setTabIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [activeCard, setActiveCard] = useState(null); // Track which card is active
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -36,22 +37,57 @@ const AdPreview = ({ setPage }) => {
     };
   }, []);
 
-  
-  const renderFacebookAd = (size, highlighted = false) => {
+  // Function to handle the download of the ad image
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = previewImage; // previewImage is the image you want to download
+    link.download = 'ad_image.jpg'; // Default filename
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const toggleMenu = (index) => {
+    setActiveCard(activeCard === index ? null : index); // Toggle the menu for the specific card
+  };
+
+  const renderFacebookAd = (size, index) => {
     // Set the width based on the size prop
     const widthClass = size === 'large' ? 'w-[265px]' : size === 'medium' ? 'w-[300px]' : 'w-[210px]';
-  
+
     return (
-      <div className={`bg-white border border-[#e0e0e0] rounded-[12px] ml-0 p-2 shadow-sm ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${widthClass}`}>
-        <div className="p-2 pt-0 pb-0">
-          <div className="flex items-center mb-1">
-            <FaFacebook className={`text-blue-600 ${size === 'large' ? 'text-2xl' : 'text-xl'}`} />
-            <div className="ml-2">
-              <h3 className="font-semibold text-sm text-[#082A66]">Brand</h3>
-              <p className="text-xs text-gray-500">Sponsored</p>
+      <div className={`bg-white border border-[#e0e0e0] rounded-[12px] ml-0 p-2 shadow-sm ${size==='large'? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${widthClass}`} key={index}>
+        <div className="p-2 pt-0 pb-0 relative">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center">
+              <FaFacebook className={`text-blue-600 ${size === 'large' ? 'text-2xl' : 'text-xl'}`} />
+              <div className="ml-2">
+                <h3 className="font-semibold text-sm text-[#082A66]">Brand</h3>
+                <p className="text-xs text-gray-500">Sponsored</p>
+              </div>
+            </div>
+
+            {/* Three-dot menu */}
+            <div className="relative">
+              <button
+                className={`text-gray-800 focus:outline-none p-1 rounded-full hover:bg-[#f1f1f1] ${activeCard === index  && size==='large'? 'bg-[#f1f1f1]' : size!='large'?'cursor-none':''}`}
+                onClick={() => toggleMenu(index)}
+              >
+                <FiMoreVertical className="w-4 h-4" />
+              </button>
+              {activeCard === index && size==='large' && (
+                <div className="absolute left-8 -mt-6 text-nowrap bg-white rounded-md shadow-lg z-10">
+                  <button
+                    onClick={handleDownload}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+                  >
+                    Download Ad
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-  
+
           {/* Top text with ellipses */}
           <p className={`mb-2 text-[#082A66] ${size === 'large' ? 'text-sm' : 'text-xs'}`} 
             style={{ 
@@ -95,30 +131,52 @@ const AdPreview = ({ setPage }) => {
         </div>
       </div>
     );
-  };  
+  };
 
-  const renderInstagramAd = (size, highlighted = false) => {
+  const renderInstagramAd = (size, index, highlighted = false) => {
     // Set the width and height based on the size prop
-    const widthClass = highlighted ? 'w-[270px]' : 'w-[200px]';
+    const widthClass = size === 'large' ? 'w-[270px]' : 'w-[200px]';
   
     return (
-      <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[16px] ml-0 p-2 ${highlighted ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${widthClass}`}>
-        <div className="bg-white shadow-lg rounded-[16px]">
+      <div className={`bg-[#FCFCFC66] border border-[#FCFCFC] rounded-[18px] ml-0 p-2 ${size==='large' ? '' : windowWidth >= 750 ? 'opacity-60' : ''} ${widthClass}`} key={index}>
+        <div className="bg-white shadow-lg rounded-[16px] relative"> {/* Added relative positioning */}
           <div className="p-2">
-            <div className="flex items-center mb-2">
-              <FaInstagram className={`text-pink-600 ${size === 'large' ? 'text-3xl' : 'text-xl'}`} />
-              <div className="ml-3">
-                <h3 className="font-semibold text-xs">Brand</h3>
-                <p className="text-xs text-gray-500">Sponsored</p>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <FaInstagram className={`text-pink-600 ${size === 'large' ? 'text-3xl' : 'text-xl'}`} />
+                <div className="ml-3">
+                  <h3 className="font-semibold text-xs">Brand</h3>
+                  <p className="text-xs text-gray-500">Sponsored</p>
+                </div>
+              </div>
+  
+              {/* Three-dot menu */}
+              <div className="relative">
+                <button
+                  className={`text-gray-800 focus:outline-none p-1 rounded-full hover:bg-[#f1f1f1] ${activeCard === index  && size==='large'? 'bg-[#f1f1f1]' : size!='large'?'cursor-none':''}`}
+                  onClick={() => toggleMenu(index)}
+                >
+                  <FiMoreVertical className="w-4 h-4" />
+                </button>
+                {activeCard === index && size==='large' && (
+                  <div className="absolute left-8 -mt-6 text-nowrap bg-white rounded-md shadow-lg z-10">
+                    <button
+                      onClick={handleDownload}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+                    >
+                      Download Ad
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-
+  
             <img
               src={previewImage} // Use the passed image here
               alt="Ad Image"
               className={`rounded-lg mb-2 object-cover w-full h-auto`}
             />
-
+  
             <div className="flex gap-2 justify-between pb-2">
               <span className="flex gap-2">
                 <FaRegHeart className="cursor-pointer" />{" "}
@@ -127,7 +185,7 @@ const AdPreview = ({ setPage }) => {
               </span>{" "}
               <BiBookmark className="cursor-pointer" />
             </div>
-
+  
             {/* Bottom text with ellipses */}
             <p className={`mb-1 text-[082A66] ${size === 'large' ? 'text-xs' : 'text-xs'}`} 
               style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -137,8 +195,8 @@ const AdPreview = ({ setPage }) => {
         </div>
       </div>
     );
-};
-
+  };
+  
   const handleCustomizeAds = () => {
     navigate("/customsample", { state: { preview_img: previewImage } });
   };
