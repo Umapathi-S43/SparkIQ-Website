@@ -20,9 +20,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navItems = [
     { name: "Home", icon: homeIcon, path: "/homepage" },
     { name: "Brands", icon: brandsIcon, path: "/brandspage" },
-    { name: "Campaigns", icon: campaignsIcon, path: "/Ecampaigns" },
     { name: "Products", icon: productsIcon, path: "/productspage" },
-    { name: "Saved Products", icon: savedproducts, path: "/savedproductspage" },
+    { name: "Saved Creatives", icon: savedproducts, path: "/savedproductspage" },
+    { name: "Campaigns", icon: campaignsIcon, path: "/Ecampaigns" },
     { name: "View Plan", icon: viewPlanIcon, path: "/viewplans" },
     { name: "Profile", icon: profileIcon, path: "/profile" },
   ];
