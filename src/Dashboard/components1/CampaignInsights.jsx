@@ -307,7 +307,7 @@ const CampaignInsights = () => {
           className="absolute bottom-0 right-24 w-44 hidden lg:block"
         />
       </div>
-      <div className="overflow-auto" style={{ maxHeight: "58vh" }}>
+      <div className="overflow-auto" style={{ maxHeight: "62vh" }}>
         <div className="flex justify-between items-start pt-0 rounded-3xl p-6 pb-0 pl-4 lg:mt-0">
           <div className="flex flex-col items-start gap-1 lg:gap-2">
             <button
