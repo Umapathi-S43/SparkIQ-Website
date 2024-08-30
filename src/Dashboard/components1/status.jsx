@@ -208,7 +208,7 @@ const HomePage = () => {
                   </div>
                 </div>
                 <div className="flex-grow ml-16">
-                  <p className="font-bold text-[#082A66]">Create Your First Campaign</p>
+                  <p className="font-bold text-[#082A66]">Generate Your First Creative</p>
                   {selectedTask === 3 && (
                     <>
                       <p className="text-xs lg:text-sm text-gray-600">Create a campaign to start reaching your audience</p>
