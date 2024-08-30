@@ -211,7 +211,10 @@ const HomePage = () => {
                   <p className="font-bold text-[#082A66]">Generate Your First Creative</p>
                   {selectedTask === 3 && (
                     <>
-                      <p className="text-xs lg:text-sm text-gray-600">Create a campaign to start reaching your audience</p>
+                    {/*Create a campaign to start reaching your audience*/}
+                      <p className="text-xs lg:text-sm text-gray-600">
+                      Generate an AI creative to start reaching your audience effectively.
+                      </p>
                       <button
                         className="custom-button p-2 pl-6 pr-6 text-white rounded-xl shadow-xl flex justify-center lg:w-fit w-40 mt-3 text-nowrap"
                         onClick={handleCreateCampaign}
