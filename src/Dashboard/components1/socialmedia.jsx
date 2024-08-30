@@ -7,6 +7,7 @@ import linkimg2 from '../../assets/dashboard_img/link3.png';
 import meta from '../../assets/dashboard_img/metasvg.svg';
 import glogo from '../../assets/dashboard_img/glogosvg.svg';
 import brandl from '../../assets/dashboard_img/brand_img.png';
+import toast from "react-hot-toast";
 
 const SocialMediaConnect = ({ handleTaskCompletion }) => {
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -45,20 +46,37 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
   ];
 
   const handleConnectAccount = (type) => {
-    setAccountType(type);
+   /* setAccountType(type);
     setSelectedAccount(type === 'meta' ? metaAccounts[0] : googleAccounts[0]);
     localStorage.setItem('accountType', type);
-    localStorage.setItem('selectedAccount', JSON.stringify(type === 'meta' ? metaAccounts[0] : googleAccounts[0]));
-  };
+    localStorage.setItem('selectedAccount', JSON.stringify(type === 'meta' ? metaAccounts[0] : googleAccounts[0]));*/
+
+    // Show toast message indicating the feature is under construction
+    toast.error("We’re in the process of connecting your accounts. This feature will be available soon, so stay tuned!");
+
+    // Delay for 5 seconds before redirecting to the homepage
+    setTimeout(() => {
+        navigate('/homepage');
+    },500);
+};
+
 
   const handleSelectAccount = (account) => {
     setSelectedAccount(account);
     setDropdownVisible(false);
     localStorage.setItem('selectedAccount', JSON.stringify(account));
+    
   };
 
   const handleSaveAndContinue = () => {
-    setCurrentStep(2);
+    //setCurrentStep(2);
+    // Show toast message indicating the feature is under construction
+    toast.error("We're working on connecting your accounts. This feature is coming soon, stay tuned!");
+
+    // Delay for 5 seconds before redirecting to the homepage
+    setTimeout(() => {
+        navigate('/homepage');
+    }, 100);
   };
 
   const handleSaveAndContinueFinal = () => {
