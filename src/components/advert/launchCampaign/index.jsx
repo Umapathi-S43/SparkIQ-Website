@@ -31,15 +31,14 @@ export default function LaunchCampaign({ setPage }) {
       />
     </div>
     <div className="w-full">
-    <span 
-  className='font-semibold text-xl mt-8 block text-nowrap' 
-  style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
->
-  Launch Campaign Page in Progress
-</span>
+      <span 
+        className='font-semibold text-xl mt-8 block text-nowrap' 
+        style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
+      > Launch Campaign Page in Progress
+      </span>
       <span className='mt-2 block'>
-      We are currently preparing this page to help you finalise your campaign settings. We appreciate your patience and look forward to providing you with a streamlined setup experience. Stay tuned for updates!
- </span>
+          We are currently preparing this page to help you finalise your campaign settings. We appreciate your patience and look forward to providing you with a streamlined setup experience. Stay tuned for updates!
+      </span>
     </div>
   </div>
 </div>

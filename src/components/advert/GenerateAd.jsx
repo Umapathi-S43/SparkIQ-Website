@@ -161,7 +161,7 @@ export default function GenerateAd({ setPage, pages }) {
       </div>
 
       {/* GeneratedCreatives Section */}
-      <div ref={generatedCreativesRef} className="mt-4">
+      <div ref={generatedCreativesRef}>
       <GeneratedCreatives
         isThirdSectionOpen={isThirdSectionOpen}
         toggleThirdSectionAccordion={toggleThirdSectionAccordion}
