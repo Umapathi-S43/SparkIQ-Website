@@ -82,7 +82,7 @@ const GeneratedCreatives = ({
  
         // Step 1: Try the GET request first
         const res = await axios.get(
-          `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`,
+          `${baseUrl}/generated-images/model/${modelName}/${storedProductID}/${templateColors[selectedTab]}`,
           {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
@@ -122,8 +122,8 @@ const GeneratedCreatives = ({
         if (postResponse.status === 200 || postResponse.status === 201) {
           // Step 3: Perform the GET request again after successful POST
           const resAfterPost = await axios.get(
-            `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`, 
-            {
+            `${baseUrl}/generated-images/model/${modelName}/${storedProductID}/${templateColors[selectedTab]}`,
+          {
               headers: {
                 Authorization: `Bearer ${jwtToken}`,
               },
@@ -226,8 +226,8 @@ const refreshModelData = async (modelName, appendToData, setLoading, apiCallsRef
             if (postResponse.status === 200 || postResponse.status === 201) {
                 // Perform the GET request only after successful POST
                 const res = await axios.get(
-                    `${baseUrl}/generated-images/model/${models[i]}/${storedProductID}`,
-                    {
+                    `${baseUrl}/generated-images/model/${modelName}/${storedProductID}/${templateColors[selectedTab]}`,
+                      {
                         headers: {
                             Authorization: `Bearer ${jwtToken}`,
                         },
