@@ -588,7 +588,7 @@ const setLoadingBasedOnModel = (modelName) => {
   };
 
   return (
-    <div ref={generatedCreativesRef} className="container max-w-7xl lg:p-0 flex-grow mx-auto">
+    <div ref={generatedCreativesRef} className="container max-w-7xl mt-4 lg:p-0 flex-grow mx-auto">
       <div className="w-full">
        <style>{`
         .button-container {

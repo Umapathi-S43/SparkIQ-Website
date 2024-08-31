@@ -20,19 +20,23 @@ export default function LaunchCampaign({ setPage }) {
   };
 
   return (
-    <div className='flex justify-center items-center lg:mr-4'>
-  <div className="coming-soon rounded-xl w-full lg:w-1/2 lg:-ml-20 lg:mr-24 flex flex-col items-center text-center">
-    <div>
-      <img 
-        src={comingSoonImage} 
-        alt="Coming Soon" 
-        className='rounded-lg mt-16' 
-        style={{ height: '30vh' }} 
-      />
+    <div className='flex justify-center items-center'>
+  <div className="coming-soon rounded-xl border border-[#FCFCFC] bg-[#FCFCFC] bg-opacity-25 p-14 w-full lg:w-4/5 lg:-ml-16 lg:mr-24 flex flex-col items-center text-center">
+    <div className='w-full flex justify-center'>
+      <video
+        autoPlay
+        muted
+        loop
+        className='rounded-lg w-full' // Set video width to 100%
+        style={{ height: '50vh' }}
+      >
+         <source src='/v-nobg.webm' type="video/webm" />
+         Your browser does not support the video tag.
+      </video>
     </div>
     <div className="w-full">
       <span 
-        className='font-semibold text-xl mt-8 block text-nowrap' 
+        className='font-semibold text-xl block text-nowrap' 
         style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
       > Launch Campaign Page in Progress
       </span>

@@ -53,29 +53,38 @@ const SavedProducts = () => {
   });
 
   return (
-    <div className='flex justify-center items-center lg:mr-4'>
-  <div className="coming-soon rounded-xl w-full lg:w-1/2 lg:-ml-20 lg:mr-24 flex flex-col items-center text-center">
-    <div>
-      <img 
-        src={comingSoonImage} 
-        alt="Coming Soon" 
-        className='rounded-lg mt-16' 
-        style={{ height: '30vh' }} 
-      />
-    </div>
-    <div className="w-full">
-      <span 
-        className='font-semibold text-xl mt-8 block text-nowrap' 
-        style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
+    <div className='flex justify-center items-center'>
+  <div className="coming-soon rounded-xl border border-[#FCFCFC] bg-[#FCFCFC] bg-opacity-25 p-14 w-full lg:w-4/5 lg:-ml-16 lg:mr-24 flex flex-col items-center text-center">
+    <div className='w-full flex justify-center'>
+      <video
+        autoPlay
+        muted
+        loop
+        className='rounded-lg w-full' // Set video width to 100%
+        style={{ height: '50vh' }}
       >
-        We are preparing this page to display your saved creatives.
+         <source src='/v-nobg.webm' type="video/webm" />
+         Your browser does not support the video tag.
+      </video>
+    </div>
+    <div className='w-full'>
+      <div className='block w-full'>
+        <span
+          className='font-semibold text-xl block w-full'
+          style={{
+            fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
+            padding: '0 10px', // Adjust padding for consistent alignment
+          }}
+        >
+          We are preparing this page to display your saved creatives.
       </span>
       <span className='mt-2 block'>
       Soon, your wishlisted or saved AI-generated creatives will be showcased here, making it easy to access and manage your favorite designs. Stay tuned for updates!
       </span>
+      </div>
     </div>
   </div>
-</div>
+</div>  
 
 );
 };
