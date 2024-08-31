@@ -31,7 +31,7 @@ const SignUpPage = () => {
     phoneNumber: `${countryCode}-${mobile}`,
   };
 
-  const handleSendOtp = async () => {
+  const handleNextStep = async () => {
     if (!validateMobile(mobile)) {
       toast.error("Invalid mobile number");
       return;
@@ -40,17 +40,13 @@ const SignUpPage = () => {
     try {
       const response = await axios.post(`${baseUrl}/user/register`, submitData);
       toast.success("Success");
-      setShowOtpModal(true);
+      setOtpValidated(true); // Directly validate OTP to move to password screen
+      setShowOtpModal(false);
       console.log(response.data);
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Failed to send OTP");
+      toast.error(error.response?.data?.message || "Failed to register user");
     }
-  };
-
-  const handleOtpValidation = () => {
-    setOtpValidated(true);
-    setShowOtpModal(false);
   };
 
   const validatePassword = (password) => {
@@ -193,17 +189,6 @@ const SignUpPage = () => {
     "+94": 7, // Sri Lanka
   };
 
-  if (showOtpModal) {
-    return (
-      <OTPVerification
-        userMobile={`${countryCode}${mobile}`}
-        onBack={() => setShowOtpModal(false)}
-        onOtpValidated={handleOtpValidation}
-        submitData={submitData}
-      />
-    );
-  }
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4">
       <div className="flex flex-col items-center w-full max-w-md p-4 pt-0">
@@ -267,14 +252,14 @@ const SignUpPage = () => {
                 )}
                 <div className="flex justify-start items-start w-full">
                   <button
-                    onClick={handleSendOtp}
+                    onClick={handleNextStep} // Updated to call handleNextStep instead of handleSendOtp
                     className={`custom-button mt-4 text-white py-2 w-full rounded-md shadow-lg ${
                       (!mobile || mobileError) &&
                       "cursor-not-allowed opacity-50"
                     }`}
                     disabled={!mobile || mobileError} // Disable button if mobile number is invalid
                   >
-                    Send OTP
+                    Next
                   </button>
                 </div>
               </>
