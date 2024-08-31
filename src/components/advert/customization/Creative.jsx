@@ -13,6 +13,9 @@ export default function Creative({
   setSelectedImage,
   randomPhrase,
   captionDetails,
+  aimodel,
+  tabColor,
+  templateColor,
   setPage,
 }) {
   const [colors, setColors] = useState(["#1138AC", "#008BC4"]);
@@ -29,8 +32,6 @@ export default function Creative({
 
   // Initialize navigate
   const navigate = useNavigate();
- // Fetch aimodel from localStorage
- const aimodel = JSON.parse(localStorage.getItem("generateAdState"))?.aimodel || "Brand Awareness";
 
   useEffect(() => {
     // Fetch initial phrases or handle it if it's already defined elsewhere
@@ -56,10 +57,10 @@ export default function Creative({
   }, []);
 
   useEffect(() => {
-    console.log("ai model from use effect", aimodel);
+    console.log("ai model from use effect", aimodel, templateColor);
     fetchGeneratedImages();
-  }, [aimodel]); // Add aimodel as a dependency
-
+  }, [aimodel,templateColor]); // Add aimodel as a dependency
+  
   const fetchGeneratedImages = async () => {
     const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
 
@@ -72,15 +73,15 @@ export default function Creative({
     console.log("Ai model passed is :",aimodel);
     const selectedModels = modelMapping[aimodel];
     const imagesData = [];
-    console.log("Selected model",selectedModels);
+    console.log("template color from creative:",templateColor);
 
     try {
       if (Array.isArray(selectedModels)) {
         // If the model is an array, fetch images for each model (AIDA, FAB) for Sale
         for (let model of selectedModels) {
           const res = await axios.get(
-            `${baseUrl}/generated-images/model/${model}/${storedProductID}`,
-            {
+            `${baseUrl}/generated-images/model/${aimodel}/${storedProductID}/${templateColor}`,
+                      {
               headers: {
                 Authorization: `Bearer ${jwtToken}`,
               },
@@ -92,7 +93,7 @@ export default function Creative({
       } else {
         // If it's a single model, fetch images directly
         const res = await axios.get(
-          `${baseUrl}/generated-images/model/${selectedModels}/${storedProductID}`,
+          `${baseUrl}/generated-images/model/${aimodel}/${storedProductID}/${templateColor}`,
           {
             headers: {
               Authorization: `Bearer ${jwtToken}`,

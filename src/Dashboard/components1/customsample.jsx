@@ -156,6 +156,7 @@ export default function CustomSample({
                   setPage={setPage}
                   handleBackClick={handleBackClick}
                   aimodel={state?.aimodel}
+                  templateColor={state?.templateColor}
                   handleNextClick={handleNextClick} // Pass handleNextClick to Creative
                 />
               </TabPanel>

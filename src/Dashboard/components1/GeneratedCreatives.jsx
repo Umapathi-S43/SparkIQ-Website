@@ -26,7 +26,8 @@ const GeneratedCreatives = ({
   const [brandAwarenessData, setBrandAwarenessData] = useState(initialBrandAwarenessData.length > 0 ? initialBrandAwarenessData : []);
   const [saleData, setSaleData] = useState(initialSaleData.length > 0 ? initialSaleData : []);
   const [retargetingData, setRetargetingData] = useState(initialRetargetingData.length > 0 ? initialRetargetingData : []);
-  
+  const globalIndexCounter = useRef(0);
+
   const [loadingBrandAwareness, setLoadingBrandAwareness] = useState(true);
   const [loadingSale, setLoadingSale] = useState(true);
   const [loadingRetargeting, setLoadingRetargeting] = useState(true);
@@ -68,95 +69,96 @@ const GeneratedCreatives = ({
   const fetchModelData = async (modelName, appendToData, setLoading, apiCallsRef) => {
     const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
     console.log("Generated URL:", url);
-  
+
     const models = modelMapping[modelName];
-  
+
     try {
-      for (let i = 0; i < models.length; i++) {
-        if (!jwtToken) {
-          throw new Error("No JWT token found. Please log in.");
-        }
-  
-        // Log token to check if it's valid
-        console.log('JWT Token:', jwtToken);
- 
-        // Step 1: Try the GET request first
-        const res = await axios.get(
-          `${baseUrl}/generated-images/model/${modelName}/${storedProductID}/${templateColors[selectedTab]}`,
-          {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
-  
-        const labeledData = res.data.map(item => ({
-          ...item,
-          label: modelLabels[models[i]] || modelName,
-        }));
-  
-          // Clear the UI data before fetching new data
-          appendToData(() => []);
-        if (labeledData.length > 0) {
-          // If data exists, render it and return
-          appendToData(prevData => [...prevData, ...labeledData]);
-          setLoading(false);  // Only set loading to false if data is not empty
-          apiCallsRef.current = true; // Set the reference to true if any API call succeeds
-          return; // Exit the loop since data is already available
-        } else {
-          console.log('GET call returned empty data array, proceeding to POST call.');
-        }
-  
-        // Step 2: If no data, proceed with the POST request
-        const postResponse = await axios.post(url, {}, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        });
-  
-        // Log response status and data for debugging
-        console.log('POST Response status:', postResponse.status);
-        console.log('POST Response data:', postResponse.data);
-  
-        // Check if POST was successful
-        if (postResponse.status === 200 || postResponse.status === 201) {
-          // Step 3: Perform the GET request again after successful POST
-          const resAfterPost = await axios.get(
-            `${baseUrl}/generated-images/model/${modelName}/${storedProductID}/${templateColors[selectedTab]}`,
-          {
-              headers: {
-                Authorization: `Bearer ${jwtToken}`,
-              },
+        for (let i = 0; i < models.length; i++) {
+            if (!jwtToken) {
+                throw new Error("No JWT token found. Please log in.");
             }
-          );
-  
-          const labeledDataAfterPost = resAfterPost.data.map(item => ({
-            ...item,
-            label: modelLabels[models[i]] || modelName,
-          }));
-  
-          if (labeledDataAfterPost.length > 0) {
-            appendToData(prevData => [...prevData, ...labeledDataAfterPost]);
-            setLoading(false);  // Only set loading to false if data is not empty
-            apiCallsRef.current = true; // Set the reference to true if any API call succeeds
-            return; // Exit the loop if the call was successful
-          } else {
-            console.log('Received empty data array even after POST, keeping loading state active.');
-          }
-        } else {
-          console.log(`POST request failed with status: ${postResponse.status}`);
+
+            console.log('JWT Token:', jwtToken);
+
+            // Step 1: Try the GET request first
+            const res = await axios.get(
+                `${baseUrl}/generated-images/model/${modelName}/${storedProductID}/${templateColors[selectedTab]}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${jwtToken}`,
+                    },
+                }
+            );
+
+            const labeledData = res.data.map((item) => ({
+                ...item,
+                label: modelLabels[models[i]] || modelName,
+                index: globalIndexCounter.current++, // Assign and increment the global index
+                templateColor: `${templateColors[selectedTab]}`, // Store the template color
+                modelName: modelName, // Store the model name
+            }));
+
+            appendToData(() => []); // Clear previous data before appending new data
+            if (labeledData.length > 0) {
+                appendToData((prevData) => [...prevData, ...labeledData]);
+                setLoading(false); // Only set loading to false if data is not empty
+                apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+                return; // Exit the loop since data is already available
+            } else {
+                console.log('GET call returned empty data array, proceeding to POST call.');
+            }
+
+            // Step 2: If no data, proceed with the POST request
+            const postResponse = await axios.post(url, {}, {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+            });
+
+            console.log('POST Response status:', postResponse.status);
+            console.log('POST Response data:', postResponse.data);
+
+            if (postResponse.status === 200 || postResponse.status === 201) {
+                // Step 3: Perform the GET request again after successful POST
+                const resAfterPost = await axios.get(
+                    `${baseUrl}/generated-images/model/${modelName}/${storedProductID}/${templateColors[selectedTab]}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${jwtToken}`,
+                        },
+                    }
+                );
+
+                const labeledDataAfterPost = resAfterPost.data.map((item) => ({
+                    ...item,
+                    label: modelLabels[models[i]] || modelName,
+                    index: globalIndexCounter.current++, // Assign and increment the global index
+                    templateColor: `${templateColors[selectedTab]}`, // Store the template color
+                    modelName: modelName, // Store the model name
+                }));
+
+                if (labeledDataAfterPost.length > 0) {
+                  appendToData(prevData => [...prevData, ...labeledDataAfterPost]);
+                  setLoading(false);  // Only set loading to false if data is not empty
+                  apiCallsRef.current = true; // Set the reference to true if any API call succeeds
+                  return; // Exit the loop if the call was successful
+                } else {
+                  console.log('Received empty data array even after POST, keeping loading state active.');
+                }
+              } else {
+                console.log(`POST request failed with status: ${postResponse.status}`);
+              }
         }
-      }
     } catch (error) {
-      console.error(`Failed to fetch ${models.join(", ")} model`, error);
-  
-      // Additional error handling
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-      }
+        console.error(`Failed to fetch ${models.join(", ")} model`, error);
+
+        if (error.response) {
+            console.error('Error response data:', error.response.data);
+            console.error('Error response status:', error.response.status);
+        }
     }
-  };
+};
+
   
   const refreshCreatives = async () => {
     setIsLoading(true); // Start loading animation
@@ -324,6 +326,7 @@ const setLoadingBasedOnModel = (modelName) => {
 
   const handleTabChange = (tab) => {
     setSelectedTab(tab);
+    globalIndexCounter.current = 0; // Reset the index counter on template color change
     setIsLoading(true);
     setBrandAwarenessData([]); // Clear data to prevent old data from showing
     setSaleData([]);
@@ -331,12 +334,11 @@ const setLoadingBasedOnModel = (modelName) => {
     setLoadingBrandAwareness(true);
     setLoadingSale(true);
     setLoadingRetargeting(true);
-     // Scroll to the top of the section when the component mounts
-     if (generatedCreativesRef.current) {
-      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
-  }
-    
+    if (generatedCreativesRef.current) {
+        generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+    }
 };
+
 
 
   const showToast = (message, type) => {
@@ -408,7 +410,7 @@ const setLoadingBasedOnModel = (modelName) => {
   // Updated to display 3 cards per row
   const FilteredData = ({ filteredModel, modelName }) => {
 
-    const handlePreviewClick = (imageUrl,model) => {
+    const handlePreviewClick = (imageUrl, model, index) => {
       const currentState = {
         isThirdSectionOpen,
         brandAwarenessData,
@@ -416,19 +418,34 @@ const setLoadingBasedOnModel = (modelName) => {
         retargetingData,
         selectedTab,
         aimodel: model, // Store the model name
+        templateColor: `${templateColors[selectedTab]}`,
+        
       };
+      console.log("Passing state to localStorage:", currentState); // Log state before saving to localStorage
+    
       localStorage.setItem('generateAdState', JSON.stringify(currentState));
+    
+      const selectedImage = [...brandAwarenessData, ...saleData, ...retargetingData].find(
+        (item) => item.index === index
+      );
       
-      navigate('/customsample', {
-        state: {
-          image: imageUrl,
-          aimodel: model,
-        },
-      });
-    };
+      if (selectedImage) {
+        const { templateColor, modelName } = selectedImage;
+        console.log("Image URL:", imageUrl);
+        console.log("Model Name:", modelName);
+        console.log("Template Color:", templateColor);
     
-    
+        navigate('/customsample', {
+          state: {
+            image: imageUrl,
+            aimodel: modelName,
+            templateColor: templateColor,
+          },
+        });
+      }
 
+    }; 
+    
     const handleDownloadClick = (imageUrl) => {
       const link = document.createElement('a');
       link.href = imageUrl;
@@ -517,9 +534,7 @@ const setLoadingBasedOnModel = (modelName) => {
               </button>
               <button
                 className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                onClick={() =>
-                  handlePreviewClick(product.imageURL || product.generatedImageURL,modelName)
-                }
+                onClick={() => handlePreviewClick(product.imageURL || product.generatedImageURL, modelName, product.index)}
               >
                 <div className="button-container">
                   <svg
