@@ -98,7 +98,6 @@ const GeneratedCreatives = ({
                 modelName: modelName, // Store the model name
             }));
 
-            appendToData(() => []); // Clear previous data before appending new data
             if (labeledData.length > 0) {
                 appendToData((prevData) => [...prevData, ...labeledData]);
                 setLoading(false); // Only set loading to false if data is not empty

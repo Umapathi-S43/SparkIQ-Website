@@ -54,6 +54,7 @@ const HomePage = () => {
       setTasksCompleted(tasksCompleted + 1);
       setTask3Completed(true);
       localStorage.setItem('task3Completed', 'true');
+      
     }
   };
 
@@ -71,6 +72,9 @@ const HomePage = () => {
 
   const handleCreateCampaign = () => {
     setTimeout(() => {
+      localStorage.removeItem('generateAdState');
+      localStorage.removeItem('selectedProduct');
+      localStorage.removeItem('productID');
       navigate('/campaigns', { state: { taskNumber: 3 } });
     }, 100); // Adding a slight delay for smoother transition
   };
