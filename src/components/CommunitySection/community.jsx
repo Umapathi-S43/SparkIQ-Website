@@ -5,8 +5,8 @@ import math from "../../assets/dashboard_img/mathlab.svg";
 
 export default function Community() {
   return (
-    <div className="w-full mb-10 font-roboto p-6">
-      <h1 className="text-center lg:text-5xl text-3xl font-bold py-6 pt-0 mb-6">
+    <div className="w-full mb-10 font-roboto lg:p-6 md:p-4 sm:p-1">
+      <h1 className="text-center lg:text-5xl text-3xl font-bold py-2 pt-0 mb-4">
         Incubation and Community
       </h1>
       <div className="flex flex-wrap justify-center gap-4 my-4">
@@ -26,7 +26,7 @@ export default function Community() {
           className="w-52 transform transition-transform duration-500 hover:scale-110 m-2"
         />
       </div>
-      <p className="lg:text-justify lg:px-3 lg:py-4 lg:text-xl text-md text-center">
+      <p className="lg:text-justify lg:px-3 sm:px-1 lg:py-4 lg:text-xl text-md text-center">
         The Blitz Cohort, facilitated by T-Hub, is an innovation intermediary
         and business incubator located in Raidurg, Hyderabad, Telangana, India.
         Operating on the triple helix model of innovation, T-Hub is a

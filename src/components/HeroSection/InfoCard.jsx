@@ -1,9 +1,11 @@
 import "animate.css";
 import Xarrow from "react-xarrows";
-
 import PropTypes from "prop-types";
+import { useMediaQuery } from "react-responsive";
 
 const InfoCard = ({ image, title, position, reveal, component, index }) => {
+	const isLargeScreen = useMediaQuery({ query: "(min-width: 1024px)" });
+
 	const positionClass =
 		position === "top-right"
 			? "-top-10 -right-14"
@@ -19,7 +21,7 @@ const InfoCard = ({ image, title, position, reveal, component, index }) => {
 		<div
 			className={`flex flex-col gap-4 absolute floating-div ${positionClass} ${
 				reveal ? "animate__animated animate__fadeIn animate__slow" : "hidden"
-			} ${index === 0 || index === 1 ? "!w-[220px] p-4" : "p-2"}`}
+			} ${index === 0 || index === 1 ? "!w-[220px] p-4 mx-auto" : "p-2 -ml-16"}`}
 			id={position}
 		>
 			<div>
@@ -40,7 +42,7 @@ const InfoCard = ({ image, title, position, reveal, component, index }) => {
 					/>
 				)}
 			</div>
-			{reveal && (
+			{reveal && isLargeScreen && (
 				<Xarrow
 					start="hero-img"
 					end={position}
