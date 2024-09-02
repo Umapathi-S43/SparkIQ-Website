@@ -6,9 +6,7 @@ import {
   FaChevronDown,
   FaRegLightbulb,
   FaCheck,
-  FaPlus,
 } from "react-icons/fa";
-import Picker from "./colorPicker";
 import brandImage from "../../assets/dashboard_img/brand_img.png";
 import gallery from "../../assets/dashboard_img/gallerylogo.png";
 import sound from "../../assets/dashboard_img/sound.png";
@@ -33,19 +31,12 @@ const BrandSetup = () => {
     imageFile: null,
     logoURL: "",
     showSubmitButton: false,
-    domColors: [],
-    isLoadingColor: true,
     isEdit: false,
   });
 
-  const [customColor, setCustomColor] = useState("#000000");
-  const [additionalColors, setAdditionalColors] = useState([]);
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [colorPickerTarget, setColorPickerTarget] = useState(null);
   const [completedSections, setCompletedSections] = useState({
     1: false,
     2: false,
-    3: false,
   });
   const [expandedSection, setExpandedSection] = useState(1); // Open first section by default
   const navigate = useNavigate();
@@ -78,24 +69,15 @@ const BrandSetup = () => {
             (brand) => brand.name === name
           );
           if (foundBrand) {
-            let parsedColors = [];
-            try {
-              parsedColors = JSON.parse(foundBrand.brandColours);
-            } catch (parseError) {
-              console.error("Error parsing brandColours:", parseError);
-            }
             setFormInputs({
               brandName: foundBrand.name,
               brandDescription: foundBrand.description,
               logoURL: foundBrand.logoURL,
               brandId: foundBrand.id,
-              domColors: Array.isArray(parsedColors)
-                ? parsedColors
-                : [parsedColors],
               isEdit: true,
               showSubmitButton: true,
             });
-            setCompletedSections({ 1: true, 2: true, 3: true });
+            setCompletedSections({ 1: true, 2: true });
             setExpandedSection(null);
           }
         }
@@ -134,25 +116,6 @@ const BrandSetup = () => {
     }
   };
 
-  const handleColorSelect = (color) => {
-    setCustomColor(color.hex);
-    if (colorPickerTarget !== null) {
-      setAdditionalColors((prevColors) => {
-        const newColors = [...prevColors];
-        newColors[colorPickerTarget] = color.hex;
-        return newColors;
-      });
-    }
-  };
-
-  const handleSaveAdditionalColor = () => {
-    if (additionalColors.length < 10 && colorPickerTarget === null) {
-      setAdditionalColors([...additionalColors, customColor]);
-    }
-    setColorPickerOpen(false);
-    setColorPickerTarget(null);
-  };
-
   const handleSaveAndContinue = (section) => {
     if (
       (section === 1 &&
@@ -165,6 +128,11 @@ const BrandSetup = () => {
     const newCompletedSections = { ...completedSections };
     newCompletedSections[section] = true;
     setCompletedSections(newCompletedSections);
+
+    if (section === 2) {
+      setFormInputs({ ...formInputs, showSubmitButton: true });
+    }
+
     setExpandedSection(section + 1); // Automatically open the next section
   };
 
@@ -181,43 +149,12 @@ const BrandSetup = () => {
         .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
           headers: {
             "Content-Type": "multipart/form-data",
-            
-              Authorization: `Bearer ${jwtToken}`,
-            
+            Authorization: `Bearer ${jwtToken}`,
           },
         })
         .then((res) => {
-          setFormInputs({ ...formInputs, isLoadingColor: true });
-          toast.success("Image upload successful");
-          dominantColor(res.data.data.url);
-        });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const dominantColor = async (url) => {
-    try {
-      if (!jwtToken) {
-        throw new Error("No JWT token found. Please log in.");
-      }
-      await axios
-        .post(
-          `${baseUrl}/sparkiq/ai/product/dominant-colors`,
-          { url: url },
-          {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        )
-        .then((res) => {
-          setFormInputs({
-            ...formInputs,
-            domColors: res.data.data.background_colors,
-            logoURL: url,
-            isLoadingColor: false,
-          });
+         // toast.success("Image upload successful");
+          handleCreateOrEditBrand(res.data.data.url); // Call create/edit brand after successful image upload
         });
     } catch (error) {
       console.log(error);
@@ -235,87 +172,6 @@ const BrandSetup = () => {
       return text;
     }
     return text?.substring(0, maxLength) + "...";
-  };
-
-  const handleCreateBrand = async () => {
-    if (
-      !formInputs.brandName ||
-      !formInputs.brandDescription ||
-      !formInputs.logoURL
-    ) {
-      toast.error("Please fill in all the required fields.");
-      return;
-    }
-
-    const newBrand = {
-      id: "123",
-      name: formInputs.brandName,
-      description: formInputs.brandDescription,
-      logoURL: formInputs.logoURL,
-      brandColours: JSON.stringify(formInputs.domColors),
-    };
-    try {
-      if (!jwtToken) {
-        throw new Error("No JWT token found. Please log in.");
-      }
-      await axios
-        .post(`${baseUrl}/brand`, newBrand, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        })
-        .then((res) => {
-          toast.success("Brand created successfully");
-
-          localStorage.setItem("task1Completed", "true");
-
-          navigate("/homepage");
-          console.log(res);
-        });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const handleEditBrand = async () => {
-    if (
-      !formInputs.brandName ||
-      !formInputs.brandDescription ||
-      !formInputs.logoURL
-    ) {
-      toast.error("Please fill in all the required fields.");
-      return;
-    }
-
-    const editBrand = {
-      id: formInputs.brandId,
-      name: formInputs.brandName,
-      description: formInputs.brandDescription,
-      logoURL: formInputs.logoURL,
-      brandColours: JSON.stringify(formInputs.domColors),
-      companyId: "123",
-    };
-
-    try {
-      if (!jwtToken) {
-        throw new Error("No JWT token found. Please log in.");
-      }
-      await axios
-        .post(`${baseUrl}/brand`, editBrand, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        })
-        .then((res) => {
-          toast.success("Brand edited successfully");
-          localStorage.setItem("task1Completed", "true");
-
-          navigate("/homepage");
-          console.log(res);
-        });
-    } catch (error) {
-      console.log(error);
-    }
   };
 
   const getDisplayText = (name, description) => {
@@ -340,8 +196,39 @@ const BrandSetup = () => {
     return `${upperCaseName} ${truncatedDescription}`;
   };
 
-  const handlePickerClick = (e) => {
-    e.stopPropagation();
+  const handleCreateOrEditBrand = async (logoURL) => {
+    const newBrand = {
+      id: formInputs.isEdit ? formInputs.brandId : "123",
+      name: formInputs.brandName,
+      description: formInputs.brandDescription,
+      logoURL: logoURL || formInputs.logoURL,
+      brandColours: '#FCFCFC', // Pass empty array for colors
+    };
+
+    try {
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
+      }
+
+      await axios
+        .post(`${baseUrl}/brand`, newBrand, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        })
+        .then((res) => {
+          toast.success(
+            formInputs.isEdit ? "Brand edited successfully" : "Brand created successfully"
+          );
+
+          localStorage.setItem("task1Completed", "true");
+
+          navigate("/homepage");
+          console.log(res);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
@@ -564,163 +451,16 @@ const BrandSetup = () => {
                 </div>
               )}
             </div>
-            <div
-              onClick={() =>
-                formInputs.isEdit || completedSections[2]
-                  ? toggleSection(3)
-                  : null
-              }
-              className={`relative items-center border border-[#fcfcfc] p-0 rounded-2xl cursor-pointer ${
-                expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
-              } ${
-                !formInputs.isEdit && !completedSections[2]
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-            >
-              {completedSections[3] && (
-                <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
-                  <div className="text-xs">Completed</div>
-                  <FaCheck className="ml-1" />
-                </div>
-              )}
-              <div
-                className={`flex items-center justify-between ${
-                  expandedSection === 3 ? "bg-[#F6F8FE]" : ""
-                } p-4 rounded-t-2xl`}
-              >
-                <div className="flex items-center">
-                  <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
-                    <FaRegLightbulb className="text-[#374151] text-xl" />
-                  </div>
-                  <p className="ml-3">Extracted Brand Colors</p>
-                </div>
-                <div>
-                  {expandedSection === 3 ? (
-                    <FaChevronDown />
-                  ) : (
-                    <FaChevronRight />
-                  )}
-                </div>
-              </div>
-              {expandedSection === 3 && (
-                <div className="p-2" onClick={handlePickerClick}>
-                  {formInputs.isLoadingColor ? (
-                    <div className="flex flex-wrap gap-4 p-2 rounded-xl">
-                      <div className="animate-pulse flex space-x-4">
-                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
-                      {formInputs.domColors?.map((colors, index) => {
-                        const rgbColor = `rgb(${colors[0]}, ${colors[1]}, ${colors[2]})`;
-                        return (
-                          <div
-                            key={index}
-                            className="flex items-center bg-white p-2 rounded-xl"
-                          >
-                            <label className="text-sm pl-4 font-semibold lg:pr-14 pr-10 text-nowrap">
-                              Brand Color {index}
-                            </label>
-                            <button
-                              className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
-                              style={{ background: rgbColor }}
-                              onClick={() => {
-                                setCustomColor(rgbColor);
-                                setColorPickerTarget(null);
-                                setColorPickerOpen(true);
-                              }}
-                            >
-                              {rgbColor}
-                            </button>
-                          </div>
-                        );
-                      })}
-                      {additionalColors.map((color, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-white p-2 rounded-xl"
-                        >
-                          <label className="text-sm pl-3 font-semibold lg:pr-9 pr-4 text-nowrap">
-                            Additional Color {index + 1}
-                          </label>
-                          <button
-                            className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
-                            style={{ background: color }}
-                            onClick={() => {
-                              setCustomColor(color);
-                              setColorPickerTarget(index);
-                              setColorPickerOpen(true);
-                            }}
-                          >
-                            {color}
-                          </button>
-                        </div>
-                      ))}
-                      {additionalColors.length < 10 && (
-                        <button
-                          className="custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setColorPickerTarget(null);
-                            setColorPickerOpen(true);
-                          }}
-                        >
-                          <FaPlus className="text-white" />
-                        </button>
-                      )}
-                      {colorPickerOpen && (
-                        <div className="absolute z-10 lg:w-full md:w-full sm:w-1/2">
-                          <div className="flex justify-start">
-                            <Picker
-                              color={customColor}
-                              onChangeComplete={handleColorSelect}
-                            />
-                          </div>
-                          <button
-                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-4 mr-2 text-white rounded-2xl shadow-2xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSaveAdditionalColor();
-                            }}
-                          >
-                            Save
-                          </button>
-                          <button
-                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-64 text-white rounded-2xl shadow-2xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setColorPickerOpen(false);
-                            }}
-                          >
-                            Close
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <button
-                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSaveAndContinue(3);
-                      setFormInputs({ ...formInputs, showSubmitButton: true });
-                    }}
-                  >
-                    Save and Continue
-                  </button>
-                </div>
-              )}
-            </div>
             {formInputs.showSubmitButton && (
               <div className="flex justify-start mt-4">
                 <button
                   className="custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg"
-                  onClick={
-                    formInputs.isEdit ? handleEditBrand : handleCreateBrand
+                  onClick={() =>
+                    formInputs.isEdit
+                      ? handleCreateOrEditBrand(formInputs.logoURL)
+                      : formInputs.imageFile
+                      ? uploadImage()
+                      : handleCreateOrEditBrand()
                   }
                 >
                   {formInputs.isEdit ? "Update" : "Create Brand"}
