@@ -52,11 +52,12 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
     localStorage.setItem('selectedAccount', JSON.stringify(type === 'meta' ? metaAccounts[0] : googleAccounts[0]));*/
 
     // Show toast message indicating the feature is under construction
+    localStorage.setItem('task2Completed', 'true');
+    navigate('/homepage', { state: { task2Completed: true } });
     toast.error("We’re in the process of connecting your accounts. This feature will be available soon, so stay tuned!");
 
     // Delay for 5 seconds before redirecting to the homepage
     setTimeout(() => {
-        navigate('/homepage');
     },500);
 };
 
@@ -206,7 +207,7 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
                 </div>
               </div>
               <div className="flex justify-end mt-4">
-                <button className="custom-button p-2 lg:pl-6 lg:pr-6 m-4 lg:mb-0 text-white rounded-xl shadow-inner flex justify-center w-fit mt-1" onClick={handleSaveAndContinue}>
+                <button className="custom-button p-2 lg:pl-6 lg:pr-6 m-4 lg:mb-0 text-white rounded-xl shadow-inner flex justify-center w-fit mt-1" onClick={handleSaveAndContinueFinal}>
                   Save and Continue
                 </button>
               </div>
