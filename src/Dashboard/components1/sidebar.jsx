@@ -21,6 +21,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: "Home", icon: homeIcon, path: "/homepage" },
     { name: "Brands", icon: brandsIcon, path: "/brandspage" },
     { name: "Products", icon: productsIcon, path: "/productspage" },
+    { name: "Generate Creatives", icon: savedproducts, path: "/Campaigns" },
     { name: "Saved Creatives", icon: savedproducts, path: "/savedproductspage" },
     { name: "Campaigns", icon: campaignsIcon, path: "/Ecampaigns" },
     { name: "View Plan", icon: viewPlanIcon, path: "/viewplans" },
