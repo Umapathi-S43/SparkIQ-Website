@@ -53,12 +53,13 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
 
     // Show toast message indicating the feature is under construction
     localStorage.setItem('task2Completed', 'true');
-    navigate('/homepage', { state: { task2Completed: true } });
-    toast.error("We’re in the process of connecting your accounts. This feature will be available soon, so stay tuned!");
-
+    
+    toast("We’re in the process of connecting your accounts. This feature will be available soon, so stay tuned!", {
+      icon: '⚠️',
+    });
     // Delay for 5 seconds before redirecting to the homepage
     setTimeout(() => {
-    },500);
+    },100);
 };
 
 
@@ -72,7 +73,7 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
   const handleSaveAndContinue = () => {
     //setCurrentStep(2);
     // Show toast message indicating the feature is under construction
-    toast.error("We're working on connecting your accounts. This feature is coming soon, stay tuned!");
+    toast.error("We’re in the process of connecting your accounts. This feature will be available soon, so stay tuned!");
 
     // Delay for 5 seconds before redirecting to the homepage
     setTimeout(() => {
@@ -82,6 +83,10 @@ const SocialMediaConnect = ({ handleTaskCompletion }) => {
 
   const handleSaveAndContinueFinal = () => {
     localStorage.setItem('task2Completed', 'true');
+    
+    toast.error("We're working on connecting your accounts. This feature is coming soon, stay tuned!", {
+      icon: '⚠️',
+    });
     if (fromPreviewBtn) {
       navigate('/customsample');
     } else {
