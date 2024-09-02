@@ -65,6 +65,18 @@ const GeneratedCreatives = ({
   };
 
   const navigate = useNavigate();
+  
+  const ComingSoonMessage = () => (
+    <div className="mt-4 p-4 text-center">
+      <h3 className="font-bold text-lg mb-2">Templates - Coming Soon</h3>
+      <p className="text-sm text-gray-600">
+        We're working hard to bring you exciting new templates! Stay tuned for updates.
+      </p>
+      <p className="text-sm text-gray-600">
+        Under construction. Please check back later.
+      </p>
+    </div>
+  );
 
   const fetchModelData = async (modelName, appendToData, setLoading, apiCallsRef) => {
     const url = `${baseUrl}/generate/${storedProductID}/${cleanedSize}/${templateColors[selectedTab]}/${modelName}`;
@@ -333,9 +345,18 @@ const setLoadingBasedOnModel = (modelName) => {
     setLoadingBrandAwareness(true);
     setLoadingSale(true);
     setLoadingRetargeting(true);
+
+    if (tab === "Templates") {
+      setLoadingBrandAwareness(false);
+      setLoadingSale(false);
+      setLoadingRetargeting(false);
+      return;
+    }
+    
     if (generatedCreativesRef.current) {
         generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
     }
+    
 };
 
 
@@ -454,7 +475,12 @@ const setLoadingBasedOnModel = (modelName) => {
       document.body.removeChild(link);
     };
   
-       
+    // Function to handle the edit button click and show a warning message
+  const handleEdit = () => {
+    toast.error("Edit feature is under development and would come up in no time.", {
+      icon: '⚠️',
+    });
+  };   
 
     const filteredProducts = filteredModel.filter((product) => {
       return (
@@ -501,9 +527,10 @@ const setLoadingBasedOnModel = (modelName) => {
               </button>
               <button
                 className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                onClick={() =>
-                  navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)
-                }
+                //onClick={() =>
+                  //navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)
+                //}
+                onClick={handleEdit}
               >
                 <div className="button-container">
                   <svg
@@ -755,28 +782,54 @@ const setLoadingBasedOnModel = (modelName) => {
 
 
             </div>
-            <div className="mx-4">
-              {/* Brand Awareness */}
+           {/* <div className="mx-4">
+              {/* Brand Awareness 
               {loadingBrandAwareness ? (
                 <CardLoaderRow label="Brand Awareness" delay={100} rows={2} />
               ) : (
                 <FilteredData filteredModel={brandAwarenessData} modelName="Brand Awareness" />
               )}
 
-              {/* Sale */}
+              {/* Sale 
               {loadingSale ? (
                 <CardLoaderRow label="Sale" delay={2000} rows={2} />
               ) : (
                 <FilteredData filteredModel={saleData} modelName="Sale" />
               )}
 
-              {/* Retargeting Audience */}
+              {/* Retargeting Audience 
               {loadingRetargeting ? (
                 <CardLoaderRow label="Retargeting Audience" delay={3000} rows={1} />
               ) : (
                 <FilteredData filteredModel={retargetingData} modelName="Retargeting Audience" />
               )}
-            </div>
+            </div>**/}
+            <div className="mx-4">
+  {selectedTab === "Templates" ? (
+    <ComingSoonMessage />
+  ) : (
+    <>
+      {loadingBrandAwareness ? (
+        <CardLoaderRow label="Brand Awareness" delay={100} rows={2} />
+      ) : (
+        <FilteredData filteredModel={brandAwarenessData} modelName="Brand Awareness" />
+      )}
+
+      {loadingSale ? (
+        <CardLoaderRow label="Sale" delay={2000} rows={2} />
+      ) : (
+        <FilteredData filteredModel={saleData} modelName="Sale" />
+      )}
+
+      {loadingRetargeting ? (
+        <CardLoaderRow label="Retargeting Audience" delay={3000} rows={1} />
+      ) : (
+        <FilteredData filteredModel={retargetingData} modelName="Retargeting Audience" />
+      )}
+    </>
+  )}
+</div>
+
           </>
         )}
       </section>
