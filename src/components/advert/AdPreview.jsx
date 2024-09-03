@@ -279,6 +279,12 @@ const AdPreview = ({ setPage }) => {
                       </button>
                       <button
                         className="w-fit custom-button rounded-[10px] text-white py-1 px-3 whitespace-pre font-medium"
+                        onClick={handleDownload}
+                      >
+                        Download Ad
+                      </button>
+                      <button
+                        className="w-fit custom-button rounded-[10px] text-white py-1 px-3 whitespace-pre font-medium"
                         onClick={handleNextStep}
                       >
                         Next Step
