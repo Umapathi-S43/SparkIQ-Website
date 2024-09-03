@@ -457,8 +457,8 @@ const AdProduct = () => {
   
 
     return (
-        <div className="overflow-auto flex-grow mr-8">
-           <section className={`border border-white max-w-7xl bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 overflow-auto ${isOpen ? 'p-0' : 'p-3'}`}>
+        <div className="flex-grow mr-8">
+           <div className={`border border-white max-w-7xl bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 overflow-auto ${isOpen ? 'p-0' : 'p-3'}`}>
                 <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'} relative cursor-pointer`} onClick={() => setIsOpen(!isOpen)}>
                     
                     <span className="flex items-center gap-4">
@@ -472,7 +472,7 @@ const AdProduct = () => {
                             </p>
                         </span>
                     </span>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-6 overflow-auto">
                         {productDetails.isEdit && (
                             <div className="flex items-center gap-2">
                                 <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
@@ -487,7 +487,7 @@ const AdProduct = () => {
                 </div>
 
                 {isOpen && (
-                    <div className="flex flex-col lg:flex-row p-8 w-full">
+                    <div className="flex flex-col lg:flex-row p-8 w-full overflow-auto hide-scrollbar" style={{maxHeight:'65vh'}}>
                         <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
                             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-gradient-to-r from-[#F0F4F8] via-[#D9E9F2] to-[#F0F4F8] rounded-3xl flex items-center justify-center shadow-2xl transition-transform transform hover:scale-105 hover:rotate-2 duration-300">
                                 <div className="absolute w-[85%] h-[85%] sm:w-[90%] sm:h-[90%] md:w-[95%] md:h-[95%] bg-white rounded-3xl flex items-center justify-center shadow-inner overflow-hidden">
@@ -829,7 +829,7 @@ const AdProduct = () => {
                         </div>
                     </div>
                 )}
-            </section>
+            </div>
         </div>
     );
 };
