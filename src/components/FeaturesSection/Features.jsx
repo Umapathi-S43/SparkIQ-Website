@@ -23,7 +23,7 @@ const Features = () => {
             <div className="flex flex-col lg:flex-row justify-around items-center gap-8 lg:gap-0">
                 <div className="flex flex-col w-full lg:w-1/2 items-start justify-center lg:gap-8 px-4 lg:px-0">
                     <h2 className="text-3xl lg:text-5xl font-semibold">Creative Platform</h2>
-                    <p className="text-lg lg:text-xl text-[#6B7280] font-semibold sm:mb-4">
+                    <p className="text-lg lg:text-xl text-[#6B7280] font-semibold mb-4">
                         Spark IQ leverages AI to suggest brand-centric colors, craft impactful ad and product descriptions, and offer tailored ad templates for cohesive branding.
                     </p>
                     <Button type="primary" link="#features" content="Book A Demo" className="whitespace-nowrap mt-6 sm:mt-0 sm:whitespace-normal" />

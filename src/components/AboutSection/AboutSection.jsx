@@ -6,8 +6,13 @@ import { aboutCards } from "../../data";
 
 const AboutSection = () => {
   const [height, setHeight] = useState(0);
-  const [enteredCards, setEnteredCards] = useState([]); // State to keep track of entered cards
+  const [enteredCards, setEnteredCards] = useState([]);
   const cardRefs = useRef([]);
+
+  // Function to check if the screen is small or medium
+  const isSmallOrMediumScreen = () => {
+    return window.innerWidth <= 1024; // Adjust this value based on your breakpoints
+  };
 
   useEffect(() => {
     // Initialize AOS
@@ -20,20 +25,35 @@ const AboutSection = () => {
       (entries) => {
         entries.forEach((entry) => {
           const index = parseInt(entry.target.id.split("-")[1], 10) - 1;
-          const height =
-            index === 0
+
+          // Determine the height based on screen size
+          const height = isSmallOrMediumScreen()
+            ? index === 0
               ? 0
               : index === 1
-              ? 300
+              ? 150
               : index === 2
-              ? 800
+              ? 700
               : index === 3
-              ? 1360
+              ? 1200
               : index === 4
-              ? 1870
+              ? 1720
               : index === 5
-              ? 2360
-              : index === 6 && 2860;
+              ? 2280
+              : index === 6 && 2820
+            : index === 0
+            ? 0
+            : index === 1
+            ? 300
+            : index === 2
+            ? 800
+            : index === 3
+            ? 1360
+            : index === 4
+            ? 1870
+            : index === 5
+            ? 2360
+            : index === 6 && 2860;
 
           if (entry.isIntersecting) {
             setEnteredCards((prevEnteredCards) => {
@@ -43,7 +63,6 @@ const AboutSection = () => {
                 ? prevEnteredCards
                 : [...prevEnteredCards, { index, height }];
 
-              // Set the height to the height of the object with the biggest index
               const maxHeight = newCards.reduce(
                 (max, card) => Math.max(max, card.height),
                 0
@@ -59,7 +78,6 @@ const AboutSection = () => {
                   (card) => card.index !== index
                 );
 
-                // Set the height to the height of the object with the biggest index
                 const maxHeight = newCards.reduce(
                   (max, card) => Math.max(max, card.height),
                   0
@@ -85,25 +103,27 @@ const AboutSection = () => {
     // Cleanup function for the observer
     return () => observer.disconnect();
   }, []);
-  console.log(enteredCards);
+
+  const isSmallScreen = isSmallOrMediumScreen();
+
   return (
-    <div id="about" className="flex flex-col relative my-12 md:my-24">
-      <div className="my-12 md:my-24">
-        <h2 className="text-2xl md:text-[32px] lg:text-[42px] text-center font-bold">
+    <div id="about" className="flex flex-col relative my-24">
+      <div className="my-24">
+        <h2 className="text-[42px] text-center font-bold">
           How Spark IQ Works?
         </h2>
-        <p className="text-base md:text-lg lg:mx-[100px] xl:mx-[340px] text-center text-[#6B7280] font-semibold">
+        <p className="text-lg xl:mx-[340px] text-center text-[#6B7280] font-semibold">
           From Brand Setup to Launching the ad campaign, Spark IQ employs AI
           Assist Technology to create awesome ad campaigns that fetch better
           leads and conversions for you.
         </p>
       </div>
-      <div className="max-w-[1024px] mx-auto flex flex-col mb-16 md:mb-32 relative">
+      <div className="max-w-[1024px] mx-auto flex flex-col mb-32 relative">
         {aboutCards.map((card, index) => (
           <div
             id={`card-${index + 1}`}
             ref={(el) => (cardRefs.current[index] = el)}
-            className="h-10 md:h-20 w-10 md:w-20 z-20 absolute left-1/2"
+            className="h-20 w-20 z-20 absolute left-1/2"
             style={{
               top: `${
                 index == 0
@@ -131,9 +151,9 @@ const AboutSection = () => {
             number={index + 1}
             title={card.title}
             description={card.description}
-            image={card.image}
             align={card.align}
             last={index === aboutCards.length - 1}
+            image={!isSmallScreen ? card.image : ''} // Conditionally pass the image prop
           />
         ))}
       </div>

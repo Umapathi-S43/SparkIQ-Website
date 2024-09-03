@@ -1,26 +1,79 @@
 import PropTypes from "prop-types";
 
-const AboutCard = ({ title, description, image, align, number }) => {
+const AboutCard = ({ title, description, image, align, number, last }) => {
 	const cardReverse = align === "right" ? "flex-row-reverse" : "flex-row";
 
 	return (
 		<div
 			data-aos={number % 2 === 0 ? "fade-left" : "fade-right"}
-			className={`flex flex-col md:${cardReverse} justify-between items-center relative md:gap-10 lg:gap-24 xl:gap-52 py-12 md:py-24`}
+			className={`flex ${cardReverse} justify-between items-center relative xl:gap-52 py-24 about-card-container`}
 		>
-			<div className="w-full md:w-1/2 pl-0 md:pl-8 text-center md:text-left">
-				<h3 className="text-2xl md:text-[28px] lg:text-[36px] xl:text-[42px] leading-tight md:leading-[34px] lg:leading-[42px] xl:leading-[50px] pb-4 md:pb-8 font-semibold">
+			{/* Number (Moved to the top for smaller screens) */}
+			<div className="lg:hidden absolute top-0 left-1/2 transform -translate-x-1/2 mb-1 about-card-number">
+				<div className="bg-white w-14 h-14 rounded-full text-3xl text-center pt-2 text-[#0086CD]">
+					{number}
+				</div>
+			</div>
+
+			{/* Content */}
+			<div className="w-full lg:w-1/2 lg:pl-8 text-center lg:text-left mt-4 lg:mt-0">
+				<h3 className="lg:text-[42px] text-[24px] leading-[50px] lg:pb-8 pb-1 font-semibold">
 					{title}
 				</h3>
-				<p className="text-base md:text-lg text-[#6B7280]">{description}</p>
+				<p className="lg:text-lg text-sm text-[#6B7280]">{description}</p>
 			</div>
-			<div className="w-full md:w-1/2 flex justify-center md:justify-end mt-6 md:mt-0">
-				<img data-aos={`zoom-in-${align}`} src={image} alt="" className="w-full max-w-xs md:max-w-md lg:max-w-lg" />
+
+			{/* Image on Larger Screens */}
+			<div className="hidden lg:flex w-1/2 justify-center">
+				<img data-aos={`zoom-in-${align}`} src={image} alt="" className="" />
 			</div>
-			<div className="w-full h-[200px] md:w-[410px] md:h-[190px] lg:w-[620px] lg:h-[280px] xl:w-[820px] xl:h-[380px] absolute about-card-bg rounded-3xl"></div>
-			<div className="absolute left-1/2 transform -translate-x-1/2 bg-white w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full text-2xl md:text-2xl lg:text-3xl text-center pt-1 md:pt-1.5 lg:pt-2 text-[#0086CD]">
+
+			{/* Background Shape */}
+			<div className="w-[820px] h-[380px] absolute about-card-bg rounded-3xl"></div>
+
+			{/* Number (For larger screens, it's in the original position) */}
+			<div className={`hidden lg:block absolute ${last ? "number-last" : "number"} left-1/2 transform -translate-x-1/2 bg-white w-14 h-14 rounded-full text-3xl text-center pt-2 about-card-number`}>
 				{number}
 			</div>
+
+			<style jsx>{`
+				@media (max-width: 1024px) {
+					.about-card-container {
+						flex-direction: column !important; /* Stack items vertically */
+						align-items: center; /* Center items horizontally */
+						text-align: center; /* Center text */
+						padding-top: 40px; /* Add space for the number above */
+						margin-bottom: 50px; /* Add space below each card */
+					}
+
+					.about-card-container .relative {
+						background: #e0f7fa; /* Add background color */
+						border-radius: 16px; /* Ensure the background has rounded corners */
+						padding: 20px; /* Add padding for spacing */
+						margin-bottom: 24px; /* Space between cards */
+					}
+
+					.about-card-container .hidden.lg\\:flex {
+						display: none !important; /* Hide the image on smaller screens */
+					}
+
+					.about-card-container .about-card-bg {
+						display: none; /* Hide the background on smaller screens */
+					}
+
+					.about-card-number {
+						position: absolute;
+						top: -20px; /* Adjust position relative to content */
+					}
+				}
+
+				@media (min-width: 1025px) {
+					.about-card-number {
+						left: 51%; /* Center the number on larger screens */
+						transform: translateX(-50%); /* Ensure it's perfectly centered */
+					}
+				}
+			`}</style>
 		</div>
 	);
 };

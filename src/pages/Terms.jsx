@@ -1,6 +1,7 @@
 import React from 'react';
 import Footer from '../components/Footer';
 import sparkLogo from "../assets/logo.png";
+import { Link } from "react-router-dom";
 
 const TermsOfService = () => {
   return (
@@ -9,7 +10,9 @@ const TermsOfService = () => {
         <div className="absolute top-0 left-0 w-1/10 h-full bg-gradient-to-r from-blue-200 to-transparent"></div>
         <header className="w-full py-4 relative z-10" style={{ background: 'linear-gradient(90deg, white, #cfe9ff)' }}>
           <div className="container mx-auto flex items-center justify-center flex-col sm:flex-row py-4 px-4">
+          <Link to="/"> 
             <img src={sparkLogo} alt="spark logo" className="w-[158px] mb-4 sm:mb-0 sm:mr-4" />
+            </Link>
             <h1 className="text-3xl font-semibold text-blue-700 text-center">Terms of Service</h1>
           </div>
         </header>

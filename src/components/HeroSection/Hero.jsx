@@ -77,10 +77,12 @@ const Hero = () => {
                                 }
                             />
                         </div>
-                    <div className="py-6 lg:py-10 flex gap-4 justify-center lg:justify-start">
-                        <Button type="primary" link="#features" content="Book A Demo" />
-                        <Button type="secondary" link="#about" content="Talk To Us" />
-                    </div>
+                        <div className="py-6 lg:py-10 flex flex-col lg:flex-row gap-4 justify-center lg:justify-start">
+  <Button type="primary" link="#features" content="Book A Demo" />
+  <Button type="secondary" link="#about" content="Talk To Us" />
+</div>
+
+
                 </div>
                 <div className="w-full lg:w-1/2 relative flex justify-center">
                     <div className="image-container">

@@ -7,10 +7,10 @@ const Button = ({ type, link, content }) => {
   
   const buttonType =
     type === "primary"
-      ? "text-white gradient-button-primary"
+      ? "text-white gradient-button-primary text-nowrap"
       : type === "blue"
-      ? "bg-[#0086CD] text-white"
-      : "bg-white text-[#FF3067]";
+      ? "bg-[#0086CD] text-white text-nowrap"
+      : "bg-white text-[#FF3067] text-nowrap";
   
   const handleClick = () => {
     if (link) {
@@ -19,12 +19,14 @@ const Button = ({ type, link, content }) => {
   };
 
   return (
+    <div className='flex justify-center'>
     <button 
-      className={`${buttonType} p-3 px-6 rounded-xl font-semibold`}
+      className={`${buttonType} w-fit p-3 px-6 rounded-xl font-semibold text-nowrap `}
       onClick={handleClick}
     >
       {content}
     </button>
+    </div>
   );
 };
 
@@ -35,6 +37,3 @@ Button.propTypes = {
 };
 
 export default Button;
-
-
-

@@ -8,7 +8,9 @@ const Footer = () => {
 	return (
 		<footer className="relative flex flex-col md:flex-row h-auto md:h-[230px] p-6 md:p-12 items-center md:px-[6rem]">
 			<div className="w-full md:w-1/2 mb-4 md:mb-0 flex justify-center md:justify-start">
-				<img src={logo} alt="" className="w-[120px] md:w-[158px]" />
+			<Link to="/"> {/* Wrap the logo with Link to redirect to the home page */}
+					<img src={logo} alt="Spark IQ Logo" className="w-[120px] md:w-[158px]" />
+				</Link>
 			</div>
 			<div className="w-full md:w-1/2 flex flex-col md:flex-row justify-between text-center md:text-left">
 				<div className="flex flex-col gap-3 md:gap-6 mb-4 md:mb-0">

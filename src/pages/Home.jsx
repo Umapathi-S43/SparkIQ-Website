@@ -10,7 +10,7 @@ import Footer from "../components/Footer";
 import Community from '../components/CommunitySection/community';
 const Home = () => {
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden w-full">
 			<Navbar />
 			<Hero />
 			<div className="px-[6rem]">
