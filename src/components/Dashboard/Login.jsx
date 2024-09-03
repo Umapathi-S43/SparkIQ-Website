@@ -48,11 +48,12 @@ const LoginPage = () => {
     navigate("/signup"); // Navigate to the signup page
   };
 
+  //in second div as of now width modifed to max-w-sm from max-w-md
   return (
     <div className="flex items-center justify-end min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4 lg:pr-40">
-      <div className="flex flex-col items-center w-full max-w-md p-4">
+      <div className="flex flex-col items-center w-full max-w-sm p-4 mb-8">
         <img src={logo} alt="Logo" className="w-40 h-20 mb-6" />
-        <form onSubmit={handleSubmit} className="w-full">
+        <form onSubmit={handleSubmit} className="w-full ">
           <div
             className="w-full p-8 rounded-3xl shadow-md border border-white"
             style={{ background: "rgba(255,255,255,0.30)" }}
@@ -63,7 +64,7 @@ const LoginPage = () => {
             <p className="text-xl text-[#0A3580] mb-6 text-center font-medium">
               to the future of marketing.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            {/*<div className="flex flex-col sm:flex-row gap-4 mb-4">
               <button
                 type="button"
                 className="w-full sm:w-1/2 py-2 bg-white text-[#082A66] font-bold rounded-lg flex items-center justify-center shadow-sm focus-within:ring-blue-400 focus:outline-none"
@@ -105,7 +106,7 @@ const LoginPage = () => {
                 <span className="px-2 text-gray-500">or</span>
                 <div className="border-t border-gray-400 flex-grow ml-2"></div>
               </div>
-            </div>
+            </div>*/}
             <div className="flex flex-col gap-4">
               <input
                 type="email"
@@ -137,7 +138,7 @@ const LoginPage = () => {
               </p>
             </div>
           </div>
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center m-4 mt-6">
             <button
               type="submit"
               className="custom-button p-2 pl-6 pr-6 text-white  border-[#FCFCFC] rounded-lg shadow-2xl flex justify-center w-fit"
