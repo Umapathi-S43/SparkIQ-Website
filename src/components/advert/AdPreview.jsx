@@ -13,11 +13,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 const textCaption = "🎨 Explore Infinite Creativity with fdg adfwerw 🌈🌟 Discover a Hint of Enigma, Infused with Grace💖 Embrace the Magic of tr5vy5✨ Elevate Your Sensory Journey for Just BDT 500 🌟";
 
 const AdPreview = ({ setPage }) => {
+  const location = useLocation();
+  const { aimodel, templateColor } = location.state || {};
+
   const [isLoading, setIsLoading] = useState(true);
   const [tabIndex, setTabIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [activeCard, setActiveCard] = useState(null); // Track which card is active
-  const location = useLocation();
+  
   const navigate = useNavigate();
 
   // Extract the passed preview image from location state
@@ -198,7 +201,11 @@ const AdPreview = ({ setPage }) => {
   };
   
   const handleCustomizeAds = () => {
-    navigate("/customsample", { state: { preview_img: previewImage } });
+    navigate("/customsample", { state: {
+      preview_img: previewImage,
+      aimodel: aimodel,
+      templateColor: templateColor,
+    },});
   };
 
   const handleNextStep = () => {

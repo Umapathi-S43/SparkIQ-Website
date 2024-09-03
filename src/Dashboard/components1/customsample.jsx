@@ -22,7 +22,8 @@ export default function CustomSample({
   const [selectedCaption, setSelectedCaption] = useState(
     "🎨 Discover Uniqueness with Ashiqur Rahman: A Blend of Abstract and Precision  🧩 Thought-Provoking Artistry 💲 Priced at USD 400 A Touch of Elegance to Your Collection."
   );
-
+  const { aimodel, templateColor } = location.state || {};
+  
   const [captionDetails, setCaptionDetails] = useState({
     cta: "Discover more",
     content: "Transform your routine",
@@ -44,9 +45,12 @@ export default function CustomSample({
     navigate('/adPreview', {
       state: {
         preview_img: selectedImage || generatedImageURL, // Pass the selected or generated image as preview_img
+        aimodel: aimodel,
+        templateColor: templateColor,
       },
     });
   };
+  
 
   return (
     <div className="min-h-screen p-3 py-1 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
@@ -155,10 +159,11 @@ export default function CustomSample({
                   captionDetails={captionDetails}
                   setPage={setPage}
                   handleBackClick={handleBackClick}
-                  aimodel={state?.aimodel}
-                  templateColor={state?.templateColor}
-                  handleNextClick={handleNextClick} // Pass handleNextClick to Creative
+                  aimodel={aimodel} // Pass the aimodel here
+                  templateColor={templateColor} // Pass the templateColor here
+                  handleNextClick={handleNextClick}
                 />
+
               </TabPanel>
               <TabPanel className="pt-4 px-2 sm:px-6">
                 <Caption

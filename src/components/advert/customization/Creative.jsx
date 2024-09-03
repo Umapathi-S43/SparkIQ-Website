@@ -202,6 +202,7 @@ export default function Creative({
 
   const handleNext = () => {
     handleNextClick();
+    
   };
 
   return (
