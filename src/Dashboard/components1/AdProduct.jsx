@@ -817,11 +817,11 @@ const AdProduct = () => {
                         {completedSections[1] && completedSections[2] && (
                         <div className="flex justify-start p-4 pl-2">
                             <button
-                                className="w-fit rounded-xl text-white py-3 px-10 font-medium custom-button"
+                                className="w-fit rounded-xl text-white py-3 px-6 font-medium custom-button"
                                 disabled={isNextStepDisabled}
                                 onClick={handleProductSubmission}
                             >
-                                {!productDetails.isEdit ? "Next Step" : "Edit Product"}
+                                {!productDetails.isEdit ? "Create Product" : "Edit Product"}
                             </button>
                         </div>
                     )}
