@@ -487,7 +487,7 @@ const AdProduct = () => {
                 </div>
 
                 {isOpen && (
-                    <div className="flex flex-col lg:flex-row p-8 w-full overflow-auto hide-scrollbar" style={{maxHeight:'65vh'}}>
+                    <div className="flex flex-col lg:flex-row p-8 w-full overflow-auto hide-scrollbar" style={{maxHeight:'69vh'}}>
                         <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
                             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-gradient-to-r from-[#F0F4F8] via-[#D9E9F2] to-[#F0F4F8] rounded-3xl flex items-center justify-center shadow-2xl transition-transform transform hover:scale-105 hover:rotate-2 duration-300">
                                 <div className="absolute w-[85%] h-[85%] sm:w-[90%] sm:h-[90%] md:w-[95%] md:h-[95%] bg-white rounded-3xl flex items-center justify-center shadow-inner overflow-hidden">
