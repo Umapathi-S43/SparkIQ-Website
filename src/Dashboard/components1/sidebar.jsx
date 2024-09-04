@@ -16,6 +16,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  localStorage.removeItem('generateAdState');
+  localStorage.removeItem('selectedProduct');
+  localStorage.removeItem('productID');
 
   const navItems = [
     { name: "Home", icon: homeIcon, path: "/homepage" },
