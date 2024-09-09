@@ -140,26 +140,31 @@ const BrandSetup = () => {
     const uploadData = new FormData();
     uploadData.append("file", formInputs.imageFile);
     uploadData.append("customerId", "123");
-
+  
     try {
       if (!jwtToken) {
         throw new Error("No JWT token found. Please log in.");
       }
-      await axios
-        .post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        })
-        .then((res) => {
-         // toast.success("Image upload successful");
-          handleCreateOrEditBrand(res.data.data.url); // Call create/edit brand after successful image upload
-        });
+      const response = await axios.post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+  
+      const logoURL = response.data.data.url;
+      setFormInputs((prevInputs) => ({
+        ...prevInputs,
+        logoURL, // Set the uploaded logo URL
+        showSubmitButton: true, // Now show the submit button after logo is uploaded
+      }));
+  
+      toast.success("Image upload successful");
     } catch (error) {
       console.log(error);
     }
   };
+  
 
   const toggleSection = (section) => {
     if (section === 1 || completedSections[section - 1]) {
@@ -443,7 +448,10 @@ const BrandSetup = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSaveAndContinue(2);
-                      formInputs.imageFile && uploadImage();
+                      if (formInputs.imageFile) {
+                        // Upload the image and then enable the submission button
+                        uploadImage();
+                      }
                     }}
                   >
                     Save and Continue
@@ -455,13 +463,14 @@ const BrandSetup = () => {
               <div className="flex justify-start mt-4">
                 <button
                   className="custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg"
-                  onClick={() =>
-                    formInputs.isEdit
-                      ? handleCreateOrEditBrand(formInputs.logoURL)
-                      : formInputs.imageFile
-                      ? uploadImage()
-                      : handleCreateOrEditBrand()
-                  }
+                  onClick={() => {
+                    if (formInputs.logoURL) {
+                      handleCreateOrEditBrand(); // Now create or update brand after logo is uploaded and button is clicked
+                    } else if (formInputs.imageFile) {
+                      // If the image is not uploaded yet, first upload it and then create or update the brand
+                      uploadImage().then(() => handleCreateOrEditBrand());
+                    }
+                  }}
                 >
                   {formInputs.isEdit ? "Update" : "Create Brand"}
                 </button>
