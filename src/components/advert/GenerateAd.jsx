@@ -149,6 +149,7 @@ export default function GenerateAd({ setPage, pages }) {
           <div ref={creativeSizeRef}>
             <CreativeSize
               isNextSectionOpen={isNextSectionOpen}
+              isCompleted={openModalProductDetails}
               toggleNextSectionAccordion={toggleNextSectionAccordion}
               handleNextSection={handleNextSection}
               setIsLoading={setIsLoading}
