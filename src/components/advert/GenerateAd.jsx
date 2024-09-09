@@ -153,7 +153,6 @@ export default function GenerateAd({ setPage, pages }) {
               handleNextSection={handleNextSection}
               setIsLoading={setIsLoading}
               openModalProductDetails={openModalProductDetails}
-              isCompleted={openModalCreativeSize}
               setIsCompleted={setOpenModalCreativeSize}
             />
           </div>

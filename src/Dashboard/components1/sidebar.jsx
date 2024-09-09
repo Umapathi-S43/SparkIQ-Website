@@ -12,13 +12,9 @@ import signoutIcon from "../../assets/dashboard_img/signout.svg";
 import savedproducts from "../../assets/dashboard_img/savedProducts.svg";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
-    const [selectedItem, setSelectedItem] = useState("");
-
+  const [selectedItem, setSelectedItem] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
-  localStorage.removeItem('generateAdState');
-  localStorage.removeItem('selectedProduct');
-  localStorage.removeItem('productID');
 
   const navItems = [
     { name: "Home", icon: homeIcon, path: "/homepage" },
@@ -41,7 +37,16 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const handleNavigation = (item) => {
     setSelectedItem(item.name);
+
+    // Only clear the localStorage when navigating to "Generate Creatives"
+    if (item.name === "Generate Creatives") {
+      localStorage.removeItem('generateAdState');
+      localStorage.removeItem('selectedProduct');
+      localStorage.removeItem('productID');
+    }
+
     navigate(item.path, { replace: true });
+    
     if (window.innerWidth < 1024) {
       toggleSidebar(); // Close sidebar after navigation on small screens
     }
@@ -49,7 +54,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const handleSignOut = () => {
     localStorage.removeItem("jwtToken");
-
     window.location.href = "/login";
   };
 
