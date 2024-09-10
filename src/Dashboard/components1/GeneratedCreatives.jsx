@@ -309,24 +309,33 @@ const setLoadingBasedOnModel = (modelName) => {
 
   
 
-  const loadCreatives = async () => {
-    if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
-      return;
-    }
+const loadCreatives = async () => {
+  if (!isThirdSectionOpen || !isPreviousSectionsCompleted) {
+    return;
+  }
 
-    const apiCallsRef = { current: false }; // Using an object to pass by reference
+  const apiCallsRef = { current: false }; // Using an object to pass by reference
 
-    await fetchModelData("unaware", setBrandAwarenessData, setLoadingBrandAwareness, apiCallsRef);
-    await fetchModelData("problem aware", setBrandAwarenessData, setLoadingBrandAwareness, apiCallsRef);
-    await fetchModelData("solution aware", setSaleData, setLoadingSale, apiCallsRef);
-    await fetchModelData("product aware", setSaleData, setLoadingSale, apiCallsRef);
-    await fetchModelData("most aware", setRetargetingData, setLoadingRetargeting, apiCallsRef);
+  // Clear the existing data before loading new data
+  setBrandAwarenessData([]);
+  setSaleData([]);
+  setRetargetingData([]);
+  setLoadingBrandAwareness(true);
+  setLoadingSale(true);
+  setLoadingRetargeting(true);
 
-    // Show the error message only once after all API calls if none succeeded
-    if (!apiCallsRef.current) {
-      showToast("Action failed: please try after some time", "error");
-    }
-  };
+  await fetchModelData("unaware", setBrandAwarenessData, setLoadingBrandAwareness, apiCallsRef);
+  await fetchModelData("problem aware", setBrandAwarenessData, setLoadingBrandAwareness, apiCallsRef);
+  await fetchModelData("solution aware", setSaleData, setLoadingSale, apiCallsRef);
+  await fetchModelData("product aware", setSaleData, setLoadingSale, apiCallsRef);
+  await fetchModelData("most aware", setRetargetingData, setLoadingRetargeting, apiCallsRef);
+
+  // Show the error message only once after all API calls if none succeeded
+  if (!apiCallsRef.current) {
+    showToast("Action failed: please try after some time", "error");
+  }
+};
+
 
   useEffect(() => {
     if (isThirdSectionOpen && isPreviousSectionsCompleted) {
@@ -336,31 +345,38 @@ const setLoadingBasedOnModel = (modelName) => {
 
 
   const handleTabChange = (tab) => {
-    setSelectedTab(tab);
+    setSelectedTab(tab); // Update the selected tab
     globalIndexCounter.current = 0; // Reset the index counter on template color change
-    setIsLoading(true);
-    setBrandAwarenessData([]); // Clear data to prevent old data from showing
+  
+    // Clear data for the previous tab
+    setBrandAwarenessData([]);
     setSaleData([]);
     setRetargetingData([]);
+  
+    // Set loading states for the new tab
     setLoadingBrandAwareness(true);
     setLoadingSale(true);
     setLoadingRetargeting(true);
-
+  
+    setIsLoading(true); // Set the overall loading state
+  
     if (tab === "Templates") {
+      // Handle the "Templates" tab which is not loading data
       setLoadingBrandAwareness(false);
       setLoadingSale(false);
       setLoadingRetargeting(false);
       return;
     }
-    
+  
+    // Call the creative loading function after the tab is changed
+    loadCreatives();
+  
+    // Scroll to the top of the section when the tab is changed
     if (generatedCreativesRef.current) {
-        generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
+      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
     }
-    
-};
-
-
-
+  };
+  
   const showToast = (message, type) => {
     toast(message, {
       position: "top-center",

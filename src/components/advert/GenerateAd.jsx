@@ -23,7 +23,14 @@ export default function GenerateAd({ setPage, pages }) {
   const creativeSizeRef = useRef(null);
   const generatedCreativesRef = useRef(null);
 
-  // Restore state from localStorage on mount
+  // Function to toggle between "Brand Color" and "Single Color"
+  const toggleSelectedTab = () => {
+    setSelectedTab((prevTab) =>
+      prevTab === "Brand Color" ? "Single Color" : "Brand Color"
+    );
+    localStorage.removeItem("generateAdState");
+  };
+
   // Restore state from localStorage on mount
   useEffect(() => {
     const savedState = JSON.parse(localStorage.getItem("generateAdState"));
@@ -49,7 +56,7 @@ export default function GenerateAd({ setPage, pages }) {
       localStorage.removeItem("generateAdState");
     }
   }, []);
-  
+
   // Save the state when necessary
   const saveCurrentState = () => {
     const currentState = {
@@ -74,6 +81,7 @@ export default function GenerateAd({ setPage, pages }) {
   const toggleThirdSectionAccordion = () => {
     if (openModalProductDetails && openModalCreativeSize) {
       setIsThirdSectionOpen(!isThirdSectionOpen);
+      toggleSelectedTab(); // Toggle the tab when the third section is opened
     }
   };
 
@@ -82,6 +90,7 @@ export default function GenerateAd({ setPage, pages }) {
       setIsNextSectionOpen(false);
       setIsThirdSectionOpen(true);
       scrollToGeneratedCreatives(); // Scroll to GeneratedCreatives when both sections are completed
+      toggleSelectedTab(); // Toggle the tab when navigating to the next section
     }
     saveCurrentState(); // Save state before navigating
   };
