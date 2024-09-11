@@ -542,11 +542,10 @@ const loadCreatives = async () => {
                 </div>
               </button>
               <button
-                className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                //onClick={() =>
-                  //navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)
-                //}
-                onClick={handleEdit}
+               className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
+               onClick={() =>
+                 navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)
+               }
               >
                 <div className="button-container">
                   <svg
