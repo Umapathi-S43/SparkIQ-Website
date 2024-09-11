@@ -368,8 +368,6 @@ const loadCreatives = async () => {
       return;
     }
   
-    // Call the creative loading function after the tab is changed
-    loadCreatives();
   
     // Scroll to the top of the section when the tab is changed
     if (generatedCreativesRef.current) {
@@ -481,6 +479,9 @@ const loadCreatives = async () => {
       }
 
     }; 
+    const handleEditClick = (imageUrl, model, index) => {
+      handleEdit(imageUrl, model, index);  // Call handleEdit
+    };
     
     const handleDownloadClick = (imageUrl) => {
       const link = document.createElement('a');
@@ -492,11 +493,39 @@ const loadCreatives = async () => {
     };
   
     // Function to handle the edit button click and show a warning message
-  const handleEdit = () => {
-    toast.error("Edit feature is under development and would come up in no time.", {
-      icon: '⚠️',
-    });
-  };   
+    const handleEdit = (imageUrl, model, index) => {
+      const currentState = {
+        isThirdSectionOpen,
+        brandAwarenessData,
+        saleData,
+        retargetingData,
+        selectedTab,
+        aimodel: model, // Store the model name
+        templateColor: `${templateColors[selectedTab]}`,
+      };
+    
+      console.log("Passing state to localStorage:", currentState); // Log state before saving to localStorage
+      localStorage.setItem('generateAdState', JSON.stringify(currentState));
+    
+      const selectedImage = [...brandAwarenessData, ...saleData, ...retargetingData].find(
+        (item) => item.index === index
+      );
+      
+      if (selectedImage) {
+        const { templateColor, modelName, id } = selectedImage; // Assuming `id` is part of the selected image object
+        console.log("Navigating to edit template with ID:", id);
+        
+        navigate(`/edit_template?id=${encodeURIComponent(id)}`, {
+          state: {
+            aimodel: modelName,
+            templateColor: templateColor,
+            imageUrl: imageUrl, // Pass the image URL if needed
+            id: id, // Pass the unique id
+          },
+        });
+      }
+    };
+    
 
     const filteredProducts = filteredModel.filter((product) => {
       return (
@@ -543,9 +572,7 @@ const loadCreatives = async () => {
               </button>
               <button
                className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-               onClick={() =>
-                 navigate(`/edit_template?id=${encodeURIComponent(product.id)}`)
-               }
+               onClick={() => handleEditClick(product.imageURL || product.generatedImageURL, modelName, product.index)} // Call handleEditClick here
               >
                 <div className="button-container">
                   <svg
@@ -576,6 +603,7 @@ const loadCreatives = async () => {
               <button
                 className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
                 onClick={() => handlePreviewClick(product.imageURL || product.generatedImageURL, modelName, product.index)}
+             
               >
                 <div className="button-container">
                   <svg
