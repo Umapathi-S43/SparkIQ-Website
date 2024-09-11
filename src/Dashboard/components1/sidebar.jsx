@@ -62,7 +62,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       <div className="lg:hidden w-full h-full bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2]">
         <div className="relative w-full h-full max-w-5xl lg:max-w-full p-4"
          style={{ margin: "auto", borderRadius: "1rem" }}>
-          <div className="relative w-full h-full max-w-5xl p-4 bg-[#FCFCFC] bg-opacity-20 rounded-2xl border-2 border-[#FCFCFC] lg:bg-transparent lg:border-none">
+          <div className="relative w-full h-full max-w-5xl p-4 bg-[#FCFCFC] bg-opacity-20 rounded-2xl border-2 border-[#FCFCFC] lg:bg-transparent lg:border-none overflow-auto">
             <div className="flex justify-between items-center p-4 lg:hidden rounded-t-2xl">
               <img 
                 src={logo} 
@@ -140,7 +140,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </div>
             <div className="mt-auto ml-0 pl-0">
               <div
-                className="group text-gray-700 w-52 p-3 pl-6 rounded-3xl flex items-center cursor-pointer hover:bg-[#1547DB] hover:text-white"
+                className="group text-gray-700 w-48 p-3 pl-6 rounded-3xl flex items-center cursor-pointer hover:bg-[#1547DB] hover:text-white"
                 onClick={handleSignOut}
               >
                 <div className="w-[24px] h-[24px] rounded-md flex items-center justify-center bg-[#0086CD] group-hover:bg-[#1138AC]">
