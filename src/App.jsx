@@ -31,6 +31,7 @@ import TextFormat from './Dashboard/components1/Edit/Textformat';
 import { Toaster } from 'react-hot-toast';
 import SignUpPage from './components/Dashboard/SignUp';
 import ProtectedRoute from './components/utils/withAuth';
+import EditTemplate1 from './Dashboard/components1/Edit/EditTemplate1';
 
 function App() {
   return (
@@ -129,6 +130,10 @@ function App() {
           <Route
             path="/text_format"
             element={<ProtectedRoute element={<TextFormat />} />}
+          />
+          <Route
+            path="/custom_edit"
+            element={<ProtectedRoute element={<EditTemplate1 />} />}
           />
           <Route path="/signup" element={<SignUpPage />} />
         </Routes>

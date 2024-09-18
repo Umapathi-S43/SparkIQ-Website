@@ -79,4 +79,30 @@
       #e2e2e2 2px
     );
   }
+
+  .bg-striped-container {
+    position: relative; /* Required for the pseudo-element to align properly */
+    padding: 8px; /* Add padding to push content inside */
+  }
+  
+  .bg-striped-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 20px; /* Optional: for rounded corners */
+    padding: 8px; /* Border width */
+    background: repeating-linear-gradient(
+      145deg,
+      #B3D4E5,
+      #B3D4E5 2px,
+      #f3f3f3 4px,
+      #e2e2e2 2px
+    );
+    z-index: -1; /* Ensure it stays behind the content */
+    box-sizing: border-box; /* Make sure the gradient covers the border area */
+  }
+  
   

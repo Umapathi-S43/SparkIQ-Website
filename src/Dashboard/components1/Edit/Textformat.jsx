@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import 'tailwindcss/tailwind.css';
+import './TextFormat.css'
 import { AiOutlineAlignLeft, AiOutlineAlignRight, AiOutlineAlignCenter } from 'react-icons/ai';
 import { BsJustify } from 'react-icons/bs';
 

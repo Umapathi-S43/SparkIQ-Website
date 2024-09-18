@@ -368,6 +368,8 @@ const loadCreatives = async () => {
       return;
     }
   
+    // Call the creative loading function after the tab is changed
+    loadCreatives();
   
     // Scroll to the top of the section when the tab is changed
     if (generatedCreativesRef.current) {
@@ -515,7 +517,7 @@ const loadCreatives = async () => {
         const { templateColor, modelName, id } = selectedImage; // Assuming `id` is part of the selected image object
         console.log("Navigating to edit template with ID:", id);
         
-        navigate(`/edit_template?id=${encodeURIComponent(id)}`, {
+        navigate(`/custom_edit?id=${encodeURIComponent(id)}`, {
           state: {
             aimodel: modelName,
             templateColor: templateColor,
