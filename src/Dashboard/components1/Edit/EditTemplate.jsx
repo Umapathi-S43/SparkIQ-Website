@@ -1,686 +1,428 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  FaTextHeight,
-  FaImage,
-  FaShapes,
-  FaRegImages,
-  FaUpload,
-} from "react-icons/fa";
-import html2canvas from "html2canvas";
-import brandImage from "../../../assets/dashboard_img/brand_img.png"; // Adjust the path as needed
-import AdCreatives from "./AdCreatives"; // Import the AdCreatives component
-import sample_img from "../../../assets/dashboard_img/ad_creatives_img.jpg"; // Adjust the path as needed
-import TextFormatToolbar from "./Textformat";
-import { Rnd } from "react-rnd";
-import "./EditTemplate.css";
-import { baseUrl } from "../../../components/utils/Constant";
 import axios from "axios";
-import Draggable from "react-draggable";
+import { FaTextHeight, FaImage, FaShapes, FaRegImages, FaUpload } from "react-icons/fa";
+import { Rnd } from "react-rnd";
+import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
-
-const initialElements = [
-  {
-    id: 1,
-    type: "image",
-    src: sample_img,
-    defaultPosition: { x: 80, y: 18 },
-    defaultSize: { width: 250, height: 200 },
-  },
-  {
-    id: 2,
-    type: "text",
-    content: "Surveying prisms - Geomatics",
-    defaultPosition: { x: 24, y: 245 },
-    defaultSize: { width: 300, height: 50 },
-    style: {
-      fontSize: "18px",
-      fontFamily: "Arial",
-      whiteSpace: "normal",
-      wordWrap: "break-word",
-    },
-  },
-  {
-    id: 3,
-    type: "text",
-    content:
-      "Surveyors and engineers to measure the change in position of a target that is assumed to be moving.",
-    defaultPosition: { x: 20, y: 275 },
-    defaultSize: { width: 360, height: 50 },
-    style: {
-      fontSize: "14px",
-      fontFamily: "Arial",
-      whiteSpace: "normal",
-      wordWrap: "break-word",
-    },
-  },
-  {
-    id: 4,
-    type: "button",
-    content: "Learn More",
-    defaultPosition: { x: 20, y: 335 },
-    defaultSize: { width: 100, height: 40 },
-    style: {
-      fontSize: "14px",
-      fontFamily: "Arial",
-      backgroundColor: "blue",
-      color: "white",
-      textAlign: "center",
-      lineHeight: "40px",
-      borderRadius: "4px",
-    },
-  },
-  {
-    id: 5,
-    type: "text",
-    content: "https://geomatics.com",
-    defaultPosition: { x: 120, y: 215 },
-    defaultSize: { width: 300, height: 50 },
-    style: {
-      fontSize: "14px",
-      fontFamily: "Arial",
-      whiteSpace: "normal",
-      wordWrap: "break-word",
-    },
-  },
-  {
-    id: 6,
-    type: "text",
-    content: "5675764267",
-    defaultPosition: { x: 150, y: 345 }, // Position adjusted to be besides CTA
-    defaultSize: { width: 100, height: 40 },
-    style: {
-      fontSize: "14px",
-      fontFamily: "Arial",
-      whiteSpace: "normal",
-      wordWrap: "break-word",
-    },
-  },
-];
+import html2canvas from 'html2canvas';
+import TextFormatToolbar from "./Textformat"; // Import TextFormatToolbar
 
 export default function EditTemplate() {
-  const [elements, setElements] = useState(initialElements);
-  const [activeElementId, setActiveElementId] = useState(null);
-  const [activeComponent, setActiveComponent] = useState("");
-  const [bgColor, setBgColor] = useState("");
-  const [showAdCreatives, setShowAdCreatives] = useState(false);
-  const [history, setHistory] = useState([initialElements]);
-  const [historyIndex, setHistoryIndex] = useState(0);
-  const navigate = useNavigate();
-  const templateRef = useRef();
-
+  const [elements, setElements] = useState([]);
+  const [selectedElementIndex, setSelectedElementIndex] = useState(null); // Track selected element
+  const [imageLayoutSize, setImageLayoutSize] = useState(1080); // Default size
   const [productDetails, setProductDetails] = useState(null);
-  const [productForm, setProductForm] = useState({
-    title: productDetails?.title || "",
-    description: productDetails?.description || "",
-    ctaButtonText: productDetails?.ctaButtonText || "",
-    websiteAddressText: productDetails?.websiteAddressText || "",
-    phoneNumberText: productDetails?.phoneNumberText || "",
-  });
-  console.log(productDetails, "productDetails");
-
+  const [activeComponent, setActiveComponent] = useState(""); // Track active component from Sidebar
+  const [loading, setLoading] = useState(true);
+  const [zoom, setZoom] = useState(0.45); // Zoom level
+  const [tooltip, setTooltip] = useState({ visible: false, width: 0, height: 0, x: 0, y: 0 });
+  const [editingTextIndex, setEditingTextIndex] = useState(null); // Track the text element being edited
+  const templateRef = useRef();
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
 
+  // Fetch product details using productID
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
-        const response = await axios.get(
-          `${baseUrl}/generated-images/${productID}`,
+        const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
+        const data = response.data;
+
+        setProductDetails(data);
+        if (data.imagelayoutsize) {
+          const layoutSize = parseInt(data.imagelayoutsize.split("x")[0]);
+          setImageLayoutSize(layoutSize);
+        }
+
+        const dynamicElements = [
           {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
+            type: "image",
+            src: data.logoURL,
+            position: { x: parseInt(data.logoposition.split(",")[0]), y: parseInt(data.logoposition.split(",")[1]) },
+            size: { width: data.logoWidth, height: data.logoHeight }
+          },
+          {
+            type: "text",
+            content: data.title,
+            position: { x: parseInt(data.titlePosition.split(",")[0]), y: parseInt(data.titlePosition.split(",")[1]) },
+            style: {
+              fontSize: `${data.fontSize}px`,
+              fontFamily: "Arial",
+              whiteSpace: "normal",
+              wordWrap: "break-word"
+            }
+          },
+          {
+            type: "text",
+            content: data.description,
+            position: { x: parseInt(data.descriptionPosition.split(",")[0]), y: parseInt(data.descriptionPosition.split(",")[1]) },
+            style: {
+              fontSize: `${data.descriptionFontSize}px`,
+              fontFamily: "Arial",
+              whiteSpace: "normal",
+              wordWrap: "break-word"
             },
+            contentFormatted: data.description && data.description.split('.').map((text, index) => (
+              text.trim() ? <div key={index}>{text.trim()}.</div> : null
+            ))
+          },
+          {
+            type: "image",
+            src: data.productURL,
+            position: { x: 0, y: 0 },
+            size: { width: 540, height: 540 }
+          },
+          {
+            type: "text",
+            content: data.phoneNumberText,
+            position: { x: parseInt(data.phoneNumberPosition.split(",")[0]), y: parseInt(data.phoneNumberPosition.split(",")[1]) },
+            style: {
+              fontSize: `${data.phoneNumberSize}px`,
+              fontFamily: "Arial",
+              whiteSpace: "normal",
+              wordWrap: "break-word"
+            }
+          },
+          {
+            type: "text",
+            content: data.ctaButtonText,
+            position: { x: parseInt(data.ctaPosition.split(",")[0]), y: parseInt(data.ctaPosition.split(",")[1]) },
+            style: {
+              fontSize: `${data.ctaFontSize}px`,
+              fontFamily: "Arial",
+              whiteSpace: "normal",
+              backgroundColor: "#FFC107",
+              padding: "5px",
+              borderRadius: "5px"
+            }
           }
-        );
-        setProductDetails(response.data);
+        ];
+
+        setElements(dynamicElements);
+        setLoading(false);
+
       } catch (error) {
-        console.log("Failed to fetch product details.", error);
+        console.error("Failed to fetch product details.", error);
       }
     };
+
     fetchProductDetails();
   }, [productID]);
 
-  useEffect(() => {
-    if (productDetails) {
-      setProductForm({
-        title: productDetails.title || "",
-        description: productDetails.description || "",
-        ctaButtonText: productDetails.ctaButtonText || "",
-        websiteAddressText: productDetails.websiteAddressText || "",
-        phoneNumberText: productDetails.phoneNumberText || "",
-      });
-    }
-  }, [productDetails]);
-
-  const handleOnChange = (e) => {
-    setProductForm({ ...productForm, [e.target.name]: e.target.value });
-  };
-
-  const saveHistory = (updatedElements) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(updatedElements);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  };
-
-  const handleResize = (e, direction, ref, delta, id) => {
-    const newSize = { width: ref.offsetWidth, height: ref.offsetHeight };
-    const updatedElements = elements.map((el) =>
-      el.id === id ? { ...el, defaultSize: newSize } : el
-    );
-    setElements(updatedElements);
-    saveHistory(updatedElements);
-  };
-
-  const handleDragStop = (e, d, id) => {
-    const updatedElements = elements.map((el) =>
-      el.id === id ? { ...el, defaultPosition: { x: d.x, y: d.y } } : el
-    );
-    setElements(updatedElements);
-    saveHistory(updatedElements);
-  };
-
-  const handleClick = (id) => {
-    setActiveElementId(id);
-  };
-
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setElements(history[newIndex]);
-      setHistoryIndex(newIndex);
-    }
-  };
-
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setElements(history[newIndex]);
-      setHistoryIndex(newIndex);
-    }
-  };
-
-  const setElementsAndSaveHistory = (updatedElements) => {
-    setElements(updatedElements);
-    saveHistory(updatedElements);
-  };
-
-  const onItemSelected = (item, tab) => {
-    if (tab === "Templates") {
-      setElementsAndSaveHistory(initialElements);
-    } else if (tab === "Gradient Ads" || tab === "AI Backgrounds") {
-      setBgColor(item.bgClass);
-    } else if (tab === "Video Ads") {
-      setElementsAndSaveHistory(
-        initialElements.map((el, idx) => ({
-          ...el,
-          defaultPosition: { ...el.defaultPosition, x: idx * 10, y: idx * 10 },
-        }))
-      );
-    }
-  };
-
-  const onDrop = (e) => {
-    e.preventDefault();
-    const item = JSON.parse(e.dataTransfer.getData("item"));
-    setElementsAndSaveHistory([
-      ...elements,
-      { ...item, id: elements.length + 1 },
-    ]);
-  };
-
-  const onDragOver = (e) => {
-    e.preventDefault();
-  };
-
-  const handleInputChange = (e, id) => {
-    const updatedElements = elements.map((el) =>
-      el.id === id ? { ...el, content: e.target.value } : el
-    );
-    setElements(updatedElements);
-    saveHistory(updatedElements);
-  };
-
   const handleExport = async () => {
-    if (templateRef.current) {
-      const canvas = await html2canvas(templateRef.current);
-      const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
-      link.download = "template.png";
-      link.click();
-    }
-  };
-
-  const handleSaveAndNext = async () => {
-    setActiveElementId(null); // Deselect any selected elements
-    setTimeout(async () => {
-      if (templateRef.current) {
-        const canvas = await html2canvas(templateRef.current);
-        const image = canvas.toDataURL("image/png");
-        navigate("/CustomSample", {
-          state: {
-            image,
-          },
-        });
-      }
-    }, 100); // Wait for the deselection to render
-  };
-
-  const titleSuggestions = [
-    "Surveying prisms - Geomatics",
-    "Geomatics-prims",
-    "Surveying prism",
-    "Optical survey prism",
-    "Mini prism",
-  ];
-  const descriptionSuggestions = [
-    "Surveyors and engineers to measure the change in position of a target that is assumed to be moving.",
-    "Geometric precision for your surveys.",
-    "Accurate and reliable surveying.",
-    "Precision instruments for surveying.",
-    "High-quality surveying prisms.",
-  ];
-  const ctaSuggestions = ["Learn More", "Discover More", "Explore More"];
-
-  const [showSuggestions, setShowSuggestions] = useState({
-    title: false,
-    description: false,
-    cta: false,
-  });
-
-  const [suggestions, setSuggestions] = useState({
-    title: titleSuggestions,
-    description: descriptionSuggestions,
-    cta: ctaSuggestions,
-  });
-
-  const toggleSuggestions = (field) => {
-    setShowSuggestions((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
-  };
-
-  const handleSuggestionClick = (field, suggestion) => {
-    const updatedElements = elements.map((el) => {
-      if (field === "title" && el.id === 2)
-        return { ...el, content: suggestion };
-      if (field === "description" && el.id === 3)
-        return { ...el, content: suggestion };
-      if (field === "cta" && el.id === 4) return { ...el, content: suggestion };
-      return el;
+  if (templateRef.current) {
+    const canvas = await html2canvas(templateRef.current, {
+      useCORS: true, // Enable CORS handling
+      allowTaint: true, // Allow tainted images to be used
     });
-    setElementsAndSaveHistory(updatedElements);
-    setShowSuggestions((prev) => ({
-      ...prev,
-      [field]: false,
-    }));
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = 'template.png';
+    link.click();
+  }
+};
+
+
+const handleSaveAndNext = async () => {
+  try {
+    // Ensure all images including background and elements are loaded
+    const images = Array.from(templateRef.current.querySelectorAll('img'));
+
+    // Wait for all images to load
+    const loadImages = images.map(img => {
+      return new Promise((resolve, reject) => {
+        if (img.complete) {
+          resolve();
+        } else {
+          img.onload = resolve;
+          img.onerror = reject;
+        }
+      });
+    });
+
+    await Promise.all(loadImages); // Wait for all images to load
+
+    // Capture the template with html2canvas
+    const canvas = await html2canvas(templateRef.current, {
+      useCORS: true, // Enable CORS
+      allowTaint: true, // Allow cross-origin tainted images
+      backgroundColor: null, // Ensure no default background color is applied
+    });
+
+    // Convert the canvas to an image
+    const image = canvas.toDataURL('image/png');
+
+    // Navigate to CustomSample and pass the image
+    navigate('/CustomSample', {
+      state: { image }, // Pass the generated image to CustomSample page
+    });
+  } catch (error) {
+    console.error("Failed to generate image from canvas", error);
+  }
+};
+
+const handleDoubleClickText = (index) => {
+    setEditingTextIndex(index);
+    setSelectedElementIndex(index); // Mark the selected element
+    setActiveComponent("Text"); // Activate the Text component in Sidebar
+};
+
+
+
+// Function to handle text change
+const handleTextChange = (e, index) => {
+    const newElements = [...elements];
+    newElements[index].content = e.target.textContent; // Update the content
+    setElements(newElements);
+};
+
+// To handle formatting from the TextFormatToolbar
+const handleTextFormatting = (styleProperty, value) => {
+    if (selectedElementIndex !== null) {
+        const newElements = [...elements];
+        newElements[selectedElementIndex].style[styleProperty] = value; // Apply formatting
+        setElements(newElements);
+    }
+};
+
+  const handleZoomChange = (e) => {
+    setZoom(e.target.value / 100);
   };
 
-  const [element, setElement] = useState({
-    logo: { x: 0, y: 0, width: 216, height: 113 },
-    title: {
-      x: 43,
-      y: 810,
-      fontSize: 70,
-      text: "Managing\nHypertension Effectively",
-    },
-    description: {
-      x: 54,
-      y: 367,
-      fontSize: 40,
-      text: "- Uncontrolled blood pressure risks\n- Increased stroke and heart failure\n- Arjuna for hypertension control",
-    },
-    ctaButton: { x: 669, y: 194, width: 221, height: 97, text: "Act Now" },
-    phoneNumber: { x: 95, y: 194, text: "8688423165" },
-  });
+  const getScaledSize = () => {
+    const scaledWidth = imageLayoutSize * zoom;
+    const scaledHeight = imageLayoutSize * zoom;
 
-  const handleDrag = (e, data, key) => {
-    setElement((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], x: data.x, y: data.y },
-    }));
+    return { width: scaledWidth, height: scaledHeight };
   };
 
-  return (
+  const handleElementResize = (e, direction, ref, delta, index) => {
+  const newElements = [...elements];
+
+  // Ensure the element exists before updating its size
+  if (newElements[index]) {
+    const newWidth = ref.offsetWidth / zoom;
+    const newHeight = ref.offsetHeight / zoom;
+
+    // If the element is text, adjust font size based on the height
+    if (newElements[index].type === 'text') {
+      const fontSize = parseFloat(newElements[index].style.fontSize) || 16;
+      const newFontSize = (fontSize * newHeight) / ref.offsetHeight;
+    }
+
+    // Update the size of the element based on the resize
+    newElements[index].size = {
+      width: newWidth,
+      height: newHeight,
+    };
+    setElements(newElements);
+
+    const rect = ref.getBoundingClientRect();
+
+    // Dynamically show tooltip during resizing
+    setTooltip({
+      visible: true,
+      width: newWidth,
+      height: newHeight,
+      x: rect.right + 10,
+      y: rect.bottom + 10,
+    });
+  } else {
+    console.error(`Size property is undefined for element at index ${index}`);
+  }
+};
+
+const handleElementDragStop = (e, d, index) => {
+  const newElements = [...elements];
+
+  // Ensure the element exists before updating its position
+  if (newElements[index] && newElements[index].position) {
+    // Update the position based on the drag stop event
+    newElements[index].position = { x: d.x / zoom, y: d.y / zoom };
+    setElements(newElements);
+
+    const element = newElements[index];
+    const elementWidth = element.size?.width;  // No default size here, respect the API response
+    const elementHeight = element.size?.height;
+
+    if (elementWidth && elementHeight) {
+      // Display tooltip after dragging
+      setTooltip({
+        visible: true,
+        width: elementWidth,
+        height: elementHeight,
+        x: d.x + (elementWidth * zoom) + 10, // Position tooltip at the bottom-right
+        y: d.y + (elementHeight * zoom) + 10,
+      });
+    } else {
+      console.error(`Size property is undefined for element at index ${index}`);
+    }
+  } else {
+    console.error(`Position property is undefined for element at index ${index}`);
+  }
+
+  setSelectedElementIndex(null); // Deselect the element after dragging
+};
+
+
+const handleResizeStop = (e, direction, ref, delta, index) => {
+  // Finalize the size and keep the tooltip visible
+  handleElementResize(e, direction, ref, delta, index);
+  setTooltip((tooltip) => ({
+    ...tooltip,
+    visible: true, // Ensure tooltip remains visible after resizing
+  }));
+};
+
+const adjustTooltipPosition = () => {
+  const tooltipX = tooltip.x;
+  const tooltipY = tooltip.y;
+  const tooltipWidth = 80; // Tooltip width
+  const tooltipHeight = 30; // Tooltip height
+  const padding = 10; // Padding from the edge
+
+  let left = tooltipX;
+  let top = tooltipY;
+
+  // Ensure tooltip doesn't go beyond the right edge
+  if (left + tooltipWidth > window.innerWidth) {
+    left = window.innerWidth - tooltipWidth - padding;
+  }
+
+  // Ensure tooltip doesn't go beyond the bottom edge
+  if (top + tooltipHeight > window.innerHeight) {
+    top = window.innerHeight - tooltipHeight - padding;
+  }
+
+  return { left, top };
+};
+
+
+return (
     <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
-      <div
-        className="border-2 border-white rounded-[32px] w-full"
-        style={{ height: "calc(100vh - 1rem)" }}
-      >
-        <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[32px] p-6 w-full">
+      <div className="border-2 border-white rounded-[20px] w-full overflow-auto" style={{ height: "calc(100vh - 1rem)" }}>
+        <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-3 w-full">
           <span className="flex items-center gap-2">
             <img src="/icon5.svg" alt="Icon" />
             <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold text-xl">
-                Template Customization
-              </h4>
-              <p className="text-[#374151] text-sm">
-                Customize your ad based on your preferences.
-              </p>
+              <h4 className="text-[#082A66] font-bold text-xl">Template Customization</h4>
+              <p className="text-[#374151] text-sm">Customize your ad based on your preferences.</p>
             </span>
           </span>
-          <img
-            src={brandImage}
-            alt="Brand Banner"
-            className="-mb-5 right-24 w-36 hidden lg:block"
-          />
         </div>
         <div className="flex">
           <div className="p-4 w-1/12">
-            <Sidebar
-              setActiveComponent={setActiveComponent}
-              setShowAdCreatives={setShowAdCreatives}
-            />
+          <Sidebar setActiveComponent={setActiveComponent} setShowAdCreatives={() => {}} />
+
           </div>
           <div className="flex-row relative w-full m-4 ml-0">
-            <div
-              className="flex items-center justify-between p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1"
-              style={{ height: "8vh" }}
-            >
+          <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
+               {/* Display TextFormatToolbar only when the 'Text' component is active */}
+               {activeComponent === "Text" && <TextFormatToolbar onClose={() => setActiveComponent("")} applyFormatting={handleTextFormatting} />}
+
               <div className="flex">
-                <button
-                  onClick={handleUndo}
-                  className="rounded mr-2 relative group"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    className="w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                    />
-                  </svg>
-                  <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full bg-[#082A66] text-white text-xs rounded px-1 py-0.5 hidden group-hover:block">
-                    Undo
-                  </span>
-                </button>
-                <button
-                  onClick={handleRedo}
-                  className="rounded mr-2 relative group"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    className="w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 15l6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"
-                    />
-                  </svg>
-                  <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full bg-[#082A66] text-white text-xs rounded px-1 py-0.5 hidden group-hover:block">
-                    Redo
-                  </span>
-                </button>
-                {activeComponent === "Text" && (
-                  <TextFormatToolbar onClose={() => setActiveComponent("")} />
-                )}
+                <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
+                <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
+                <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
               </div>
-              <div className="flex">
-                <button
-                  onClick={() => navigate("/campaigns")}
-                  className="flex bg-red-500 text-white py-1 px-4 rounded mr-2"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleExport}
-                  className="custom-button text-white py-1 px-4 rounded mr-2"
-                >
-                  Export
-                </button>
-                <button
-                  onClick={handleSaveAndNext}
-                  className="custom-button text-white py-1 px-4 rounded"
-                >
-                  Save & Next
-                </button>
-              </div>
+              
             </div>
-            <div
-              className="flex flex-cols-2 justify-end relative w-full shadow-lg rounded-md m-4 ml-0 "
-              style={{ height: "calc(100vh - 15rem)" }}
-            >
-              <div className="w-1/2 h-[450px] flex flex-col items-start p-4 mr-12 mt-0 pt-0">
-                {showAdCreatives ? (
-                  <AdCreatives
-                    onItemSelected={onItemSelected}
-                    onClose={() => setShowAdCreatives(false)}
-                  />
-                ) : (
-                  <div className="flex flex-col h-[450px] space-y-4 rounded-xl mt-8 bg-[#FCFCFC20] shadow-md border border-[#FCFCFC] py-4 px-10">
-                    <div className="flex items-center mt-4">
-                      <label className="w-1/4">Title:</label>
-                      <div className="relative flex-1">
-                        <div className="flex flex-row">
-                          <input
-                            type="text"
-                            name="title"
-                            value={productForm.title}
-                            onChange={handleOnChange}
-                            className="input lg:w-[387px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                          />
-                          <button
-                            className="flex items-center shadow-lg bg-[#FCFCFC60] border-2 px-3 rounded-md py-1 ml-2"
-                            onClick={() => toggleSuggestions("description")}
-                          >
-                            <img
-                              src="icon7.svg"
-                              className="w-7 h-7 cursor-pointer -mt-1"
-                            />
-                            <p className="text-xs ml-1 text-nowrap">
-                              AI Assist
-                            </p>
-                          </button>
-                        </div>
-                        {showSuggestions.title && (
-                          <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md">
-                            {suggestions.title.map((suggestion, index) => (
-                              <div
-                                key={index}
-                                className="px-4 py-2 cursor-pointer hover:bg-gray-200"
-                                onClick={() =>
-                                  handleSuggestionClick("title", suggestion)
-                                }
-                              >
-                                {suggestion}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <label className="w-1/4">Description:</label>
-                      <div className="relative flex-1">
-                        <div className="flex flex-row">
-                          <textarea
-                            value={productForm.description}
-                            name="description"
-                            onChange={handleOnChange}
-                            className="textarea lg:w-[387px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none hide-scrollbar"
-                            contentEditable={true}
-                            suppressContentEditableWarning={true}
-                            onClick={() => setActiveComponent("Text")}
-                          />
-                          <div className="py-3">
-                            <button
-                              className="flex items-center shadow-lg bg-[#FCFCFC60] border-2 px-3 rounded-md py-1 ml-2"
-                              onClick={() => toggleSuggestions("description")}
-                            >
-                              <img
-                                src="icon7.svg"
-                                className="w-7 h-7 cursor-pointer -mt-1"
-                              />
-                              <p className="text-xs ml-1 text-nowrap">
-                                AI Assist
-                              </p>
-                            </button>
-                          </div>
-                        </div>
-                        {showSuggestions.description && (
-                          <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md">
-                            {suggestions.description.map(
-                              (suggestion, index) => (
-                                <div
-                                  key={index}
-                                  className="px-4 py-2 cursor-pointer hover:bg-gray-200"
-                                  onClick={() =>
-                                    handleSuggestionClick(
-                                      "description",
-                                      suggestion
-                                    )
-                                  }
-                                >
-                                  {suggestion}
-                                </div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <label className="w-1/4">CTA:</label>
-                      <div className="relative flex-1">
-                        <div className="flex flex-row">
-                          <input
-                            type="text"
-                            value={productForm.ctaButtonText}
-                            name="ctaButtonText"
-                            onChange={handleOnChange}
-                            className="input lg:w-[387px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                          />
-                          <button
-                            className="flex items-center shadow-lg bg-[#FCFCFC60] border-2 px-3 rounded-md py-1 ml-2"
-                            onClick={() => toggleSuggestions("description")}
-                          >
-                            <img
-                              src="icon7.svg"
-                              className="w-7 h-7 cursor-pointer -mt-1"
-                            />
-                            <p className="text-xs ml-1 text-nowrap">
-                              AI Assist
-                            </p>
-                          </button>
-                        </div>
-                        {showSuggestions.cta && (
-                          <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md">
-                            {suggestions.cta.map((suggestion, index) => (
-                              <div
-                                key={index}
-                                className="px-4 py-2 cursor-pointer hover:bg-gray-200"
-                                onClick={() =>
-                                  handleSuggestionClick("cta", suggestion)
-                                }
-                              >
-                                {suggestion}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <label className="w-1/4">Website:</label>
-                      <input
-                        type="text"
-                        value={productForm.websiteAddressText}
-                        name="websiteAddressText"
-                        onChange={handleOnChange}
-                        className="input lg:w-[550px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <label className="w-1/4">Phone Number:</label>
-                      <input
-                        type="text"
-                        value={productForm.phoneNumberText}
-                        name="phoneNumberText"
-                        onChange={handleOnChange}
-                        className="input lg:w-[550px] w-3/4 py-2 px-4 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="border shadow-sm justify-center bg-striped mx-auto p-0 pl-14 pt-2 m-1 ">
-                <div
-                  className="w-[400px] h-[400px] bg-[#FCFCFC] rounded-lg flex flex-col items-center p-4 mr-12 mt-8 hover:ring-2 hover:ring-blue-400"
-                  style={{ backgroundImage: `url(${productDetails?.logoUrl})` }}
-                >
-                  <Draggable
-                    position={{ x: element.logo.x, y: element.logo.y }}
-                    onStop={(e, data) => handleDrag(e, data, "logo")}
-                  >
-                    <div
-                      className="draggable-element"
-                      style={{
-                        width: element.logo.width,
-                        height: element.logo.height,
-                      }}
-                    >
-                      <img
-                        src={productDetails?.imageURL}
-                        alt="Logo"
-                        width={250}
-                        height={200}
-                      />
-                    </div>
-                  </Draggable>
+            <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
+              <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-4 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()}>
+              <div
+  className="bg-stripped p-4"
+  style={{
+    height: `${imageLayoutSize * zoom}px`,
+    width: `${imageLayoutSize * zoom}px`,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundImage: productDetails?.bgImageURL ? `url(${productDetails.bgImageURL})` : 'none',
+    backgroundSize: "cover", // Make sure the background covers the whole area
+    backgroundPosition: "center", // Center the background
+    backgroundRepeat: "no-repeat", // Ensure the background does not repeat
+    position: "relative", // Keep the position relative to contain the elements
+  }}
+  ref={templateRef}
+>
+  {loading ? (
+    <p>Loading elements...</p>
+  ) : (
+    elements.map((element, index) => (
+      <Rnd
+  key={index}
+  size={{ width: element.size?.width * zoom || "auto", height: element.size?.height * zoom || "auto" }}
+  position={{ x: element.position.x * zoom, y: element.position.y * zoom }}
+  onClick={() => setSelectedElementIndex(index)}
+  onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit
+  onDragStop={(e, d) => handleElementDragStop(e, d, index)}
+  onResize={(e, direction, ref, delta) => handleElementResize(e, direction, ref, delta, index)} // Resize dynamically
+  onResizeStop={(e, direction, ref, delta) => handleResizeStop(e, direction, ref, delta, index)} // Finalize resizing
+  bounds="parent"
+  style={{
+    border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
+  }}
+>
+  {element.type === "image" ? (
+    <img src={element.src} alt="element" style={{ width: "100%", height: "100%" }} />
+  ) : (
+    <div
+      contentEditable={editingTextIndex === index} // Make the text editable on double-click
+      onInput={(e) => handleTextChange(e, index)} // Handle text changes
+      style={{
+        ...element.style,
+        fontSize: `${parseFloat(element.style.fontSize) * zoom}px`,
+      }}
+    >
+      {element.contentFormatted ? element.contentFormatted : element.content}
+    </div>
+  )}
+</Rnd>
 
-                  <Draggable onStop={(e, data) => handleDrag(e, data, "title")}>
-                    <div>{productForm.title}</div>
-                  </Draggable>
+    ))
+  )}
+</div>
 
-                  <Draggable
-                    onStop={(e, data) => handleDrag(e, data, "description")}
-                  >
-                    <div>{productForm.description}</div>
-                  </Draggable>
+{tooltip.visible && (
+  <div
+    className="absolute bg-black text-white px-2 py-1 rounded"
+    style={{
+      left: adjustTooltipPosition().left,
+      top: adjustTooltipPosition().top,
+      zIndex: 1000, // Ensure tooltip stays above other elements
+    }}
+  >
+    w: {Math.round(tooltip.width)}px h: {Math.round(tooltip.height)}px
+  </div>
+)}
 
-                  <Draggable
-                    onStop={(e, data) => handleDrag(e, data, "ctaButton")}
-                  >
-                    <button
-                      className="bg-blue-600 leading-10 px-8 rounded text-center text-white text-sm"
-                      style={{
-                        width: productDetails?.ctaButtonWidth,
-                        height: productDetails?.ctaButtonHeight,
-                      }}
-                    >
-                      {productForm.ctaButtonText}
-                    </button>
-                  </Draggable>
-
-                  <Draggable
-                    onStop={(e, data) => handleDrag(e, data, "phoneNumber")}
-                  >
-                    <div className="draggable-element">
-                      {productForm.phoneNumberText}
-                    </div>
-                  </Draggable>
-                </div>
               </div>
             </div>
           </div>
         </div>
+        <div
+          className="fixed right-8 bottom-2 flex items-center rounded-lg"
+          style={{ zIndex: 1000 }}
+        >
+          <input
+            type="range"
+            min="10"
+            max="500"
+            value={zoom * 100}
+            onChange={handleZoomChange}
+            style={{ width: '120px' }}
+          />
+          <span className="ml-2 text-[#082A66] font-bold gap-4">{Math.round(zoom * 100)}%</span>
+        </div>
+
       </div>
     </div>
   );
@@ -688,57 +430,36 @@ export default function EditTemplate() {
 
 const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
   return (
-    <div
-      className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg"
-      style={{ height: "calc(100vh - 10rem)" }}
-    >
-      <button
-        className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
-        onClick={() => {
-          setActiveComponent("Creatives");
-          setShowAdCreatives(true);
-        }}
-      >
+    <div className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg" style={{ height: 'calc(100vh - 8rem)' }}>
+      <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => {
+        setActiveComponent('Creatives');
+        setShowAdCreatives(true);
+      }}>
         <img src="/icon5.svg" alt="Icon" className="w-8 h-8" />
         <span className="text-sm">Creatives</span>
       </button>
       <div className="flex flex-col items-center justify-center space-y-2 mt-4">
-        <button
-          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
-          onClick={() => setActiveComponent("Text")}
-        >
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Text')}>
           <FaTextHeight />
           <span className="text-sm">Text</span>
         </button>
-        <button
-          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
-          onClick={() => setActiveComponent("Image")}
-        >
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Image')}>
           <FaImage />
           <span className="text-sm">Image</span>
         </button>
-        <button
-          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
-          onClick={() => setActiveComponent("Shape")}
-        >
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Shape')}>
           <FaShapes />
           <span className="text-sm">Shape</span>
         </button>
-        <button
-          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
-          onClick={() => setActiveComponent("Frame")}
-        >
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Frame')}>
           <FaRegImages />
           <span className="text-sm">Frame</span>
         </button>
-        <button
-          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
-          onClick={() => setActiveComponent("Uploads")}
-        >
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Uploads')}>
           <FaUpload />
           <span className="text-sm">Uploads</span>
         </button>
       </div>
     </div>
   );
-};
+}; 
