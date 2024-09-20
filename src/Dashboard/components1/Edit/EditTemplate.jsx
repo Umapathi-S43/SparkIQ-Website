@@ -7,6 +7,11 @@ import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
 import html2canvas from 'html2canvas';
 import TextFormatToolbar from "./Textformat"; // Import TextFormatToolbar
+import TextAdder from "./TextAdder"; // Import TextFormatToolbar
+import ImageUploadLayout from "./ImageUpload";
+import AdCreatives from "./AdCreatives";
+import ImageSearchSidebar from "./ImageSearch";
+import ShapeStyleLayout from "./Shapes";
 
 export default function EditTemplate() {
   const [elements, setElements] = useState([]);
@@ -77,8 +82,14 @@ export default function EditTemplate() {
           {
             type: "image",
             src: data.productURL,
-            position: { x: 0, y: 0 },
-            size: { width: 540, height: 540 }
+            position: { 
+              x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0, 
+              y: data.productPosition ? parseInt(data.productPosition.split(",")[1]) : 0 
+            },
+            size: { 
+              width: data.productWidth || 540, 
+              height: data.productHeight || 540 
+            }
           },
           {
             type: "text",
@@ -116,6 +127,11 @@ export default function EditTemplate() {
 
     fetchProductDetails();
   }, [productID]);
+
+  // Function to handle adding a new text element from TextAdder
+  const handleAddText = (newElement) => {
+    setElements([...elements, newElement]); // Append new text element to the existing elements
+  };
 
   const handleExport = async () => {
   if (templateRef.current) {
@@ -172,17 +188,16 @@ const handleSaveAndNext = async () => {
 const handleDoubleClickText = (index) => {
     setEditingTextIndex(index);
     setSelectedElementIndex(index); // Mark the selected element
-    setActiveComponent("Text"); // Activate the Text component in Sidebar
 };
 
 
 
-// Function to handle text change
+// Function to handle real-time text changes as user types (optional debouncing)
 const handleTextChange = (e, index) => {
-    const newElements = [...elements];
-    newElements[index].content = e.target.textContent; // Update the content
-    setElements(newElements);
+  const newElements = [...elements];
+  newElements[index].content = e.target.textContent;
 };
+
 
 // To handle formatting from the TextFormatToolbar
 const handleTextFormatting = (styleProperty, value) => {
@@ -281,8 +296,20 @@ const handleResizeStop = (e, direction, ref, delta, index) => {
     visible: true, // Ensure tooltip remains visible after resizing
   }));
 };
+// Function to handle key down events (specifically for Backspace handling)
+const handleKeyDown = (e, index) => {
+  if (e.key === "Backspace") {
+      const element = elements[index];
+      const content = element.content;
 
+      // If there's no content left, prevent further backspace actions
+      if (content.length === 0) {
+          e.preventDefault(); // Prevent default backspace behavior
+      }
+  }
+};
 const adjustTooltipPosition = () => {
+  
   const tooltipX = tooltip.x;
   const tooltipY = tooltip.y;
   const tooltipWidth = 80; // Tooltip width
@@ -307,125 +334,144 @@ const adjustTooltipPosition = () => {
 
 
 return (
-    <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
-      <div className="border-2 border-white rounded-[20px] w-full overflow-auto" style={{ height: "calc(100vh - 1rem)" }}>
-        <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-3 w-full">
-          <span className="flex items-center gap-2">
-            <img src="/icon5.svg" alt="Icon" />
-            <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold text-xl">Template Customization</h4>
-              <p className="text-[#374151] text-sm">Customize your ad based on your preferences.</p>
-            </span>
+  <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
+    <div className="border-2 border-white rounded-[20px] w-full overflow-auto" style={{ height: "calc(100vh - 1rem)" }}>
+      <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-3 w-full">
+        <span className="flex items-center gap-2">
+          <img src="/icon5.svg" alt="Icon" />
+          <span className="flex flex-col">
+            <h4 className="text-[#082A66] font-bold text-xl">Template Customization</h4>
+            <p className="text-[#374151] text-sm">Customize your ad based on your preferences.</p>
           </span>
-        </div>
-        <div className="flex">
-          <div className="p-4 w-1/12">
+        </span>
+      </div>
+      <div className="flex">
+        <div className="p-4 w-1/12">
           <Sidebar setActiveComponent={setActiveComponent} setShowAdCreatives={() => {}} />
-
-          </div>
-          <div className="flex-row relative w-full m-4 ml-0">
+        </div>
+        <div className="flex-row relative w-full m-4 ml-0">
           <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
-               {/* Display TextFormatToolbar only when the 'Text' component is active */}
-               {activeComponent === "Text" && <TextFormatToolbar onClose={() => setActiveComponent("")} applyFormatting={handleTextFormatting} />}
-
-              <div className="flex">
-                <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
-                <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
-                <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
-              </div>
-              
+          {editingTextIndex !== null && (
+                <TextFormatToolbar
+                  onClose={() => setEditingTextIndex(null)} // Close toolbar
+                  applyFormatting={handleTextFormatting} />
+              )}
+<div className="flex">
+              <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
+              <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
+              <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
             </div>
-            <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
-              <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-4 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()}>
-              <div
-  className="bg-stripped p-4"
-  style={{
-    height: `${imageLayoutSize * zoom}px`,
-    width: `${imageLayoutSize * zoom}px`,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundImage: productDetails?.bgImageURL ? `url(${productDetails.bgImageURL})` : 'none',
-    backgroundSize: "cover", // Make sure the background covers the whole area
-    backgroundPosition: "center", // Center the background
-    backgroundRepeat: "no-repeat", // Ensure the background does not repeat
-    position: "relative", // Keep the position relative to contain the elements
-  }}
-  ref={templateRef}
->
-  {loading ? (
-    <p>Loading elements...</p>
-  ) : (
-    elements.map((element, index) => (
-      <Rnd
-  key={index}
-  size={{ width: element.size?.width * zoom || "auto", height: element.size?.height * zoom || "auto" }}
-  position={{ x: element.position.x * zoom, y: element.position.y * zoom }}
-  onClick={() => setSelectedElementIndex(index)}
-  onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit
-  onDragStop={(e, d) => handleElementDragStop(e, d, index)}
-  onResize={(e, direction, ref, delta) => handleElementResize(e, direction, ref, delta, index)} // Resize dynamically
-  onResizeStop={(e, direction, ref, delta) => handleResizeStop(e, direction, ref, delta, index)} // Finalize resizing
-  bounds="parent"
-  style={{
-    border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
-  }}
->
-  {element.type === "image" ? (
-    <img src={element.src} alt="element" style={{ width: "100%", height: "100%" }} />
-  ) : (
-    <div
-      contentEditable={editingTextIndex === index} // Make the text editable on double-click
-      onInput={(e) => handleTextChange(e, index)} // Handle text changes
-      style={{
-        ...element.style,
-        fontSize: `${parseFloat(element.style.fontSize) * zoom}px`,
-      }}
-    >
-      {element.contentFormatted ? element.contentFormatted : element.content}
-    </div>
-  )}
-</Rnd>
+          </div>
+          <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
+            {/* Show TextAdder when Text component is active */}
+            {activeComponent === "Creatives" && (
+                <div className="w-2/5 m-4 shadow-sm rounded-md">
+                  <AdCreatives />
+                </div>
+              )}
+            
+            {activeComponent === "Text" && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md">
+                  <TextAdder onAddText={handleAddText} />
+                </div>
+              )}
+              {/* Show ImageUploadLayout when Uploads component is active */}
+              {activeComponent === "Uploads" && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar">
+                  <ImageUploadLayout />
+                </div>
+              )}
+               {activeComponent === "Images" && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar">
+                  <ImageSearchSidebar
+                   />
+                </div>
+              )}
 
-    ))
-  )}
-</div>
+              {activeComponent === "Shapes" && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar">
+                  <ShapeStyleLayout
+                   />
+                </div>
+              )}
 
-{tooltip.visible && (
-  <div
-    className="absolute bg-black text-white px-2 py-1 rounded"
-    style={{
-      left: adjustTooltipPosition().left,
-      top: adjustTooltipPosition().top,
-      zIndex: 1000, // Ensure tooltip stays above other elements
-    }}
-  >
-    w: {Math.round(tooltip.width)}px h: {Math.round(tooltip.height)}px
-  </div>
-)}
-
+            <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-4 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()}>
+              <div className="bg-stripped p-4" style={{
+                height: `${imageLayoutSize * zoom}px`,
+                width: `${imageLayoutSize * zoom}px`,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundImage: productDetails?.bgImageURL ? `url(${productDetails.bgImageURL})` : 'none',
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                position: "relative"
+              }} ref={templateRef}>
+                {/* Render each element (text or image) */}
+                {loading ? (
+                  <p>Loading elements...</p>
+                ) : (
+                  elements.map((element, index) => (
+                    <Rnd
+                      key={index}
+                      size={{ width: element.size?.width * zoom || "auto", height: element.size?.height * zoom || "auto" }}
+                      position={{ x: element.position.x * zoom, y: element.position.y * zoom }}
+                      onClick={() => setSelectedElementIndex(index)}
+                      onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit
+                      onDragStop={(e, d) => handleElementDragStop(e, d, index)}
+                      onResize={(e, direction, ref, delta) => handleElementResize(e, direction, ref, delta, index)} // Resize dynamically
+                      onResizeStop={(e, direction, ref, delta) => handleResizeStop(e, direction, ref, delta, index)} // Finalize resizing
+                      bounds="parent"
+                      style={{
+                        border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
+                      }}
+                    >
+                      {element.type === "image" ? (
+                        <img src={element.src} alt="element" style={{ width: "100%", height: "100%" }} />
+                      ) : (
+                        <div
+                              contentEditable={editingTextIndex === index} // Make the text editable on double-click
+                              onBlur={(e) => handleTextBlur(index, e)} // Finalize text change on blur
+                              onInput={(e) => handleTextChange(e, index)} // Handle live text changes (but don’t update state unnecessarily)
+                              onKeyDown={(e) => handleKeyDown(e, index)} // Handle backspace and other key events
+                              suppressContentEditableWarning={true} // Suppress React warning for contentEditable
+                              style={{
+                                  ...element.style,
+                                  fontSize: `${parseFloat(element.style.fontSize) * zoom}px`,
+                              }}
+                          >
+                              {element.contentFormatted ? element.contentFormatted : element.content}
+                          </div>
+                      )}
+                    </Rnd>
+                  ))
+                )}
               </div>
+              {tooltip.visible && (
+              <div
+                className="absolute bg-black text-white px-2 py-1 rounded"
+                style={{
+                  left: adjustTooltipPosition().left,
+                  top: adjustTooltipPosition().top,
+                  zIndex: 1000, // Ensure tooltip stays above other elements
+                }}
+              >
+                w: {Math.round(tooltip.width)}px h: {Math.round(tooltip.height)}px
+              </div>
+            )}
+
             </div>
           </div>
         </div>
-        <div
-          className="fixed right-8 bottom-2 flex items-center rounded-lg"
-          style={{ zIndex: 1000 }}
-        >
-          <input
-            type="range"
-            min="10"
-            max="500"
-            value={zoom * 100}
-            onChange={handleZoomChange}
-            style={{ width: '120px' }}
-          />
-          <span className="ml-2 text-[#082A66] font-bold gap-4">{Math.round(zoom * 100)}%</span>
-        </div>
-
+      </div>
+      <div className="fixed right-8 bottom-2 flex items-center rounded-lg" style={{ zIndex: 1000 }}>
+        <input type="range" min="10" max="500" value={zoom * 100} onChange={handleZoomChange} style={{ width: '120px' }} />
+        <span className="ml-2 text-[#082A66] font-bold gap-4">{Math.round(zoom * 100)}%</span>
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
@@ -443,11 +489,11 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
           <FaTextHeight />
           <span className="text-sm">Text</span>
         </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Image')}>
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Images')}>
           <FaImage />
           <span className="text-sm">Image</span>
         </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Shape')}>
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Shapes')}>
           <FaShapes />
           <span className="text-sm">Shape</span>
         </button>
@@ -458,8 +504,9 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
         <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Uploads')}>
           <FaUpload />
           <span className="text-sm">Uploads</span>
-        </button>
+        </button>    
       </div>
+
     </div>
   );
 }; 
