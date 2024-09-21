@@ -10,7 +10,7 @@ import TextFormatToolbar from "./Textformat"; // Import TextFormatToolbar
 import TextAdder from "./TextAdder"; // Import TextFormatToolbar
 import ImageUploadLayout from "./ImageUpload";
 import AdCreatives from "./AdCreatives";
-import ImageSearchSidebar from "./ImageSearch";
+import ImageSearchLayout from "./ImageSearch";
 import ShapeStyleLayout from "./Shapes";
 
 export default function EditTemplate() {
@@ -255,6 +255,33 @@ const handleTextFormatting = (styleProperty, value) => {
   }
 };
 
+useEffect(() => {
+  const handleKeyDown = (event) => {
+    if (event.key === "Delete") {
+      if (selectedElementIndex !== null) {
+        handleDeleteElement(); // Call the delete function when Delete key is pressed
+      }
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  // Cleanup event listener when the component unmounts
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, [selectedElementIndex]); // Rerun this effect if the selected element changes
+
+const handleDeleteElement = () => {
+  if (selectedElementIndex !== null) {
+    const newElements = [...elements];
+    newElements.splice(selectedElementIndex, 1); // Remove the selected element
+    setElements(newElements);
+    setSelectedElementIndex(null); // Reset the selection
+  }
+};
+
+
 const handleElementDragStop = (e, d, index) => {
   const newElements = [...elements];
 
@@ -285,6 +312,16 @@ const handleElementDragStop = (e, d, index) => {
   }
 
   setSelectedElementIndex(null); // Deselect the element after dragging
+};
+ // Function to handle adding a new image element from ImageSearchLayout
+ const handleAddImage = (imageUrl) => {
+  const newImageElement = {
+    type: 'image',
+    src: imageUrl,
+    position: { x: 50, y: 50 }, // Default position for the image
+    size: { width: 200, height: 200 }, // Default size for the image
+  };
+  setElements([...elements, newImageElement]); // Add the selected image as a new element
 };
 
 
@@ -356,7 +393,7 @@ return (
                   onClose={() => setEditingTextIndex(null)} // Close toolbar
                   applyFormatting={handleTextFormatting} />
               )}
-<div className="flex">
+              <div className="flex">
               <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
               <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
               <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
@@ -371,20 +408,21 @@ return (
               )}
             
             {activeComponent === "Text" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md">
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md bg-[#082A66]">
                   <TextAdder onAddText={handleAddText} />
                 </div>
               )}
               {/* Show ImageUploadLayout when Uploads component is active */}
               {activeComponent === "Uploads" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar">
-                  <ImageUploadLayout />
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                  <ImageUploadLayout onSelectImage={handleAddImage} /> {/* Pass the handleAddImage callback */}
                 </div>
               )}
+
                {activeComponent === "Images" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar">
-                  <ImageSearchSidebar
-                   />
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar  bg-[#082A66]">
+                  <ImageSearchLayout onSelectImage={handleAddImage} /> {/* Pass the handleAddImage callback */}
+          
                 </div>
               )}
 
@@ -460,7 +498,6 @@ return (
                 w: {Math.round(tooltip.width)}px h: {Math.round(tooltip.height)}px
               </div>
             )}
-
             </div>
           </div>
         </div>
@@ -506,7 +543,6 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
           <span className="text-sm">Uploads</span>
         </button>    
       </div>
-
     </div>
   );
 }; 

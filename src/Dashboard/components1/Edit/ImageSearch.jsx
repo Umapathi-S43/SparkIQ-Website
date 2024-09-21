@@ -4,14 +4,13 @@ import { toast } from "react-toastify";
 import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
 
-const ImageSearchLayout = () => {
-  // Extract the selected product from localStorage
+const ImageSearchLayout = ({ onSelectImage }) => { // Accept a callback prop
   const storedProduct = JSON.parse(localStorage.getItem("selectedProduct")) || {};
   const [searchTerm, setSearchTerm] = useState(storedProduct.name || ""); // Default search term based on the product name
   const [currentPage, setCurrentPage] = useState(1); // For pagination
   const [images, setImages] = useState([]);
 
-  // Fetch images initially when the component mounts, based on the default title from localStorage
+  // Fetch images initially when the component mounts
   useEffect(() => {
     if (storedProduct.name) {
       handleSearchForImages(); // Automatically search based on the product title
@@ -38,16 +37,15 @@ const ImageSearchLayout = () => {
   };
 
   return (
-    <div className="border shadow-md p-4 text-[#082A66]">
+    <div className="border shadow-md p-4 text-[#FCFCFC] rounded-lg">
       <h3 className="font-semibold text-xl pb-4">Search for Images</h3>
 
-      {/* Input field for search term and search button */}
-      <div className="border p-4 mb-4">
+      <div className="border p-4 mb-4 rounded-md">
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 mb-2 border rounded-md"
+          className="w-full p-2 mb-2 border rounded-md text-[#082A66]"
           placeholder="Search for images"
         />
         <button
@@ -58,16 +56,19 @@ const ImageSearchLayout = () => {
         </button>
       </div>
 
-      {/* Display images in a grid, two per row with equal height and width */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {images.length > 0 ? (
           images.map((image, index) => (
-            <div key={image.id} className="border p-2">
-              <img 
-                src={image.imgUrl} 
-                alt={`Preview ${index}`} 
-                className="w-full h-auto" 
-                style={{ width: "150px", height: "100px", objectFit: "cover" }} // Equal size images
+            <div
+              key={image.id}
+              className="border p-1 rounded-md cursor-pointer" // Add pointer cursor to indicate image is clickable
+              onClick={() => onSelectImage(image.imgUrl)} // Pass the image URL back to the parent component
+            >
+              <img
+                src={image.imgUrl}
+                alt={`Preview ${index}`}
+                className="w-full h-auto rounded-md"
+                style={{ width: "150px", height: "120px", objectFit: "cover" }} // Equal size images
               />
             </div>
           ))
@@ -76,7 +77,6 @@ const ImageSearchLayout = () => {
         )}
       </div>
 
-      {/* Pagination buttons (if needed) */}
       <div className="flex justify-between mt-4">
         <button
           className="custom-button text-white p-2 px-4 rounded"
