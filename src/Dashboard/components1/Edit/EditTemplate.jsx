@@ -12,6 +12,7 @@ import ImageUploadLayout from "./ImageUpload";
 import AdCreatives from "./AdCreatives";
 import ImageSearchLayout from "./ImageSearch";
 import ShapeStyleLayout from "./Shapes";
+import FramesComponent from "./Frames";
 
 export default function EditTemplate() {
   const [elements, setElements] = useState([]);
@@ -20,9 +21,15 @@ export default function EditTemplate() {
   const [productDetails, setProductDetails] = useState(null);
   const [activeComponent, setActiveComponent] = useState(""); // Track active component from Sidebar
   const [loading, setLoading] = useState(true);
-  const [zoom, setZoom] = useState(0.45); // Zoom level
+  const [zoom, setZoom] = useState(0.40); // Zoom level
   const [tooltip, setTooltip] = useState({ visible: false, width: 0, height: 0, x: 0, y: 0 });
   const [editingTextIndex, setEditingTextIndex] = useState(null); // Track the text element being edited
+  const [templates, setTemplates] = useState([[]]); // Start with one empty template
+  const [activeTemplateIndex, setActiveTemplateIndex] = useState(0); // Keep track of the active template
+  const templateContainerRef = useRef(null); // Ref to the container holding all templates
+  const [selectedFrame, setSelectedFrame] = useState(null); // New frame selection
+  const [droppedImage, setDroppedImage] = useState(null); // Dropped image state
+
   const templateRef = useRef();
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,13 +89,13 @@ export default function EditTemplate() {
           {
             type: "image",
             src: data.productURL,
-            position: { 
-              x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0, 
-              y: data.productPosition ? parseInt(data.productPosition.split(",")[1]) : 0 
+            position: {
+              x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0,
+              y: data.productPosition ? parseInt(data.productPosition.split(",")[1]) : 0
             },
-            size: { 
-              width: data.productWidth || 540, 
-              height: data.productHeight || 540 
+            size: {
+              width: data.productWidth || 540,
+              height: data.productHeight || 540
             }
           },
           {
@@ -128,85 +135,131 @@ export default function EditTemplate() {
     fetchProductDetails();
   }, [productID]);
 
+
+  // Function to add a new template page when "+ Add Page" is clicked
+  const handleAddPage = () => {
+    const newTemplate = [...elements]; // Copy the current elements of the template
+    setTemplates([...templates, newTemplate]); // Add a new template
+    setActiveTemplateIndex(templates.length); // Set the new template as active
+
+    // Scroll to the new template after adding it
+    setTimeout(() => {
+      if (templateContainerRef.current) {
+        const newTemplate = templateContainerRef.current.children[templates.length]; // Get the new template
+        newTemplate.scrollIntoView({ behavior: 'smooth' }); // Scroll to it
+      }
+    }, 100); // Delay to ensure the DOM has updated
+  };
+
+
   // Function to handle adding a new text element from TextAdder
   const handleAddText = (newElement) => {
     setElements([...elements, newElement]); // Append new text element to the existing elements
   };
 
+
+  // Function to handle adding a shape
+  const handleAddShape = (shape) => {
+    const newShapeElement = {
+      type: 'shape',
+      component: shape.component, // The icon component selected
+      position: { x: 50, y: 50 }, // Default position for the shape
+      size: { width: 200, height: 200 }, // Set shape size to 200x200
+      style: {
+        color: '#fff', // Default color (navy blue)
+        backgroundColor: 'transparent', // No background color by default
+
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        fontSize: '100px', // Set font size of the icon
+      },
+    };
+    setElements([...elements, newShapeElement]); // Add shape to elements
+  };
+
+
+
   const handleExport = async () => {
-  if (templateRef.current) {
-    const canvas = await html2canvas(templateRef.current, {
-      useCORS: true, // Enable CORS handling
-      allowTaint: true, // Allow tainted images to be used
-    });
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
-    link.download = 'template.png';
-    link.click();
-  }
-};
-
-
-const handleSaveAndNext = async () => {
-  try {
-    // Ensure all images including background and elements are loaded
-    const images = Array.from(templateRef.current.querySelectorAll('img'));
-
-    // Wait for all images to load
-    const loadImages = images.map(img => {
-      return new Promise((resolve, reject) => {
-        if (img.complete) {
-          resolve();
-        } else {
-          img.onload = resolve;
-          img.onerror = reject;
-        }
+    if (templateRef.current) {
+      const canvas = await html2canvas(templateRef.current, {
+        useCORS: true, // Enable CORS handling
+        allowTaint: true, // Allow tainted images to be used
       });
-    });
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = 'template.png';
+      link.click();
+    }
+  };
 
-    await Promise.all(loadImages); // Wait for all images to load
 
-    // Capture the template with html2canvas
-    const canvas = await html2canvas(templateRef.current, {
-      useCORS: true, // Enable CORS
-      allowTaint: true, // Allow cross-origin tainted images
-      backgroundColor: null, // Ensure no default background color is applied
-    });
+  const handleSaveAndNext = async () => {
+    try {
+      // Ensure all images including background and elements are loaded
+      const images = Array.from(templateRef.current.querySelectorAll('img'));
 
-    // Convert the canvas to an image
-    const image = canvas.toDataURL('image/png');
+      // Wait for all images to load
+      const loadImages = images.map(img => {
+        return new Promise((resolve, reject) => {
+          if (img.complete) {
+            resolve();
+          } else {
+            img.onload = resolve;
+            img.onerror = reject;
+          }
+        });
+      });
 
-    // Navigate to CustomSample and pass the image
-    navigate('/CustomSample', {
-      state: { image }, // Pass the generated image to CustomSample page
-    });
-  } catch (error) {
-    console.error("Failed to generate image from canvas", error);
-  }
-};
+      await Promise.all(loadImages); // Wait for all images to load
 
-const handleDoubleClickText = (index) => {
+      // Capture the template with html2canvas
+      const canvas = await html2canvas(templateRef.current, {
+        useCORS: true, // Enable CORS
+        allowTaint: true, // Allow cross-origin tainted images
+        backgroundColor: null, // Ensure no default background color is applied
+      });
+
+      // Convert the canvas to an image
+      const image = canvas.toDataURL('image/png');
+
+      // Navigate to CustomSample and pass the image
+      navigate('/CustomSample', {
+        state: { image }, // Pass the generated image to CustomSample page
+      });
+    } catch (error) {
+      console.error("Failed to generate image from canvas", error);
+    }
+  };
+
+  const handleDoubleClickText = (index) => {
     setEditingTextIndex(index);
     setSelectedElementIndex(index); // Mark the selected element
-};
+  };
 
 
 
-// Function to handle real-time text changes as user types (optional debouncing)
-const handleTextChange = (e, index) => {
-  const newElements = [...elements];
-  newElements[index].content = e.target.textContent;
-};
+  // Function to handle real-time text changes as user types (optional debouncing)
+  const handleTextChange = (e, index) => {
+    const newElements = [...elements];
+    newElements[index].content = e.target.textContent;
+  };
 
 
-// To handle formatting from the TextFormatToolbar
-const handleTextFormatting = (styleProperty, value) => {
+  // To handle formatting from the TextFormatToolbar
+  const handleTextFormatting = (styleProperty, value) => {
     if (selectedElementIndex !== null) {
-        const newElements = [...elements];
-        newElements[selectedElementIndex].style[styleProperty] = value; // Apply formatting
-        setElements(newElements);
+      const newElements = [...elements];
+
+      // Check if the selected element is a shape or text and apply the color accordingly
+      if (newElements[selectedElementIndex].type === 'text' || newElements[selectedElementIndex].type === 'shape') {
+        newElements[selectedElementIndex].style[styleProperty] = value; // Apply formatting for both text and shape
+      }
+
+      setElements(newElements);
     }
-};
+  };
+
 
   const handleZoomChange = (e) => {
     setZoom(e.target.value / 100);
@@ -220,194 +273,244 @@ const handleTextFormatting = (styleProperty, value) => {
   };
 
   const handleElementResize = (e, direction, ref, delta, index) => {
-  const newElements = [...elements];
-
-  // Ensure the element exists before updating its size
-  if (newElements[index]) {
-    const newWidth = ref.offsetWidth / zoom;
-    const newHeight = ref.offsetHeight / zoom;
-
-    // If the element is text, adjust font size based on the height
-    if (newElements[index].type === 'text') {
-      const fontSize = parseFloat(newElements[index].style.fontSize) || 16;
-      const newFontSize = (fontSize * newHeight) / ref.offsetHeight;
-    }
-
-    // Update the size of the element based on the resize
-    newElements[index].size = {
-      width: newWidth,
-      height: newHeight,
-    };
-    setElements(newElements);
-
-    const rect = ref.getBoundingClientRect();
-
-    // Dynamically show tooltip during resizing
-    setTooltip({
-      visible: true,
-      width: newWidth,
-      height: newHeight,
-      x: rect.right + 10,
-      y: rect.bottom + 10,
-    });
-  } else {
-    console.error(`Size property is undefined for element at index ${index}`);
-  }
-};
-
-useEffect(() => {
-  const handleKeyDown = (event) => {
-    if (event.key === "Delete") {
-      if (selectedElementIndex !== null) {
-        handleDeleteElement(); // Call the delete function when Delete key is pressed
-      }
-    }
-  };
-
-  window.addEventListener("keydown", handleKeyDown);
-
-  // Cleanup event listener when the component unmounts
-  return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-  };
-}, [selectedElementIndex]); // Rerun this effect if the selected element changes
-
-const handleDeleteElement = () => {
-  if (selectedElementIndex !== null) {
     const newElements = [...elements];
-    newElements.splice(selectedElementIndex, 1); // Remove the selected element
-    setElements(newElements);
-    setSelectedElementIndex(null); // Reset the selection
-  }
-};
 
+    if (newElements[index]) {
+      const newWidth = ref.offsetWidth / zoom;
+      const newHeight = ref.offsetHeight / zoom;
 
-const handleElementDragStop = (e, d, index) => {
-  const newElements = [...elements];
+      // Update the size of the element based on the resize
+      newElements[index].size = {
+        width: newWidth,
+        height: newHeight,
+      };
 
-  // Ensure the element exists before updating its position
-  if (newElements[index] && newElements[index].position) {
-    // Update the position based on the drag stop event
-    newElements[index].position = { x: d.x / zoom, y: d.y / zoom };
-    setElements(newElements);
+      // Adjust the fontSize if the element is a shape
+      if (newElements[index].type === 'shape') {
+        const baseFontSize = 100; // Base font size for icons
+        const scaleFactor = newWidth / 200; // Assume 200 is the original width
+        newElements[index].style.fontSize = `${baseFontSize * scaleFactor}px`; // Scale font size based on container size
+      }
 
-    const element = newElements[index];
-    const elementWidth = element.size?.width;  // No default size here, respect the API response
-    const elementHeight = element.size?.height;
+      setElements(newElements);
 
-    if (elementWidth && elementHeight) {
-      // Display tooltip after dragging
+      const rect = ref.getBoundingClientRect();
       setTooltip({
         visible: true,
-        width: elementWidth,
-        height: elementHeight,
-        x: d.x + (elementWidth * zoom) + 10, // Position tooltip at the bottom-right
-        y: d.y + (elementHeight * zoom) + 10,
+        width: newWidth,
+        height: newHeight,
+        x: rect.right + 10,
+        y: rect.bottom + 10,
       });
     } else {
       console.error(`Size property is undefined for element at index ${index}`);
     }
-  } else {
-    console.error(`Position property is undefined for element at index ${index}`);
-  }
-
-  setSelectedElementIndex(null); // Deselect the element after dragging
-};
- // Function to handle adding a new image element from ImageSearchLayout
- const handleAddImage = (imageUrl) => {
-  const newImageElement = {
-    type: 'image',
-    src: imageUrl,
-    position: { x: 50, y: 50 }, // Default position for the image
-    size: { width: 200, height: 200 }, // Default size for the image
   };
-  setElements([...elements, newImageElement]); // Add the selected image as a new element
-};
 
 
-const handleResizeStop = (e, direction, ref, delta, index) => {
-  // Finalize the size and keep the tooltip visible
-  handleElementResize(e, direction, ref, delta, index);
-  setTooltip((tooltip) => ({
-    ...tooltip,
-    visible: true, // Ensure tooltip remains visible after resizing
-  }));
-};
-// Function to handle key down events (specifically for Backspace handling)
-const handleKeyDown = (e, index) => {
-  if (e.key === "Backspace") {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Delete") {
+        if (selectedElementIndex !== null) {
+          handleDeleteElement(); // Call the delete function when Delete key is pressed
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup event listener when the component unmounts
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedElementIndex]); // Rerun this effect if the selected element changes
+
+  const handleDeleteElement = () => {
+    if (selectedElementIndex !== null) {
+      const newElements = [...elements];
+      newElements.splice(selectedElementIndex, 1); // Remove the selected element
+      setElements(newElements);
+      setSelectedElementIndex(null); // Reset the selection
+    }
+  };
+
+
+  const handleElementDragStop = (e, d, index) => {
+    const newElements = [...elements];
+
+    // Ensure the element exists before updating its position
+    if (newElements[index] && newElements[index].position) {
+      // Update the position based on the drag stop event
+      newElements[index].position = { x: d.x / zoom, y: d.y / zoom };
+      setElements(newElements);
+
+      const element = newElements[index];
+      const elementWidth = element.size?.width;  // No default size here, respect the API response
+      const elementHeight = element.size?.height;
+
+      if (elementWidth && elementHeight) {
+        // Display tooltip after dragging
+        setTooltip({
+          visible: true,
+          width: elementWidth,
+          height: elementHeight,
+          x: d.x + (elementWidth * zoom) + 10, // Position tooltip at the bottom-right
+          y: d.y + (elementHeight * zoom) + 10,
+        });
+      } else {
+        console.error(`Size property is undefined for element at index ${index}`);
+      }
+    } else {
+      console.error(`Position property is undefined for element at index ${index}`);
+    }
+
+    setSelectedElementIndex(null); // Deselect the element after dragging
+  };
+  // Function to handle adding a new image element from ImageSearchLayout
+  const handleAddImage = (imageUrl) => {
+    const newImageElement = {
+      type: 'image',
+      src: imageUrl,
+      position: { x: 50, y: 50 }, // Default position for the image
+      size: { width: 200, height: 200 }, // Default size for the image
+    };
+    setElements([...elements, newImageElement]); // Add the selected image as a new element
+  };
+
+
+  const handleColorChange = (newColor) => {
+    if (selectedElementIndex !== null) {
+      const updatedElements = [...elements];
+      updatedElements[selectedElementIndex].style.color = newColor; // Change shape color
+      setElements(updatedElements); // Update the state with new color
+    }
+  };
+
+
+  const handleResizeStop = (e, direction, ref, delta, index) => {
+    // Finalize the size and keep the tooltip visible
+    handleElementResize(e, direction, ref, delta, index);
+    setTooltip((tooltip) => ({
+      ...tooltip,
+      visible: true, // Ensure tooltip remains visible after resizing
+    }));
+  };
+  // Function to handle key down events (specifically for Backspace handling)
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Backspace") {
       const element = elements[index];
       const content = element.content;
 
       // If there's no content left, prevent further backspace actions
       if (content.length === 0) {
-          e.preventDefault(); // Prevent default backspace behavior
+        e.preventDefault(); // Prevent default backspace behavior
       }
+    }
+  };
+
+
+  const adjustTooltipPosition = () => {
+
+    const tooltipX = tooltip.x;
+    const tooltipY = tooltip.y;
+    const tooltipWidth = 80; // Tooltip width
+    const tooltipHeight = 30; // Tooltip height
+    const padding = 10; // Padding from the edge
+
+    let left = tooltipX;
+    let top = tooltipY;
+
+    // Ensure tooltip doesn't go beyond the right edge
+    if (left + tooltipWidth > window.innerWidth) {
+      left = window.innerWidth - tooltipWidth - padding;
+    }
+
+    // Ensure tooltip doesn't go beyond the bottom edge
+    if (top + tooltipHeight > window.innerHeight) {
+      top = window.innerHeight - tooltipHeight - padding;
+    }
+
+    return { left, top };
+  };
+
+ // Function to handle adding a frame
+ const handleFrameSelect = (frame) => {
+  const newFrameElement = {
+    type: "frame",
+    frameType: frame.name,
+    position: { x: 50, y: 50 },
+    size: { width: 300, height: 300 },
+    style: {
+      border: "2px solid #4A90E2",
+      clipPath: frame.clipPath, 
+    },
+    content: null, // Placeholder for dropped image
+  };
+  setElements([...elements, newFrameElement]);
+  setSelectedFrame(frame);
+};
+
+// Function to handle image drop inside a frame
+const handleImageDrop = (e, index) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    const newElements = [...elements];
+    newElements[index].content = event.target.result; // Set the image as base64 data URL
+    setElements(newElements); 
+  };
+
+  if (file) {
+    reader.readAsDataURL(file); 
   }
 };
-const adjustTooltipPosition = () => {
-  
-  const tooltipX = tooltip.x;
-  const tooltipY = tooltip.y;
-  const tooltipWidth = 80; // Tooltip width
-  const tooltipHeight = 30; // Tooltip height
-  const padding = 10; // Padding from the edge
 
-  let left = tooltipX;
-  let top = tooltipY;
-
-  // Ensure tooltip doesn't go beyond the right edge
-  if (left + tooltipWidth > window.innerWidth) {
-    left = window.innerWidth - tooltipWidth - padding;
-  }
-
-  // Ensure tooltip doesn't go beyond the bottom edge
-  if (top + tooltipHeight > window.innerHeight) {
-    top = window.innerHeight - tooltipHeight - padding;
-  }
-
-  return { left, top };
+const handleDragOver = (e) => {
+  e.preventDefault(); 
 };
 
 
-return (
-  <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
-    <div className="border-2 border-white rounded-[20px] w-full overflow-auto" style={{ height: "calc(100vh - 1rem)" }}>
-      <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-3 w-full">
-        <span className="flex items-center gap-2">
-          <img src="/icon5.svg" alt="Icon" />
-          <span className="flex flex-col">
-            <h4 className="text-[#082A66] font-bold text-xl">Template Customization</h4>
-            <p className="text-[#374151] text-sm">Customize your ad based on your preferences.</p>
+
+  return (
+    <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
+      <div className="border-2 border-white rounded-[20px] w-full overflow-auto" style={{ height: "calc(100vh - 1rem)" }}>
+        <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-3 w-full">
+          <span className="flex items-center gap-2">
+            <img src="/icon5.svg" alt="Icon" />
+            <span className="flex flex-col">
+              <h4 className="text-[#082A66] font-bold text-xl">Template Customization</h4>
+              <p className="text-[#374151] text-sm">Customize your ad based on your preferences.</p>
+            </span>
           </span>
-        </span>
-      </div>
-      <div className="flex">
-        <div className="p-4 w-1/12">
-          <Sidebar setActiveComponent={setActiveComponent} setShowAdCreatives={() => {}} />
         </div>
-        <div className="flex-row relative w-full m-4 ml-0">
-          <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
-          {editingTextIndex !== null && (
+        <div className="flex">
+          <div className="p-4 w-1/12">
+            <Sidebar setActiveComponent={setActiveComponent} setShowAdCreatives={() => { }} />
+          </div>
+          <div className="flex-row relative w-full m-4 ml-0">
+            <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
+              {editingTextIndex !== null && (
                 <TextFormatToolbar
                   onClose={() => setEditingTextIndex(null)} // Close toolbar
                   applyFormatting={handleTextFormatting} />
               )}
               <div className="flex">
-              <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
-              <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
-              <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
+                <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
+                <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
+                <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
-            {/* Show TextAdder when Text component is active */}
-            {activeComponent === "Creatives" && (
+            <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
+              {/* Show TextAdder when Text component is active */}
+              {activeComponent === "Creatives" && (
                 <div className="w-2/5 m-4 shadow-sm rounded-md">
                   <AdCreatives />
                 </div>
               )}
-            
-            {activeComponent === "Text" && (
+
+              {activeComponent === "Text" && (
                 <div className="w-1/4 m-4 p-4 shadow-sm rounded-md bg-[#082A66]">
                   <TextAdder onAddText={handleAddText} />
                 </div>
@@ -419,98 +522,169 @@ return (
                 </div>
               )}
 
-               {activeComponent === "Images" && (
+              {activeComponent === "Images" && (
                 <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar  bg-[#082A66]">
                   <ImageSearchLayout onSelectImage={handleAddImage} /> {/* Pass the handleAddImage callback */}
-          
+
                 </div>
               )}
 
               {activeComponent === "Shapes" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar">
-                  <ShapeStyleLayout
-                   />
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                  <ShapeStyleLayout handleAddShape={handleAddShape} />
                 </div>
               )}
 
-            <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-4 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()}>
-              <div className="bg-stripped p-4" style={{
-                height: `${imageLayoutSize * zoom}px`,
-                width: `${imageLayoutSize * zoom}px`,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundImage: productDetails?.bgImageURL ? `url(${productDetails.bgImageURL})` : 'none',
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-                position: "relative"
-              }} ref={templateRef}>
-                {/* Render each element (text or image) */}
-                {loading ? (
-                  <p>Loading elements...</p>
-                ) : (
-                  elements.map((element, index) => (
-                    <Rnd
-                      key={index}
-                      size={{ width: element.size?.width * zoom || "auto", height: element.size?.height * zoom || "auto" }}
-                      position={{ x: element.position.x * zoom, y: element.position.y * zoom }}
-                      onClick={() => setSelectedElementIndex(index)}
-                      onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit
-                      onDragStop={(e, d) => handleElementDragStop(e, d, index)}
-                      onResize={(e, direction, ref, delta) => handleElementResize(e, direction, ref, delta, index)} // Resize dynamically
-                      onResizeStop={(e, direction, ref, delta) => handleResizeStop(e, direction, ref, delta, index)} // Finalize resizing
-                      bounds="parent"
-                      style={{
-                        border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
-                      }}
-                    >
-                      {element.type === "image" ? (
-                        <img src={element.src} alt="element" style={{ width: "100%", height: "100%" }} />
-                      ) : (
-                        <div
-                              contentEditable={editingTextIndex === index} // Make the text editable on double-click
-                              onBlur={(e) => handleTextBlur(index, e)} // Finalize text change on blur
-                              onInput={(e) => handleTextChange(e, index)} // Handle live text changes (but don’t update state unnecessarily)
-                              onKeyDown={(e) => handleKeyDown(e, index)} // Handle backspace and other key events
-                              suppressContentEditableWarning={true} // Suppress React warning for contentEditable
-                              style={{
-                                  ...element.style,
-                                  fontSize: `${parseFloat(element.style.fontSize) * zoom}px`,
-                              }}
+              {activeComponent === "Frames" && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                  <FramesComponent onSelectFrame={handleFrameSelect} />
+                </div>
+              )}
+              <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-8 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()} ref={templateContainerRef}>
+                <div className="template-area p-4"
+                  onDrop={(e) => handleImageDrop(e, selectedElementIndex)}
+                  onDragOver={handleDragOver}
+
+                  style={{
+                    height: `${imageLayoutSize * zoom}px`,
+                    width: `${imageLayoutSize * zoom}px`,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    backgroundImage: productDetails?.bgImageURL ? `url(${productDetails.bgImageURL})` : 'none',
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                    position: "relative"
+
+                  }} ref={templateRef}>
+                  {/* Render each element (text or image) */}
+                  {loading ? (
+                    <p>Loading elements...</p>
+                  ) : (
+                    elements.map((element, index) => (
+                      <Rnd
+                        key={index}
+                        size={{
+                          width: element.size?.width * zoom || "auto",
+                          height: element.size?.height * zoom || "auto"
+                        }}
+                        position={{
+                          x: element.position.x * zoom,
+                          y: element.position.y * zoom
+                        }}
+                        onClick={() => setSelectedElementIndex(index)}
+                        onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit text
+                        onDragStop={(e, d) => handleElementDragStop(e, d, index)}
+
+                        onResize={(e, direction, ref, delta) =>
+                          handleElementResize(e, direction, ref, delta, index)
+                        } // Resize dynamically
+                        onResizeStop={(e, direction, ref, delta) =>
+                          handleResizeStop(e, direction, ref, delta, index)
+                        } // Finalize resizing
+                        bounds="parent"
+                        style={{
+                          border: selectedElementIndex === index ? "2px solid #4A90E2" : "none"
+                        }}
+                      >
+                        {element.type === "image" ? (
+                          // Render Image Element
+                          <img
+                            src={element.src}
+                            alt="element"
+                            style={{
+                              width: "100%",
+                              height: "100%"
+                            }}
+                          />
+                        ) : element.type === "shape" ? (
+                          // Render Shape Element
+                          <div
+                            style={{
+                              ...element.style,
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              width: "100%",
+                              height: "100%",
+                              backgroundColor: element.style.backgroundColor || "transparent", // Default to transparent if not specified
+                              color: element.style.color || "#082A66", // Default shape color
+                              fontSize: element.style.fontSize || "100px" // Font size for shape
+                            }}
                           >
-                              {element.contentFormatted ? element.contentFormatted : element.content}
+                            {element.component} {/* Render the shape component */}
                           </div>
-                      )}
-                    </Rnd>
-                  ))
+                        ) : element.type === "frame" ? (
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              clipPath: element.style.clipPath, // Apply shape
+                              backgroundImage: element.content ? `url(${element.content})` : 'none',
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              border: element.style.border,
+                              backgroundColor: element.content ? 'transparent' : '#e0e0e0', // Show image or placeholder
+ 
+                            }}
+                          >
+                          </div>
+                        ) : (
+                          // Render Text Element
+                          <div
+                            contentEditable={editingTextIndex === index} // Make the text editable on double-click
+                            onBlur={(e) => handleTextBlur(index, e)} // Finalize text change on blur
+                            onInput={(e) => handleTextChange(e, index)} // Handle live text changes
+                            onKeyDown={(e) => handleKeyDown(e, index)} // Handle backspace and other key events
+                            suppressContentEditableWarning={true} // Suppress React warning for contentEditable
+                            style={{
+                              ...element.style,
+                              fontSize: `${parseFloat(element.style.fontSize) * zoom}px` // Adjust font size based on zoom
+                            }}
+                          >
+                            {element.contentFormatted
+                              ? element.contentFormatted
+                              : element.content}
+                          </div>
+                        )}
+                      </Rnd>
+                    ))
+                  )}
+                </div>
+
+                {tooltip.visible && (
+                  <div
+                    className="absolute bg-black text-white px-2 py-1 rounded"
+                    style={{
+                      left: adjustTooltipPosition().left,
+                      top: adjustTooltipPosition().top,
+                      zIndex: 1000, // Ensure tooltip stays above other elements
+                    }}
+                  >
+                    w: {Math.round(tooltip.width)}px h: {Math.round(tooltip.height)}px
+                  </div>
                 )}
               </div>
-              {tooltip.visible && (
-              <div
-                className="absolute bg-black text-white px-2 py-1 rounded"
-                style={{
-                  left: adjustTooltipPosition().left,
-                  top: adjustTooltipPosition().top,
-                  zIndex: 1000, // Ensure tooltip stays above other elements
-                }}
-              >
-                w: {Math.round(tooltip.width)}px h: {Math.round(tooltip.height)}px
+            </div>
+            <div className="absolute w-full">
+              <div className="absolute inset-x-0 bottom-0 flex justify-center">
+                <div className="border border-[#FCFCFC] p-2 w-1/4 mb-4 justify-center">
+                  adding new template here
+                </div>
               </div>
-            )}
             </div>
           </div>
         </div>
-      </div>
-      <div className="fixed right-8 bottom-2 flex items-center rounded-lg" style={{ zIndex: 1000 }}>
-        <input type="range" min="10" max="500" value={zoom * 100} onChange={handleZoomChange} style={{ width: '120px' }} />
-        <span className="ml-2 text-[#082A66] font-bold gap-4">{Math.round(zoom * 100)}%</span>
+        <div className="fixed right-8 bottom-2 flex items-center rounded-lg" style={{ zIndex: 1000 }}>
+          <input type="range" min="10" max="500" value={zoom * 100} onChange={handleZoomChange} style={{ width: '120px' }} />
+          <span className="ml-2 text-[#082A66] font-bold gap-4">{Math.round(zoom * 100)}%</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
-
 const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
   return (
     <div className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg" style={{ height: 'calc(100vh - 8rem)' }}>
@@ -534,14 +708,14 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
           <FaShapes />
           <span className="text-sm">Shape</span>
         </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Frame')}>
+        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Frames')}>
           <FaRegImages />
           <span className="text-sm">Frame</span>
         </button>
         <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Uploads')}>
           <FaUpload />
           <span className="text-sm">Uploads</span>
-        </button>    
+        </button>
       </div>
     </div>
   );
