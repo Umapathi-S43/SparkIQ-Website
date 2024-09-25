@@ -34,7 +34,7 @@ export default function EditTemplate() {
   const [activeComponent, setActiveComponent] = useState(""); // Track active component from Sidebar
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(0.40); // Zoom level
-  const [transparency, setTransparency] = useState(80);
+  const [transparency, setTransparency] = useState(100);
   const [selectedColor, setSelectedColor] = useState('#FFFFFF'); // Default color
   const [tooltip, setTooltip] = useState({ visible: false, width: 0, height: 0, x: 0, y: 0 });
   const [editingTextIndex, setEditingTextIndex] = useState(null); // Track the text element being edited
@@ -150,7 +150,7 @@ export default function EditTemplate() {
   }, [productID]);
 
 
-  
+
   useEffect(() => {
     if (activeElement && activeElement.style) {
       // If opacity is defined, use it, otherwise default to 1 (100% transparency)
@@ -161,7 +161,7 @@ export default function EditTemplate() {
       setSelectedColor(activeElement.style.color || '#FFFFFF');
     }
   }, [activeElement]);
-  
+
 
 
   // Function to add a new template page when "+ Add Page" is clicked
@@ -184,7 +184,7 @@ export default function EditTemplate() {
   const handleAddText = (newElement) => {
     setElements([...elements, newElement]); // Append new text element to the existing elements
     newElement.style = { ...newElement.style, zIndex: elements.length + 1 }; // Set initial zIndex
-    
+
   };
 
 
@@ -464,20 +464,20 @@ export default function EditTemplate() {
   };
 
 
-// Handler for color change
-const handleColorChange = (color) => {
-  setSelectedColor(color);
+  // Handler for color change
+  const handleColorChange = (color) => {
+    setSelectedColor(color);
 
-  // Apply the color to the selected element
-  if (selectedElementIndex !== null) {
-    setElements((prevElements) => {
-      const updatedElements = [...prevElements];
-      const updatedElement = updatedElements[selectedElementIndex];
-      updatedElement.style.color = color;
-      return updatedElements;
-    });
-  }
-};
+    // Apply the color to the selected element
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+        updatedElement.style.color = color;
+        return updatedElements;
+      });
+    }
+  };
 
 
   const handleResizeStop = (e, direction, ref, delta, index) => {
@@ -525,6 +525,45 @@ const handleColorChange = (color) => {
 
     return { left, top };
   };
+
+
+  const handleAlignElement = (alignType) => {
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const element = updatedElements[selectedElementIndex];
+
+        const templateArea = templateRef.current.getBoundingClientRect(); // Get the template area dimensions
+        const elementSize = element.size || { width: 100, height: 100 }; // Default size if not specified
+
+        switch (alignType) {
+          case 'top':
+            element.position.y = 0;
+            break;
+          case 'left':
+            element.position.x = 0;
+            break;
+          case 'center':
+            element.position.x = (templateArea.width - elementSize.width * zoom) / 2 / zoom;
+            break;
+          case 'middle':
+            element.position.y = (templateArea.height - elementSize.height * zoom) / 2 / zoom;
+            break;
+          case 'right':
+            element.position.x = (templateArea.width - elementSize.width * zoom) / zoom;
+            break;
+          case 'bottom':
+            element.position.y = (templateArea.height - elementSize.height * zoom) / zoom;
+            break;
+          default:
+            break;
+        }
+
+        return updatedElements;
+      });
+    }
+  };
+
 
   // Function to handle activating a Sidebar component
   const handleSidebarComponent = (componentName) => {
@@ -594,7 +633,7 @@ const handleColorChange = (color) => {
         </div>
         <div className="flex">
           <div className="p-4 w-1/12">
-            <Sidebar setActiveComponent={handleSidebarComponent}  setShowAdCreatives={() => { }} />
+            <Sidebar setActiveComponent={handleSidebarComponent} setShowAdCreatives={() => { }} />
           </div>
           <div className="flex-row relative w-full m-4 ml-0">
             <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
@@ -604,20 +643,20 @@ const handleColorChange = (color) => {
                   applyFormatting={handleTextFormatting} />
               )}
               <div className="flex">
-              <DesignMenu 
+                <DesignMenu
                   activeMenu={activeMenu}
                   setActiveMenu={handleDesignMenu}
                   transparency={transparency}
                   handleTransparencyChange={handleTransparencyChange}
                 />
 
-                
+
                 <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
                 <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
                 <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
               </div>
-              </div>
-              
+            </div>
+
             <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
               {/* Show TextAdder when Text component is active */}
               {activeComponent === "Creatives" && (
@@ -657,19 +696,21 @@ const handleColorChange = (color) => {
                 </div>
               )}
 
-            {activeMenu === 'color' && (
-              <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
-                <ColorMenu handleColorChange={handleColorChange}/>
+              {activeMenu === 'color' && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                  <ColorMenu handleColorChange={handleColorChange} />
                 </div>
-              )}  
+              )}
 
 
-            {activeMenu === 'position' && (
-              <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
-              <PositionMenu handlePositionChange={handlePositionChange} /> {/* Pass the function here */}          
-              </div>
-              )}  
-          
+              {activeMenu === 'position' && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                  <PositionMenu
+                    handlePositionChange={handlePositionChange}
+                    handleAlignElement={handleAlignElement} // Pass this function
+                  /></div>
+              )}
+
               <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-8 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()} ref={templateContainerRef}>
                 <div className="template-area p-4"
                   onDrop={(e) => handleImageDrop(e, selectedElementIndex)}
@@ -717,7 +758,7 @@ const handleColorChange = (color) => {
                         style={{
                           border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
                           zIndex: element.style?.zIndex || 1, // Apply zIndex to the element
-                          }}
+                        }}
                       >
                         {element.type === "image" ? (
                           // Render Image Element
@@ -801,13 +842,13 @@ const handleColorChange = (color) => {
                 )}
               </div>
             </div>
-            <div className="absolute w-full">
+            {/*<div className="absolute w-full">
               <div className="absolute inset-x-0 bottom-0 flex justify-center">
                 <div className="border border-[#FCFCFC] p-2 w-1/4 mb-4 justify-center">
                   adding new template here
                 </div>
               </div>
-            </div>
+            </div>*/}
           </div>
         </div>
         <div className="fixed right-8 bottom-2 flex items-center rounded-lg" style={{ zIndex: 1000 }}>
@@ -821,14 +862,14 @@ const handleColorChange = (color) => {
 const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
   return (
     <div className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg" style={{ height: 'calc(100vh - 8rem)' }}>
-      <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full " 
-       /* 
-    onClick={() => {
-      setActiveComponent('Creatives');
-      setShowAdCreatives(true);
-    }}
-  */
->
+      <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full "
+      /* 
+   onClick={() => {
+     setActiveComponent('Creatives');
+     setShowAdCreatives(true);
+   }}
+ */
+      >
         <img src="/icon5.svg" alt="Icon" className="w-8 h-8" />
         <span className="text-sm">Creatives</span>
       </button>
