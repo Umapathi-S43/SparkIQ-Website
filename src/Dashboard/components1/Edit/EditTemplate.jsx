@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaTextHeight, FaImage, FaShapes, FaRegImages, FaUpload } from "react-icons/fa";
+import { RxTransparencyGrid } from 'react-icons/rx'; // Icon for transparency
+import { FaPalette, FaLayerGroup } from 'react-icons/fa'; // Icons for color and position
 import { Rnd } from "react-rnd";
 import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
@@ -13,15 +15,27 @@ import AdCreatives from "./AdCreatives";
 import ImageSearchLayout from "./ImageSearch";
 import ShapeStyleLayout from "./Shapes";
 import FramesComponent from "./Frames";
+import { MdColorLens } from "react-icons/md";
+import DesignMenu from './DesignMenu';
+import ColorMenu from './ColorMenu';
+import TransparencyMenu from './TransparencyMenu';
+import PositionMenu from './PositionMenu';
+
 
 export default function EditTemplate() {
   const [elements, setElements] = useState([]);
   const [selectedElementIndex, setSelectedElementIndex] = useState(null); // Track selected element
+  // Get the currently selected element 
+  const activeElement = selectedElementIndex !== null ? elements[selectedElementIndex] : null;
   const [imageLayoutSize, setImageLayoutSize] = useState(1080); // Default size
+  const [activeMenu, setActiveMenu] = useState(null); // Track which menu is active
+
   const [productDetails, setProductDetails] = useState(null);
   const [activeComponent, setActiveComponent] = useState(""); // Track active component from Sidebar
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(0.40); // Zoom level
+  const [transparency, setTransparency] = useState(80);
+  const [selectedColor, setSelectedColor] = useState('#FFFFFF'); // Default color
   const [tooltip, setTooltip] = useState({ visible: false, width: 0, height: 0, x: 0, y: 0 });
   const [editingTextIndex, setEditingTextIndex] = useState(null); // Track the text element being edited
   const [templates, setTemplates] = useState([[]]); // Start with one empty template
@@ -136,6 +150,20 @@ export default function EditTemplate() {
   }, [productID]);
 
 
+  
+  useEffect(() => {
+    if (activeElement && activeElement.style) {
+      // If opacity is defined, use it, otherwise default to 1 (100% transparency)
+      const opacityValue = activeElement.style.opacity !== undefined ? activeElement.style.opacity : 1;
+      setTransparency(opacityValue * 100);
+
+      // Set color, default to white if not defined
+      setSelectedColor(activeElement.style.color || '#FFFFFF');
+    }
+  }, [activeElement]);
+  
+
+
   // Function to add a new template page when "+ Add Page" is clicked
   const handleAddPage = () => {
     const newTemplate = [...elements]; // Copy the current elements of the template
@@ -155,6 +183,8 @@ export default function EditTemplate() {
   // Function to handle adding a new text element from TextAdder
   const handleAddText = (newElement) => {
     setElements([...elements, newElement]); // Append new text element to the existing elements
+    newElement.style = { ...newElement.style, zIndex: elements.length + 1 }; // Set initial zIndex
+    
   };
 
 
@@ -168,7 +198,6 @@ export default function EditTemplate() {
       style: {
         color: '#fff', // Default color (navy blue)
         backgroundColor: 'transparent', // No background color by default
-
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -177,8 +206,6 @@ export default function EditTemplate() {
     };
     setElements([...elements, newShapeElement]); // Add shape to elements
   };
-
-
 
   const handleExport = async () => {
     if (templateRef.current) {
@@ -271,6 +298,62 @@ export default function EditTemplate() {
 
     return { width: scaledWidth, height: scaledHeight };
   };
+
+
+  const handlePositionChange = (positionAction) => {
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+
+        // Ensure the style object exists before setting the zIndex
+        if (!updatedElement.style) {
+          updatedElement.style = {}; // Initialize the style object if it doesn't exist
+        }
+
+        // Update position based on action (Forward, Backward, ToFront, ToBack)
+        switch (positionAction) {
+          case 'forward':
+            updatedElement.style.zIndex = (updatedElement.style.zIndex || 1) + 1;
+            break;
+          case 'backward':
+            updatedElement.style.zIndex = Math.max((updatedElement.style.zIndex || 1) - 1, 1);
+            break;
+          case 'toFront':
+            updatedElement.style.zIndex = Math.max(...updatedElements.map(el => el.style?.zIndex || 1)) + 1;
+            break;
+          case 'toBack':
+            updatedElement.style.zIndex = 0; // Move to the back
+            break;
+          default:
+            break;
+        }
+        return updatedElements;
+      });
+    }
+  };
+
+  const handleTransparencyChange = (e) => {
+    const newTransparency = e.target.value;
+    setTransparency(newTransparency);
+
+    // Apply the transparency to the selected element
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+
+        // Ensure the style object exists before setting the opacity
+        if (!updatedElement.style) {
+          updatedElement.style = {}; // Initialize the style object if it's missing
+        }
+
+        updatedElement.style.opacity = newTransparency / 100; // Apply transparency to the element
+        return updatedElements;
+      });
+    }
+  };
+
 
   const handleElementResize = (e, direction, ref, delta, index) => {
     const newElements = [...elements];
@@ -373,18 +456,28 @@ export default function EditTemplate() {
       src: imageUrl,
       position: { x: 50, y: 50 }, // Default position for the image
       size: { width: 200, height: 200 }, // Default size for the image
+      style: {
+        zIndex: elements.length + 1, // Initial zIndex based on the current number of elements
+      }
     };
     setElements([...elements, newImageElement]); // Add the selected image as a new element
   };
 
 
-  const handleColorChange = (newColor) => {
-    if (selectedElementIndex !== null) {
-      const updatedElements = [...elements];
-      updatedElements[selectedElementIndex].style.color = newColor; // Change shape color
-      setElements(updatedElements); // Update the state with new color
-    }
-  };
+// Handler for color change
+const handleColorChange = (color) => {
+  setSelectedColor(color);
+
+  // Apply the color to the selected element
+  if (selectedElementIndex !== null) {
+    setElements((prevElements) => {
+      const updatedElements = [...prevElements];
+      const updatedElement = updatedElements[selectedElementIndex];
+      updatedElement.style.color = color;
+      return updatedElements;
+    });
+  }
+};
 
 
   const handleResizeStop = (e, direction, ref, delta, index) => {
@@ -433,43 +526,57 @@ export default function EditTemplate() {
     return { left, top };
   };
 
- // Function to handle adding a frame
- const handleFrameSelect = (frame) => {
-  const newFrameElement = {
-    type: "frame",
-    frameType: frame.name,
-    position: { x: 50, y: 50 },
-    size: { width: 300, height: 300 },
-    style: {
-      border: "2px solid #4A90E2",
-      clipPath: frame.clipPath, 
-    },
-    content: null, // Placeholder for dropped image
-  };
-  setElements([...elements, newFrameElement]);
-  setSelectedFrame(frame);
-};
-
-// Function to handle image drop inside a frame
-const handleImageDrop = (e, index) => {
-  e.preventDefault();
-  const file = e.dataTransfer.files[0];
-  const reader = new FileReader();
-
-  reader.onload = (event) => {
-    const newElements = [...elements];
-    newElements[index].content = event.target.result; // Set the image as base64 data URL
-    setElements(newElements); 
+  // Function to handle activating a Sidebar component
+  const handleSidebarComponent = (componentName) => {
+    // Set the active component and reset any active design menu
+    setActiveComponent(componentName);
+    setActiveMenu(null); // Ensure no design menu is active
   };
 
-  if (file) {
-    reader.readAsDataURL(file); 
-  }
-};
+  // Function to handle activating a DesignMenu
+  const handleDesignMenu = (menuName) => {
+    // Set the active design menu and reset any active sidebar component
+    setActiveMenu(menuName);
+    setActiveComponent(""); // Ensure no sidebar component is active
+  };
 
-const handleDragOver = (e) => {
-  e.preventDefault(); 
-};
+  // Function to handle adding a frame
+  const handleFrameSelect = (frame) => {
+    const newFrameElement = {
+      type: "frame",
+      frameType: frame.name,
+      position: { x: 50, y: 50 },
+      size: { width: 300, height: 300 },
+      style: {
+        border: "2px solid #4A90E2",
+        clipPath: frame.clipPath,
+      },
+      content: null, // Placeholder for dropped image
+    };
+    setElements([...elements, newFrameElement]);
+    setSelectedFrame(frame);
+  };
+
+  // Function to handle image drop inside a frame
+  const handleImageDrop = (e, index) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const newElements = [...elements];
+      newElements[index].content = event.target.result; // Set the image as base64 data URL
+      setElements(newElements);
+    };
+
+    if (file) {
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
 
 
 
@@ -487,7 +594,7 @@ const handleDragOver = (e) => {
         </div>
         <div className="flex">
           <div className="p-4 w-1/12">
-            <Sidebar setActiveComponent={setActiveComponent} setShowAdCreatives={() => { }} />
+            <Sidebar setActiveComponent={handleSidebarComponent}  setShowAdCreatives={() => { }} />
           </div>
           <div className="flex-row relative w-full m-4 ml-0">
             <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
@@ -497,11 +604,20 @@ const handleDragOver = (e) => {
                   applyFormatting={handleTextFormatting} />
               )}
               <div className="flex">
+              <DesignMenu 
+                  activeMenu={activeMenu}
+                  setActiveMenu={handleDesignMenu}
+                  transparency={transparency}
+                  handleTransparencyChange={handleTransparencyChange}
+                />
+
+                
                 <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
                 <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
                 <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
               </div>
-            </div>
+              </div>
+              
             <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
               {/* Show TextAdder when Text component is active */}
               {activeComponent === "Creatives" && (
@@ -540,6 +656,20 @@ const handleDragOver = (e) => {
                   <FramesComponent onSelectFrame={handleFrameSelect} />
                 </div>
               )}
+
+            {activeMenu === 'color' && (
+              <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                <ColorMenu handleColorChange={handleColorChange}/>
+                </div>
+              )}  
+
+
+            {activeMenu === 'position' && (
+              <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+              <PositionMenu handlePositionChange={handlePositionChange} /> {/* Pass the function here */}          
+              </div>
+              )}  
+          
               <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-8 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()} ref={templateContainerRef}>
                 <div className="template-area p-4"
                   onDrop={(e) => handleImageDrop(e, selectedElementIndex)}
@@ -583,10 +713,11 @@ const handleDragOver = (e) => {
                         onResizeStop={(e, direction, ref, delta) =>
                           handleResizeStop(e, direction, ref, delta, index)
                         } // Finalize resizing
-                        bounds="parent"
+                        bounds="parent" // Constrain element within parent (template area)
                         style={{
-                          border: selectedElementIndex === index ? "2px solid #4A90E2" : "none"
-                        }}
+                          border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
+                          zIndex: element.style?.zIndex || 1, // Apply zIndex to the element
+                          }}
                       >
                         {element.type === "image" ? (
                           // Render Image Element
@@ -595,7 +726,9 @@ const handleDragOver = (e) => {
                             alt="element"
                             style={{
                               width: "100%",
-                              height: "100%"
+                              height: "100%",
+                              opacity: element.style?.opacity ?? 1, // Ensure opacity is safely accessed
+                              zIndex: element.style?.zIndex || 1 // Apply zIndex to the element
                             }}
                           />
                         ) : element.type === "shape" ? (
@@ -610,7 +743,8 @@ const handleDragOver = (e) => {
                               height: "100%",
                               backgroundColor: element.style.backgroundColor || "transparent", // Default to transparent if not specified
                               color: element.style.color || "#082A66", // Default shape color
-                              fontSize: element.style.fontSize || "100px" // Font size for shape
+                              fontSize: element.style.fontSize || "100px", // Font size for shape
+                              zIndex: element.style?.zIndex || 1 // Apply zIndex to the element
                             }}
                           >
                             {element.component} {/* Render the shape component */}
@@ -627,10 +761,9 @@ const handleDragOver = (e) => {
                               backgroundRepeat: 'no-repeat',
                               border: element.style.border,
                               backgroundColor: element.content ? 'transparent' : '#e0e0e0', // Show image or placeholder
- 
+                              zIndex: element.style?.zIndex || 0 // Apply zIndex to the element
                             }}
-                          >
-                          </div>
+                          ></div>
                         ) : (
                           // Render Text Element
                           <div
@@ -688,10 +821,14 @@ const handleDragOver = (e) => {
 const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
   return (
     <div className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg" style={{ height: 'calc(100vh - 8rem)' }}>
-      <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => {
-        setActiveComponent('Creatives');
-        setShowAdCreatives(true);
-      }}>
+      <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full " 
+       /* 
+    onClick={() => {
+      setActiveComponent('Creatives');
+      setShowAdCreatives(true);
+    }}
+  */
+>
         <img src="/icon5.svg" alt="Icon" className="w-8 h-8" />
         <span className="text-sm">Creatives</span>
       </button>
@@ -719,4 +856,141 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
       </div>
     </div>
   );
-}; 
+};
+
+{/*const DesignMenu = ({ activeElement, setElements, selectedElementIndex, handlePositionChange }) => {
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [transparency, setTransparency] = useState(100); // Manage the transparency
+  const [selectedColor, setSelectedColor] = useState('#FFFFFF'); // Default color
+
+  useEffect(() => {
+    if (activeElement && activeElement.style) {
+      // If opacity is defined, use it, otherwise default to 1 (100% transparency)
+      const opacityValue = activeElement.style.opacity !== undefined ? activeElement.style.opacity : 1;
+      setTransparency(opacityValue * 100);
+
+      // Set color, default to white if not defined
+      setSelectedColor(activeElement.style.color || '#FFFFFF');
+    }
+  }, [activeElement]);
+
+
+
+  // Handler for transparency slider
+  const handleTransparencyChange = (e) => {
+    const newTransparency = e.target.value;
+    setTransparency(newTransparency);
+
+    // Apply the transparency to the selected element
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+
+        // Ensure the style object exists before setting the opacity
+        if (!updatedElement.style) {
+          updatedElement.style = {}; // Initialize the style object if it's missing
+        }
+
+        updatedElement.style.opacity = newTransparency / 100; // Apply transparency to the element
+        return updatedElements;
+      });
+    }
+  };
+
+
+  // Handler for color change
+  const handleColorChange = (color) => {
+    setSelectedColor(color);
+
+    // Apply the color to the selected element
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+        updatedElement.style.color = color;
+        return updatedElements;
+      });
+    }
+  };
+
+
+  // Toggle menu
+  const toggleMenu = (menu) => {
+    setActiveMenu(activeMenu === menu ? null : menu); // Toggle between transparency, color, etc.
+  };
+
+  return (
+    <div className="flex flex-row items-center gap-4 mr-4">
+      <button
+        className="flex flex-row items-center gap-2 text-lg rounded w-full"
+        onClick={() => toggleMenu('transparency')}
+      >
+        <RxTransparencyGrid size={24} />
+      </button>
+
+      {activeMenu === 'transparency' && (
+        <div className="p-3 w-full bg-white rounded-md mt-4 shadow-md">
+          <span>Transparency</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={transparency}
+            onChange={handleTransparencyChange}
+            className="w-full"
+          />
+        </div>
+      )}
+
+      <button
+        className="flex flex-row items-center gap-2 text-lg rounded w-full"
+        onClick={() => toggleMenu('color')}
+      >
+        <MdColorLens size={28} />
+      </button>
+
+      {activeMenu === 'color' && (
+        <div className="p-4 w-full bg-white rounded-md mt-4 shadow-md">
+          <span>Colors</span>
+          <div className="color-palette">
+            {['#000000', '#FF5733', '#33FF57', '#3357FF', '#FFFF33'].map((color) => (
+              <button
+                key={color}
+                className="color-option"
+                style={{
+                  backgroundColor: color,
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  margin: '5px'
+                }}
+                onClick={() => handleColorChange(color)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button
+        className="flex flex-col items-center gap-2 text-lg rounded w-full"
+        onClick={() => toggleMenu('position')}
+      >
+        <FaLayerGroup size={24} />
+      </button>
+
+      {activeMenu === 'position' && (
+        <div className="p-4 w-full bg-white rounded-md mt-4 shadow-md">
+          <span>Layer Position</span>
+          <div className="position-controls">
+            <button onClick={() => handlePositionChange('forward')}>Forward</button>
+            <button onClick={() => handlePositionChange('backward')}>Backward</button>
+            <button onClick={() => handlePositionChange('toFront')}>To Front</button>
+            <button onClick={() => handlePositionChange('toBack')}>To Back</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+*/}
