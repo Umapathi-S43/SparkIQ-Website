@@ -393,20 +393,21 @@ export default function EditTemplate() {
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === "Delete") {
+      if (event.key === "Delete" || event.key === "Backspace") {
         if (selectedElementIndex !== null) {
-          handleDeleteElement(); // Call the delete function when Delete key is pressed
+          handleDeleteElement(); // Call the delete function when Delete or Backspace key is pressed
         }
       }
     };
-
+  
     window.addEventListener("keydown", handleKeyDown);
-
+  
     // Cleanup event listener when the component unmounts
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedElementIndex]); // Rerun this effect if the selected element changes
+  
 
   const handleDeleteElement = () => {
     if (selectedElementIndex !== null) {

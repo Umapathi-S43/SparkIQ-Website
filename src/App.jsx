@@ -31,6 +31,7 @@ import TextFormat from './Dashboard/components1/Edit/Textformat';
 import { Toaster } from 'react-hot-toast';
 import SignUpPage from './components/Dashboard/SignUp';
 import ProtectedRoute from './components/utils/withAuth';
+import GenerateDAPCreativesPage from './Dashboard/pages1/GenerateDAPCreativesPage';
 
 function App() {
   return (
@@ -49,6 +50,10 @@ function App() {
           <Route
             path="/socialmedia"
             element={<ProtectedRoute element={<SocialMedia />} />}
+          />
+          <Route
+            path="/DAPCreatives"
+            element={<ProtectedRoute element={<GenerateDAPCreativesPage />} />}
           />
           <Route
             path="/brandsetup"
