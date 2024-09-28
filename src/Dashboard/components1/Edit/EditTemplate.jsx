@@ -390,13 +390,13 @@ export default function EditTemplate() {
     }
   };
 
-
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === "Delete" || event.key === "Backspace") {
-        if (selectedElementIndex !== null) {
-          handleDeleteElement(); // Call the delete function when Delete or Backspace key is pressed
-        }
+      // Check for the Delete key, Backspace key with Fn (macOS), or Backspace alone
+      const isDeleteKey = event.key === "Delete" || 
+                          (event.key === "Backspace" && (event.metaKey || event.ctrlKey || event.key === 'Fn')); // macOS Fn+Backspace or Backspace with Meta/Ctrl key
+      if (isDeleteKey && selectedElementIndex !== null) {
+        handleDeleteElement(); // Call the delete function
       }
     };
   
@@ -406,7 +406,8 @@ export default function EditTemplate() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedElementIndex]); // Rerun this effect if the selected element changes
+  }, [selectedElementIndex]);
+  
   
 
   const handleDeleteElement = () => {
