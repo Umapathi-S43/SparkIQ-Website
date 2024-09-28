@@ -764,15 +764,17 @@ export default function EditTemplate() {
                         {element.type === "image" ? (
                           // Render Image Element
                           <img
-                            src={element.src}
-                            alt="element"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              opacity: element.style?.opacity ?? 1, // Ensure opacity is safely accessed
-                              zIndex: element.style?.zIndex || 1 // Apply zIndex to the element
-                            }}
-                          />
+                          src={element.src}
+                          alt="element"
+                          draggable="false" // Prevent default image drag behavior
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            opacity: element.style?.opacity ?? 1,
+                            zIndex: element.style?.zIndex || 1
+                          }}
+                        />
+
                         ) : element.type === "shape" ? (
                           // Render Shape Element
                           <div
