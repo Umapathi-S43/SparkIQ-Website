@@ -13,6 +13,7 @@ const SignUpPage = () => {
   const [otpValidated, setOtpValidated] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState(""); // State for email validation error
   const [mobile, setMobile] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
   const [password, setPassword] = useState("");
@@ -31,9 +32,32 @@ const SignUpPage = () => {
     phoneNumber: `${countryCode}-${mobile}`,
   };
 
+  // Email validation function using regex
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validate email in real-time as the user types
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (!validateEmail(value)) {
+      setEmailError("Invalid email format");
+    } else {
+      setEmailError("");
+    }
+  };
+
   const handleNextStep = async () => {
     if (!validateMobile(mobile)) {
       toast.error("Invalid mobile number");
+      return;
+    }
+    
+    // Ensure no email error exists before proceeding
+    if (emailError) {
+      toast.error("Please enter a valid email.");
       return;
     }
 
@@ -121,7 +145,8 @@ const SignUpPage = () => {
       !password ||
       !confirmPassword ||
       passwordError ||
-      confirmPasswordError
+      confirmPasswordError ||
+      emailError // Ensure there is no email error
     ) {
       toast.error("Please fill all fields correctly before signing up.");
       return;
@@ -141,7 +166,6 @@ const SignUpPage = () => {
       localStorage.setItem("jwtToken", jwtToken);
       window.location.href = "/homepage";
       console.log(response);
-      
     } catch (error) {
       console.error(error);
       toast.error("Error creating signup");
@@ -170,7 +194,6 @@ const SignUpPage = () => {
     // Add more countries as needed
   ].sort((a, b) => a.name.localeCompare(b.name)); // Sort countries alphabetically by name
 
-  // Mapping of country codes to the length of phone numbers (excluding country code)
   const countryPhoneLengths = {
     "+91": 10, // India
     "+1": 10, // USA, Canada
@@ -182,7 +205,6 @@ const SignUpPage = () => {
     "+66": 9, // Thailand
     "+27": 9, // South Africa
     "+34": 9, // Spain
-    // Add other countries here...
     "+234": 10, // Nigeria
     "+65": 8, // Singapore
     "+60": 7, // Malaysia
@@ -223,15 +245,18 @@ const SignUpPage = () => {
                   type="email"
                   placeholder="Email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange} // Validate email on change
                   className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                 />
+                {emailError && (
+                  <p className="text-red-500 text-sm">{emailError}</p>
+                )}
                 <div className="flex items-center gap-2">
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
                     className="p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none overflow-auto"
-                    style={{ maxHeight: "60px" }} // Limit height to 8 items and add scrollbar
+                    style={{ maxHeight: "60px" }}
                   >
                     {countries.map((country) => (
                       <option key={country.code} value={country.code}>
@@ -252,19 +277,18 @@ const SignUpPage = () => {
                 )}
                 <div className="flex justify-start items-start w-full">
                   <button
-                    onClick={handleNextStep} // Updated to call handleNextStep instead of handleSendOtp
+                    onClick={handleNextStep}
                     className={`custom-button mt-4 text-white py-2 w-full rounded-md shadow-lg ${
-                      (!mobile || mobileError) &&
+                      (!mobile || mobileError || emailError) &&
                       "cursor-not-allowed opacity-50"
                     }`}
-                    disabled={!mobile || mobileError} // Disable button if mobile number is invalid
+                    disabled={!mobile || mobileError || emailError}
                   >
                     Next
                   </button>
                 </div>
               </>
             )}
-            {/* Conditionally Render Password Fields */}
             {otpValidated && (
               <>
                 <div className="relative">
@@ -311,7 +335,7 @@ const SignUpPage = () => {
           <button
             className="custom-button text-white py-2 px-6 rounded-md shadow-lg"
             onClick={handleSignUp}
-            disabled={!otpValidated} // Disable sign-up button until OTP is validated
+            disabled={!otpValidated}
           >
             Sign Up
           </button>

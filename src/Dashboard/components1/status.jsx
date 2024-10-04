@@ -20,12 +20,12 @@ const HomePage = () => {
     const task3 = localStorage.getItem('task3Completed') === 'true';
 
     setTask1Completed(task1);
-    setTask2Completed(task2);
+    //setTask2Completed(task2);
     setTask3Completed(task3);
 
     let completedCount = 0;
     if (task1) completedCount++;
-    if (task2) completedCount++;
+    //if (task2) completedCount++;
     if (task3) completedCount++;
     setTasksCompleted(completedCount);
 
@@ -81,14 +81,15 @@ const HomePage = () => {
 
   const canAccessTask = (taskNumber) => {
     if (taskNumber === 1) return true;
-    if (taskNumber === 2) return task1Completed;
-    if (taskNumber === 3) return task1Completed && task2Completed;
+   // if (taskNumber === 2) return task1Completed;
+    //if (taskNumber === 3) return task1Completed && task2Completed;
+    if (taskNumber === 3) return task1Completed;
     return false;
   };
 
   return (
     <div className="flex-grow overflow-y-auto hide-scrollbar" style={{ maxHeight: '80vh' }}>
-      <div className="max-w-6xl mx-auto mb-2 border border-[#fcfcfc] rounded-3xl pt-8 flex flex-col items-center">
+      <div className="max-w-6xl mx-auto mb-2 border border-[#fcfcfc] rounded-3xl pt-8 flex flex-col items-center gap-6">
         <h1 className="text-xl lg:text-2xl font-medium mb-2 text-center pt-2">
           Welcome to Spark IQ <img src={handimg} alt="Hai" className="inline-block w-6 lg:w-8 h-6 lg:h-8" />
         </h1>
@@ -96,9 +97,9 @@ const HomePage = () => {
           <h2 className="text-lg lg:text-xl font-bold">Getting Started</h2>
           <p className="text-gray-600 mb-4">Get ready to launch your campaign with our quick checklist!</p>
           <div className="flex flex-col lg:flex-row md:flex-row items-center mb-4">
-            <p className="text-sm lg:text-md font-bold mb-2 lg:mb-0 pr-2">{tasksCompleted} out of 3 tasks completed</p>
+            <p className="text-sm lg:text-md font-bold mb-2 lg:mb-0 pr-2">{tasksCompleted} out of 2 tasks completed</p>
             <div className="flex-grow lg:ml-4 h-2 bg-white rounded-full w-4/6 md:w-3/6">
-              <div className="h-full bg-green-500 rounded-full" style={{ width: `${(tasksCompleted / 3) * 100}%` }}></div>
+              <div className="h-full bg-green-500 rounded-full" style={{ width: `${(tasksCompleted / 2) * 100}%` }}></div>
             </div>
           </div>
           <div className="space-y-4">
@@ -144,7 +145,7 @@ const HomePage = () => {
                 </div>
               </div>
             </div>
-            <div
+            {/* <div
               className={`border p-3 rounded-lg cursor-pointer ${selectedTask === 2 ? 'bg-[rgba(252,252,252,0.25)] border-[#FCFCFC]' : ''}`}
               onClick={() => canAccessTask(2) && setSelectedTask(2)}
               style={{ opacity: canAccessTask(2) ? '1' : '0.5', pointerEvents: canAccessTask(2) ? 'auto' : 'none' }}
@@ -185,8 +186,8 @@ const HomePage = () => {
                   )}
                 </div>
               </div>
-            </div>
-            <div
+            </div>*/}
+            <div 
               className={`border p-3 rounded-lg cursor-pointer ${selectedTask === 3 ? 'bg-[rgba(252,252,252,0.25)] border-[#FCFCFC]' : ''}`}
               onClick={() => canAccessTask(3) && setSelectedTask(3)}
               style={{ opacity: canAccessTask(3) ? '1' : '0.5', pointerEvents: canAccessTask(3) ? 'auto' : 'none' }}
