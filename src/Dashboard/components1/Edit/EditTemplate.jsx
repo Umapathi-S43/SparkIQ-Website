@@ -394,7 +394,7 @@ export default function EditTemplate() {
     const handleKeyDown = (event) => {
       // Check for the Delete key, Backspace key with Fn (macOS), or Backspace alone
       const isDeleteKey = event.key === "Delete" || 
-                          (event.key === "Backspace" && (event.metaKey || event.ctrlKey || event.key === 'Fn')); // macOS Fn+Backspace or Backspace with Meta/Ctrl key
+            (event.key === "Backspace" && (event.metaKey || event.ctrlKey || event.key === 'Fn'));// macOS Fn+Backspace or Backspace with Meta/Ctrl key
       if (isDeleteKey && selectedElementIndex !== null) {
         handleDeleteElement(); // Call the delete function
       }
@@ -475,7 +475,10 @@ export default function EditTemplate() {
       setElements((prevElements) => {
         const updatedElements = [...prevElements];
         const updatedElement = updatedElements[selectedElementIndex];
+        // Only set color for text or shape elements
+      if (updatedElement.type === 'text' || updatedElement.type === 'shape') {
         updatedElement.style.color = color;
+      }
         return updatedElements;
       });
     }
@@ -641,8 +644,13 @@ export default function EditTemplate() {
             <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
               {editingTextIndex !== null && (
                 <TextFormatToolbar
-                  onClose={() => setEditingTextIndex(null)} // Close toolbar
-                  applyFormatting={handleTextFormatting} />
+                fontFamily={activeElement?.style?.fontFamily || 'Sans Serif'}
+                fontSize={activeElement?.style?.fontSize || '16px'}
+                fontColor={activeElement?.style?.color || '#000000'}
+                onClose={() => setEditingTextIndex(null)}
+              />
+              
+                
               )}
               <div className="flex">
                 <DesignMenu

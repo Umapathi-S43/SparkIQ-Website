@@ -149,10 +149,10 @@ const AdProduct = () => {
               brandID: productDetails.brandID,
               name: productDetails.productName,
               description: productDetails.productDescription,
-              price: productDetails.productPrice,
-              priceType: productDetails.currency,
-              discount: productDetails.customDiscount,
-              discountType: productDetails.discount,
+            //   price: productDetails.productPrice,
+            //   priceType: productDetails.currency,
+            //   discount: productDetails.customDiscount,
+            //   discountType: productDetails.discount,
               productImagesList: [
                   {
                       imageURL: productDetails.logoURL,
@@ -399,16 +399,16 @@ const AdProduct = () => {
     const isNextStepDisabled =
         productDetails.productName === "" ||
         productDetails.productDescription === "" ||
-        productDetails.brandName === "" ||
-        productDetails.productPrice === "" ||
-        productDetails.customDiscount === "" ||
-        (productDetails.discount === "Price" &&
-            (isNaN(parseFloat(productDetails.customDiscount)) ||
-                parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
-        (productDetails.discount === "Percentage" &&
-            (isNaN(parseFloat(productDetails.customDiscount)) ||
-                parseFloat(productDetails.customDiscount) <= 0 ||
-                parseFloat(productDetails.customDiscount) > 100));
+        productDetails.brandName === "" 
+        // productDetails.productPrice === "" ||
+        // productDetails.customDiscount === "" ||
+        // (productDetails.discount === "Price" &&
+        //     (isNaN(parseFloat(productDetails.customDiscount)) ||
+        //         parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+        // (productDetails.discount === "Percentage" &&
+        //     (isNaN(parseFloat(productDetails.customDiscount)) ||
+        //         parseFloat(productDetails.customDiscount) <= 0 ||
+        //         parseFloat(productDetails.customDiscount) > 100));
 
     const handleSaveAndContinue = (section) => {
         if (isNextStepDisabled) {

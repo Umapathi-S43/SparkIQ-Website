@@ -375,10 +375,10 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                 brandID: productDetails.brandID,
                 name: productDetails.productName,
                 description: productDetails.productDescription,
-                price: productDetails.productPrice,
-                priceType: productDetails.currency,
-                discount: productDetails.customDiscount,
-                discountType: productDetails.discount,
+                // price: productDetails.productPrice,
+                // priceType: productDetails.currency,
+                // discount: productDetails.customDiscount,
+                // discountType: productDetails.discount,
                 productImagesList: [
                     {
                         imageURL: productDetails.logoURL,
@@ -427,16 +427,16 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         const isNextStepDisabled =
             productDetails.productName === "" ||
             productDetails.productDescription === "" ||
-            productDetails.brandName === "" ||
-            productDetails.productPrice === "" ||
-            productDetails.customDiscount === "" ||
-            (productDetails.discount === "Price" &&
-                (isNaN(parseFloat(productDetails.customDiscount)) ||
-                    parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
-            (productDetails.discount === "Percentage" &&
-                (isNaN(parseFloat(productDetails.customDiscount)) ||
-                    parseFloat(productDetails.customDiscount) <= 0 ||
-                    parseFloat(productDetails.customDiscount) > 100));
+            productDetails.brandName === "" 
+            // productDetails.productPrice === "" ||
+            // productDetails.customDiscount === "" ||
+            // (productDetails.discount === "Price" &&
+            //     (isNaN(parseFloat(productDetails.customDiscount)) ||
+            //         parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+            // (productDetails.discount === "Percentage" &&
+            //     (isNaN(parseFloat(productDetails.customDiscount)) ||
+            //         parseFloat(productDetails.customDiscount) <= 0 ||
+            //         parseFloat(productDetails.customDiscount) > 100));
         
         if (isNextStepDisabled) {
             toast.error("Please fill in all the required fields correctly.");
@@ -476,8 +476,8 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         productDetails.productName === "" ||
         productDetails.productDescription === "" ||
         productDetails.brandName === "" ||
-        productDetails.productPrice === "" ||
-        productDetails.customDiscount === "" ||
+        // productDetails.productPrice === "" ||
+        // productDetails.customDiscount === "" ||
         productDetails.logoURL === "";
 
     return (
