@@ -365,6 +365,11 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
 
     const handleProductSubmission = async (e) => {
         e.preventDefault();
+        const defaultProductPrice = productDetails.productPrice === "" ? "0" : productDetails.productPrice;
+        const defaultCurrency = productDetails.currency === "" ? "USD" : productDetails.currency;
+        const defaultCustomDiscount = productDetails.customDiscount === "" ? "0" : productDetails.customDiscount;
+        const defaultDiscountType = productDetails.discount === "" ? "Percentage" : productDetails.discount;
+
         
         try {
             console.log("Product submission initiated...");
@@ -375,10 +380,10 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                 brandID: productDetails.brandID,
                 name: productDetails.productName,
                 description: productDetails.productDescription,
-                // price: productDetails.productPrice,
-                // priceType: productDetails.currency,
-                // discount: productDetails.customDiscount,
-                // discountType: productDetails.discount,
+                price: defaultProductPrice,
+                priceType: defaultCurrency,
+                discount: defaultCustomDiscount,
+                discountType: defaultDiscountType,
                 productImagesList: [
                     {
                         imageURL: productDetails.logoURL,

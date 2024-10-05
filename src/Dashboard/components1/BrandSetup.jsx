@@ -22,6 +22,7 @@ const BrandSetup = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const brandName = params.get("name");
+  const [isUploading, setIsUploading] = useState(false); // New state to track image upload
 
   const [formInputs, setFormInputs] = useState({
     brandName: brandName || "",
@@ -140,30 +141,35 @@ const BrandSetup = () => {
     const uploadData = new FormData();
     uploadData.append("file", formInputs.imageFile);
     uploadData.append("customerId", "123");
-  
+
+    setIsUploading(true); // Start the upload process
+
     try {
-      if (!jwtToken) {
-        throw new Error("No JWT token found. Please log in.");
-      }
-      const response = await axios.post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${jwtToken}`,
-        },
-      });
-  
-      const logoURL = response.data.data.url;
-      setFormInputs((prevInputs) => ({
-        ...prevInputs,
-        logoURL, // Set the uploaded logo URL
-        showSubmitButton: true, // Now show the submit button after logo is uploaded
-      }));
-  
-      toast.success("Image upload successful");
+        if (!jwtToken) {
+            throw new Error("No JWT token found. Please log in.");
+        }
+        const response = await axios.post(`${baseUrl}/sparkiq/image/upload`, uploadData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+                Authorization: `Bearer ${jwtToken}`,
+            },
+        });
+
+        const logoURL = response.data.data.url;
+        setFormInputs((prevInputs) => ({
+            ...prevInputs,
+            logoURL, // Set the uploaded logo URL
+            showSubmitButton: true, // Now show the submit button after logo is uploaded
+        }));
+
+        toast.success("Image upload successful");
     } catch (error) {
-      console.log(error);
+        console.log(error);
+        toast.error("Failed to upload image.");
+    } finally {
+        setIsUploading(false); // End the upload process
     }
-  };
+};
   
 
   const toggleSection = (section) => {
@@ -461,19 +467,21 @@ const BrandSetup = () => {
             </div>
             {formInputs.showSubmitButton && (
               <div className="flex justify-start mt-4">
-                <button
-                  className="custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg"
+               <button
+                  className={`custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`} // Apply styling for disabled state
                   onClick={() => {
-                    if (formInputs.logoURL) {
-                      handleCreateOrEditBrand(); // Now create or update brand after logo is uploaded and button is clicked
-                    } else if (formInputs.imageFile) {
-                      // If the image is not uploaded yet, first upload it and then create or update the brand
-                      uploadImage().then(() => handleCreateOrEditBrand());
-                    }
+                      if (formInputs.logoURL) {
+                          handleCreateOrEditBrand(); // Now create or update brand after logo is uploaded and button is clicked
+                      } else if (formInputs.imageFile) {
+                          // If the image is not uploaded yet, first upload it and then create or update the brand
+                          uploadImage().then(() => handleCreateOrEditBrand());
+                      }
                   }}
+                  disabled={isUploading} // Disable the button during upload
                 >
                   {formInputs.isEdit ? "Update" : "Create Brand"}
-                </button>
+              </button>
+
               </div>
             )}
           </div>

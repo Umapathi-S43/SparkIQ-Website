@@ -12,6 +12,7 @@ const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF
 const discountOptions = ["Price", "Percentage"];
 
 const AdProduct = () => {
+    
     const [productDetails, setProductDetails] = useState({
         productName: "",
         productDescription: "",
@@ -141,6 +142,12 @@ const AdProduct = () => {
 
     const handleProductSubmission = async (e) => {
       e.preventDefault();
+       // Set default values if they are not provided
+    const defaultProductPrice = productDetails.productPrice === "" ? "0" : productDetails.productPrice;
+    const defaultCurrency = productDetails.currency === "" ? "USD" : productDetails.currency;
+    const defaultCustomDiscount = productDetails.customDiscount === "" ? "0" : productDetails.customDiscount;
+    const defaultDiscountType = productDetails.discount === "" ? "Percentage" : productDetails.discount;
+
   
       try {
           const isEditMode = productDetails.isEdit && storedProductID;
@@ -149,10 +156,10 @@ const AdProduct = () => {
               brandID: productDetails.brandID,
               name: productDetails.productName,
               description: productDetails.productDescription,
-            //   price: productDetails.productPrice,
-            //   priceType: productDetails.currency,
-            //   discount: productDetails.customDiscount,
-            //   discountType: productDetails.discount,
+              price: defaultProductPrice,
+              priceType: defaultCurrency,
+              discount: defaultCustomDiscount,
+              discountType: defaultDiscountType,
               productImagesList: [
                   {
                       imageURL: productDetails.logoURL,

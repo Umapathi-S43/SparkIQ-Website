@@ -184,9 +184,12 @@ const Products = () => {
                     {product.name}
                   </span>
                 )}
+                {product.price > 0 && (
                 <span className="font-semibold text-[#082A66] group-hover:text-white">
                   {product.price} {product.priceType}
                 </span>
+              )}
+
               </div>
               <div className="text-justify w-full px-2 line-clamp-3">
                 <p className="text-sm text-[#374151] group-hover:text-white">
