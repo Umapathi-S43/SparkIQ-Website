@@ -393,10 +393,20 @@ export default function EditTemplate() {
   useEffect(() => {
     const handleKeyDown = (event) => {
       // Check for the Delete key, Backspace key with Fn (macOS), or Backspace alone
-      const isDeleteKey = event.key === "Delete" || 
-            (event.key === "Backspace" && (event.metaKey || event.ctrlKey || event.key === 'Fn'));// macOS Fn+Backspace or Backspace with Meta/Ctrl key
+      const isDeleteKey =
+        event.key === "Delete" ||
+        (event.key === "Backspace"); // macOS Fn+Backspace or Backspace with Meta/Ctrl key
+  
       if (isDeleteKey && selectedElementIndex !== null) {
-        handleDeleteElement(); // Call the delete function
+        const element = elements[selectedElementIndex];
+  
+        // If the element is not a text field or is a text field but not in edit mode, delete it
+        const isTextElement = element.type === "text";
+        const isEditable = editingTextIndex !== null && editingTextIndex === selectedElementIndex;
+  
+        if (!isTextElement || !isEditable) {
+          handleDeleteElement(); // Call the delete function
+        }
       }
     };
   
@@ -406,7 +416,7 @@ export default function EditTemplate() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedElementIndex]);
+  }, [selectedElementIndex, editingTextIndex, elements]);
   
   
 
