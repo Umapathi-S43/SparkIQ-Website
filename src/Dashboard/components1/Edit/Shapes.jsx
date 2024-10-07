@@ -45,7 +45,7 @@ import './ShapeStyles.css'; // Custom styles for shapes
 
 const ShapeStyleLayout = ({ handleAddShape }) => {
   const size = 100; // Set default size for all icons
-  const color = '#f5f5f5'; // Set the color to smokewhite for all icons
+  const color = '#082A66'; // Set the color to smokewhite for all icons
   const icons = [
     { name: 'Arrow Right', component: <PiArrowFatRightFill /> },    
     {name:'leafs3',component:<DiYii />},
@@ -103,8 +103,8 @@ const ShapeStyleLayout = ({ handleAddShape }) => {
   ];
 
   return (
-    <div className="border shadow-md p-4 text-[#FCFCFC]">
-      <h3 className="font-semibold text-xl pb-4">Shapes</h3>
+    <div className="border-2 shadow-md p-3 text-[#FCFCFC]">
+      <h3 className="font-semibold text-xl pb-4 pt-2 text-[#082A66]">Shapes</h3>
       <div className="grid-container">
         {icons.map((icon, index) => (
           <div

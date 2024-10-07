@@ -37,10 +37,10 @@ const ImageSearchLayout = ({ onSelectImage }) => { // Accept a callback prop
   };
 
   return (
-    <div className="border shadow-md p-4 text-[#FCFCFC] rounded-lg">
-      <h3 className="font-semibold text-xl pb-4">Search for Images</h3>
+    <div className="border-2 shadow-md p-4 text-[#FCFCFC] rounded-lg">
+      <h3 className="font-semibold text-xl pb-4 text-[#082A66]">Search for Images</h3>
 
-      <div className="border p-4 mb-4 rounded-md">
+      <div className="border border-[#FCFCFC] p-4 mb-4 rounded-md">
         <input
           type="text"
           value={searchTerm}

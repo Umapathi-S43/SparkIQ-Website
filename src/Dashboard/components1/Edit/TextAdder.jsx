@@ -66,7 +66,7 @@ const TextAdder = ({ onAddText }) => {
   };
 
   return (
-    <div className="border shadow-md p-4 text-[#FCFCFC] gap-4 rounded-lg">
+    <div className="border shadow-md p-4 text-[#082A66] gap-4 rounded-lg">
       <div>
         <button
           className="font-semibold text-xl shadow-sm rounded-lg p-2 mb-2 w-full custom-button text-white border-2"
@@ -77,19 +77,19 @@ const TextAdder = ({ onAddText }) => {
       </div>
       <h3 className="font-semibold text-xl pb-2 mt-5">Default text styles</h3>
       <button
-        className="font-semibold text-2xl border shadow-sm rounded-lg p-4 mb-2 w-full hover:bg-[#9A9A9A99] hover:text-white"
+        className="font-semibold text-xl border-2 border-[#FCFCFC] shadow-sm rounded-lg p-4 mb-2 w-full hover:bg-[#9A9A9A99] hover:text-white"
         onClick={() => handleAddText('heading')}
       >
         Add a heading
       </button>
       <button
-        className="font-semibold text-xl border shadow-sm p-3 w-full rounded-lg mb-2 hover:bg-[#9A9A9A99] hover:text-white"
+        className="font-semibold text-lg border-2 border-[#FCFCFC]  shadow-sm p-3 w-full rounded-lg mb-2 hover:bg-[#9A9A9A99] hover:text-white"
         onClick={() => handleAddText('subheading')}
       >
         Add a subheading
       </button>
       <button
-        className="font-semibold text-lg border shadow-sm p-2 w-full rounded-lg mb-2 hover:bg-[#9A9A9A99] hover:text-white transition-all duration-300 ease-in-out"
+        className="font-semibold text-md border-2 border-[#FCFCFC]  shadow-sm p-2 w-full rounded-lg mb-2 hover:bg-[#9A9A9A99] hover:text-white transition-all duration-300 ease-in-out"
         onClick={() => handleAddText('body')}
       >
         Add a little bit of body text

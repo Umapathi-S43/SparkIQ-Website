@@ -31,14 +31,14 @@ const FramesComponent = ({ onSelectFrame }) => {
   };
 
   return (
-    <div className="frames-component border-2 border-[#FCFCFC] rounded-xl">
-      <h2 className="text-white text-2xl mb-4 p-2">Select a Frame:</h2>
+    <div className="frames-component border  shadow-md rounded-xl">
+      <h3 className="font-semibold text-xl p-4 text-[#082A66]">Select a Frame:</h3>
       <div className="frames-list grid grid-cols-3 gap-4 p-2">
         {frames.map((frame) => (
           <div
             key={frame.name}
-            className="hover-frame frame-box p-4 border bg-white rounded-lg "
-            style={{ clipPath: frame.clipPath, width: "80px", height: "80px", backgroundColor: "#f0f0f0" }}
+            className="hover-frame frame-box p-4 border bg-[#082A66] rounded-lg "
+            style={{ clipPath: frame.clipPath, width: "80px", height: "80px", backgroundColor: "[#082A66]" }}
             onClick={() => handleFrameSelect(frame)}
           >
             {/* You can add a label here if needed */}

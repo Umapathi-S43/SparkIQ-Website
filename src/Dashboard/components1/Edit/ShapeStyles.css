@@ -18,7 +18,7 @@
 }
 
 .shape-box:hover {
-  border: 2px solid #f0f0f0; /* Apply a blue border on hover */
+  border: 4px solid #FCFCFC; /* Apply a blue border on hover */
 }
 
 .icon {

@@ -686,32 +686,32 @@ export default function EditTemplate() {
               )}
 
               {activeComponent === "Text" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md bg-[#082A66]">
+                <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md bg-[#FCFCFC40]">
                   <TextAdder onAddText={handleAddText} />
                 </div>
               )}
               {/* Show ImageUploadLayout when Uploads component is active */}
               {activeComponent === "Uploads" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <ImageUploadLayout onSelectImage={handleAddImage} /> {/* Pass the handleAddImage callback */}
                 </div>
               )}
 
               {activeComponent === "Images" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar  bg-[#082A66]">
+                <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar  bg-[#FCFCFC40]">
                   <ImageSearchLayout onSelectImage={handleAddImage} /> {/* Pass the handleAddImage callback */}
 
                 </div>
               )}
 
               {activeComponent === "Shapes" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <ShapeStyleLayout handleAddShape={handleAddShape} />
                 </div>
               )}
 
               {activeComponent === "Frames" && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <FramesComponent onSelectFrame={handleFrameSelect} />
                 </div>
               )}
