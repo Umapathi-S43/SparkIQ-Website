@@ -652,16 +652,14 @@ export default function EditTemplate() {
           </div>
           <div className="flex-row relative w-full m-4 ml-0">
             <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
-              {editingTextIndex !== null && (
-                <TextFormatToolbar
+            {editingTextIndex !== null && (activeElement?.type === 'text' || activeElement?.type === 'cta') && (
+              <TextFormatToolbar
                 fontFamily={activeElement?.style?.fontFamily || 'Sans Serif'}
                 fontSize={activeElement?.style?.fontSize || '16px'}
                 fontColor={activeElement?.style?.color || '#000000'}
                 onClose={() => setEditingTextIndex(null)}
               />
-              
-                
-              )}
+            )}
               <div className="flex">
                 <DesignMenu
                   activeMenu={activeMenu}
