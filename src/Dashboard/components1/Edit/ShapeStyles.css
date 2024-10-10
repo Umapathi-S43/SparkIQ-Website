@@ -1,0 +1,32 @@
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Adjust this value based on how many icons per row */
+  gap: 10px;
+}
+
+.shape-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90px;
+  height: 90px;
+  background-color: transparent; /* Initial background */
+  cursor: pointer;
+  border-radius: 8px; /* Optional, for rounded corners */
+  transition: background-color 0.2s ease, border 0.2s ease;
+  border: 2px solid transparent; /* Initially no border */
+}
+
+.shape-box:hover {
+  border: 2px solid #f0f0f0; /* Apply a blue border on hover */
+}
+
+.icon {
+  font-size: 100px; /* Set the default size */
+  color: #f5f5f5; /* Default icon color */
+  transition: color 0.2s ease;
+}
+
+.shape-box:hover .icon {
+  color: #082A66; /* Change icon color on hover (navy blue) */
+}

@@ -52,6 +52,10 @@ function App() {
             element={<ProtectedRoute element={<SocialMedia />} />}
           />
           <Route
+            path="/DAPCreatives"
+            element={<ProtectedRoute element={<GenerateDAPCreativesPage />} />}
+          />
+          <Route
             path="/brandsetup"
             element={<ProtectedRoute element={<BrandSetupPage />} />}
           />
