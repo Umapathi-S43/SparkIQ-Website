@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 
-const ColorMenu = ({ handleColorChange  }) => {
+const GradientColorMenu = ({ handleGradientColorChange}) => {
   const [customColor, setCustomColor] = useState('#C70039'); // State for real-time color picker
 
-  const solidColors = [
-    '#000000', '#FFFFFF', '#FF5733', '#33FF57', '#3357FF', '#FFFF33', '#FF33FF', '#00FFFF', '#FFCC00', '#FF6666',
-    '#C70039', '#900C3F', '#581845', '#DAF7A6', '#FFC300', '#FF5733', '#C70039', '#900C3F', '#581845', '#2ECC71',
-    '#1ABC9C', '#3498DB', '#9B59B6', '#34495E', '#F1C40F', '#E67E22', '#E74C3C', '#ECF0F1', '#95A5A6', '#7F8C8D',
-  ];
-
-  const gradientColors = [
+ const gradientColors = [
      // Pink Gradients
      'linear-gradient(45deg, #ff9a9e 0%, #fad0c4 100%)',
      'linear-gradient(45deg, #fcb69f 0%, #ff7eb3 100%)',
@@ -18,7 +12,6 @@ const ColorMenu = ({ handleColorChange  }) => {
      // Red Gradients
      'linear-gradient(45deg, #ff9966 0%, #ff5e62 100%)',
      'linear-gradient(45deg, #ff6a00 0%, #ee0979 100%)',
-     'linear-gradient(45deg, #ff512f 0%, #dd2476 100%)',
  
      // Orange Gradients
      'linear-gradient(45deg, #ff9a9e 0%, #ff7e5f 100%)',
@@ -51,7 +44,6 @@ const ColorMenu = ({ handleColorChange  }) => {
      'linear-gradient(45deg, #72c2ff 0%, #bed1ff 100%)',
  
     'linear-gradient(45deg, #ff9a9e 0%, #fad0c4 100%)',
-    'linear-gradient(45deg, #a18cd1 0%, #fbc2eb 100%)',
     'linear-gradient(45deg, #fad0c4 0%, #ffd1ff 100%)',
     'linear-gradient(45deg, #fbc2eb 0%, #a6c1ee 100%)',
     'linear-gradient(45deg, #fddb92 0%, #d1fdff 100%)',
@@ -75,33 +67,8 @@ const ColorMenu = ({ handleColorChange  }) => {
 
   return (
     <div className="p-4 bg-[#FCFCFC40] rounded-md shadow-md">
-      <span className="block mb-2 font-semibold">Select Color</span>
-      
-      {/* Solid Colors Section */}
-      <div className="mt-2">
-        <span className="block mb-2 font-semibold">Solid Colors</span>
-        <div className="color-palette grid grid-cols-6 gap-2">
-          {solidColors.map((color, index) => (
-            <button
-              key={index}
-              className="color-option"
-              style={{
-                background: color,
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                margin: '5px',
-                border: '1px solid #ccc',
-              }}
-              onClick={() => handleColorChange(color)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Gradient Colors Section
+      <span className="block font-semibold">Select Background Color</span>
       <div className="mt-4">
-        <span className="block mb-2 font-semibold">Gradient Colors</span>
         <div className="color-palette grid grid-cols-6 gap-2">
           {gradientColors.map((color, index) => (
             <button
@@ -115,11 +82,11 @@ const ColorMenu = ({ handleColorChange  }) => {
                 margin: '5px',
                 border: '1px solid #ccc',
               }}
-              onClick={() => handleColorChange(color)}
+              onClick={() => handleGradientColorChange(color)}
             />
           ))}
         </div>
-      </div>*/}
+      </div>
 
       {/* Custom Color Picker */}
       <div className="mt-4">
@@ -136,4 +103,4 @@ const ColorMenu = ({ handleColorChange  }) => {
   );
 };
 
-export default ColorMenu;
+export default GradientColorMenu;

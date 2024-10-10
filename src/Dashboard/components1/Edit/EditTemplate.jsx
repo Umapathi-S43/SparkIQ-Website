@@ -18,8 +18,9 @@ import FramesComponent from "./Frames";
 import { MdColorLens } from "react-icons/md";
 import DesignMenu from './DesignMenu';
 import ColorMenu from './ColorMenu';
-import TransparencyMenu from './TransparencyMenu';
+import GradientColorMenu from "./GradientColor";
 import PositionMenu from './PositionMenu';
+import ShapeWithSVG from "./ShapeWithSVG";
 
 
 export default function EditTemplate() {
@@ -192,20 +193,40 @@ export default function EditTemplate() {
   const handleAddShape = (shape) => {
     const newShapeElement = {
       type: 'shape',
-      component: shape.component, // The icon component selected
+      component: shape.component, // The component selected (either icon or SVG)
       position: { x: 50, y: 50 }, // Default position for the shape
       size: { width: 200, height: 200 }, // Set shape size to 200x200
       style: {
-        color: '#fff', // Default color (navy blue)
+        color: '#fff', // This color can be dynamically changed if needed
         backgroundColor: 'transparent', // No background color by default
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        fontSize: '100px', // Set font size of the icon
+        fontSize: '100px', // Set font size of the icon if it's an icon
       },
     };
     setElements([...elements, newShapeElement]); // Add shape to elements
   };
+
+  const handleAddSVG = (svg) => {
+    const newSVGElement = {
+      type: 'svg',
+      component: svg.component, // Store the function reference
+      position: { x: 50, y: 50 },
+      size: { width: 200, height: 200 },
+      fillColor: '#fff', // Use fillColor to manage the color
+      style: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: elements.length + 1,
+      },
+    };
+    setElements([...elements, newSVGElement]);
+  };
+
+
+
 
   const handleExport = async () => {
     if (templateRef.current) {
@@ -396,29 +417,29 @@ export default function EditTemplate() {
       const isDeleteKey =
         event.key === "Delete" ||
         (event.key === "Backspace"); // macOS Fn+Backspace or Backspace with Meta/Ctrl key
-  
+
       if (isDeleteKey && selectedElementIndex !== null) {
         const element = elements[selectedElementIndex];
-  
+
         // If the element is not a text field or is a text field but not in edit mode, delete it
         const isTextElement = element.type === "text";
         const isEditable = editingTextIndex !== null && editingTextIndex === selectedElementIndex;
-  
+
         if (!isTextElement || !isEditable) {
           handleDeleteElement(); // Call the delete function
         }
       }
     };
-  
+
     window.addEventListener("keydown", handleKeyDown);
-  
+
     // Cleanup event listener when the component unmounts
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedElementIndex, editingTextIndex, elements]);
-  
-  
+
+
 
   const handleDeleteElement = () => {
     if (selectedElementIndex !== null) {
@@ -475,20 +496,45 @@ export default function EditTemplate() {
     setElements([...elements, newImageElement]); // Add the selected image as a new element
   };
 
-
   // Handler for color change
   const handleColorChange = (color) => {
-    setSelectedColor(color);
+    setSelectedColor(color); // Update selected color
 
-    // Apply the color to the selected element
     if (selectedElementIndex !== null) {
       setElements((prevElements) => {
         const updatedElements = [...prevElements];
         const updatedElement = updatedElements[selectedElementIndex];
-        // Only set color for text or shape elements
-      if (updatedElement.type === 'text' || updatedElement.type === 'shape') {
-        updatedElement.style.color = color;
-      }
+
+        if (updatedElement.type === 'svg') {
+          updatedElement.fillColor = color; // Update fill color property
+        } else if (updatedElement.type === 'shape') {
+          updatedElement.style.color = color; // Change color for shapes
+        } else if (updatedElement.type === 'text') {
+          updatedElement.style.color = color; // Change text color
+        }
+
+        return updatedElements; // Return the updated elements
+      });
+    }
+  };
+
+
+
+  // Handler for gradient color change
+  const handleGradientColorChange = (gradientColor) => {
+    setSelectedColor(gradientColor); // Store the selected gradient color
+
+    // Apply the gradient color to the selected element
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+
+        // Only apply gradient background for text elements
+        if (updatedElement.type === 'text') {
+          updatedElement.style.background = gradientColor; // Apply gradient as background
+        }
+
         return updatedElements;
       });
     }
@@ -652,14 +698,14 @@ export default function EditTemplate() {
           </div>
           <div className="flex-row relative w-full m-4 ml-0">
             <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
-            {editingTextIndex !== null && (activeElement?.type === 'text' || activeElement?.type === 'cta') && (
-              <TextFormatToolbar
-                fontFamily={activeElement?.style?.fontFamily || 'Sans Serif'}
-                fontSize={activeElement?.style?.fontSize || '16px'}
-                fontColor={activeElement?.style?.color || '#000000'}
-                onClose={() => setEditingTextIndex(null)}
-              />
-            )}
+              {editingTextIndex !== null && (activeElement?.type === 'text' || activeElement?.type === 'cta') && (
+                <TextFormatToolbar
+                  fontFamily={activeElement?.style?.fontFamily || 'Sans Serif'}
+                  fontSize={activeElement?.style?.fontSize || '16px'}
+                  fontColor={activeElement?.style?.color || '#000000'}
+                  onClose={() => setEditingTextIndex(null)}
+                />
+              )}
               <div className="flex">
                 <DesignMenu
                   activeMenu={activeMenu}
@@ -705,8 +751,10 @@ export default function EditTemplate() {
               {activeComponent === "Shapes" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <ShapeStyleLayout handleAddShape={handleAddShape} />
+                  <ShapeWithSVG handleAddSVG={handleAddSVG} /> {/* Add ShapeWithSVG component */}
                 </div>
               )}
+
 
               {activeComponent === "Frames" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
@@ -715,14 +763,21 @@ export default function EditTemplate() {
               )}
 
               {activeMenu === 'color' && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <ColorMenu handleColorChange={handleColorChange} />
                 </div>
               )}
 
+              {activeMenu === 'gradientColor' && activeElement?.type === 'text' && (
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
+                  <GradientColorMenu handleGradientColorChange={handleGradientColorChange} />
+                </div>
+              )}
+
+
 
               {activeMenu === 'position' && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#082A66]">
+                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <PositionMenu
                     handlePositionChange={handlePositionChange}
                     handleAlignElement={handleAlignElement} // Pass this function
@@ -781,16 +836,16 @@ export default function EditTemplate() {
                         {element.type === "image" ? (
                           // Render Image Element
                           <img
-                          src={element.src}
-                          alt="element"
-                          draggable="false" // Prevent default image drag behavior
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            opacity: element.style?.opacity ?? 1,
-                            zIndex: element.style?.zIndex || 1
-                          }}
-                        />
+                            src={element.src}
+                            alt="element"
+                            draggable="false" // Prevent default image drag behavior
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              opacity: element.style?.opacity ?? 1,
+                              zIndex: element.style?.zIndex || 1
+                            }}
+                          />
 
                         ) : element.type === "shape" ? (
                           // Render Shape Element
@@ -810,6 +865,12 @@ export default function EditTemplate() {
                           >
                             {element.component} {/* Render the shape component */}
                           </div>
+                        ) : element.type === "svg" ? (
+                          element.component(element.fillColor) // Render the SVG with the current fill color
+
+
+                          // {element.component} {/* Render the SVG component */}
+
                         ) : element.type === "frame" ? (
                           <div
                             style={{

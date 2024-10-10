@@ -4,12 +4,12 @@ import { MdAlignHorizontalCenter, MdAlignVerticalTop, MdAlignVerticalBottom } fr
 
 const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
   return (
-    <div className="p-4 bg-white rounded-md shadow-md">
+    <div className="p-4 bg-[#FCFCFC90] rounded-md shadow-md">
       <span className='text-2xl font-semibold'>Position</span>
       <div className="position-controls mt-4 space-y-4"> {/* Adding margin and spacing between buttons */}
         {/* Forward button */}
         <button
-          className="flex items-center gap-2 w-full bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex items-center gap-2 w-full bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handlePositionChange('forward')}
         >
           <FaArrowUp />
@@ -18,7 +18,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* Backward button */}
         <button
-          className="flex items-center gap-2 w-full bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex items-center gap-2 w-full bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handlePositionChange('backward')}
         >
           <FaArrowDown />
@@ -27,7 +27,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* To Front button */}
         <button
-          className="flex items-center gap-2 w-full bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex items-center gap-2 w-full bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handlePositionChange('toFront')}
         >
           <FaAngleDoubleUp />
@@ -36,7 +36,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* To Back button */}
         <button
-          className="flex items-center gap-2 w-full bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex items-center gap-2 w-full bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handlePositionChange('toBack')}
         >
           <FaAngleDoubleDown />
@@ -49,7 +49,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
       <div className="align-controls mt-3 grid grid-cols-2 gap-2">
         {/* Align Top */}
         <button
-          className="flex flex-row items-center justify-start bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex flex-row items-center justify-start bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handleAlignElement('top')}
         >
           <MdAlignVerticalTop size={24} />
@@ -58,7 +58,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* Align Left */}
         <button
-          className="flex flex-row items-center justify-start bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex flex-row items-center justify-start bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handleAlignElement('left')}
         >
           <FaAlignLeft size={24} />
@@ -67,7 +67,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* Align Center */}
         <button
-          className="flex flex-row items-center justify-start bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex flex-row items-center justify-start bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handleAlignElement('center')}
         >
           <FaAlignCenter size={24} />
@@ -76,7 +76,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* Align Middle */}
         <button
-          className="flex flex-row items-center justify-start bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex flex-row items-center justify-start bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handleAlignElement('middle')}
         >
           <MdAlignHorizontalCenter size={24} />
@@ -85,7 +85,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* Align Right */}
         <button
-          className="flex flex-row items-center justify-start bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex flex-row items-center justify-start bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handleAlignElement('right')}
         >
           <FaAlignRight size={24} />
@@ -94,7 +94,7 @@ const PositionMenu = ({ handlePositionChange, handleAlignElement }) => {
 
         {/* Align Bottom */}
         <button
-          className="flex flex-row items-center justify-start bg-gray-300 text-white py-2 px-4 rounded hover:text-[#082A66]"
+          className="flex flex-row items-center justify-start bg-gray-300 text-[#082A66] py-2 px-4 rounded hover:text-white"
           onClick={() => handleAlignElement('bottom')}
         >
           <MdAlignVerticalBottom size={24} />
