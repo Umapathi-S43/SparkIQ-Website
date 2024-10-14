@@ -28,6 +28,9 @@ import ArrowElements from "./ArrowElements";
 import StarElements from "./StarElements";
 import BrushedElements from "./BrushedElements";
 import RibbonElements from "./RibbonElements";
+import LabelElements from "./LabelElements";
+import BadgesShieldElements from "./BadgesShields";
+import SpeechBubblesElements from "./SpeechBubbles";
 
 
 export default function EditTemplate() {
@@ -766,6 +769,9 @@ export default function EditTemplate() {
                   <StarElements handleAddSVG={handleAddSVG}/>
                   <BrushedElements handleAddSVG={handleAddSVG}/>
                   <RibbonElements handleAddSVG={handleAddSVG}/>
+                  <LabelElements handleAddSVG={handleAddSVG}/>
+                  <BadgesShieldElements handleAddSVG={handleAddSVG}/>
+                  <SpeechBubblesElements handleAddSVG={handleAddSVG}/>
                 </div>
               )}
 

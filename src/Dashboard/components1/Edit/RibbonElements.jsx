@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const RibbonElements = ({ handleAddSVG }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const svgs = [
     { name: 'SVG Ribbon 01', component: (fillColor) =>(<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px" viewBox="0 0 400 134" enable-background="new 0 0 400 134"  width="100%" height="100%" preserveAspectRatio="none" fill={fillColor}> <polygon  points="400,67 356.236,134 0,134 0,0 356.236,0 " data-color-group="0"/> </svg>),},
@@ -70,7 +70,7 @@ const RibbonElements = ({ handleAddSVG }) => {
               className="shape-box"
               style={{
                 width: '90px',
-                height: '90px',
+                height: '60px',
                 cursor: 'pointer',
                 display: 'flex',
                 justifyContent: 'center',
