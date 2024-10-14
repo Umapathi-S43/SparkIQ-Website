@@ -22,6 +22,12 @@ import GradientColorMenu from "./GradientColor";
 import PositionMenu from './PositionMenu';
 import ShapeWithSVG from "./ShapeWithSVG";
 import DesignElements from "./DesignElements";
+import OutlineElements from "./OutlineElements";
+import GeometricalElements from "./GeometricalElements";
+import ArrowElements from "./ArrowElements";
+import StarElements from "./StarElements";
+import BrushedElements from "./BrushedElements";
+import RibbonElements from "./RibbonElements";
 
 
 export default function EditTemplate() {
@@ -754,7 +760,12 @@ export default function EditTemplate() {
                   <ShapeStyleLayout handleAddShape={handleAddShape} />
                   <DesignElements handleAddSVG={handleAddSVG} /> {/* Add ShapeWithSVG component */}
                   <ShapeWithSVG handleAddSVG={handleAddSVG} /> {/* Add ShapeWithSVG component */}
-                  
+                  <OutlineElements handleAddSVG={handleAddSVG}/>
+                  <GeometricalElements handleAddSVG={handleAddSVG}/>
+                  <ArrowElements handleAddSVG={handleAddSVG}/>
+                  <StarElements handleAddSVG={handleAddSVG}/>
+                  <BrushedElements handleAddSVG={handleAddSVG}/>
+                  <RibbonElements handleAddSVG={handleAddSVG}/>
                 </div>
               )}
 
