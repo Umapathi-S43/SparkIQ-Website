@@ -31,6 +31,8 @@ import RibbonElements from "./RibbonElements";
 import LabelElements from "./LabelElements";
 import BadgesShieldElements from "./BadgesShields";
 import SpeechBubblesElements from "./SpeechBubbles";
+import BlobElements from "./BlobElements";
+import SunburstElements from "./SunburstHalftone";
 
 
 export default function EditTemplate() {
@@ -772,6 +774,8 @@ export default function EditTemplate() {
                   <LabelElements handleAddSVG={handleAddSVG}/>
                   <BadgesShieldElements handleAddSVG={handleAddSVG}/>
                   <SpeechBubblesElements handleAddSVG={handleAddSVG}/>
+                  <BlobElements handleAddSVG={handleAddSVG}/>
+                  <SunburstElements handleAddSVG={handleAddSVG}/>
                 </div>
               )}
 
