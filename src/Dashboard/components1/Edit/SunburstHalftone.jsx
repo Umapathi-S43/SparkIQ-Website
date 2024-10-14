@@ -72,7 +72,7 @@ const SunburstElements = ({ handleAddSVG }) => {
               }}
               onClick={() => handleSVGClick(svg)} // Handle click to add SVG
             >
-              {svg.component('#1a1a1a')} {/* Pass default color */}
+              {svg.component('#082A66')} {/* Pass default color */}
             </div>
           ))}
         </div>
