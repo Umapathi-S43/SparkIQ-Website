@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const ShapeWithSVG = ({ handleAddSVG }) => {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
 
     const svgs = [
         {

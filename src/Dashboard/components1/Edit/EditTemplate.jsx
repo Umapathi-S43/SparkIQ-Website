@@ -21,6 +21,7 @@ import ColorMenu from './ColorMenu';
 import GradientColorMenu from "./GradientColor";
 import PositionMenu from './PositionMenu';
 import ShapeWithSVG from "./ShapeWithSVG";
+import DesignElements from "./DesignElements";
 
 
 export default function EditTemplate() {
@@ -751,7 +752,9 @@ export default function EditTemplate() {
               {activeComponent === "Shapes" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <ShapeStyleLayout handleAddShape={handleAddShape} />
+                  <DesignElements handleAddSVG={handleAddSVG} /> {/* Add ShapeWithSVG component */}
                   <ShapeWithSVG handleAddSVG={handleAddSVG} /> {/* Add ShapeWithSVG component */}
+                  
                 </div>
               )}
 
