@@ -1,37 +1,39 @@
 // App.tsx
 
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './pages/Home';
-import PrivacyPolicy from './pages/Privacy-Policy';
-import TermsOfService from './pages/Terms';
-import LoginPage from './components/Dashboard/Login';
-import HomePage from './Dashboard/pages1/HomePage1';
-import BrandSetupPage from './Dashboard/pages1/BrandSetupPage';
-import AdCampaign from './components/advert';
-import SocialMedia from './Dashboard/pages1/SocialMediaPage';
-import BrandsPage from './Dashboard/pages1/BrandsPage';
-import ProductsPage from './Dashboard/pages1/ProductsPage';
-import ProductDetailsPage from './Dashboard/pages1/ProductDetailsPage';
-import ProfilePage from './Dashboard/pages1/ProfilePage';
-import Congrats from './Dashboard/components1/congrats';
-import Samplepage from './Dashboard/components1/samplehs';
-import SavedProductsPage from './Dashboard/pages1/SavedProductsPage';
-import GeneratedCreativesPage from './Dashboard/pages1/GeneratedCreativesPage';
-import CustomizationAdsPage from './Dashboard/pages1/CustomizationAdsPage';
-import ViewPlans from './Dashboard/pages1/ViewPlans';
-import ExistingCampaignsPage from './Dashboard/pages1/ECampaignsPage';
-import CampaignInsightsPage from './Dashboard/pages1/CampaignInsightsPage';
-import CustomSample from './Dashboard/components1/customsample';
-import AdPreviewPage from './Dashboard/pages1/AdPreviewPage';
-import LaunchCampaignPage from './Dashboard/pages1/LaunchCampaignPage';
-import EditTemplate from './Dashboard/components1/Edit/EditTemplate';
-import AdCreatives from './Dashboard/components1/Edit/AdCreatives';
-import TextFormat from './Dashboard/components1/Edit/Textformat';
-import { Toaster } from 'react-hot-toast';
-import SignUpPage from './components/Dashboard/SignUp';
-import ProtectedRoute from './components/utils/withAuth';
-import GenerateDAPCreativesPage from './Dashboard/pages1/GenerateDAPCreativesPage';
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Home from "./pages/Home";
+import PrivacyPolicy from "./pages/Privacy-Policy";
+import TermsOfService from "./pages/Terms";
+import LoginPage from "./components/Dashboard/Login";
+import HomePage from "./Dashboard/pages1/HomePage1";
+import BrandSetupPage from "./Dashboard/pages1/BrandSetupPage";
+import AdCampaign from "./components/advert";
+import SocialMedia from "./Dashboard/pages1/SocialMediaPage";
+import BrandsPage from "./Dashboard/pages1/BrandsPage";
+import ProductsPage from "./Dashboard/pages1/ProductsPage";
+import ProductDetailsPage from "./Dashboard/pages1/ProductDetailsPage";
+import ProfilePage from "./Dashboard/pages1/ProfilePage";
+import Congrats from "./Dashboard/components1/congrats";
+import Samplepage from "./Dashboard/components1/samplehs";
+import SavedProductsPage from "./Dashboard/pages1/SavedProductsPage";
+import GeneratedCreativesPage from "./Dashboard/pages1/GeneratedCreativesPage";
+import CustomizationAdsPage from "./Dashboard/pages1/CustomizationAdsPage";
+import ViewPlans from "./Dashboard/pages1/ViewPlans";
+import ExistingCampaignsPage from "./Dashboard/pages1/ECampaignsPage";
+import CampaignInsightsPage from "./Dashboard/pages1/CampaignInsightsPage";
+import CustomSample from "./Dashboard/components1/customsample";
+import AdPreviewPage from "./Dashboard/pages1/AdPreviewPage";
+import LaunchCampaignPage from "./Dashboard/pages1/LaunchCampaignPage";
+import EditTemplate from "./Dashboard/components1/Edit/EditTemplate";
+import AdCreatives from "./Dashboard/components1/Edit/AdCreatives";
+import TextFormat from "./Dashboard/components1/Edit/Textformat";
+import { Toaster } from "react-hot-toast";
+import SignUpPage from "./components/Dashboard/SignUp";
+import ProtectedRoute from "./components/utils/withAuth";
+import GenerateDAPCreativesPage from "./Dashboard/pages1/GenerateDAPCreativesPage";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { DndProvider } from "react-dnd";
 
 function App() {
   return (
@@ -125,7 +127,15 @@ function App() {
           />
           <Route
             path="/edit_template"
-            element={<ProtectedRoute element={<EditTemplate />} />}
+            element={
+              <ProtectedRoute
+                element={
+                  <DndProvider backend={HTML5Backend}>
+                    <EditTemplate />
+                  </DndProvider>
+                }
+              />
+            }
           />
           <Route
             path="/ad_creatives"

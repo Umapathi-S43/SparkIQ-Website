@@ -1,13 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaTextHeight, FaImage, FaShapes, FaRegImages, FaUpload } from "react-icons/fa";
-import { RxTransparencyGrid } from 'react-icons/rx'; // Icon for transparency
-import { FaPalette, FaLayerGroup } from 'react-icons/fa'; // Icons for color and position
+import {
+  FaTextHeight,
+  FaImage,
+  FaShapes,
+  FaRegImages,
+  FaUpload,
+} from "react-icons/fa";
+import { RxTransparencyGrid } from "react-icons/rx"; // Icon for transparency
+import { FaPalette, FaLayerGroup } from "react-icons/fa"; // Icons for color and position
 import { Rnd } from "react-rnd";
 import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
-import html2canvas from 'html2canvas';
+import html2canvas from "html2canvas";
 import TextFormatToolbar from "./Textformat"; // Import TextFormatToolbar
 import TextAdder from "./TextAdder"; // Import TextFormatToolbar
 import ImageUploadLayout from "./ImageUpload";
@@ -16,10 +22,10 @@ import ImageSearchLayout from "./ImageSearch";
 import ShapeStyleLayout from "./Shapes";
 import FramesComponent from "./Frames";
 import { MdColorLens } from "react-icons/md";
-import DesignMenu from './DesignMenu';
-import ColorMenu from './ColorMenu';
+import DesignMenu from "./DesignMenu";
+import ColorMenu from "./ColorMenu";
 import GradientColorMenu from "./GradientColor";
-import PositionMenu from './PositionMenu';
+import PositionMenu from "./PositionMenu";
 import ShapeWithSVG from "./ShapeWithSVG";
 import DesignElements from "./DesignElements";
 import OutlineElements from "./OutlineElements";
@@ -33,23 +39,31 @@ import BadgesShieldElements from "./BadgesShields";
 import SpeechBubblesElements from "./SpeechBubbles";
 import BlobElements from "./BlobElements";
 import SunburstElements from "./SunburstHalftone";
-
+import { useDrag, useDrop } from "react-dnd";
+import Moveable from "react-moveable";
 
 export default function EditTemplate() {
   const [elements, setElements] = useState([]);
   const [selectedElementIndex, setSelectedElementIndex] = useState(null); // Track selected element
-  // Get the currently selected element 
-  const activeElement = selectedElementIndex !== null ? elements[selectedElementIndex] : null;
+  // Get the currently selected element
+  const activeElement =
+    selectedElementIndex !== null ? elements[selectedElementIndex] : null;
   const [imageLayoutSize, setImageLayoutSize] = useState(1080); // Default size
   const [activeMenu, setActiveMenu] = useState(null); // Track which menu is active
 
   const [productDetails, setProductDetails] = useState(null);
   const [activeComponent, setActiveComponent] = useState(""); // Track active component from Sidebar
   const [loading, setLoading] = useState(true);
-  const [zoom, setZoom] = useState(0.40); // Zoom level
+  const [zoom, setZoom] = useState(0.4); // Zoom level
   const [transparency, setTransparency] = useState(100);
-  const [selectedColor, setSelectedColor] = useState('#FFFFFF'); // Default color
-  const [tooltip, setTooltip] = useState({ visible: false, width: 0, height: 0, x: 0, y: 0 });
+  const [selectedColor, setSelectedColor] = useState("#FFFFFF"); // Default color
+  const [tooltip, setTooltip] = useState({
+    visible: false,
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
+  });
   const [editingTextIndex, setEditingTextIndex] = useState(null); // Track the text element being edited
   const [templates, setTemplates] = useState([[]]); // Start with one empty template
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0); // Keep track of the active template
@@ -62,6 +76,11 @@ export default function EditTemplate() {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
+  const [imageSrc, setImageSrc] = useState(null);
+
+  const onDropHandler = (item) => {
+    setImageSrc(item.src);
+  };
 
   // Fetch product details using productID
   useEffect(() => {
@@ -70,9 +89,12 @@ export default function EditTemplate() {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
-        const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        });
+        const response = await axios.get(
+          `${baseUrl}/generated-images/${productID}`,
+          {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          }
+        );
         const data = response.data;
 
         setProductDetails(data);
@@ -85,75 +107,97 @@ export default function EditTemplate() {
           {
             type: "image",
             src: data.logoURL,
-            position: { x: parseInt(data.logoposition.split(",")[0]), y: parseInt(data.logoposition.split(",")[1]) },
-            size: { width: data.logoWidth, height: data.logoHeight }
+            position: {
+              x: parseInt(data.logoposition.split(",")[0]),
+              y: parseInt(data.logoposition.split(",")[1]),
+            },
+            size: { width: data.logoWidth, height: data.logoHeight },
           },
           {
             type: "text",
             content: data.title,
-            position: { x: parseInt(data.titlePosition.split(",")[0]), y: parseInt(data.titlePosition.split(",")[1]) },
+            position: {
+              x: parseInt(data.titlePosition.split(",")[0]),
+              y: parseInt(data.titlePosition.split(",")[1]),
+            },
             style: {
               fontSize: `${data.fontSize}px`,
               fontFamily: "Arial",
               whiteSpace: "normal",
-              wordWrap: "break-word"
-            }
+              wordWrap: "break-word",
+            },
           },
           {
             type: "text",
             content: data.description,
-            position: { x: parseInt(data.descriptionPosition.split(",")[0]), y: parseInt(data.descriptionPosition.split(",")[1]) },
+            position: {
+              x: parseInt(data.descriptionPosition.split(",")[0]),
+              y: parseInt(data.descriptionPosition.split(",")[1]),
+            },
             style: {
               fontSize: `${data.descriptionFontSize}px`,
               fontFamily: "Arial",
               whiteSpace: "normal",
-              wordWrap: "break-word"
+              wordWrap: "break-word",
             },
-            contentFormatted: data.description && data.description.split('.').map((text, index) => (
-              text.trim() ? <div key={index}>{text.trim()}.</div> : null
-            ))
+            contentFormatted:
+              data.description &&
+              data.description
+                .split(".")
+                .map((text, index) =>
+                  text.trim() ? <div key={index}>{text.trim()}.</div> : null
+                ),
           },
           {
             type: "image",
             src: data.productURL,
             position: {
-              x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0,
-              y: data.productPosition ? parseInt(data.productPosition.split(",")[1]) : 0
+              x: data.productPosition
+                ? parseInt(data.productPosition.split(",")[0])
+                : 0,
+              y: data.productPosition
+                ? parseInt(data.productPosition.split(",")[1])
+                : 0,
             },
             size: {
               width: data.productWidth || 540,
-              height: data.productHeight || 540
-            }
+              height: data.productHeight || 540,
+            },
           },
           {
             type: "text",
             content: data.phoneNumberText,
-            position: { x: parseInt(data.phoneNumberPosition.split(",")[0]), y: parseInt(data.phoneNumberPosition.split(",")[1]) },
+            position: {
+              x: parseInt(data.phoneNumberPosition.split(",")[0]),
+              y: parseInt(data.phoneNumberPosition.split(",")[1]),
+            },
             style: {
               fontSize: `${data.phoneNumberSize}px`,
               fontFamily: "Arial",
               whiteSpace: "normal",
-              wordWrap: "break-word"
-            }
+              wordWrap: "break-word",
+            },
           },
           {
             type: "text",
             content: data.ctaButtonText,
-            position: { x: parseInt(data.ctaPosition.split(",")[0]), y: parseInt(data.ctaPosition.split(",")[1]) },
+            position: {
+              x: parseInt(data.ctaPosition.split(",")[0]),
+              y: parseInt(data.ctaPosition.split(",")[1]),
+            },
             style: {
               fontSize: `${data.ctaFontSize}px`,
               fontFamily: "Arial",
               whiteSpace: "normal",
               backgroundColor: "#FFC107",
               padding: "5px",
-              borderRadius: "5px"
-            }
-          }
+              borderRadius: "5px",
+            },
+          },
         ];
 
         setElements(dynamicElements);
         setLoading(false);
-
       } catch (error) {
         console.error("Failed to fetch product details.", error);
       }
@@ -162,20 +206,19 @@ export default function EditTemplate() {
     fetchProductDetails();
   }, [productID]);
 
-
-
   useEffect(() => {
     if (activeElement && activeElement.style) {
       // If opacity is defined, use it, otherwise default to 1 (100% transparency)
-      const opacityValue = activeElement.style.opacity !== undefined ? activeElement.style.opacity : 1;
+      const opacityValue =
+        activeElement.style.opacity !== undefined
+          ? activeElement.style.opacity
+          : 1;
       setTransparency(opacityValue * 100);
 
       // Set color, default to white if not defined
-      setSelectedColor(activeElement.style.color || '#FFFFFF');
+      setSelectedColor(activeElement.style.color || "#FFFFFF");
     }
   }, [activeElement]);
-
-
 
   // Function to add a new template page when "+ Add Page" is clicked
   const handleAddPage = () => {
@@ -186,35 +229,33 @@ export default function EditTemplate() {
     // Scroll to the new template after adding it
     setTimeout(() => {
       if (templateContainerRef.current) {
-        const newTemplate = templateContainerRef.current.children[templates.length]; // Get the new template
-        newTemplate.scrollIntoView({ behavior: 'smooth' }); // Scroll to it
+        const newTemplate =
+          templateContainerRef.current.children[templates.length]; // Get the new template
+        newTemplate.scrollIntoView({ behavior: "smooth" }); // Scroll to it
       }
     }, 100); // Delay to ensure the DOM has updated
   };
-
 
   // Function to handle adding a new text element from TextAdder
   const handleAddText = (newElement) => {
     setElements([...elements, newElement]); // Append new text element to the existing elements
     newElement.style = { ...newElement.style, zIndex: elements.length + 1 }; // Set initial zIndex
-
   };
-
 
   // Function to handle adding a shape
   const handleAddShape = (shape) => {
     const newShapeElement = {
-      type: 'shape',
+      type: "shape",
       component: shape.component, // The component selected (either icon or SVG)
       position: { x: 50, y: 50 }, // Default position for the shape
       size: { width: 200, height: 200 }, // Set shape size to 200x200
       style: {
-        color: '#fff', // This color can be dynamically changed if needed
-        backgroundColor: 'transparent', // No background color by default
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontSize: '100px', // Set font size of the icon if it's an icon
+        color: "#fff", // This color can be dynamically changed if needed
+        backgroundColor: "transparent", // No background color by default
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontSize: "100px", // Set font size of the icon if it's an icon
       },
     };
     setElements([...elements, newShapeElement]); // Add shape to elements
@@ -222,25 +263,21 @@ export default function EditTemplate() {
 
   const handleAddSVG = (svg) => {
     const newSVGElement = {
-        type: 'svg',
-        component: svg.component, // Store the function reference
-        position: { x: 50, y: 50 },
-        size: { width: 200, height: 200 },
-        fillColor: '#fff', // Use fillColor to manage the color
-        style: {
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: elements.length + 1,
-            opacity: 1,  // Set initial opacity to 1 (fully opaque)
-        },
+      type: "svg",
+      component: svg.component, // Store the function reference
+      position: { x: 50, y: 50 },
+      size: { width: 200, height: 200 },
+      fillColor: "#fff", // Use fillColor to manage the color
+      style: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: elements.length + 1,
+        opacity: 1, // Set initial opacity to 1 (fully opaque)
+      },
     };
     setElements([...elements, newSVGElement]);
-};
-
-
-
-
+  };
 
   const handleExport = async () => {
     if (templateRef.current) {
@@ -248,21 +285,20 @@ export default function EditTemplate() {
         useCORS: true, // Enable CORS handling
         allowTaint: true, // Allow tainted images to be used
       });
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = 'template.png';
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = "template.png";
       link.click();
     }
   };
 
-
   const handleSaveAndNext = async () => {
     try {
       // Ensure all images including background and elements are loaded
-      const images = Array.from(templateRef.current.querySelectorAll('img'));
+      const images = Array.from(templateRef.current.querySelectorAll("img"));
 
       // Wait for all images to load
-      const loadImages = images.map(img => {
+      const loadImages = images.map((img) => {
         return new Promise((resolve, reject) => {
           if (img.complete) {
             resolve();
@@ -283,10 +319,10 @@ export default function EditTemplate() {
       });
 
       // Convert the canvas to an image
-      const image = canvas.toDataURL('image/png');
+      const image = canvas.toDataURL("image/png");
 
       // Navigate to CustomSample and pass the image
-      navigate('/CustomSample', {
+      navigate("/CustomSample", {
         state: { image }, // Pass the generated image to CustomSample page
       });
     } catch (error) {
@@ -299,14 +335,11 @@ export default function EditTemplate() {
     setSelectedElementIndex(index); // Mark the selected element
   };
 
-
-
   // Function to handle real-time text changes as user types (optional debouncing)
   const handleTextChange = (e, index) => {
     const newElements = [...elements];
     newElements[index].content = e.target.textContent;
   };
-
 
   // To handle formatting from the TextFormatToolbar
   const handleTextFormatting = (styleProperty, value) => {
@@ -314,14 +347,16 @@ export default function EditTemplate() {
       const newElements = [...elements];
 
       // Check if the selected element is a shape or text and apply the color accordingly
-      if (newElements[selectedElementIndex].type === 'text' || newElements[selectedElementIndex].type === 'shape') {
+      if (
+        newElements[selectedElementIndex].type === "text" ||
+        newElements[selectedElementIndex].type === "shape"
+      ) {
         newElements[selectedElementIndex].style[styleProperty] = value; // Apply formatting for both text and shape
       }
 
       setElements(newElements);
     }
   };
-
 
   const handleZoomChange = (e) => {
     setZoom(e.target.value / 100);
@@ -333,7 +368,6 @@ export default function EditTemplate() {
 
     return { width: scaledWidth, height: scaledHeight };
   };
-
 
   const handlePositionChange = (positionAction) => {
     if (selectedElementIndex !== null) {
@@ -348,16 +382,22 @@ export default function EditTemplate() {
 
         // Update position based on action (Forward, Backward, ToFront, ToBack)
         switch (positionAction) {
-          case 'forward':
-            updatedElement.style.zIndex = (updatedElement.style.zIndex || 1) + 1;
+          case "forward":
+            updatedElement.style.zIndex =
+              (updatedElement.style.zIndex || 1) + 1;
             break;
-          case 'backward':
-            updatedElement.style.zIndex = Math.max((updatedElement.style.zIndex || 1) - 1, 1);
+          case "backward":
+            updatedElement.style.zIndex = Math.max(
+              (updatedElement.style.zIndex || 1) - 1,
+              1
+            );
             break;
-          case 'toFront':
-            updatedElement.style.zIndex = Math.max(...updatedElements.map(el => el.style?.zIndex || 1)) + 1;
+          case "toFront":
+            updatedElement.style.zIndex =
+              Math.max(...updatedElements.map((el) => el.style?.zIndex || 1)) +
+              1;
             break;
-          case 'toBack':
+          case "toBack":
             updatedElement.style.zIndex = 0; // Move to the back
             break;
           default:
@@ -374,22 +414,20 @@ export default function EditTemplate() {
 
     // Apply the transparency to the selected element
     if (selectedElementIndex !== null) {
-        setElements((prevElements) => {
-            const updatedElements = [...prevElements];
-            const updatedElement = updatedElements[selectedElementIndex];
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
 
-            // Ensure the style object exists before setting the opacity
-            if (!updatedElement.style) {
-                updatedElement.style = {}; // Initialize the style object if it's missing
-            }
+        // Ensure the style object exists before setting the opacity
+        if (!updatedElement.style) {
+          updatedElement.style = {}; // Initialize the style object if it's missing
+        }
 
-            updatedElement.style.opacity = newTransparency / 100; // Apply transparency to the element
-            return updatedElements;
-        });
+        updatedElement.style.opacity = newTransparency / 100; // Apply transparency to the element
+        return updatedElements;
+      });
     }
-};
-
-
+  };
 
   const handleElementResize = (e, direction, ref, delta, index) => {
     const newElements = [...elements];
@@ -405,7 +443,7 @@ export default function EditTemplate() {
       };
 
       // Adjust the fontSize if the element is a shape
-      if (newElements[index].type === 'shape') {
+      if (newElements[index].type === "shape") {
         const baseFontSize = 100; // Base font size for icons
         const scaleFactor = newWidth / 200; // Assume 200 is the original width
         newElements[index].style.fontSize = `${baseFontSize * scaleFactor}px`; // Scale font size based on container size
@@ -429,16 +467,16 @@ export default function EditTemplate() {
   useEffect(() => {
     const handleKeyDown = (event) => {
       // Check for the Delete key, Backspace key with Fn (macOS), or Backspace alone
-      const isDeleteKey =
-        event.key === "Delete" ||
-        (event.key === "Backspace"); // macOS Fn+Backspace or Backspace with Meta/Ctrl key
+      const isDeleteKey = event.key === "Delete" || event.key === "Backspace"; // macOS Fn+Backspace or Backspace with Meta/Ctrl key
 
       if (isDeleteKey && selectedElementIndex !== null) {
         const element = elements[selectedElementIndex];
 
         // If the element is not a text field or is a text field but not in edit mode, delete it
         const isTextElement = element.type === "text";
-        const isEditable = editingTextIndex !== null && editingTextIndex === selectedElementIndex;
+        const isEditable =
+          editingTextIndex !== null &&
+          editingTextIndex === selectedElementIndex;
 
         if (!isTextElement || !isEditable) {
           handleDeleteElement(); // Call the delete function
@@ -454,8 +492,6 @@ export default function EditTemplate() {
     };
   }, [selectedElementIndex, editingTextIndex, elements]);
 
-
-
   const handleDeleteElement = () => {
     if (selectedElementIndex !== null) {
       const newElements = [...elements];
@@ -464,7 +500,6 @@ export default function EditTemplate() {
       setSelectedElementIndex(null); // Reset the selection
     }
   };
-
 
   const handleElementDragStop = (e, d, index) => {
     const newElements = [...elements];
@@ -476,7 +511,7 @@ export default function EditTemplate() {
       setElements(newElements);
 
       const element = newElements[index];
-      const elementWidth = element.size?.width;  // No default size here, respect the API response
+      const elementWidth = element.size?.width; // No default size here, respect the API response
       const elementHeight = element.size?.height;
 
       if (elementWidth && elementHeight) {
@@ -485,14 +520,18 @@ export default function EditTemplate() {
           visible: true,
           width: elementWidth,
           height: elementHeight,
-          x: d.x + (elementWidth * zoom) + 10, // Position tooltip at the bottom-right
-          y: d.y + (elementHeight * zoom) + 10,
+          x: d.x + elementWidth * zoom + 10, // Position tooltip at the bottom-right
+          y: d.y + elementHeight * zoom + 10,
         });
       } else {
-        console.error(`Size property is undefined for element at index ${index}`);
+        console.error(
+          `Size property is undefined for element at index ${index}`
+        );
       }
     } else {
-      console.error(`Position property is undefined for element at index ${index}`);
+      console.error(
+        `Position property is undefined for element at index ${index}`
+      );
     }
 
     setSelectedElementIndex(null); // Deselect the element after dragging
@@ -500,13 +539,13 @@ export default function EditTemplate() {
   // Function to handle adding a new image element from ImageSearchLayout
   const handleAddImage = (imageUrl) => {
     const newImageElement = {
-      type: 'image',
+      type: "image",
       src: imageUrl,
       position: { x: 50, y: 50 }, // Default position for the image
       size: { width: 200, height: 200 }, // Default size for the image
       style: {
         zIndex: elements.length + 1, // Initial zIndex based on the current number of elements
-      }
+      },
     };
     setElements([...elements, newImageElement]); // Add the selected image as a new element
   };
@@ -520,11 +559,11 @@ export default function EditTemplate() {
         const updatedElements = [...prevElements];
         const updatedElement = updatedElements[selectedElementIndex];
 
-        if (updatedElement.type === 'svg') {
+        if (updatedElement.type === "svg") {
           updatedElement.fillColor = color; // Update fill color property
-        } else if (updatedElement.type === 'shape') {
+        } else if (updatedElement.type === "shape") {
           updatedElement.style.color = color; // Change color for shapes
-        } else if (updatedElement.type === 'text') {
+        } else if (updatedElement.type === "text") {
           updatedElement.style.color = color; // Change text color
         }
 
@@ -532,8 +571,6 @@ export default function EditTemplate() {
       });
     }
   };
-
-
 
   // Handler for gradient color change
   const handleGradientColorChange = (gradientColor) => {
@@ -546,7 +583,7 @@ export default function EditTemplate() {
         const updatedElement = updatedElements[selectedElementIndex];
 
         // Only apply gradient background for text elements
-        if (updatedElement.type === 'text') {
+        if (updatedElement.type === "text") {
           updatedElement.style.background = gradientColor; // Apply gradient as background
         }
 
@@ -554,7 +591,6 @@ export default function EditTemplate() {
       });
     }
   };
-
 
   const handleResizeStop = (e, direction, ref, delta, index) => {
     // Finalize the size and keep the tooltip visible
@@ -577,9 +613,7 @@ export default function EditTemplate() {
     }
   };
 
-
   const adjustTooltipPosition = () => {
-
     const tooltipX = tooltip.x;
     const tooltipY = tooltip.y;
     const tooltipWidth = 80; // Tooltip width
@@ -602,7 +636,6 @@ export default function EditTemplate() {
     return { left, top };
   };
 
-
   const handleAlignElement = (alignType) => {
     if (selectedElementIndex !== null) {
       setElements((prevElements) => {
@@ -613,23 +646,27 @@ export default function EditTemplate() {
         const elementSize = element.size || { width: 100, height: 100 }; // Default size if not specified
 
         switch (alignType) {
-          case 'top':
+          case "top":
             element.position.y = 0;
             break;
-          case 'left':
+          case "left":
             element.position.x = 0;
             break;
-          case 'center':
-            element.position.x = (templateArea.width - elementSize.width * zoom) / 2 / zoom;
+          case "center":
+            element.position.x =
+              (templateArea.width - elementSize.width * zoom) / 2 / zoom;
             break;
-          case 'middle':
-            element.position.y = (templateArea.height - elementSize.height * zoom) / 2 / zoom;
+          case "middle":
+            element.position.y =
+              (templateArea.height - elementSize.height * zoom) / 2 / zoom;
             break;
-          case 'right':
-            element.position.x = (templateArea.width - elementSize.width * zoom) / zoom;
+          case "right":
+            element.position.x =
+              (templateArea.width - elementSize.width * zoom) / zoom;
             break;
-          case 'bottom':
-            element.position.y = (templateArea.height - elementSize.height * zoom) / zoom;
+          case "bottom":
+            element.position.y =
+              (templateArea.height - elementSize.height * zoom) / zoom;
             break;
           default:
             break;
@@ -639,7 +676,6 @@ export default function EditTemplate() {
       });
     }
   };
-
 
   // Function to handle activating a Sidebar component
   const handleSidebarComponent = (componentName) => {
@@ -693,34 +729,49 @@ export default function EditTemplate() {
     e.preventDefault();
   };
 
-
-
   return (
     <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
-      <div className="border-2 border-white rounded-[20px] w-full overflow-auto" style={{ height: "calc(100vh - 1rem)" }}>
+      <div
+        className="border-2 border-white rounded-[20px] w-full overflow-auto"
+        style={{ height: "calc(100vh - 1rem)" }}
+      >
         <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-3 w-full">
           <span className="flex items-center gap-2">
             <img src="/icon5.svg" alt="Icon" />
             <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold text-xl">Template Customization</h4>
-              <p className="text-[#374151] text-sm">Customize your ad based on your preferences.</p>
+              <h4 className="text-[#082A66] font-bold text-xl">
+                Template Customization
+              </h4>
+              <p className="text-[#374151] text-sm">
+                Customize your ad based on your preferences.
+              </p>
             </span>
           </span>
         </div>
         <div className="flex">
           <div className="p-4 w-1/12">
-            <Sidebar setActiveComponent={handleSidebarComponent} setShowAdCreatives={() => { }} />
+            <Sidebar
+              setActiveComponent={handleSidebarComponent}
+              setShowAdCreatives={() => {}}
+            />
           </div>
           <div className="flex-row relative w-full m-4 ml-0">
-            <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
-              {editingTextIndex !== null && (activeElement?.type === 'text' || activeElement?.type === 'cta') && (
-                <TextFormatToolbar
-                  fontFamily={activeElement?.style?.fontFamily || 'Sans Serif'}
-                  fontSize={activeElement?.style?.fontSize || '16px'}
-                  fontColor={activeElement?.style?.color || '#000000'}
-                  onClose={() => setEditingTextIndex(null)}
-                />
-              )}
+            <div
+              className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1"
+              style={{ height: "8vh" }}
+            >
+              {editingTextIndex !== null &&
+                (activeElement?.type === "text" ||
+                  activeElement?.type === "cta") && (
+                  <TextFormatToolbar
+                    fontFamily={
+                      activeElement?.style?.fontFamily || "Sans Serif"
+                    }
+                    fontSize={activeElement?.style?.fontSize || "16px"}
+                    fontColor={activeElement?.style?.color || "#000000"}
+                    onClose={() => setEditingTextIndex(null)}
+                  />
+                )}
               <div className="flex">
                 <DesignMenu
                   activeMenu={activeMenu}
@@ -729,14 +780,31 @@ export default function EditTemplate() {
                   handleTransparencyChange={handleTransparencyChange}
                 />
 
-
-                <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
-                <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
-                <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
+                <button
+                  onClick={() => navigate("/campaigns")}
+                  className="flex bg-red-500 text-white py-1 px-4 rounded mr-2"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleExport}
+                  className="custom-button text-white py-1 px-4 rounded mr-2"
+                >
+                  Export
+                </button>
+                <button
+                  onClick={handleSaveAndNext}
+                  className="custom-button text-white py-1 px-4 rounded"
+                >
+                  Save & Next
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar" style={{ height: "calc(100vh - 12rem)" }}>
+            <div
+              className="flex justify-center relative shadow-lg rounded-md overflow-auto hide-scrollbar"
+              style={{ height: "calc(100vh - 12rem)" }}
+            >
               {/* Show TextAdder when Text component is active */}
               {activeComponent === "Creatives" && (
                 <div className="w-2/5 m-4 shadow-sm rounded-md">
@@ -752,36 +820,38 @@ export default function EditTemplate() {
               {/* Show ImageUploadLayout when Uploads component is active */}
               {activeComponent === "Uploads" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
-                  <ImageUploadLayout onSelectImage={handleAddImage} /> {/* Pass the handleAddImage callback */}
+                  <ImageUploadLayout onSelectImage={handleAddImage} />{" "}
+                  {/* Pass the handleAddImage callback */}
                 </div>
               )}
 
               {activeComponent === "Images" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar  bg-[#FCFCFC40]">
-                  <ImageSearchLayout onSelectImage={handleAddImage} /> {/* Pass the handleAddImage callback */}
-
+                  <ImageSearchLayout onSelectImage={handleAddImage} />{" "}
+                  {/* Pass the handleAddImage callback */}
                 </div>
               )}
 
               {activeComponent === "Shapes" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <ShapeStyleLayout handleAddShape={handleAddShape} />
-                  <DesignElements handleAddSVG={handleAddSVG} /> {/* Add ShapeWithSVG component */}
-                  <ShapeWithSVG handleAddSVG={handleAddSVG} /> {/* Add ShapeWithSVG component */}
-                  <OutlineElements handleAddSVG={handleAddSVG}/>
-                  <GeometricalElements handleAddSVG={handleAddSVG}/>
-                  <ArrowElements handleAddSVG={handleAddSVG}/>
-                  <StarElements handleAddSVG={handleAddSVG}/>
-                  <BrushedElements handleAddSVG={handleAddSVG}/>
-                  <RibbonElements handleAddSVG={handleAddSVG}/>
-                  <LabelElements handleAddSVG={handleAddSVG}/>
-                  <BadgesShieldElements handleAddSVG={handleAddSVG}/>
-                  <SpeechBubblesElements handleAddSVG={handleAddSVG}/>
-                  <BlobElements handleAddSVG={handleAddSVG}/>
-                  <SunburstElements handleAddSVG={handleAddSVG}/>
+                  <DesignElements handleAddSVG={handleAddSVG} />{" "}
+                  {/* Add ShapeWithSVG component */}
+                  <ShapeWithSVG handleAddSVG={handleAddSVG} />{" "}
+                  {/* Add ShapeWithSVG component */}
+                  <OutlineElements handleAddSVG={handleAddSVG} />
+                  <GeometricalElements handleAddSVG={handleAddSVG} />
+                  <ArrowElements handleAddSVG={handleAddSVG} />
+                  <StarElements handleAddSVG={handleAddSVG} />
+                  <BrushedElements handleAddSVG={handleAddSVG} />
+                  <RibbonElements handleAddSVG={handleAddSVG} />
+                  <LabelElements handleAddSVG={handleAddSVG} />
+                  <BadgesShieldElements handleAddSVG={handleAddSVG} />
+                  <SpeechBubblesElements handleAddSVG={handleAddSVG} />
+                  <BlobElements handleAddSVG={handleAddSVG} />
+                  <SunburstElements handleAddSVG={handleAddSVG} />
                 </div>
               )}
-
 
               {activeComponent === "Frames" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
@@ -789,30 +859,37 @@ export default function EditTemplate() {
                 </div>
               )}
 
-              {activeMenu === 'color' && (
+              {activeMenu === "color" && (
                 <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <ColorMenu handleColorChange={handleColorChange} />
                 </div>
               )}
 
-              {activeMenu === 'gradientColor' && activeElement?.type === 'text' && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
-                  <GradientColorMenu handleGradientColorChange={handleGradientColorChange} />
-                </div>
-              )}
+              {activeMenu === "gradientColor" &&
+                activeElement?.type === "text" && (
+                  <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
+                    <GradientColorMenu
+                      handleGradientColorChange={handleGradientColorChange}
+                    />
+                  </div>
+                )}
 
-
-
-              {activeMenu === 'position' && (
+              {activeMenu === "position" && (
                 <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   <PositionMenu
                     handlePositionChange={handlePositionChange}
                     handleAlignElement={handleAlignElement} // Pass this function
-                  /></div>
+                  />
+                </div>
               )}
 
-              <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-8 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()} ref={templateContainerRef}>
-                <div className="template-area p-4"
+              <div
+                className="shadow-sm justify-center bg-striped mx-auto my-auto mt-8 w-full h-full overflow-auto hide-scrollbar"
+                style={getScaledSize()}
+                ref={templateContainerRef}
+              >
+                <div
+                  className="template-area p-4"
                   onDrop={(e) => handleImageDrop(e, selectedElementIndex)}
                   onDragOver={handleDragOver}
                   onClick={(e) => {
@@ -821,20 +898,22 @@ export default function EditTemplate() {
                       setSelectedElementIndex(null);
                     }
                   }}
-                
                   style={{
                     height: `${imageLayoutSize * zoom}px`,
                     width: `${imageLayoutSize * zoom}px`,
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    backgroundImage: productDetails?.bgImageURL ? `url(${productDetails.bgImageURL})` : 'none',
+                    backgroundImage: productDetails?.bgImageURL
+                      ? `url(${productDetails.bgImageURL})`
+                      : "none",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
-                    position: "relative"
-
-                  }} ref={templateRef}>
+                    position: "relative",
+                  }}
+                  ref={templateRef}
+                >
                   {/* Render each element (text or image) */}
                   {loading ? (
                     <p>Loading elements...</p>
@@ -844,16 +923,17 @@ export default function EditTemplate() {
                         key={index}
                         size={{
                           width: element.size?.width * zoom || "auto",
-                          height: element.size?.height * zoom || "auto"
+                          height: element.size?.height * zoom || "auto",
                         }}
                         position={{
                           x: element.position.x * zoom,
-                          y: element.position.y * zoom
+                          y: element.position.y * zoom,
                         }}
                         onClick={() => setSelectedElementIndex(index)}
                         onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit text
-                        onDragStop={(e, d) => handleElementDragStop(e, d, index)}
-
+                        onDragStop={(e, d) =>
+                          handleElementDragStop(e, d, index)
+                        }
                         onResize={(e, direction, ref, delta) =>
                           handleElementResize(e, direction, ref, delta, index)
                         } // Resize dynamically
@@ -862,25 +942,33 @@ export default function EditTemplate() {
                         } // Finalize resizing
                         bounds="parent" // Constrain element within parent (template area)
                         style={{
-                          border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
+                          border:
+                            selectedElementIndex === index
+                              ? "2px solid #4A90E2"
+                              : "none",
                           zIndex: element.style?.zIndex || 1, // Apply zIndex to the element
                         }}
                       >
                         {element.type === "image" ? (
                           // Render Image Element
-                          <img
+                          <DraggableImage
                             src={element.src}
-                            alt="element"
-                            draggable="false" // Prevent default image drag behavior
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              opacity: element.style?.opacity ?? 1,
-                              zIndex: element.style?.zIndex || 1
-                            }}
+                            opacity={element.style?.opacity ?? 1}
+                            zIndex={element.style?.zIndex || 1}
+                            element={element}
                           />
-
-                        ) : element.type === "shape" ? (
+                        ) : // <img
+                        //   src={element.src}
+                        //   alt="element"
+                        //   draggable="false" // Prevent default image drag behavior
+                        //   style={{
+                        //     width: "100%",
+                        //     height: "100%",
+                        //     opacity: element.style?.opacity ?? 1,
+                        //     zIndex: element.style?.zIndex || 1,
+                        //   }}
+                        // />
+                        element.type === "shape" ? (
                           // Render Shape Element
                           <div
                             style={{
@@ -890,36 +978,49 @@ export default function EditTemplate() {
                               alignItems: "center",
                               width: "100%",
                               height: "100%",
-                              backgroundColor: element.style.backgroundColor || "transparent", // Default to transparent if not specified
+                              backgroundColor:
+                                element.style.backgroundColor || "transparent", // Default to transparent if not specified
                               color: element.style.color || "#082A66", // Default shape color
                               fontSize: element.style.fontSize || "100px", // Font size for shape
-                              zIndex: element.style?.zIndex || 1 // Apply zIndex to the element
+                              zIndex: element.style?.zIndex || 1, // Apply zIndex to the element
                             }}
                           >
-                            {element.component} {/* Render the shape component */}
+                            {element.component}{" "}
+                            {/* Render the shape component */}
                           </div>
                         ) : element.type === "svg" ? (
-                          element.component(element.fillColor, element.style.opacity ?? 1) // Pass fill color and opacity
+                          element.component(
+                            element.fillColor,
+                            element.style.opacity ?? 1
+                          ) // Pass fill color and opacity
+                        ) : // {element.component} {/* Render the SVG component */}
 
-
-                          // {element.component} {/* Render the SVG component */}
-
-                        ) : element.type === "frame" ? (
-                          <div
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              clipPath: element.style.clipPath, // Apply shape
-                              backgroundImage: element.content ? `url(${element.content})` : 'none',
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                              backgroundRepeat: 'no-repeat',
-                              border: element.style.border,
-                              backgroundColor: element.content ? 'transparent' : '#e0e0e0', // Show image or placeholder
-                              zIndex: element.style?.zIndex || 0 // Apply zIndex to the element
-                            }}
-                          ></div>
+                        element.type === "frame" ? (
+                          <DroppableArea
+                            onDrop={onDropHandler}
+                            imageSrc={imageSrc}
+                            setImageSrc={setImageSrc}
+                            clipPath={element.style.clipPath}
+                          />
                         ) : (
+                          // <div
+                          //   style={{
+                          //     width: "100%",
+                          //     height: "100%",
+                          //     clipPath: element.style.clipPath, // Apply shape
+                          //     backgroundImage: element.content
+                          //       ? `url(${element.content})`
+                          //       : "none",
+                          //     backgroundSize: "cover",
+                          //     backgroundPosition: "center",
+                          //     backgroundRepeat: "no-repeat",
+                          //     border: element.style.border,
+                          //     backgroundColor: element.content
+                          //       ? "transparent"
+                          //       : "#e0e0e0", // Show image or placeholder
+                          //     zIndex: element.style?.zIndex || 0, // Apply zIndex to the element
+                          //   }}
+                          // ></div>
                           // Render Text Element
                           <div
                             contentEditable={editingTextIndex === index} // Make the text editable on double-click
@@ -929,7 +1030,9 @@ export default function EditTemplate() {
                             suppressContentEditableWarning={true} // Suppress React warning for contentEditable
                             style={{
                               ...element.style,
-                              fontSize: `${parseFloat(element.style.fontSize) * zoom}px` // Adjust font size based on zoom
+                              fontSize: `${
+                                parseFloat(element.style.fontSize) * zoom
+                              }px`, // Adjust font size based on zoom
                             }}
                           >
                             {element.contentFormatted
@@ -951,7 +1054,8 @@ export default function EditTemplate() {
                       zIndex: 1000, // Ensure tooltip stays above other elements
                     }}
                   >
-                    w: {Math.round(tooltip.width)}px h: {Math.round(tooltip.height)}px
+                    w: {Math.round(tooltip.width)}px h:{" "}
+                    {Math.round(tooltip.height)}px
                   </div>
                 )}
               </div>
@@ -965,9 +1069,21 @@ export default function EditTemplate() {
             </div>*/}
           </div>
         </div>
-        <div className="fixed right-8 bottom-2 flex items-center rounded-lg" style={{ zIndex: 1000 }}>
-          <input type="range" min="10" max="500" value={zoom * 100} onChange={handleZoomChange} style={{ width: '120px' }} />
-          <span className="ml-2 text-[#082A66] font-bold gap-4">{Math.round(zoom * 100)}%</span>
+        <div
+          className="fixed right-8 bottom-2 flex items-center rounded-lg"
+          style={{ zIndex: 1000 }}
+        >
+          <input
+            type="range"
+            min="10"
+            max="500"
+            value={zoom * 100}
+            onChange={handleZoomChange}
+            style={{ width: "120px" }}
+          />
+          <span className="ml-2 text-[#082A66] font-bold gap-4">
+            {Math.round(zoom * 100)}%
+          </span>
         </div>
       </div>
     </div>
@@ -975,9 +1091,13 @@ export default function EditTemplate() {
 }
 const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
   return (
-    <div className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg" style={{ height: 'calc(100vh - 8rem)' }}>
-      <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full "
-      /* 
+    <div
+      className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg"
+      style={{ height: "calc(100vh - 8rem)" }}
+    >
+      <button
+        className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full "
+        /* 
    onClick={() => {
      setActiveComponent('Creatives');
      setShowAdCreatives(true);
@@ -988,23 +1108,38 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
         <span className="text-sm">Creatives</span>
       </button>
       <div className="flex flex-col items-center justify-center space-y-2 mt-4">
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Text')}>
+        <button
+          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
+          onClick={() => setActiveComponent("Text")}
+        >
           <FaTextHeight />
           <span className="text-sm">Text</span>
         </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Images')}>
+        <button
+          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
+          onClick={() => setActiveComponent("Images")}
+        >
           <FaImage />
           <span className="text-sm">Image</span>
         </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Shapes')}>
+        <button
+          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
+          onClick={() => setActiveComponent("Shapes")}
+        >
           <FaShapes />
           <span className="text-sm">Shape</span>
         </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Frames')}>
+        <button
+          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
+          onClick={() => setActiveComponent("Frames")}
+        >
           <FaRegImages />
           <span className="text-sm">Frame</span>
         </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Uploads')}>
+        <button
+          className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"
+          onClick={() => setActiveComponent("Uploads")}
+        >
           <FaUpload />
           <span className="text-sm">Uploads</span>
         </button>
@@ -1013,7 +1148,118 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
   );
 };
 
-{/*const DesignMenu = ({ activeElement, setElements, selectedElementIndex, handlePositionChange }) => {
+const DroppableArea = ({ clipPath }) => {
+  const [imageSrc, setImageSrc] = useState(null); // Tashlangan rasmni saqlash uchun state
+  const [frame, setFrame] = useState({
+    translate: [0, 0],
+    rotate: 0,
+    width: 100,
+    height: 100,
+  });
+  const areaRef = useRef(null); // Drop area uchun ref
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: "image",
+    drop: (item) => setImageSrc(item.src), // Rasmni drop qilingandan keyin o'zgarish
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }));
+
+  const handleDrag = ({ beforeTranslate }) => {
+    setFrame((prevFrame) => ({
+      ...prevFrame,
+      translate: beforeTranslate,
+    }));
+  };
+
+  const handleResize = ({ width, height, drag }) => {
+    setFrame((prevFrame) => ({
+      ...prevFrame,
+      width,
+      height,
+      translate: drag.beforeTranslate,
+    }));
+  };
+
+  const handleRotate = ({ beforeRotate }) => {
+    setFrame((prevFrame) => ({
+      ...prevFrame,
+      rotate: beforeRotate,
+    }));
+  };
+
+  return (
+    <>
+      <div
+        ref={(el) => {
+          drop(el);
+          areaRef.current = el;
+        }}
+        style={{
+          width: `${frame.width}px`,
+          height: `${frame.height}px`,
+          border: "2px solid black",
+          backgroundColor: isOver ? "lightgreen" : "lightgray",
+          transform: `translate(${frame.translate[0]}px, ${frame.translate[1]}px) rotate(${frame.rotate}deg)`,
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          clipPath: clipPath,
+          backgroundImage: `url(${imageSrc})`,
+          backgroundSize: "100%",
+          backgroundPosition: "center",
+        }}
+      ></div>
+
+      {/* Moveable component */}
+      <Moveable
+        target={areaRef.current}
+        draggable={true}
+        resizable={true}
+        rotatable={true}
+        onDrag={({ beforeTranslate }) => handleDrag({ beforeTranslate })}
+        onResize={({ width, height, drag }) =>
+          handleResize({ width, height, drag })
+        }
+        onRotate={({ beforeRotate }) => handleRotate({ beforeRotate })}
+        keepRatio={false}
+        throttleDrag={0}
+        throttleRotate={0}
+        throttleResize={0}
+        edge={false}
+      />
+    </>
+  );
+};
+
+const DraggableImage = ({ src }) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: "image",
+    item: { src },
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+  }));
+
+  return (
+    <img
+      ref={drag}
+      src={src}
+      alt="draggable"
+      style={{
+        width: "100%",
+        height: "100%",
+        opacity: isDragging ? 0 : 1,
+        cursor: "grab",
+      }}
+    />
+  );
+};
+
+{
+  /*const DesignMenu = ({ activeElement, setElements, selectedElementIndex, handlePositionChange }) => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [transparency, setTransparency] = useState(100); // Manage the transparency
   const [selectedColor, setSelectedColor] = useState('#FFFFFF'); // Default color
@@ -1148,4 +1394,5 @@ const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
     </div>
   );
 };
-*/}
+*/
+}
