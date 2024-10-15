@@ -222,20 +222,22 @@ export default function EditTemplate() {
 
   const handleAddSVG = (svg) => {
     const newSVGElement = {
-      type: 'svg',
-      component: svg.component, // Store the function reference
-      position: { x: 50, y: 50 },
-      size: { width: 200, height: 200 },
-      fillColor: '#fff', // Use fillColor to manage the color
-      style: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: elements.length + 1,
-      },
+        type: 'svg',
+        component: svg.component, // Store the function reference
+        position: { x: 50, y: 50 },
+        size: { width: 200, height: 200 },
+        fillColor: '#fff', // Use fillColor to manage the color
+        style: {
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: elements.length + 1,
+            opacity: 1,  // Set initial opacity to 1 (fully opaque)
+        },
     };
     setElements([...elements, newSVGElement]);
-  };
+};
+
 
 
 
@@ -372,20 +374,21 @@ export default function EditTemplate() {
 
     // Apply the transparency to the selected element
     if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
-        const updatedElements = [...prevElements];
-        const updatedElement = updatedElements[selectedElementIndex];
+        setElements((prevElements) => {
+            const updatedElements = [...prevElements];
+            const updatedElement = updatedElements[selectedElementIndex];
 
-        // Ensure the style object exists before setting the opacity
-        if (!updatedElement.style) {
-          updatedElement.style = {}; // Initialize the style object if it's missing
-        }
+            // Ensure the style object exists before setting the opacity
+            if (!updatedElement.style) {
+                updatedElement.style = {}; // Initialize the style object if it's missing
+            }
 
-        updatedElement.style.opacity = newTransparency / 100; // Apply transparency to the element
-        return updatedElements;
-      });
+            updatedElement.style.opacity = newTransparency / 100; // Apply transparency to the element
+            return updatedElements;
+        });
     }
-  };
+};
+
 
 
   const handleElementResize = (e, direction, ref, delta, index) => {
@@ -890,7 +893,7 @@ export default function EditTemplate() {
                             {element.component} {/* Render the shape component */}
                           </div>
                         ) : element.type === "svg" ? (
-                          element.component(element.fillColor) // Render the SVG with the current fill color
+                          element.component(element.fillColor, element.style.opacity ?? 1) // Pass fill color and opacity
 
 
                           // {element.component} {/* Render the SVG component */}
