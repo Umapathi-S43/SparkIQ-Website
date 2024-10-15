@@ -697,7 +697,7 @@ export default function EditTemplate() {
 
   return (
     <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
-      <div className="border-2 border-white rounded-[20px] w-full overflow-auto" style={{ height: "calc(100vh - 1rem)" }}>
+      <div className="border-2 border-white rounded-[20px] w-full overflow-hidden" style={{ height: "calc(100vh - 1rem)" }}>
         <div className="flex justify-between items-center bg-[rgba(252,252,252,0.40)] rounded-t-[20px] p-3 w-full">
           <span className="flex items-center gap-2">
             <img src="/icon5.svg" alt="Icon" />
@@ -811,8 +811,8 @@ export default function EditTemplate() {
                   /></div>
               )}
 
-              <div className="shadow-sm justify-center bg-striped mx-auto my-auto mt-8 w-full h-full overflow-auto hide-scrollbar" style={getScaledSize()} ref={templateContainerRef}>
-                <div className="template-area p-4"
+              <div className="shadow-sm justify-center mx-auto my-auto mt-8 w-full h-full overflow-auto" style={getScaledSize()} ref={templateContainerRef}>
+                <div className="template-area p-4 overflow-hidden"
                   onDrop={(e) => handleImageDrop(e, selectedElementIndex)}
                   onDragOver={handleDragOver}
                   onClick={(e) => {
@@ -860,7 +860,7 @@ export default function EditTemplate() {
                         onResizeStop={(e, direction, ref, delta) =>
                           handleResizeStop(e, direction, ref, delta, index)
                         } // Finalize resizing
-                        bounds="parent" // Constrain element within parent (template area)
+                        //bounds="parent" // Constrain element within parent (template area)
                         style={{
                           border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
                           zIndex: element.style?.zIndex || 1, // Apply zIndex to the element
