@@ -815,7 +815,13 @@ export default function EditTemplate() {
                 <div className="template-area p-4"
                   onDrop={(e) => handleImageDrop(e, selectedElementIndex)}
                   onDragOver={handleDragOver}
-
+                  onClick={(e) => {
+                    // Deselect the element when clicking on the empty area
+                    if (e.target === templateRef.current) {
+                      setSelectedElementIndex(null);
+                    }
+                  }}
+                
                   style={{
                     height: `${imageLayoutSize * zoom}px`,
                     width: `${imageLayoutSize * zoom}px`,
