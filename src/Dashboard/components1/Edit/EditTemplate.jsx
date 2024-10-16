@@ -42,7 +42,7 @@ export default function EditTemplate() {
   const activeElement = selectedElementIndex !== null ? elements[selectedElementIndex] : null;
   const [imageLayoutSize, setImageLayoutSize] = useState(1080); // Default size
   const [activeMenu, setActiveMenu] = useState(null); // Track which menu is active
-
+  const [receivedElements, setReceivedElements] = useState([]); // Store the elements from the response
   const [productDetails, setProductDetails] = useState(null);
   const [activeComponent, setActiveComponent] = useState(""); // Track active component from Sidebar
   const [loading, setLoading] = useState(true);
@@ -64,104 +64,150 @@ export default function EditTemplate() {
   const productID = params.get("id");
 
   // Fetch product details using productID
-  useEffect(() => {
-    const fetchProductDetails = async () => {
-      try {
-        if (!jwtToken) {
-          throw new Error("No JWT token found. Please log in.");
-        }
-        const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        });
-        const data = response.data;
-
-        setProductDetails(data);
-        if (data.imagelayoutsize) {
-          const layoutSize = parseInt(data.imagelayoutsize.split("x")[0]);
-          setImageLayoutSize(layoutSize);
-        }
-
-        const dynamicElements = [
-          {
-            type: "image",
-            src: data.logoURL,
-            position: { x: parseInt(data.logoposition.split(",")[0]), y: parseInt(data.logoposition.split(",")[1]) },
-            size: { width: data.logoWidth, height: data.logoHeight }
-          },
-          {
-            type: "text",
-            content: data.title,
-            position: { x: parseInt(data.titlePosition.split(",")[0]), y: parseInt(data.titlePosition.split(",")[1]) },
-            style: {
-              fontSize: `${data.fontSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              wordWrap: "break-word"
-            }
-          },
-          {
-            type: "text",
-            content: data.description,
-            position: { x: parseInt(data.descriptionPosition.split(",")[0]), y: parseInt(data.descriptionPosition.split(",")[1]) },
-            style: {
-              fontSize: `${data.descriptionFontSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              wordWrap: "break-word"
-            },
-            contentFormatted: data.description && data.description.split('.').map((text, index) => (
-              text.trim() ? <div key={index}>{text.trim()}.</div> : null
-            ))
-          },
-          {
-            type: "image",
-            src: data.productURL,
-            position: {
-              x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0,
-              y: data.productPosition ? parseInt(data.productPosition.split(",")[1]) : 0
-            },
-            size: {
-              width: data.productWidth || 540,
-              height: data.productHeight || 540
-            }
-          },
-          {
-            type: "text",
-            content: data.phoneNumberText,
-            position: { x: parseInt(data.phoneNumberPosition.split(",")[0]), y: parseInt(data.phoneNumberPosition.split(",")[1]) },
-            style: {
-              fontSize: `${data.phoneNumberSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              wordWrap: "break-word"
-            }
-          },
-          {
-            type: "text",
-            content: data.ctaButtonText,
-            position: { x: parseInt(data.ctaPosition.split(",")[0]), y: parseInt(data.ctaPosition.split(",")[1]) },
-            style: {
-              fontSize: `${data.ctaFontSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              backgroundColor: "#FFC107",
-              padding: "5px",
-              borderRadius: "5px"
-            }
-          }
-        ];
-
-        setElements(dynamicElements);
-        setLoading(false);
-
-      } catch (error) {
-        console.error("Failed to fetch product details.", error);
+ // Fetch product details using productID
+ useEffect(() => {
+  const fetchProductDetails = async () => {
+    try {
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
       }
+      const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
+      const data = response.data;
+
+      setProductDetails(data);
+      if (data.imagelayoutsize) {
+        const layoutSize = parseInt(data.imagelayoutsize.split("x")[0]);
+        setImageLayoutSize(layoutSize);
+      }
+
+      // Construct dynamic elements from API response
+      const responseElements = [
+        {
+          type: "image",
+          src: data.logoURL,
+          position: { x: parseInt(data.logoposition.split(",")[0]), y: parseInt(data.logoposition.split(",")[1]) },
+          size: { width: data.logoWidth, height: data.logoHeight }
+        },
+        {
+          type: "text",
+          content: data.title,
+          position: { x: parseInt(data.titlePosition.split(",")[0]), y: parseInt(data.titlePosition.split(",")[1]) },
+          style: {
+            fontSize: `${data.fontSize}px`,
+            fontFamily: "Arial",
+            whiteSpace: "normal",
+            wordWrap: "break-word"
+          }
+        },
+        {
+          type: "text",
+          content: data.description,
+          position: { x: parseInt(data.descriptionPosition.split(",")[0]), y: parseInt(data.descriptionPosition.split(",")[1]) },
+          style: {
+            fontSize: `${data.descriptionFontSize}px`,
+            fontFamily: "Arial",
+            whiteSpace: "normal",
+            wordWrap: "break-word"
+          },
+          contentFormatted: data.description && data.description.split('.').map((text, index) => (
+            text.trim() ? <div key={index}>{text.trim()}.</div> : null
+          ))
+        },
+        {
+          type: "image",
+          src: data.productURL,
+          position: {
+            x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0,
+            y: data.productPosition ? parseInt(data.productPosition.split(",")[1]) : 0
+          },
+          size: {
+            width: data.productWidth || 540,
+            height: data.productHeight || 540
+          }
+        },
+        {
+          type: "text",
+          content: data.phoneNumberText,
+          position: { x: parseInt(data.phoneNumberPosition.split(",")[0]), y: parseInt(data.phoneNumberPosition.split(",")[1]) },
+          style: {
+            fontSize: `${data.phoneNumberSize}px`,
+            fontFamily: "Arial",
+            whiteSpace: "normal",
+            wordWrap: "break-word"
+          }
+        },
+        {
+          type: "text",
+          content: data.ctaButtonText,
+          position: { x: parseInt(data.ctaPosition.split(",")[0]), y: parseInt(data.ctaPosition.split(",")[1]) },
+          style: {
+            fontSize: `${data.ctaFontSize}px`,
+            fontFamily: "Arial",
+            whiteSpace: "normal",
+            backgroundColor: "#FFC107",
+            padding: "5px",
+            borderRadius: "5px"
+          }
+        }
+      ];
+
+      setElements(responseElements); // Set response elements in state
+      setReceivedElements(responseElements); // Store response elements separately
+      setLoading(false);
+
+    } catch (error) {
+      console.error("Failed to fetch product details.", error);
+    }
+  };
+
+  fetchProductDetails();
+}, [productID]);
+
+// Function to handle adding new elements dynamically (shapes, frames, etc.)
+const handleAddElement = (newElement) => {
+  setElements((prevElements) => [...prevElements, newElement]);
+};
+
+// Function to generate JSON only for newly added elements (excluding existing ones from API)
+const generateNewElementsJSON = () => {
+  const newElements = elements.filter(
+    (element) =>
+      !receivedElements.some(
+        (receivedElement) =>
+          receivedElement.type === element.type &&
+          JSON.stringify(receivedElement.position) === JSON.stringify(element.position) &&
+          JSON.stringify(receivedElement.size) === JSON.stringify(element.size) &&
+          JSON.stringify(receivedElement.style) === JSON.stringify(element.style)
+      )
+  );
+
+  const newElementsJSON = newElements.map((element) => {
+    const elementJSON = {
+      type: element.type,
+      position: element.position,
+      size: element.size,
+      style: element.style,
     };
 
-    fetchProductDetails();
-  }, [productID]);
+    // Add additional properties based on element type
+    if (element.type === "text") {
+      elementJSON.content = element.content;
+    } else if (element.type === "image") {
+      elementJSON.src = element.src;
+    } else if (element.type === "frame") {
+      elementJSON.frameType = element.frameType;
+      elementJSON.content = element.content;
+    } else if (element.type === "shape" || element.type === "svg") {
+      elementJSON.component = element.component;
+    }
 
+    return elementJSON;
+  });
+
+  console.log(JSON.stringify(newElementsJSON, null, 2)); // Print JSON for dynamically added elements
+};
 
 
   useEffect(() => {
@@ -693,6 +739,33 @@ export default function EditTemplate() {
     e.preventDefault();
   };
 
+  const generateElementsJSON = () => {
+    const elementsJSON = elements.map((element) => {
+      let elementJSON = {
+        type: element.type,
+        position: element.position,
+        size: element.size,
+        style: element.style,
+      };
+
+      // Add additional content based on the element type
+      if (element.type === "text") {
+        elementJSON.content = element.content;
+      } else if (element.type === "image") {
+        elementJSON.src = element.src;
+      } else if (element.type === "frame") {
+        elementJSON.frameType = element.frameType;
+        elementJSON.content = element.content; // For image dropped inside the frame
+      } else if (element.type === "shape" || element.type === "svg") {
+        elementJSON.component = element.component; // For SVG or shape component
+      }
+
+      return elementJSON;
+    });
+
+    // Print the JSON format in the console
+    console.log(JSON.stringify(elementsJSON, null, 2)); // Print JSON formatted data
+  };
 
 
   return (
@@ -729,7 +802,9 @@ export default function EditTemplate() {
                   handleTransparencyChange={handleTransparencyChange}
                 />
 
-
+              <button onClick={generateNewElementsJSON} className="custom-button text-white py-1 px-4 rounded mr-2">
+        JSON
+      </button>
                 <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
                 <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
                 <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
