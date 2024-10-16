@@ -713,26 +713,40 @@ const handleSaveAndNext = async () => {
   };
 
   // Function to handle image drop inside a frame
-  const handleImageDrop = (e, index) => {
+  const handleImageDrop = (e, frameIndex) => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
+    
+    const draggedElement = elements[selectedElementIndex]; // Identify dragged element
+  
+    // If there's a valid selected element (from the template)
+    if (draggedElement?.type === 'image') {
       const newElements = [...elements];
-      newElements[index].content = event.target.result; // Set the image as base64 data URL
+      newElements[frameIndex].content = draggedElement.src; // Set frame content to image src
+  
       setElements(newElements);
-    };
-
-    if (file) {
-      reader.readAsDataURL(file);
+      setSelectedElementIndex(null); // Deselect after drop
+    } else {
+      // Handle external file drop
+      const file = e.dataTransfer.files[0];
+      const reader = new FileReader();
+  
+      reader.onload = (event) => {
+        const newElements = [...elements];
+        newElements[frameIndex].content = event.target.result; // Set as base64 data URL
+  
+        setElements(newElements);
+      };
+  
+      if (file) reader.readAsDataURL(file);
     }
   };
+const handleDragOver = (e) => {
+  e.preventDefault(); // Prevent the default browser behavior
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
+  // Optional: Customize the drag-over behavior (e.g., changing the style)
+  console.log("Drag over event triggered");
+};
+  
   const generateElementsJSON = () => {
     const elementsJSON = elements.map((element) => {
       let elementJSON = {
@@ -922,7 +936,7 @@ const handleSaveAndNext = async () => {
                         onClick={() => setSelectedElementIndex(index)}
                         onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit text
                         onDragStop={(e, d) => handleElementDragStop(e, d, index)}
-
+                        onDrop={(e) => handleImageDrop(e, index)} // Allow drop on this element
                         onResize={(e, direction, ref, delta) =>
                           handleElementResize(e, direction, ref, delta, index)
                         } // Resize dynamically
@@ -940,7 +954,7 @@ const handleSaveAndNext = async () => {
                           <img
                             src={element.src}
                             alt="element"
-                            draggable="false" // Prevent default image drag behavior
+                            draggable="true" // Prevent default image drag behavior
                             style={{
                               width: "100%",
                               height: "100%",
