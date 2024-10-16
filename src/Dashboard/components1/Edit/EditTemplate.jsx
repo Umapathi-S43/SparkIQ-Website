@@ -33,6 +33,7 @@ import BadgesShieldElements from "./BadgesShields";
 import SpeechBubblesElements from "./SpeechBubbles";
 import BlobElements from "./BlobElements";
 import SunburstElements from "./SunburstHalftone";
+import domtoimage from 'dom-to-image';
 
 
 export default function EditTemplate() {
@@ -284,61 +285,54 @@ const generateNewElementsJSON = () => {
     setElements([...elements, newSVGElement]);
 };
 
+const handleExport = async () => {
+  try {
+    setSelectedElementIndex(null);
+    const node = templateRef.current;
+
+    const dataUrl = await domtoimage.toPng(node, {
+      width: node.offsetWidth, // Capture the full width of the node
+      height: node.offsetHeight, // Capture the full height of the node
+      style: {
+        transformOrigin: '0 0', // Ensure the full content is captured, not just top left
+      },
+      cacheBust: true, // Ensures the image is not cached
+    });
+
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'template.png';
+    link.click();
+  } catch (error) {
+    console.error('Failed to generate image from template:', error);
+  }
+};
 
 
+const handleSaveAndNext = async () => {
+  try {
+    setSelectedElementIndex(null);
+    const node = templateRef.current;
 
+    // Generate the image using dom-to-image similar to handleExport
+    const dataUrl = await domtoimage.toPng(node, {
+      width: node.offsetWidth, // Capture the full width of the node
+      height: node.offsetHeight, // Capture the full height of the node
+      style: {
+        transformOrigin: '0 0', // Ensure the full content is captured, not just top left
+      },
+      cacheBust: true, // Ensure the image is not cached
+    });
 
-  const handleExport = async () => {
-    if (templateRef.current) {
-      const canvas = await html2canvas(templateRef.current, {
-        useCORS: true, // Enable CORS handling
-        allowTaint: true, // Allow tainted images to be used
-      });
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = 'template.png';
-      link.click();
-    }
-  };
+    // Navigate to CustomSample and pass the generated image as a base64 string
+    navigate('/CustomSample', {
+      state: { image: dataUrl }, // Pass the generated image to the CustomSample page
+    });
+  } catch (error) {
+    console.error("Failed to generate image from template:", error);
+  }
+};
 
-
-  const handleSaveAndNext = async () => {
-    try {
-      // Ensure all images including background and elements are loaded
-      const images = Array.from(templateRef.current.querySelectorAll('img'));
-
-      // Wait for all images to load
-      const loadImages = images.map(img => {
-        return new Promise((resolve, reject) => {
-          if (img.complete) {
-            resolve();
-          } else {
-            img.onload = resolve;
-            img.onerror = reject;
-          }
-        });
-      });
-
-      await Promise.all(loadImages); // Wait for all images to load
-
-      // Capture the template with html2canvas
-      const canvas = await html2canvas(templateRef.current, {
-        useCORS: true, // Enable CORS
-        allowTaint: true, // Allow cross-origin tainted images
-        backgroundColor: null, // Ensure no default background color is applied
-      });
-
-      // Convert the canvas to an image
-      const image = canvas.toDataURL('image/png');
-
-      // Navigate to CustomSample and pass the image
-      navigate('/CustomSample', {
-        state: { image }, // Pass the generated image to CustomSample page
-      });
-    } catch (error) {
-      console.error("Failed to generate image from canvas", error);
-    }
-  };
 
   const handleDoubleClickText = (index) => {
     setEditingTextIndex(index);
