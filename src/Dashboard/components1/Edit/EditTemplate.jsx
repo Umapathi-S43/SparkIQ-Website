@@ -5,6 +5,8 @@ import { FaTextHeight, FaImage, FaShapes, FaRegImages, FaUpload } from "react-ic
 import { RxTransparencyGrid } from 'react-icons/rx'; // Icon for transparency
 import { FaPalette, FaLayerGroup } from 'react-icons/fa'; // Icons for color and position
 import { Rnd } from "react-rnd";
+import { MdRotateLeft } from "react-icons/md"; // Import rotation icon
+
 import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
 import html2canvas from 'html2canvas';
@@ -680,7 +682,34 @@ const handleSaveAndNext = async () => {
     }
   };
 
-
+  const handleRotationDrag = (e, index) => {
+    const element = elements[index];
+    const rect = templateRef.current.children[index].getBoundingClientRect();
+  
+    // Calculate the center of the element to rotate around it
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+  
+    // Calculate the angle between the center and the mouse pointer
+    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+  
+    // Update rotation based on the new angle
+    handleRotationChange(index, angle);
+  };
+  
+  const handleRotationChange = (index, newAngle) => {
+    setElements((prevElements) => {
+      const newElements = [...prevElements];
+      const element = newElements[index];
+  
+      // Update the rotation angle
+      element.rotation = newAngle;
+  
+      return newElements;
+    });
+  };
+    
+  
   // Function to handle activating a Sidebar component
   const handleSidebarComponent = (componentName) => {
     // Set the active component and reset any active design menu
@@ -774,7 +803,37 @@ const handleDragOver = (e) => {
     // Print the JSON format in the console
     console.log(JSON.stringify(elementsJSON, null, 2)); // Print JSON formatted data
   };
-
+  const handleRotationDragStart = (e, index) => {
+    e.preventDefault();
+  
+    const element = elements[index];
+    const rect = templateRef.current.children[index].getBoundingClientRect();
+  
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+  
+    let startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+  
+    const handleMouseMove = (moveEvent) => {
+      let moveAngle =
+        Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * (180 / Math.PI);
+  
+      let newRotation = (element.rotation || 0) + (moveAngle - startAngle);
+      startAngle = moveAngle; // Keep the angle synchronized
+  
+      updateElementRotation(index, newRotation);
+    };
+  
+    const handleMouseUp = () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+  
+  
 
   return (
     <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
@@ -945,10 +1004,29 @@ const handleDragOver = (e) => {
                         } // Finalize resizing
                         //bounds="parent" // Constrain element within parent (template area)
                         style={{
+                          transform: `rotate(${element.rotation || 0}deg)`,
                           border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
                           zIndex: element.style?.zIndex || 1, // Apply zIndex to the element
                         }}
                       >
+                         {selectedElementIndex === index && (
+                              <div
+                                className="absolute -top-8 left-1/2 transform -translate-x-1/2 cursor-grab"
+                                draggable
+                                onMouseDown={(e) => handleRotationDragStart(e, index)}
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  backgroundColor: '#082A66',
+                                  borderRadius: '50%',
+                                  display: 'flex',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                }}
+                              >
+                        <MdRotateLeft size={16} color="white" />
+                      </div>
+                    )}
                         {element.type === "image" ? (
                           // Render Image Element
                           <img
@@ -1019,7 +1097,23 @@ const handleDragOver = (e) => {
                               ? element.contentFormatted
                               : element.content}
                           </div>
+
                         )}
+                        {/* Rotation Handle */}
+                    {selectedElementIndex === index && (
+                      <div
+                        className="rotation-handle"
+                        style={{
+                          position: "absolute",
+                          top: "-20px",
+                          left: "50%",
+                          cursor: "grab",
+                          transform: "translateX(-50%)",
+                        }}
+                        draggable
+                        onDrag={(e) => handleRotationDrag(e, index)}
+                      />
+                    )}
                       </Rnd>
                     ))
                   )}

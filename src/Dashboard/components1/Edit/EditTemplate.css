@@ -79,4 +79,10 @@
       #e2e2e2 2px
     );
   }
+  .rotation-handle {
+    width: 10px;
+    height: 10px;
+    background-color: #4a90e2;
+    border-radius: 50%;
+  }
   
