@@ -42,6 +42,8 @@ export default function EditTemplate() {
   const [elements, setElements] = useState([]);
   const [selectedElementIndex, setSelectedElementIndex] = useState(null); // Track selected element
   // Get the currently selected element 
+  const [nextElementId, setNextElementId] = useState(100);
+  let svgCounter = 0; // Global counter to generate unique names
   const activeElement = selectedElementIndex !== null ? elements[selectedElementIndex] : null;
   const [imageLayoutSize, setImageLayoutSize] = useState(1080); // Default size
   const [activeMenu, setActiveMenu] = useState(null); // Track which menu is active
@@ -80,21 +82,43 @@ export default function EditTemplate() {
       const data = response.data;
 
       setProductDetails(data);
-      if (data.imagelayoutsize) {
-        const layoutSize = parseInt(data.imagelayoutsize.split("x")[0]);
-        setImageLayoutSize(layoutSize);
-      }
+      const layoutSize = data.imagelayoutsize 
+        ? parseInt(data.imagelayoutsize.split("x")[0]) 
+        : 1080;
+      setImageLayoutSize(layoutSize);
 
-      // Construct dynamic elements from API response
+      // Construct the background as an element
+      const bgElement = {
+        type: 'background',
+        id: 'bgElement',
+        fromAPI: true,
+        bgImageURL: data.bgImageURL || null,
+        position: { x: 0, y: 0 },
+        size: { width: layoutSize, height: layoutSize },
+        style: {
+          backgroundColor: data.backgroundColor || '#FFFFFF',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          opacity: 1,
+          zIndex: 0,
+        },
+      };
+
+      // Construct other dynamic elements from API response
       const responseElements = [
         {
           type: "image",
+          id: 'logoElement',
+          fromAPI: true,
           src: data.logoURL,
           position: { x: parseInt(data.logoposition.split(",")[0]), y: parseInt(data.logoposition.split(",")[1]) },
           size: { width: data.logoWidth, height: data.logoHeight }
         },
         {
           type: "text",
+          id: 'titleElement',
+          fromAPI: true,
           content: data.title,
           position: { x: parseInt(data.titlePosition.split(",")[0]), y: parseInt(data.titlePosition.split(",")[1]) },
           style: {
@@ -106,6 +130,8 @@ export default function EditTemplate() {
         },
         {
           type: "text",
+          id: 'discriptionElement',
+          fromAPI: true,
           content: data.description,
           position: { x: parseInt(data.descriptionPosition.split(",")[0]), y: parseInt(data.descriptionPosition.split(",")[1]) },
           style: {
@@ -120,6 +146,8 @@ export default function EditTemplate() {
         },
         {
           type: "image",
+          id: 'productURLElement',
+          fromAPI: true,
           src: data.productURL,
           position: {
             x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0,
@@ -132,6 +160,8 @@ export default function EditTemplate() {
         },
         {
           type: "text",
+          id: 'phoneElement',
+          fromAPI: true,
           content: data.phoneNumberText,
           position: { x: parseInt(data.phoneNumberPosition.split(",")[0]), y: parseInt(data.phoneNumberPosition.split(",")[1]) },
           style: {
@@ -143,6 +173,8 @@ export default function EditTemplate() {
         },
         {
           type: "text",
+          id: 'CTAElement',
+          fromAPI: true,
           content: data.ctaButtonText,
           position: { x: parseInt(data.ctaPosition.split(",")[0]), y: parseInt(data.ctaPosition.split(",")[1]) },
           style: {
@@ -156,8 +188,9 @@ export default function EditTemplate() {
         }
       ];
 
-      setElements(responseElements); // Set response elements in state
-      setReceivedElements(responseElements); // Store response elements separately
+      // Add background element to the elements list
+      setElements([bgElement, ...responseElements]);
+      setReceivedElements([bgElement, ...responseElements]);
       setLoading(false);
 
     } catch (error) {
@@ -173,44 +206,37 @@ const handleAddElement = (newElement) => {
   setElements((prevElements) => [...prevElements, newElement]);
 };
 
-// Function to generate JSON only for newly added elements (excluding existing ones from API)
 const generateNewElementsJSON = () => {
-  const newElements = elements.filter(
-    (element) =>
-      !receivedElements.some(
-        (receivedElement) =>
-          receivedElement.type === element.type &&
-          JSON.stringify(receivedElement.position) === JSON.stringify(element.position) &&
-          JSON.stringify(receivedElement.size) === JSON.stringify(element.size) &&
-          JSON.stringify(receivedElement.style) === JSON.stringify(element.style)
-      )
-  );
-
-  const newElementsJSON = newElements.map((element) => {
+  const newElementsJSON = elements.map((element) => {
     const elementJSON = {
+      id: element.id,
       type: element.type,
+      name: element.name, // Include the unique name
       position: element.position,
       size: element.size,
       style: element.style,
+      zIndex: element.style?.zIndex || 1,
     };
 
-    // Add additional properties based on element type
-    if (element.type === "text") {
-      elementJSON.content = element.content;
-    } else if (element.type === "image") {
-      elementJSON.src = element.src;
+    if (element.type === "svg") {
+      elementJSON.fillColor = element.fillColor;
+      elementJSON.opacity = element.style.opacity;
     } else if (element.type === "frame") {
       elementJSON.frameType = element.frameType;
       elementJSON.content = element.content;
-    } else if (element.type === "shape" || element.type === "svg") {
-      elementJSON.component = element.component;
+    } else if (element.type === "text") {
+      elementJSON.content = element.content;
+    } else if (element.type === "image") {
+      elementJSON.src = element.src;
     }
 
     return elementJSON;
   });
 
-  console.log(JSON.stringify(newElementsJSON, null, 2)); // Print JSON for dynamically added elements
+  console.log(JSON.stringify(newElementsJSON, null, 2));
 };
+
+
 
 
   useEffect(() => {
@@ -244,7 +270,8 @@ const generateNewElementsJSON = () => {
 
   // Function to handle adding a new text element from TextAdder
   const handleAddText = (newElement) => {
-    setElements([...elements, newElement]); // Append new text element to the existing elements
+    newElement.id = `element${nextElementId}`;
+  setElements([...elements, newElement]); // Append new text element to the existing elements
     newElement.style = { ...newElement.style, zIndex: elements.length + 1 }; // Set initial zIndex
 
   };
@@ -252,40 +279,51 @@ const generateNewElementsJSON = () => {
 
   // Function to handle adding a shape
   const handleAddShape = (shape) => {
+    const uniqueId = `${shape.name}-${Date.now()}`; // Ensure each shape has a unique name
+  
     const newShapeElement = {
       type: 'shape',
-      component: shape.component, // The component selected (either icon or SVG)
-      position: { x: 50, y: 50 }, // Default position for the shape
-      size: { width: 200, height: 200 }, // Set shape size to 200x200
+      name: uniqueId, // Store the unique name
+      component: shape.component,
+      position: { x: 50, y: 50 },
+      size: { width: 200, height: 200 },
       style: {
-        color: '#fff', // This color can be dynamically changed if needed
-        backgroundColor: 'transparent', // No background color by default
+        color: '#fff',
+        backgroundColor: 'transparent',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        fontSize: '100px', // Set font size of the icon if it's an icon
+        fontSize: '100px',
       },
+      zIndex: elements.length + 1,
     };
-    setElements([...elements, newShapeElement]); // Add shape to elements
+  
+    setElements([...elements, newShapeElement]);
   };
+  
 
   const handleAddSVG = (svg) => {
+    const uniqueId = `${svg.name}-${Date.now()}`; // Create a unique ID using name and timestamp
+  
     const newSVGElement = {
-        type: 'svg',
-        component: svg.component, // Store the function reference
-        position: { x: 50, y: 50 },
-        size: { width: 200, height: 200 },
-        fillColor: '#fff', // Use fillColor to manage the color
-        style: {
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: elements.length + 1,
-            opacity: 1,  // Set initial opacity to 1 (fully opaque)
-        },
+      type: 'svg',
+      name: uniqueId, // Store the unique name
+      component: svg.component,
+      position: { x: 50, y: 50 }, // Default position
+      size: { width: 200, height: 200 }, // Default size
+      fillColor: '#082A66', // Default fill color
+      style: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        opacity: 1,
+        zIndex: elements.length + 1, // Set zIndex
+      },
     };
+  
     setElements([...elements, newSVGElement]);
-};
+  };
+  
 
 const handleExport = async () => {
   try {
@@ -307,6 +345,52 @@ const handleExport = async () => {
     link.click();
   } catch (error) {
     console.error('Failed to generate image from template:', error);
+  }
+};
+
+const handleExportWithHtml2Canvas = async () => {
+  try {
+    setSelectedElementIndex(null); // Deselect elements before export
+
+    const node = templateRef.current;
+
+    // Original size from imageLayoutSize
+    const originalWidth = imageLayoutSize;
+    const originalHeight = imageLayoutSize;
+
+    // Calculate the zoom factor (reverse the UI zoom)
+    const zoomFactor = 1 / zoom;
+
+    // Temporarily apply zoom 1 for export
+    const clonedNode = node.cloneNode(true);
+    clonedNode.style.transform = `scale(${zoomFactor})`; // Correct usage of template literal
+    clonedNode.style.transformOrigin = 'top left';
+    clonedNode.style.width = `${originalWidth}px`; // Proper template literal
+    clonedNode.style.height = `${originalHeight}px`; // Proper template literal
+    clonedNode.style.position = 'absolute';
+    clonedNode.style.left = '-9999px'; // Hide off-screen
+
+    document.body.appendChild(clonedNode); // Append to DOM temporarily
+
+    // Use html2canvas to generate the canvas
+    const canvas = await html2canvas(clonedNode, {
+      width: originalWidth,
+      height: originalHeight,
+      scale: 1, // Ensure export uses 1:1 scale
+      useCORS: true, // Handle cross-origin images
+      backgroundColor: null, // Keep transparent background if needed
+    });
+
+    document.body.removeChild(clonedNode); // Clean up cloned node
+
+    // Convert canvas to PNG and trigger download
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'template.png';
+    link.click();
+  } catch (error) {
+    console.error('Failed to export image:', error);
   }
 };
 
@@ -500,12 +584,28 @@ const handleSaveAndNext = async () => {
 
   const handleDeleteElement = () => {
     if (selectedElementIndex !== null) {
-      const newElements = [...elements];
-      newElements.splice(selectedElementIndex, 1); // Remove the selected element
-      setElements(newElements);
-      setSelectedElementIndex(null); // Reset the selection
+      setElements((prevElements) => {
+        const newElements = [...prevElements];
+        const selectedElement = newElements[selectedElementIndex];
+  
+        if (selectedElement.type === 'background') {
+          // Clear background image if the element is a background
+          selectedElement.bgImageURL = null;
+          selectedElement.style.backgroundColor = '#FFFFFF'; // Reset to white background
+        } else {
+          // Remove the selected element from the list
+          newElements.splice(selectedElementIndex, 1);
+        }
+  
+        // Reset the selected index properly
+        return newElements;
+      });
+  
+      // Reset the selected element index to null to avoid unintended behavior
+      setSelectedElementIndex(null);
     }
   };
+  
 
 
   const handleElementDragStop = (e, d, index) => {
@@ -556,46 +656,71 @@ const handleSaveAndNext = async () => {
   // Handler for color change
   const handleColorChange = (color) => {
     setSelectedColor(color); // Update selected color
-
+  
     if (selectedElementIndex !== null) {
       setElements((prevElements) => {
         const updatedElements = [...prevElements];
         const updatedElement = updatedElements[selectedElementIndex];
-
-        if (updatedElement.type === 'svg') {
+  
+        // If the selected element is a background, apply color and clear bgImageURL
+        if (updatedElement.type === 'background') {
+          updatedElement.style.backgroundColor = color;
+          updatedElement.bgImageURL = null; // Clear the background image
+        }
+         if (updatedElement.type === 'svg') {
           updatedElement.fillColor = color; // Update fill color property
         } else if (updatedElement.type === 'shape') {
           updatedElement.style.color = color; // Change color for shapes
         } else if (updatedElement.type === 'text') {
           updatedElement.style.color = color; // Change text color
         }
-
-        return updatedElements; // Return the updated elements
-      });
-    }
-  };
-
-
-
-  // Handler for gradient color change
-  const handleGradientColorChange = (gradientColor) => {
-    setSelectedColor(gradientColor); // Store the selected gradient color
-
-    // Apply the gradient color to the selected element
-    if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
-        const updatedElements = [...prevElements];
-        const updatedElement = updatedElements[selectedElementIndex];
-
-        // Only apply gradient background for text elements
-        if (updatedElement.type === 'text') {
-          updatedElement.style.background = gradientColor; // Apply gradient as background
-        }
-
+  
         return updatedElements;
       });
     }
   };
+  
+  const handleBackgroundImageChange = (imageUrl) => {
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+  
+        // Apply the new background image and clear background color
+        if (updatedElement.type === 'background') {
+          updatedElement.bgImageURL = imageUrl;
+          updatedElement.style.backgroundColor = null; // Clear the background color
+        }
+  
+        return updatedElements;
+      });
+    }
+  };
+  
+  
+  // Handler for gradient color change
+  const handleGradientColorChange = (gradientColor) => {
+    setSelectedColor(gradientColor); // Store the selected gradient color
+  
+    if (selectedElementIndex !== null) {
+      setElements((prevElements) => {
+        const updatedElements = [...prevElements];
+        const updatedElement = updatedElements[selectedElementIndex];
+  
+        // Apply the gradient to the background or text
+        if (updatedElement.type === 'background') {
+          updatedElement.style.backgroundColor = gradientColor;
+          updatedElement.bgImageURL = null; // Clear the background image
+        } else if (updatedElement.type === 'text') {
+          updatedElement.style.background = gradientColor; // Apply the gradient to text background
+        }
+  
+        return updatedElements;
+      });
+    }
+  };
+  
+  
 
 
   const handleResizeStop = (e, direction, ref, delta, index) => {
@@ -621,29 +746,24 @@ const handleSaveAndNext = async () => {
 
 
   const adjustTooltipPosition = () => {
-
-    const tooltipX = tooltip.x;
-    const tooltipY = tooltip.y;
-    const tooltipWidth = 80; // Tooltip width
-    const tooltipHeight = 30; // Tooltip height
-    const padding = 10; // Padding from the edge
-
-    let left = tooltipX;
-    let top = tooltipY;
-
-    // Ensure tooltip doesn't go beyond the right edge
+    const tooltipWidth = 80; 
+    const tooltipHeight = 30; 
+    const padding = 10; 
+ 
+    let left = tooltip.x;
+    let top = tooltip.y;
+ 
     if (left + tooltipWidth > window.innerWidth) {
-      left = window.innerWidth - tooltipWidth - padding;
+       left = window.innerWidth - tooltipWidth - padding;
     }
-
-    // Ensure tooltip doesn't go beyond the bottom edge
+ 
     if (top + tooltipHeight > window.innerHeight) {
-      top = window.innerHeight - tooltipHeight - padding;
+       top = window.innerHeight - tooltipHeight - padding;
     }
-
+ 
     return { left, top };
-  };
-
+ };
+ 
 
   const handleAlignElement = (alignType) => {
     if (selectedElementIndex !== null) {
@@ -743,66 +863,49 @@ const handleSaveAndNext = async () => {
 
   // Function to handle image drop inside a frame
   const handleImageDrop = (e, frameIndex) => {
-    e.preventDefault();
-    
-    const draggedElement = elements[selectedElementIndex]; // Identify dragged element
+    e.preventDefault(); // Prevent default browser behavior
   
-    // If there's a valid selected element (from the template)
-    if (draggedElement?.type === 'image') {
-      const newElements = [...elements];
-      newElements[frameIndex].content = draggedElement.src; // Set frame content to image src
+    const draggedIndex = e.dataTransfer.getData("text/plain"); // Get the dragged element's index
   
-      setElements(newElements);
-      setSelectedElementIndex(null); // Deselect after drop
-    } else {
-      // Handle external file drop
+    if (draggedIndex) {
+      // Case 1: Internal drag from template
+      const draggedElement = elements[parseInt(draggedIndex)];
+      if (draggedElement?.type === 'image') {
+        const newElements = [...elements];
+        newElements[frameIndex].content = draggedElement.src; // Set the frame content
+        setElements(newElements);        
+        
+        newElements.splice(draggedIndex,0);
+      }
+    } else if (e.dataTransfer.files.length > 0) {
+      // Case 2: External image file drop
       const file = e.dataTransfer.files[0];
       const reader = new FileReader();
   
       reader.onload = (event) => {
         const newElements = [...elements];
-        newElements[frameIndex].content = event.target.result; // Set as base64 data URL
-  
+        newElements[frameIndex].content = event.target.result; // Use base64 data URL
         setElements(newElements);
       };
   
-      if (file) reader.readAsDataURL(file);
+      reader.readAsDataURL(file); // Read the file as base64
+    } else {
+      console.error("Invalid drop operation");
     }
   };
-const handleDragOver = (e) => {
-  e.preventDefault(); // Prevent the default browser behavior
+  
 
-  // Optional: Customize the drag-over behavior (e.g., changing the style)
+ const handleDragOver = (e) => {
+  e.preventDefault();
   console.log("Drag over event triggered");
 };
+
+const handleDragStart = (e, index) => {
+  e.dataTransfer.setData("text/plain", index); // Store the index of the dragged element
+  setSelectedElementIndex(index); // Track the element being dragged
+};
+
   
-  const generateElementsJSON = () => {
-    const elementsJSON = elements.map((element) => {
-      let elementJSON = {
-        type: element.type,
-        position: element.position,
-        size: element.size,
-        style: element.style,
-      };
-
-      // Add additional content based on the element type
-      if (element.type === "text") {
-        elementJSON.content = element.content;
-      } else if (element.type === "image") {
-        elementJSON.src = element.src;
-      } else if (element.type === "frame") {
-        elementJSON.frameType = element.frameType;
-        elementJSON.content = element.content; // For image dropped inside the frame
-      } else if (element.type === "shape" || element.type === "svg") {
-        elementJSON.component = element.component; // For SVG or shape component
-      }
-
-      return elementJSON;
-    });
-
-    // Print the JSON format in the console
-    console.log(JSON.stringify(elementsJSON, null, 2)); // Print JSON formatted data
-  };
   const handleRotationDragStart = (e, index) => {
     e.preventDefault();
   
@@ -873,7 +976,7 @@ const handleDragOver = (e) => {
         JSON
       </button>
                 <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
-                <button onClick={handleExport} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
+                <button onClick={handleExportWithHtml2Canvas} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
                 <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
               </div>
             </div>
@@ -937,13 +1040,12 @@ const handleDragOver = (e) => {
                 </div>
               )}
 
-              {activeMenu === 'gradientColor' && activeElement?.type === 'text' && (
-                <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
-                  <GradientColorMenu handleGradientColorChange={handleGradientColorChange} />
-                </div>
-              )}
-
-
+          {activeMenu === 'gradientColor' && 
+            (activeElement?.type === 'text' || activeElement?.type === 'background') && (
+              <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
+                <GradientColorMenu handleGradientColorChange={handleGradientColorChange} />
+              </div>
+          )}
 
               {activeMenu === 'position' && (
                 <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
@@ -956,13 +1058,16 @@ const handleDragOver = (e) => {
               <div className="shadow-sm justify-center mx-auto my-auto mt-8 w-full h-full overflow-auto" style={getScaledSize()} ref={templateContainerRef}>
                 <div className="template-area p-4 overflow-hidden"
                   onDrop={(e) => handleImageDrop(e, selectedElementIndex)}
-                  onDragOver={handleDragOver}
+                  onDragOver={(e) => e.preventDefault()} // Allow drop operation
+                 
+                 
                   onClick={(e) => {
                     // Deselect the element when clicking on the empty area
                     if (e.target === templateRef.current) {
-                      setSelectedElementIndex(null);
+                      setSelectedElementIndex(0);
                     }
                   }}
+                  
                 
                   style={{
                     height: `${imageLayoutSize * zoom}px`,
@@ -970,13 +1075,15 @@ const handleDragOver = (e) => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    backgroundImage: productDetails?.bgImageURL ? `url(${productDetails.bgImageURL})` : 'none',
+                    background: elements[0]?.bgImageURL
+                      ? `url(${elements[0].bgImageURL})`
+                      : elements[0]?.style?.backgroundColor || 'transparent',
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
-                    position: "relative"
-
-                  }} ref={templateRef}>
+                    position: "relative",
+                  }}
+                   ref={templateRef}>
                   {/* Render each element (text or image) */}
                   {loading ? (
                     <p>Loading elements...</p>
@@ -994,20 +1101,28 @@ const handleDragOver = (e) => {
                         }}
                         onClick={() => setSelectedElementIndex(index)}
                         onDoubleClick={() => handleDoubleClickText(index)} // Double-click to edit text
-                        onDragStop={(e, d) => handleElementDragStop(e, d, index)}
-                        onDrop={(e) => handleImageDrop(e, index)} // Allow drop on this element
-                        onResize={(e, direction, ref, delta) =>
+                        onDragStop={(e, d) => {
+                          if (element.type !== "background") {
+                            handleElementDragStop(e, d, index);
+                          }
+                        }}
+                         onResize={(e, direction, ref, delta) =>
                           handleElementResize(e, direction, ref, delta, index)
                         } // Resize dynamically
                         onResizeStop={(e, direction, ref, delta) =>
                           handleResizeStop(e, direction, ref, delta, index)
                         } // Finalize resizing
                         //bounds="parent" // Constrain element within parent (template area)
+                        onDragOver={(e) => e.preventDefault()} // Allow drop on frame
+  onDrop={(e) => handleImageDrop(e, index)} // Handle image drop in frame
+  
                         style={{
                           transform: `rotate(${element.rotation || 0}deg)`,
                           border: selectedElementIndex === index ? "2px solid #4A90E2" : "none",
                           zIndex: element.style?.zIndex || 1, // Apply zIndex to the element
                         }}
+                        disableDragging={element.type === "background"} // Disable drag for background
+ 
                       >
                          {selectedElementIndex === index && (
                               <div
@@ -1030,15 +1145,16 @@ const handleDragOver = (e) => {
                         {element.type === "image" ? (
                           // Render Image Element
                           <img
-                            src={element.src}
-                            alt="element"
-                            draggable="true" // Prevent default image drag behavior
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              opacity: element.style?.opacity ?? 1,
-                              zIndex: element.style?.zIndex || 1
-                            }}
+                          src={element.src}
+                          alt="element"
+                          draggable={true} // Enable drag behavior
+                          onDragStart={(e) => handleDragStart(e, index)} // Handle drag start
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            opacity: element.style?.opacity ?? 1,
+                            zIndex: element.style?.zIndex || 1,
+                          }}
                           />
 
                         ) : element.type === "shape" ? (
@@ -1067,19 +1183,34 @@ const handleDragOver = (e) => {
 
                         ) : element.type === "frame" ? (
                           <div
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              clipPath: element.style.clipPath, // Apply shape
-                              backgroundImage: element.content ? `url(${element.content})` : 'none',
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                              backgroundRepeat: 'no-repeat',
-                              border: element.style.border,
-                              backgroundColor: element.content ? 'transparent' : '#e0e0e0', // Show image or placeholder
-                              zIndex: element.style?.zIndex || 0 // Apply zIndex to the element
-                            }}
-                          ></div>
+        className="frame"
+        key={index}
+        style={{
+          width: "100%",
+          height: "100%",
+          clipPath: element.style.clipPath, 
+          position: "relative",
+          border: element.style.border || "2px solid #4A90E2",
+          backgroundColor: element.content ? "transparent" : "#e0e0e0",
+        }}
+      >
+        {element.content && (
+          <img
+            src={element.content}
+            alt="frame content"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+              clipPath: element.style.clipPath,
+              position: "absolute",
+              top: 0,
+              left: 0,
+            }}
+          />
+        )}
+      </div>
                         ) : (
                           // Render Text Element
                           <div
@@ -1091,6 +1222,7 @@ const handleDragOver = (e) => {
                             style={{
                               ...element.style,
                               fontSize: `${parseFloat(element.style.fontSize) * zoom}px` // Adjust font size based on zoom
+                              
                             }}
                           >
                             {element.contentFormatted
