@@ -17,6 +17,7 @@ import AdCreatives from "./AdCreatives";
 import ImageSearchLayout from "./ImageSearch";
 import ShapeStyleLayout from "./Shapes";
 import FramesComponent from "./Frames";
+import Sidebar_Edit from "./Sidebar_Edit";
 import { MdColorLens } from "react-icons/md";
 import DesignMenu from './DesignMenu';
 import ColorMenu from './ColorMenu';
@@ -865,34 +866,45 @@ const handleSaveAndNext = async () => {
   const handleImageDrop = (e, frameIndex) => {
     e.preventDefault(); // Prevent default browser behavior
   
-    const draggedIndex = e.dataTransfer.getData("text/plain"); // Get the dragged element's index
+    // Validate the dragged data type to avoid placing URLs in other elements
+    const draggedIndex = e.dataTransfer.getData("application/element-index"); // Use the custom MIME type
   
     if (draggedIndex) {
-      // Case 1: Internal drag from template
+      // Internal drag from template elements
       const draggedElement = elements[parseInt(draggedIndex)];
+  
       if (draggedElement?.type === 'image') {
+        // Ensure only frames or image elements accept the drop
         const newElements = [...elements];
-        newElements[frameIndex].content = draggedElement.src; // Set the frame content
-        setElements(newElements);        
-        
-        newElements.splice(draggedIndex,0);
+        if (newElements[frameIndex].type === 'frame') {
+          newElements[frameIndex].content = draggedElement.src; // Set image inside the frame
+        } else if (newElements[frameIndex].type === 'image') {
+          newElements[frameIndex].src = draggedElement.src; // Replace image URL
+        }
+
+        setElements(newElements);
       }
     } else if (e.dataTransfer.files.length > 0) {
-      // Case 2: External image file drop
+      // Handle external image drop (only on image elements or frames)
       const file = e.dataTransfer.files[0];
       const reader = new FileReader();
   
       reader.onload = (event) => {
         const newElements = [...elements];
-        newElements[frameIndex].content = event.target.result; // Use base64 data URL
+        if (newElements[frameIndex]?.type === 'frame') {
+          newElements[frameIndex].content = event.target.result; // Use base64 data URL
+        } else if (newElements[frameIndex]?.type === 'image') {
+          newElements[frameIndex].src = event.target.result;
+        }
         setElements(newElements);
       };
   
-      reader.readAsDataURL(file); // Read the file as base64
+      reader.readAsDataURL(file);
     } else {
-      console.error("Invalid drop operation");
+      console.error("Invalid drop operation.");
     }
   };
+  
   
 
  const handleDragOver = (e) => {
@@ -901,10 +913,9 @@ const handleSaveAndNext = async () => {
 };
 
 const handleDragStart = (e, index) => {
-  e.dataTransfer.setData("text/plain", index); // Store the index of the dragged element
+  e.dataTransfer.setData("application/element-index", index); // Use custom type
   setSelectedElementIndex(index); // Track the element being dragged
 };
-
   
   const handleRotationDragStart = (e, index) => {
     e.preventDefault();
@@ -952,7 +963,7 @@ const handleDragStart = (e, index) => {
         </div>
         <div className="flex">
           <div className="p-4 w-1/12">
-            <Sidebar setActiveComponent={handleSidebarComponent} setShowAdCreatives={() => { }} />
+            <Sidebar_Edit setActiveComponent={handleSidebarComponent} setShowAdCreatives={() => { }} />
           </div>
           <div className="flex-row relative w-full m-4 ml-0">
             <div className="flex items-center justify-end p-4 w-full bg-[#FCFCFC40] shadow-lg rounded-md mt-1" style={{ height: "8vh" }}>
@@ -1282,179 +1293,3 @@ const handleDragStart = (e, index) => {
     </div>
   );
 }
-const Sidebar = ({ setActiveComponent, setShowAdCreatives }) => {
-  return (
-    <div className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg" style={{ height: 'calc(100vh - 8rem)' }}>
-      <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full "
-      /* 
-   onClick={() => {
-     setActiveComponent('Creatives');
-     setShowAdCreatives(true);
-   }}
- */
-      >
-        <img src="/icon5.svg" alt="Icon" className="w-8 h-8" />
-        <span className="text-sm">Creatives</span>
-      </button>
-      <div className="flex flex-col items-center justify-center space-y-2 mt-4">
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Text')}>
-          <FaTextHeight />
-          <span className="text-sm">Text</span>
-        </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Images')}>
-          <FaImage />
-          <span className="text-sm">Image</span>
-        </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Shapes')}>
-          <FaShapes />
-          <span className="text-sm">Shape</span>
-        </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Frames')}>
-          <FaRegImages />
-          <span className="text-sm">Frame</span>
-        </button>
-        <button className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full" onClick={() => setActiveComponent('Uploads')}>
-          <FaUpload />
-          <span className="text-sm">Uploads</span>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-{/*const DesignMenu = ({ activeElement, setElements, selectedElementIndex, handlePositionChange }) => {
-  const [activeMenu, setActiveMenu] = useState(null);
-  const [transparency, setTransparency] = useState(100); // Manage the transparency
-  const [selectedColor, setSelectedColor] = useState('#FFFFFF'); // Default color
-
-  useEffect(() => {
-    if (activeElement && activeElement.style) {
-      // If opacity is defined, use it, otherwise default to 1 (100% transparency)
-      const opacityValue = activeElement.style.opacity !== undefined ? activeElement.style.opacity : 1;
-      setTransparency(opacityValue * 100);
-
-      // Set color, default to white if not defined
-      setSelectedColor(activeElement.style.color || '#FFFFFF');
-    }
-  }, [activeElement]);
-
-
-
-  // Handler for transparency slider
-  const handleTransparencyChange = (e) => {
-    const newTransparency = e.target.value;
-    setTransparency(newTransparency);
-
-    // Apply the transparency to the selected element
-    if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
-        const updatedElements = [...prevElements];
-        const updatedElement = updatedElements[selectedElementIndex];
-
-        // Ensure the style object exists before setting the opacity
-        if (!updatedElement.style) {
-          updatedElement.style = {}; // Initialize the style object if it's missing
-        }
-
-        updatedElement.style.opacity = newTransparency / 100; // Apply transparency to the element
-        return updatedElements;
-      });
-    }
-  };
-
-
-  // Handler for color change
-  const handleColorChange = (color) => {
-    setSelectedColor(color);
-
-    // Apply the color to the selected element
-    if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
-        const updatedElements = [...prevElements];
-        const updatedElement = updatedElements[selectedElementIndex];
-        updatedElement.style.color = color;
-        return updatedElements;
-      });
-    }
-  };
-
-
-  // Toggle menu
-  const toggleMenu = (menu) => {
-    setActiveMenu(activeMenu === menu ? null : menu); // Toggle between transparency, color, etc.
-  };
-
-  return (
-    <div className="flex flex-row items-center gap-4 mr-4">
-      <button
-        className="flex flex-row items-center gap-2 text-lg rounded w-full"
-        onClick={() => toggleMenu('transparency')}
-      >
-        <RxTransparencyGrid size={24} />
-      </button>
-
-      {activeMenu === 'transparency' && (
-        <div className="p-3 w-full bg-white rounded-md mt-4 shadow-md">
-          <span>Transparency</span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={transparency}
-            onChange={handleTransparencyChange}
-            className="w-full"
-          />
-        </div>
-      )}
-
-      <button
-        className="flex flex-row items-center gap-2 text-lg rounded w-full"
-        onClick={() => toggleMenu('color')}
-      >
-        <MdColorLens size={28} />
-      </button>
-
-      {activeMenu === 'color' && (
-        <div className="p-4 w-full bg-white rounded-md mt-4 shadow-md">
-          <span>Colors</span>
-          <div className="color-palette">
-            {['#000000', '#FF5733', '#33FF57', '#3357FF', '#FFFF33'].map((color) => (
-              <button
-                key={color}
-                className="color-option"
-                style={{
-                  backgroundColor: color,
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  margin: '5px'
-                }}
-                onClick={() => handleColorChange(color)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      <button
-        className="flex flex-col items-center gap-2 text-lg rounded w-full"
-        onClick={() => toggleMenu('position')}
-      >
-        <FaLayerGroup size={24} />
-      </button>
-
-      {activeMenu === 'position' && (
-        <div className="p-4 w-full bg-white rounded-md mt-4 shadow-md">
-          <span>Layer Position</span>
-          <div className="position-controls">
-            <button onClick={() => handlePositionChange('forward')}>Forward</button>
-            <button onClick={() => handlePositionChange('backward')}>Backward</button>
-            <button onClick={() => handlePositionChange('toFront')}>To Front</button>
-            <button onClick={() => handlePositionChange('toBack')}>To Back</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-*/}

@@ -33,6 +33,7 @@ import SignUpPage from './components/Dashboard/SignUp';
 import ProtectedRoute from './components/utils/withAuth';
 import GenerateDAPCreativesPage from './Dashboard/pages1/GenerateDAPCreativesPage';
 import EditScreen from './Dashboard/components1/Edit/EditScreen';
+import DynamicCanvaTemplate from './Dashboard/components1/Edit/DynamicTemplate';
 
 function App() {
   return (
@@ -139,6 +140,10 @@ function App() {
           <Route
             path="/text_format"
             element={<ProtectedRoute element={<TextFormat />} />}
+          />
+          <Route
+            path="/dynamic_template"
+            element={<ProtectedRoute element={< DynamicCanvaTemplate/>} />}
           />
           <Route path="/signup" element={<SignUpPage />} />
         </Routes>
