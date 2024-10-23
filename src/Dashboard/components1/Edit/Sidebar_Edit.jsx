@@ -6,7 +6,7 @@ const Sidebar_Edit = ({ setActiveComponent }) => {
   return (
     <div
       className="flex flex-col items-center p-3 rounded-[12px] bg-[#FCFCFC40] shadow-lg"
-      style={{ height: 'calc(100vh - 8rem)' }}
+      style={{ height: 'calc(100vh - 10rem)' }}
     >
       <button
         className="flex flex-col items-center gap-2 text-lg p-2 rounded w-full"

@@ -946,8 +946,33 @@ const handleDragStart = (e, index) => {
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
   };
-  
-  
+  const handleSaveAndPreview = async () => {
+  try {
+    setSelectedElementIndex(null); // Deselect any selected elements
+    const node = templateRef.current;
+
+    const originalZoom = zoom; // Store the original zoom value
+    setZoom(1); // Set zoom to 1 for capturing the original size
+
+    setTimeout(async () => {
+      const dataUrl = await domtoimage.toPng(node, {
+        width: imageLayoutSize,
+        height: imageLayoutSize,
+        style: {
+          transformOrigin: '0 0',
+        },
+        cacheBust: true,
+      });
+
+      navigate('/preview', { state: { image: dataUrl } }); // Navigate to preview
+
+      setZoom(originalZoom); // Restore the original zoom
+    }, 100); // Adjust the timeout as needed
+  } catch (error) {
+    console.error('Failed to generate image from template:', error);
+  }
+};
+
 
   return (
     <div className="min-h-screen p-2 bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] flex flex-col items-center justify-center">
@@ -987,8 +1012,10 @@ const handleDragStart = (e, index) => {
         JSON
       </button>
                 <button onClick={() => navigate("/campaigns")} className="flex bg-red-500 text-white py-1 px-4 rounded mr-2">Close</button>
-                <button onClick={handleExportWithHtml2Canvas} className="custom-button text-white py-1 px-4 rounded mr-2">Export</button>
-                <button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
+                <button onClick={handleSaveAndPreview} className="custom-button text-white py-1 px-4 rounded">
+  Preview & Export
+</button>
+<button onClick={handleSaveAndNext} className="custom-button text-white py-1 px-4 rounded">Save & Next</button>
               </div>
             </div>
 

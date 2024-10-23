@@ -34,6 +34,7 @@ import ProtectedRoute from './components/utils/withAuth';
 import GenerateDAPCreativesPage from './Dashboard/pages1/GenerateDAPCreativesPage';
 import EditScreen from './Dashboard/components1/Edit/EditScreen';
 import DynamicCanvaTemplate from './Dashboard/components1/Edit/DynamicTemplate';
+import PreviewTemplate from './Dashboard/components1/Edit/PreviewTemplate';
 
 function App() {
   return (
@@ -140,6 +141,10 @@ function App() {
           <Route
             path="/text_format"
             element={<ProtectedRoute element={<TextFormat />} />}
+          />
+          <Route
+            path="/preview"
+            element={<ProtectedRoute element={<PreviewTemplate />} />}
           />
           <Route
             path="/dynamic_template"
