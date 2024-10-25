@@ -61,7 +61,6 @@ export default function EditTemplate() {
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
 
-  // Fetch product details using productID
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
@@ -71,140 +70,108 @@ export default function EditTemplate() {
         const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
+  
         const data = response.data;
-
-        setProductDetails(data);
-        const layoutSize = data.imagelayoutsize
-          ? parseInt(data.imagelayoutsize.split("x")[0])
+        const imageContent = JSON.parse(data.imageContent); // Parse the imageContent JSON string
+        const { elements, imagelayoutsize } = imageContent;
+  
+        const layoutSize = imagelayoutsize
+          ? parseInt(imagelayoutsize.split("*")[0])
           : 1080;
         setImageLayoutSize(layoutSize);
-
-        // Construct the background as an element
-        const bgElement = {
-          type: 'background',
-          id: 'bgElement',
-          fromAPI: true,
-          bgImageURL: data.bgImageURL || null,
-          position: { x: 0, y: 0 },
-          size: { width: layoutSize, height: layoutSize },
-          rotation: 0, // Initialize rotation
-          style: {
-            backgroundColor: data.backgroundColor || '#FFFFFF',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 1,
-            zIndex: 0,
-          },
-        };
-
-        // Construct other dynamic elements from API response
-        const responseElements = [
-          {
-            type: "image",
-            id: 'logoElement',
-            fromAPI: true,
-            src: data.logoURL,
-            position: { x: parseInt(data.logoposition.split(",")[0]), y: parseInt(data.logoposition.split(",")[1]) },
-            size: { width: data.logoWidth, height: data.logoHeight },
-            rotation: 0, // Initialize rotation
-            style: {
-              zIndex: 1,
-            },
-          },
-          {
-            type: "text",
-            id: 'titleElement',
-            fromAPI: true,
-            content: data.title,
-            position: { x: parseInt(data.titlePosition.split(",")[0]), y: parseInt(data.titlePosition.split(",")[1]) },
-            rotation: 0, // Initialize rotation
-            style: {
-              fontSize: `${data.fontSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              wordWrap: "break-word",
-              zIndex: 2,
-            }
-          },
-          {
-            type: "text",
-            id: 'descriptionElement',
-            fromAPI: true,
-            content: data.description,
-            position: { x: parseInt(data.descriptionPosition.split(",")[0]), y: parseInt(data.descriptionPosition.split(",")[1]) },
-            rotation: 0, // Initialize rotation
-            style: {
-              fontSize: `${data.descriptionFontSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              wordWrap: "break-word",
-              zIndex: 3,
-            },
-          },
-          {
-            type: "image",
-            id: 'productURLElement',
-            fromAPI: true,
-            src: data.productURL,
-            position: {
-              x: data.productPosition ? parseInt(data.productPosition.split(",")[0]) : 0,
-              y: data.productPosition ? parseInt(data.productPosition.split(",")[1]) : 0
-            },
+  
+        // Process elements to set appropriate properties
+        const processedElements = elements.map((element) => {
+          const { type, position, size, style = {}, zIndex, id, src, content } = element;
+  
+          let updatedElement = {
+            id,
+            type,
+            position: { x: position?.x || 0, y: position?.y || 0 },
             size: {
-              width: data.productWidth || 540,
-              height: data.productHeight || 540
+              width: size?.width || (type === "text" ? "100%" : 100), // Full width for text if not specified
+              height: size?.height || (type === "text" ? "auto" : 100), // Auto height for text
             },
-            rotation: 0, // Initialize rotation
             style: {
-              zIndex: 4,
+              zIndex: zIndex || 1,
             },
-          },
-          {
-            type: "text",
-            id: 'phoneElement',
-            fromAPI: true,
-            content: data.phoneNumberText,
-            position: { x: parseInt(data.phoneNumberPosition.split(",")[0]), y: parseInt(data.phoneNumberPosition.split(",")[1]) },
-            rotation: 0, // Initialize rotation
-            style: {
-              fontSize: `${data.phoneNumberSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              wordWrap: "break-word",
-              zIndex: 5,
+          };
+  
+          // Handle element types specifically
+          if (type === "background") {
+            updatedElement.style = {
+            ...updatedElement.style,
+            backgroundImage: style.background
+              ? `url(${style.background})`
+              : "none", // Ensure url() is used correctly
+            // backgroundColor: style.backgroundColor || "", // Linear gradient color (commented)
+            backgroundSize: style.backgroundSize || "cover",
+            backgroundPosition: style.backgroundPosition || "center",
+            backgroundRepeat: style.backgroundRepeat || "no-repeat",
+            opacity: style.opacity || 1,
+          };
+          } else if (type === "image") {
+            updatedElement.src = src;
+          }else if (type === "text") {
+            const color = style.color ? `rgb(${style.color.join(",")})` : "#000000"; // Fallback to black if color is missing
+            updatedElement.content = content;
+          
+            // If the element is the description, split the content by "-"
+            if (id === "descriptionElement") {
+              // Split the content by "-" and filter out any empty strings
+              const lines = content.split('-').map((line) => line.trim()).filter((line) => line);
+          
+              // Format the lines as spans with <br /> to maintain consistent positioning
+              updatedElement.contentFormatted = (
+                <div style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>
+                  {lines.map((line, index) => (
+                    <span key={index}>
+                      - {line}
+                      <br />
+                    </span>
+                  ))}
+                </div>
+              );
+            } else {
+              updatedElement.contentFormatted = content;
             }
-          },
-          {
-            type: "text",
-            id: 'CTAElement',
-            fromAPI: true,
-            content: data.ctaButtonText,
-            position: { x: parseInt(data.ctaPosition.split(",")[0]), y: parseInt(data.ctaPosition.split(",")[1]) },
-            rotation: 0, // Initialize rotation
-            style: {
-              fontSize: `${data.ctaFontSize}px`,
-              fontFamily: "Arial",
-              whiteSpace: "normal",
-              backgroundColor: "#FFC107",
-              padding: "5px",
-              borderRadius: "5px",
-              zIndex: 6,
-            }
+          
+            updatedElement.style = {
+              ...updatedElement.style,
+              fontSize: style.fontSize || "16px",
+              fontFamily: style.fontFamily || "Arial",
+              whiteSpace: style.whiteSpace || "normal",
+              wordWrap: style.wordWrap || "break-word",
+              textAlign: "center", // Center-align text for full-width elements
+              color,
+            };
+          }          
+  
+          if (id === "CTAElement") {
+            const bgColor = style.backgroundColor
+              ? `rgb(${style.backgroundColor.join(",")})`
+              : "#007BFF"; // Default to blue if missing
+            updatedElement.style = {
+              ...updatedElement.style,
+              backgroundColor: bgColor,
+              padding: style.padding || "10px",
+              borderRadius: style.borderRadius || "5px",
+            };
           }
-        ];
-
-        // Add background element to the elements list
-        setElements([bgElement, ...responseElements]);
-        setLoading(false);
-
+  
+          return updatedElement;
+        });
+  
+        setElements(processedElements); // Set elements in state
+        setLoading(false); // Loading complete
       } catch (error) {
         console.error("Failed to fetch product details.", error);
       }
     };
-
+  
     fetchProductDetails();
   }, [productID]);
+  
 
   useEffect(() => {
     if (activeElement && activeElement.style) {
@@ -951,22 +918,36 @@ export default function EditTemplate() {
                     if (e.target === templateRef.current || e.target === templateContainerRef.current) {
                       setSelectedElementIndex(0); // Select the background
                     }
-                  }}
-                  style={{
+                  }}style={{
                     height: `${imageLayoutSize * zoom}px`,
                     width: `${imageLayoutSize * zoom}px`,
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    background: elements[0]?.bgImageURL
-                      ? `url(${elements[0].bgImageURL})`
-                      : elements[0]?.style?.backgroundColor || 'transparent',
-                    backgroundSize: "cover",
+                    
+                    // Apply gradient or image correctly
+                    backgroundImage: elements[0]?.style?.backgroundColor?.includes('gradient')
+                      ? elements[0].style.backgroundColor // Use gradient directly
+                      : elements[0]?.style?.backgroundImage
+                      ? `url(${elements[0].style.backgroundImage.replace('url(', '').replace(')', '')})`
+                      : 'none', // No image or gradient, default to none
+                    
+                    // Apply solid color when no gradient or image is present
+                    backgroundColor: elements[0]?.style?.backgroundColor?.includes('gradient')
+                      ? 'transparent' // Avoid overlap if a gradient is applied
+                      : elements[0]?.style?.backgroundColor || 'transparent', // Use solid color if available
+                  
+                    backgroundBlendMode: elements[0]?.style?.backgroundImage || 
+                      elements[0]?.style?.backgroundColor?.includes('gradient')
+                      ? 'overlay'
+                      : 'normal',
+                  
+                    backgroundSize: elements[0]?.style?.backgroundImage ? 'cover' : 'auto',
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
                     position: "relative",
-                  }}
-                  ref={templateRef}>
+                  }}                
+                    ref={templateRef}>
                   {/* Render each element */}
                   {loading ? (
                     <p>Loading elements...</p>
