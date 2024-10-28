@@ -53,7 +53,7 @@ export default function EditTemplate() {
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0); // Keep track of the active template
   const templateContainerRef = useRef(null); // Ref to the container holding all templates
   const [selectedFrame, setSelectedFrame] = useState(null); // New frame selection
-
+  const [updatedJson, setUpdatedJson] = useState(null); // Store the updated JSON
   const templateRef = useRef();
   const elementRefs = useRef([]); // Refs for elements
   const location = useLocation();
@@ -67,12 +67,15 @@ export default function EditTemplate() {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
+  
         const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
   
         const data = response.data;
-        const imageContent = JSON.parse(data.imageContent); // Parse the imageContent JSON string
+        setUpdatedJson(data); // Ensure updatedJson is set correctly
+  
+        const imageContent = JSON.parse(data.imageContent);
         const { elements, imagelayoutsize } = imageContent;
   
         const layoutSize = imagelayoutsize
@@ -80,7 +83,6 @@ export default function EditTemplate() {
           : 1080;
         setImageLayoutSize(layoutSize);
   
-        // Process elements to set appropriate properties
         const processedElements = elements.map((element) => {
           const { type, position, size, style = {}, zIndex, id, src, content } = element;
   
@@ -89,68 +91,49 @@ export default function EditTemplate() {
             type,
             position: { x: position?.x || 0, y: position?.y || 0 },
             size: {
-              width: size?.width || (type === "text" ? "100%" : 100), // Full width for text if not specified
-              height: size?.height || (type === "text" ? "auto" : 100), // Auto height for text
+              width: size?.width || (type === "text" ? "100%" : 100),
+              height: size?.height || (type === "text" ? "auto" : 100),
             },
-            style: {
-              zIndex: zIndex || 1,
-            },
+            style: { zIndex: zIndex || 1 },
           };
   
-          // Handle element types specifically
           if (type === "background") {
             updatedElement.style = {
-            ...updatedElement.style,
-            backgroundImage: style.background
-              ? `url(${style.background})`
-              : "none", // Ensure url() is used correctly
-            // backgroundColor: style.backgroundColor || "", // Linear gradient color (commented)
-            backgroundSize: style.backgroundSize || "cover",
-            backgroundPosition: style.backgroundPosition || "center",
-            backgroundRepeat: style.backgroundRepeat || "no-repeat",
-            opacity: style.opacity || 1,
-          };
+              ...updatedElement.style,
+              backgroundImage: style.background && style.background !== 'none' 
+              ? style.background
+              : "none", // Set to 'none' if no valid background image
+        backgroundColor: !style.background || style.background === 'none'
+              ? style.backgroundColor || 'transparent'
+              : 'transparent', // Use transparent if backgroundImage exists
+        backgroundSize: style.backgroundSize || "cover",
+              backgroundPosition: style.backgroundPosition || "center",
+              backgroundRepeat: style.backgroundRepeat || "no-repeat",
+              opacity: style.opacity || 1,
+            };
           } else if (type === "image") {
             updatedElement.src = src;
-          }else if (type === "text") {
-            const color = style.color ? `rgb(${style.color.join(",")})` : "#000000"; // Fallback to black if color is missing
+          } else if (type === "text") {
+            const color = Array.isArray(style.color)
+              ? `rgb(${style.color.join(",")})`
+              : style.color || "#000000";
             updatedElement.content = content;
-          
-            // If the element is the description, split the content by "-"
-            if (id === "descriptionElement") {
-              // Split the content by "-" and filter out any empty strings
-              const lines = content.split('-').map((line) => line.trim()).filter((line) => line);
-          
-              // Format the lines as spans with <br /> to maintain consistent positioning
-              updatedElement.contentFormatted = (
-                <div style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>
-                  {lines.map((line, index) => (
-                    <span key={index}>
-                      - {line}
-                      <br />
-                    </span>
-                  ))}
-                </div>
-              );
-            } else {
-              updatedElement.contentFormatted = content;
-            }
-          
+  
             updatedElement.style = {
               ...updatedElement.style,
               fontSize: style.fontSize || "16px",
               fontFamily: style.fontFamily || "Arial",
               whiteSpace: style.whiteSpace || "normal",
               wordWrap: style.wordWrap || "break-word",
-              textAlign: "center", // Center-align text for full-width elements
+              textAlign: "center",
               color,
             };
-          }          
+          }
   
           if (id === "CTAElement") {
-            const bgColor = style.backgroundColor
+            const bgColor = Array.isArray(style.backgroundColor)
               ? `rgb(${style.backgroundColor.join(",")})`
-              : "#007BFF"; // Default to blue if missing
+              : style.backgroundColor || "#007BFF";
             updatedElement.style = {
               ...updatedElement.style,
               backgroundColor: bgColor,
@@ -162,7 +145,7 @@ export default function EditTemplate() {
           return updatedElement;
         });
   
-        setElements(processedElements); // Set elements in state
+        setElements(processedElements); // Ensure elements are set properly
         setLoading(false); // Loading complete
       } catch (error) {
         console.error("Failed to fetch product details.", error);
@@ -171,6 +154,7 @@ export default function EditTemplate() {
   
     fetchProductDetails();
   }, [productID]);
+  
   
 
   useEffect(() => {
@@ -547,89 +531,206 @@ export default function EditTemplate() {
     }
   };
 
-  // Function to handle Save and Export
   const handleExport = async () => {
-    generateNewElementsJSON(); // Generate JSON when exporting
     try {
-      setSelectedElementIndex(null); // Deselect any selected elements
+      generateNewElementsJSON(); // Generate the latest JSON
+  
+      setSelectedElementIndex(null); // Clear selection
+  
       const node = templateRef.current;
-
-      const originalZoom = zoom; // Store the original zoom value
-      setZoom(1); // Set zoom to 1 for capturing the original size
-
-      setTimeout(async () => {
-        const dataUrl = await domtoimage.toPng(node, {
-          width: imageLayoutSize,
-          height: imageLayoutSize,
-          style: {
-            transformOrigin: '0 0',
-          },
-          cacheBust: true,
-        });
-
-        navigate('/preview', { state: { image: dataUrl } }); // Navigate to preview
-
-        setZoom(originalZoom); // Restore the original zoom
-      }, 100); // Adjust the timeout as needed
+  
+      const dataUrl = await domtoimage.toPng(node, {
+        width: node.offsetWidth,
+        height: node.offsetHeight,
+        cacheBust: true,
+        style: {
+          backgroundImage: node.style.background,
+        },
+      });
+  
+      if (!updatedJson) {
+        throw new Error("Updated JSON is missing or null.");
+      }
+  
+      const existingContent = updatedJson.imageContent
+        ? JSON.parse(updatedJson.imageContent)
+        : {};
+  
+      const updatedElements = elements.map((element) => {
+        if (element.id === "bgElement") {
+          const { backgroundImage, backgroundColor } = element.style || {};
+  
+          return {
+            ...element,
+            style: {
+              ...element.style,
+              backgroundImage: backgroundImage || "none", // Ensure it's not undefined
+              backgroundColor: backgroundColor || "transparent", // Use transparent if no color is set
+              backgroundSize: element.style.backgroundSize || "cover",
+              backgroundPosition: element.style.backgroundPosition || "center",
+              backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
+              opacity: element.style.opacity ?? 1,
+            },
+          };
+        }
+        return element;
+      });
+  
+      const newImageContent = {
+        ...existingContent,
+        elements: updatedElements, // Merge updated elements
+      };
+  
+      const updatedContent = {
+        ...updatedJson,
+        imageContent: JSON.stringify(newImageContent),
+        updatedAt: new Date().toISOString(),
+      };
+  
+      console.log("Prepared content for review:", updatedContent);
+  
+      // Pass the generated image and updated JSON to PreviewTemplate
+      navigate("/preview", {
+        state: { image: dataUrl, json: updatedContent, productID },
+      });
+  
     } catch (error) {
-      console.error('Failed to generate image from template:', error);
+      console.error("Failed to prepare export content:", error);
     }
   };
-
-  // Function to handle Save and Next
+  
+  
+  useEffect(() => {
+    if (location.state?.json) {
+      const restoredJson = location.state.json;
+      setUpdatedJson(restoredJson); // Set the restored JSON
+  
+      const restoredElements = restoredJson.imageContent
+        ? JSON.parse(restoredJson.imageContent).elements
+        : [];
+  
+      setElements(restoredElements); // Render the elements from the restored JSON
+    }
+  }, [location.state]);
+  
+  
   const handleSaveAndNext = async () => {
     try {
+      generateNewElementsJSON(); // Generate the latest JSON
+      console.log("New elements JSON generated:", elements);
+  
       setSelectedElementIndex(null);
+  
       const node = templateRef.current;
-
-      // Generate the image using dom-to-image similar to handleExport
+  
       const dataUrl = await domtoimage.toPng(node, {
-        width: node.offsetWidth, // Capture the full width of the node
-        height: node.offsetHeight, // Capture the full height of the node
-        style: {
-          transformOrigin: '0 0', // Ensure the full content is captured, not just top left
-        },
-        cacheBust: true, // Ensure the image is not cached
+        width: node.offsetWidth,
+        height: node.offsetHeight,
+        cacheBust: true,
       });
-
-      // Navigate to CustomSample and pass the generated image as a base64 string
-      navigate('/CustomSample', {
-        state: { image: dataUrl }, // Pass the generated image to the CustomSample page
+  
+      if (!updatedJson) {
+        throw new Error("Updated JSON is missing or null.");
+      }
+  
+      const existingContent = updatedJson.imageContent
+        ? JSON.parse(updatedJson.imageContent)
+        : {};
+  
+      console.log("Existing content:", existingContent);
+  
+      const updatedElements = elements.map((element) => {
+        if (element.id === "bgElement") {
+          return {
+            ...element,
+            style: {
+              ...element.style,
+              backgroundImage: element.style.backgroundImage || "none",
+              backgroundSize: element.style.backgroundSize || "cover",
+              backgroundPosition: element.style.backgroundPosition || "center",
+              backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
+              opacity: element.style.opacity ?? 1,
+            },
+          };
+        }
+        return element;
+      });
+  
+      const newImageContent = {
+        ...existingContent,
+        elements: updatedElements, // Merge updated elements
+      };
+  
+      const updatedContent = {
+        ...updatedJson,
+        imageContent: JSON.stringify(newImageContent),
+        updatedAt: new Date().toISOString(),
+      };
+  
+      console.log("Updated content for POST:", updatedContent);
+  
+      await axios.post(`${baseUrl}/generated-images`, updatedContent, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
+  
+      console.log("Template updated successfully!");
+  
+      navigate("/CustomSample", {
+        state: { image: dataUrl },
       });
     } catch (error) {
-      console.error("Failed to generate image from template:", error);
+      console.error("Failed to update the template:", error);
     }
   };
+  
+  
 
   const generateNewElementsJSON = () => {
     const newElementsJSON = elements.map((element) => {
-      const elementJSON = {
-        id: element.id,
+      // Ensure the name and ID are correctly assigned based on the type
+      let uniqueId = element.id;
+      let uniqueName = element.name;
+      const timestamp = Date.now();
+  
+      // Generate new IDs only for new shapes, SVGs, and frames
+      if (element.type === "shape") {
+        uniqueId = `shapeElement`;
+        uniqueName = `shape-${timestamp}`;
+      } else if (element.type === "svg") {
+        uniqueId = `svgElement`;
+        uniqueName = `svg-${timestamp}`;
+      } else if (element.type === "frame") {
+        uniqueId = `frameElement`;
+        uniqueName = `frame-${timestamp}`;
+      }
+  
+      // Handle bgElement: remove backgroundImage if backgroundColor is present
+      if (element.id === "bgElement" && element.style?.backgroundColor) {
+        const { backgroundImage, ...updatedStyle } = element.style; // Exclude backgroundImage
+        element.style = updatedStyle; // Update style without backgroundImage
+      }
+  
+      return {
+        id: uniqueId,
+        name: uniqueName,
         type: element.type,
-        name: element.name, // Include the unique name
         position: element.position,
         size: element.size,
         style: element.style,
-        zIndex: element.style?.zIndex || 1,
+        src: element.src,
+        content: element.content,
       };
-
-      if (element.type === "svg") {
-        elementJSON.fillColor = element.fillColor;
-        elementJSON.opacity = element.style.opacity;
-      } else if (element.type === "frame") {
-        elementJSON.frameType = element.frameType;
-        elementJSON.content = element.content;
-      } else if (element.type === "text") {
-        elementJSON.content = element.content;
-      } else if (element.type === "image") {
-        elementJSON.src = element.src;
-      }
-
-      return elementJSON;
     });
-
-    console.log(JSON.stringify(newElementsJSON, null, 2));
+  
+    const updatedContent = {
+      ...updatedJson, // Merge with existing JSON
+      elements: newElementsJSON, // Update elements
+    };
+  
+    setUpdatedJson(updatedContent); // Store updated JSON
+    console.log("Updated JSON:", JSON.stringify(updatedContent, null, 2));
   };
+  
 
 
   // Function to handle Delete Element
@@ -918,7 +1019,9 @@ export default function EditTemplate() {
                     if (e.target === templateRef.current || e.target === templateContainerRef.current) {
                       setSelectedElementIndex(0); // Select the background
                     }
-                  }}style={{
+                  }}
+                  
+                  style={{
                     height: `${imageLayoutSize * zoom}px`,
                     width: `${imageLayoutSize * zoom}px`,
                     display: "flex",
