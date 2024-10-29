@@ -661,7 +661,6 @@ const processElements = (elements) => {
       setSelectedElementIndex(null);
   
       const node = templateRef.current;
-  
       const dataUrl = await domtoimage.toPng(node, {
         width: node.offsetWidth,
         height: node.offsetHeight,
@@ -672,58 +671,78 @@ const processElements = (elements) => {
         throw new Error("Updated JSON is missing or null.");
       }
   
-      const existingContent = updatedJson.imageContent
-        ? JSON.parse(updatedJson.imageContent)
-        : {};
+      // Convert the image data URL to a blob
+      const blob = await (await fetch(dataUrl)).blob();
+      const formData = new FormData();
+      formData.append("file", blob, "template_image.png"); // Attach the image as 'file'
   
-      console.log("Existing content:", existingContent);
+      console.log("FormData:", formData);
   
-      const updatedElements = elements.map((element) => {
-        if (element.id === "bgElement") {
-          return {
-            ...element,
-            style: {
-              ...element.style,
-              backgroundImage: element.style.backgroundImage || undefined,
-              backgroundColor: element.style.backgroundColor || undefined,
-              backgroundSize: element.style.backgroundSize || "cover",
-              backgroundPosition: element.style.backgroundPosition || "center",
-              backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
-              opacity: element.style.opacity ?? 1,
-            },
-          };
+      // Upload the image to the server
+      const uploadResponse = await axios.post(
+        `${baseUrl}/sparkiq/image/upload?customerId=123`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "multipart/form-data",
+          },
         }
-        return element;
-      });
+      );
   
-      const newImageContent = {
-        ...existingContent,
-        elements: updatedElements, // Merge updated elements
-      };
+      if (uploadResponse.status === 201) {
+        console.log("Image uploaded successfully");
   
-      const updatedContent = {
-        ...updatedJson,
-        imageContent: JSON.stringify(newImageContent),
-        updatedAt: new Date().toISOString(),
-      };
+        const uploadedImageUrl = uploadResponse.data.data.url; // Extract the uploaded image URL
   
-      console.log("Updated content for POST:", updatedContent);
+        // Parse the imageContent from the updated JSON
+        let existingContent = updatedJson.imageContent
+          ? JSON.parse(updatedJson.imageContent)
+          : {};
   
-      await axios.post(`${baseUrl}/generated-images`, updatedContent, {
-        headers: { Authorization: `Bearer ${jwtToken}` },
-      });
+        // Replace the generatedImage URL in the parsed content
+        existingContent.generatedImage = uploadedImageUrl;
   
-      console.log("Template updated successfully!");
+        // Update the JSON object with the modified imageContent
+        const newImageContent = {
+          ...existingContent,
+          elements: elements, // Ensure elements are up-to-date
+        };
   
-      navigate("/CustomSample", {
-        state: { image: dataUrl },
-      });
+        const updatedContent = {
+          ...updatedJson,
+          imageContent: JSON.stringify(newImageContent), // Stringify the updated content
+          generatedImage: uploadedImageUrl, // Update the top-level generatedImage field
+          updatedAt: new Date().toISOString(),
+        };
+  
+        console.log("Updated content for POST:", updatedContent);
+  
+        // Post the updated JSON content to the server
+        await axios.post(`${baseUrl}/generated-images`, updatedContent, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
+  
+        console.log("Template updated successfully!");
+  
+        // Navigate to the next page with the generated image data
+        navigate("/CustomSample", {
+          state: { image: dataUrl },
+        });
+      } else {
+        throw new Error("Image upload failed.");
+      }
     } catch (error) {
+      if (error.response) {
+        console.error("Server Error:", error.response.data);
+      } else if (error.request) {
+        console.error("Network Error:", error.request);
+      } else {
+        console.error("Error:", error.message);
+      }
       console.error("Failed to update the template:", error);
     }
   };
-  
-  
 
   const generateNewElementsJSON = () => {
     const newElementsJSON = elements.map((element) => {
