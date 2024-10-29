@@ -533,66 +533,72 @@ export default function EditTemplate() {
 
   const handleExport = async () => {
     try {
-      generateNewElementsJSON(); // Generate the latest JSON
   
       setSelectedElementIndex(null); // Clear selection
   
       const node = templateRef.current;
   
-      const dataUrl = await domtoimage.toPng(node, {
-        width: node.offsetWidth,
-        height: node.offsetHeight,
-        cacheBust: true,
-        style: {
-          backgroundImage: node.style.background,
-        },
-      });
+      const originalZoom = zoom; // Store the original zoom value
+      setZoom(1); // Set zoom to 1 for capturing the original size
   
-      if (!updatedJson) {
-        throw new Error("Updated JSON is missing or null.");
-      }
+      setTimeout(async () => {
+        const dataUrl = await domtoimage.toPng(node, {
+          width: imageLayoutSize, // Use specific image layout size
+          height: imageLayoutSize,
+          style: {
+            transformOrigin: '0 0',
+          },
+          cacheBust: true,
+        });
   
-      const existingContent = updatedJson.imageContent
-        ? JSON.parse(updatedJson.imageContent)
-        : {};
-  
-      const updatedElements = elements.map((element) => {
-        if (element.id === "bgElement") {
-          const { backgroundImage, backgroundColor } = element.style || {};
-  
-          return {
-            ...element,
-            style: {
-              ...element.style,
-              backgroundImage: backgroundImage || "none", // Ensure it's not undefined
-              backgroundColor: backgroundColor || "transparent", // Use transparent if no color is set
-              backgroundSize: element.style.backgroundSize || "cover",
-              backgroundPosition: element.style.backgroundPosition || "center",
-              backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
-              opacity: element.style.opacity ?? 1,
-            },
-          };
+        if (!updatedJson) {
+          throw new Error("Updated JSON is missing or null.");
         }
-        return element;
-      });
   
-      const newImageContent = {
-        ...existingContent,
-        elements: updatedElements, // Merge updated elements
-      };
+        const existingContent = updatedJson.imageContent
+          ? JSON.parse(updatedJson.imageContent)
+          : {};
   
-      const updatedContent = {
-        ...updatedJson,
-        imageContent: JSON.stringify(newImageContent),
-        updatedAt: new Date().toISOString(),
-      };
+        const updatedElements = elements.map((element) => {
+          if (element.id === "bgElement") {
+            const { backgroundImage, backgroundColor } = element.style || {};
   
-      console.log("Prepared content for review:", updatedContent);
+            return {
+              ...element,
+              style: {
+                ...element.style,
+                backgroundImage: backgroundImage || "none", // Ensure it's not undefined
+                backgroundColor: backgroundColor || "transparent", // Use transparent if no color is set
+                backgroundSize: element.style.backgroundSize || "cover",
+                backgroundPosition: element.style.backgroundPosition || "center",
+                backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
+                opacity: element.style.opacity ?? 1,
+              },
+            };
+          }
+          return element;
+        });
   
-      // Pass the generated image and updated JSON to PreviewTemplate
-      navigate("/preview", {
-        state: { image: dataUrl, json: updatedContent, productID },
-      });
+        const newImageContent = {
+          ...existingContent,
+          elements: updatedElements, // Merge updated elements
+        };
+  
+        const updatedContent = {
+          ...updatedJson,
+          imageContent: JSON.stringify(newImageContent),
+          updatedAt: new Date().toISOString(),
+        };
+  
+        console.log("Prepared content for review:", updatedContent);
+  
+        // Pass the generated image and updated JSON to PreviewTemplate
+        navigate("/preview", {
+          state: { image: dataUrl, json: updatedContent, productID },
+        });
+  
+        setZoom(originalZoom); // Restore the original zoom
+      }, 100); // Adjust the timeout as needed
   
     } catch (error) {
       console.error("Failed to prepare export content:", error);
