@@ -60,102 +60,135 @@ export default function EditTemplate() {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
+  const [hasUsedRestoredJson, setHasUsedRestoredJson] = useState(false); // New state variable
+  
 
   useEffect(() => {
-    const fetchProductDetails = async () => {
-      try {
-        if (!jwtToken) {
-          throw new Error("No JWT token found. Please log in.");
-        }
-  
-        const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        });
-  
-        const data = response.data;
-        setUpdatedJson(data); // Ensure updatedJson is set correctly
-  
-        const imageContent = JSON.parse(data.imageContent);
-        const { elements, imagelayoutsize } = imageContent;
-  
-        const layoutSize = imagelayoutsize
-          ? parseInt(imagelayoutsize.split("*")[0])
-          : 1080;
-        setImageLayoutSize(layoutSize);
-  
-        const processedElements = elements.map((element) => {
-          const { type, position, size, style = {}, zIndex, id, src, content } = element;
-  
-          let updatedElement = {
-            id,
-            type,
-            position: { x: position?.x || 0, y: position?.y || 0 },
-            size: {
-              width: size?.width || (type === "text" ? "100%" : 100),
-              height: size?.height || (type === "text" ? "auto" : 100),
-            },
-            style: { zIndex: zIndex || 1 },
-          };
-  
-          if (type === "background") {
-            updatedElement.style = {
-              ...updatedElement.style,
-              backgroundImage: style.background && style.background !== 'none' 
-              ? style.background
-              : "none", // Set to 'none' if no valid background image
-        backgroundColor: !style.background || style.background === 'none'
-              ? style.backgroundColor || 'transparent'
-              : 'transparent', // Use transparent if backgroundImage exists
-        backgroundSize: style.backgroundSize || "cover",
-              backgroundPosition: style.backgroundPosition || "center",
-              backgroundRepeat: style.backgroundRepeat || "no-repeat",
-              opacity: style.opacity || 1,
-            };
-          } else if (type === "image") {
-            updatedElement.src = src;
-          } else if (type === "text") {
-            const color = Array.isArray(style.color)
-              ? `rgb(${style.color.join(",")})`
-              : style.color || "#000000";
-            updatedElement.content = content;
-  
-            updatedElement.style = {
-              ...updatedElement.style,
-              fontSize: style.fontSize || "16px",
-              fontFamily: style.fontFamily || "Arial",
-              whiteSpace: style.whiteSpace || "normal",
-              wordWrap: style.wordWrap || "break-word",
-              textAlign: "center",
-              color,
-            };
-          }
-  
-          if (id === "CTAElement") {
-            const bgColor = Array.isArray(style.backgroundColor)
-              ? `rgb(${style.backgroundColor.join(",")})`
-              : style.backgroundColor || "#007BFF";
-            updatedElement.style = {
-              ...updatedElement.style,
-              backgroundColor: bgColor,
-              padding: style.padding || "10px",
-              borderRadius: style.borderRadius || "5px",
-            };
-          }
-  
-          return updatedElement;
-        });
-  
-        setElements(processedElements); // Ensure elements are set properly
-        setLoading(false); // Loading complete
-      } catch (error) {
-        console.error("Failed to fetch product details.", error);
+  const fetchProductDetails = async () => {
+    try {
+      if (!jwtToken) {
+        throw new Error("No JWT token found. Please log in.");
       }
-    };
-  
+
+      const response = await axios.get(`${baseUrl}/generated-images/${productID}`, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
+
+      const data = response.data;
+      setUpdatedJson(data); // Ensure updatedJson is set correctly
+
+      const imageContent = JSON.parse(data.imageContent);
+      const { elements, imagelayoutsize } = imageContent;
+
+      const layoutSize = imagelayoutsize
+        ? parseInt(imagelayoutsize.split("*")[0])
+        : 1080;
+      setImageLayoutSize(layoutSize);
+
+      const processedElements = processElements(elements);
+
+      setElements(processedElements); // Ensure elements are set properly
+      setLoading(false); // Loading complete
+    } catch (error) {
+      console.error("Failed to fetch product details.", error);
+    }
+  };
+
+  // Check if there is restored JSON in location.state
+  if (location.state?.json) {
+    const restoredJson = location.state.json;
+    setUpdatedJson(restoredJson); // Set the restored JSON
+
+    const restoredElements = restoredJson.imageContent
+      ? JSON.parse(restoredJson.imageContent).elements
+      : [];
+
+    setElements(restoredElements); // Render the elements from the restored JSON
+    setLoading(false); // Loading complete
+  } else {
+    // If no restored JSON, fetch from server
     fetchProductDetails();
-  }, [productID]);
-  
-  
+  }
+}, [productID, location.state]);
+
+// Helper function to process elements
+const processElements = (elements) => {
+  return elements.map((element) => {
+    const { type, position, size, style = {}, zIndex, id, src, content } = element;
+
+    let updatedElement = {
+      id,
+      type,
+      position: { x: position?.x || 0, y: position?.y || 0 },
+      size: {
+        width: size?.width || (type === "text" ? "100%" : 100),
+        height: size?.height || (type === "text" ? "auto" : 100),
+      },
+      style: { zIndex: zIndex || 1 },
+    };
+    if (type === "background") {
+      // Determine the background image source
+      let backgroundImage = 'none';
+      if (style.backgroundImage && style.backgroundImage !== 'none') {
+        backgroundImage = style.backgroundImage;
+      } else if (style.background && style.background !== 'none') {
+        backgroundImage = style.background;
+      }
+
+      // Determine the background color
+      let backgroundColor = 'transparent';
+      if (backgroundImage === 'none' || !backgroundImage) {
+        // No background image, use background color if available
+        backgroundColor = style.backgroundColor || 'transparent';
+      } else {
+        // Background image exists, set background color to 'transparent'
+        backgroundColor = 'transparent';
+      }
+
+      updatedElement.style = {
+        ...updatedElement.style,
+        backgroundImage,
+        backgroundColor,
+        backgroundSize: style.backgroundSize || 'cover',
+        backgroundPosition: style.backgroundPosition || 'center',
+        backgroundRepeat: style.backgroundRepeat || 'no-repeat',
+        opacity: style.opacity || 1,
+      };
+    } else if (type === "image") {
+      updatedElement.src = src;
+    } else if (type === "text") {
+      const color = Array.isArray(style.color)
+        ? `rgb(${style.color.join(",")})`
+        : style.color || "#000000";
+      updatedElement.content = content;
+
+      updatedElement.style = {
+        ...updatedElement.style,
+        fontSize: style.fontSize || "16px",
+        fontFamily: style.fontFamily || "Arial",
+        whiteSpace: style.whiteSpace || "normal",
+        wordWrap: style.wordWrap || "break-word",
+        textAlign: "center",
+        color,
+      };
+    }
+
+    if (id === "CTAElement") {
+      const bgColor = Array.isArray(style.backgroundColor)
+        ? `rgb(${style.backgroundColor.join(",")})`
+        : style.backgroundColor || "#007BFF";
+      updatedElement.style = {
+        ...updatedElement.style,
+        backgroundColor: bgColor,
+        padding: style.padding || "10px",
+        borderRadius: style.borderRadius || "5px",
+      };
+    }
+
+    return updatedElement;
+  });
+};
+
 
   useEffect(() => {
     if (activeElement && activeElement.style) {
@@ -651,7 +684,8 @@ export default function EditTemplate() {
             ...element,
             style: {
               ...element.style,
-              backgroundImage: element.style.backgroundImage || "none",
+              backgroundImage: element.style.backgroundImage || undefined,
+              backgroundColor: element.style.backgroundColor || undefined,
               backgroundSize: element.style.backgroundSize || "cover",
               backgroundPosition: element.style.backgroundPosition || "center",
               backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
@@ -697,7 +731,7 @@ export default function EditTemplate() {
       let uniqueId = element.id;
       let uniqueName = element.name;
       const timestamp = Date.now();
-  
+
       // Generate new IDs only for new shapes, SVGs, and frames
       if (element.type === "shape") {
         uniqueId = `shapeElement`;
@@ -709,13 +743,32 @@ export default function EditTemplate() {
         uniqueId = `frameElement`;
         uniqueName = `frame-${timestamp}`;
       }
-  
-      // Handle bgElement: remove backgroundImage if backgroundColor is present
-      if (element.id === "bgElement" && element.style?.backgroundColor) {
-        const { backgroundImage, ...updatedStyle } = element.style; // Exclude backgroundImage
-        element.style = updatedStyle; // Update style without backgroundImage
+
+      // Check if the element is the background element
+    if (element.id === "bgElement" || element.type === "background") {
+      // Get the original background element from updatedJson
+      const existingContent = updatedJson.imageContent
+        ? JSON.parse(updatedJson.imageContent)
+        : {};
+      const originalElements = existingContent.elements || [];
+      const originalBgElement = originalElements.find(
+        (el) => el.id === element.id || el.type === "background"
+      );
+
+      // Get the original and current background colors
+      const originalBgColor = originalBgElement?.style?.backgroundColor || "";
+      const currentBgColor = element.style.backgroundColor || "";
+
+      // If the backgroundColor has changed, and is not 'transparent', set backgroundImage to null
+      if (
+        originalBgColor !== currentBgColor &&
+        currentBgColor !== "transparent"
+      ) {
+        element.style.backgroundImage = null;
       }
-  
+    }
+
+
       return {
         id: uniqueId,
         name: uniqueName,
@@ -727,16 +780,16 @@ export default function EditTemplate() {
         content: element.content,
       };
     });
-  
+
     const updatedContent = {
       ...updatedJson, // Merge with existing JSON
       elements: newElementsJSON, // Update elements
     };
-  
+
     setUpdatedJson(updatedContent); // Store updated JSON
     console.log("Updated JSON:", JSON.stringify(updatedContent, null, 2));
   };
-  
+
 
 
   // Function to handle Delete Element
