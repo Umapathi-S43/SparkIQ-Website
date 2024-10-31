@@ -160,6 +160,8 @@ const processElements = (elements) => {
       const color = Array.isArray(style.color)
         ? `rgb(${style.color.join(",")})`
         : style.color || "#000000";
+        const backgroundColor = style.backgroundColor || "transparent";
+
       updatedElement.content = content;
 
       updatedElement.style = {
@@ -169,7 +171,10 @@ const processElements = (elements) => {
         whiteSpace: style.whiteSpace || "normal",
         wordWrap: style.wordWrap || "break-word",
         textAlign: "center",
-        color,
+        color, 
+        backgroundColor: style.backgroundColor || "transparent", // Default to transparent if not provided
+        ...style, // Spread all other styles from the `style` object
+    
       };
     }
 
@@ -566,78 +571,116 @@ const processElements = (elements) => {
 
   const handleExport = async () => {
     try {
+        setSelectedElementIndex(null); // Clear selection
+
+        const node = templateRef.current;
+        const originalZoom = zoom; // Store the original zoom value
+        setZoom(1); // Set zoom to 1 for capturing the original size
+
+        setTimeout(async () => {
+            // Generate the latest JSON
+            generateNewElementsJSON();
+            console.log("New elements JSON generated:", elements);
+
+            const dataUrl = await domtoimage.toPng(node, {
+                width: imageLayoutSize, // Use specific image layout size
+                height: imageLayoutSize,
+                style: {
+                    transformOrigin: '0 0',
+                },
+                cacheBust: true,
+            });
+
+            if (!updatedJson) {
+                throw new Error("Updated JSON is missing or null.");
+            }
+
+            // Convert the image data URL to a blob
+            const blob = await (await fetch(dataUrl)).blob();
+            const formData = new FormData();
+            formData.append("file", blob, "template_image.png"); // Attach the image as 'file'
+            console.log("FormData:", formData);
+
+            // Upload the image to the server
+            const uploadResponse = await axios.post(
+                `${baseUrl}/sparkiq/image/upload?customerId=123`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${jwtToken}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+
+            if (uploadResponse.status === 201) {
+                console.log("Image uploaded successfully");
+
+                const uploadedImageUrl = uploadResponse.data.data.url; // Extract the uploaded image URL
+
+                // Parse the imageContent from the updated JSON
+                let existingContent = updatedJson.imageContent
+                    ? JSON.parse(updatedJson.imageContent)
+                    : {};
+
+                // Update elements with additional properties for bgElement, if needed
+                const updatedElements = elements.map((element) => {
+                    if (element.id === "bgElement") {
+                        const { backgroundImage, backgroundColor } = element.style || {};
+                        return {
+                            ...element,
+                            style: {
+                                ...element.style,
+                                backgroundImage: backgroundImage || "none",
+                                backgroundColor: backgroundColor || "transparent",
+                                backgroundSize: element.style.backgroundSize || "cover",
+                                backgroundPosition: element.style.backgroundPosition || "center",
+                                backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
+                                opacity: element.style.opacity ?? 1,
+                            },
+                        };
+                    }
+                    return element;
+                });
+
+                const newImageContent = {
+                    ...existingContent,
+                    elements: updatedElements, // Merge updated elements
+                    generatedImage: uploadedImageUrl, // Set the uploaded image URL
+                };
+
+                const updatedContent = {
+                    ...updatedJson,
+                    imageContent: JSON.stringify(newImageContent),
+                    generatedImage: uploadedImageUrl,
+                    updatedAt: new Date().toISOString(),
+                };
+
+                console.log("Prepared content for review:", updatedContent);
   
-      setSelectedElementIndex(null); // Clear selection
-  
-      const node = templateRef.current;
-  
-      const originalZoom = zoom; // Store the original zoom value
-      setZoom(1); // Set zoom to 1 for capturing the original size
-  
-      setTimeout(async () => {
-        const dataUrl = await domtoimage.toPng(node, {
-          width: imageLayoutSize, // Use specific image layout size
-          height: imageLayoutSize,
-          style: {
-            transformOrigin: '0 0',
-          },
-          cacheBust: true,
-        });
-  
-        if (!updatedJson) {
-          throw new Error("Updated JSON is missing or null.");
-        }
-  
-        const existingContent = updatedJson.imageContent
-          ? JSON.parse(updatedJson.imageContent)
-          : {};
-  
-        const updatedElements = elements.map((element) => {
-          if (element.id === "bgElement") {
-            const { backgroundImage, backgroundColor } = element.style || {};
-  
-            return {
-              ...element,
-              style: {
-                ...element.style,
-                backgroundImage: backgroundImage || "none", // Ensure it's not undefined
-                backgroundColor: backgroundColor || "transparent", // Use transparent if no color is set
-                backgroundSize: element.style.backgroundSize || "cover",
-                backgroundPosition: element.style.backgroundPosition || "center",
-                backgroundRepeat: element.style.backgroundRepeat || "no-repeat",
-                opacity: element.style.opacity ?? 1,
-              },
-            };
-          }
-          return element;
-        });
-  
-        const newImageContent = {
-          ...existingContent,
-          elements: updatedElements, // Merge updated elements
-        };
-  
-        const updatedContent = {
-          ...updatedJson,
-          imageContent: JSON.stringify(newImageContent),
-          updatedAt: new Date().toISOString(),
-        };
-  
-        console.log("Prepared content for review:", updatedContent);
-  
-        // Pass the generated image and updated JSON to PreviewTemplate
-        navigate("/preview", {
-          state: { image: dataUrl, json: updatedContent, productID },
-        });
-  
-        setZoom(originalZoom); // Restore the original zoom
-      }, 100); // Adjust the timeout as needed
-  
+                  // Post the updated JSON content to the server
+                  await axios.post(`${baseUrl}/generated-images`, updatedContent, {
+                    headers: { Authorization: `Bearer ${jwtToken}` },
+                  });
+            
+                  console.log("Template updated successfully!");
+            
+
+                // Pass the generated image and updated JSON to PreviewTemplate
+                navigate("/preview", {
+                    state: { image: dataUrl, json: updatedContent, productID },
+                });
+            }
+
+            setZoom(originalZoom); // Restore the original zoom
+
+        }, 100); // Adjust the timeout as needed
+
     } catch (error) {
-      console.error("Failed to prepare export content:", error);
+        console.error("Failed to prepare export content:", error);
     }
-  };
-  
+};
+
   
   useEffect(() => {
     if (location.state?.json) {
