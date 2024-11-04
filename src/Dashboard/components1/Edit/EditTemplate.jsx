@@ -114,7 +114,7 @@ export default function EditTemplate() {
 // Helper function to process elements
 const processElements = (elements) => {
   return elements.map((element) => {
-    const { type, position, size, style = {}, zIndex, id, src, content } = element;
+    const { type, position, size, style = {}, zIndex, id, src, content,fillColor ,rotation} = element;
 
     let updatedElement = {
       id,
@@ -124,9 +124,21 @@ const processElements = (elements) => {
         width: size?.width || (type === "text" ? "100%" : 100),
         height: size?.height || (type === "text" ? "auto" : 100),
       },
+      rotation: rotation || 0,  // Ensure rotation is preserved
       style: { zIndex: zIndex || 1 },
     };
-    if (type === "background") {
+    if (type === "svg") {
+      updatedElement = {
+        ...updatedElement,
+        component: element.component || "", // Retrieve the SVG markup if available
+        fillColor: fillColor || "#082A66", // Apply fill color
+        style: {
+          ...updatedElement.style,
+          opacity: style.opacity ?? 1,
+        },
+      };
+    }
+      else if (type === "background") {
       // Determine the background image source
       let backgroundImage = 'none';
       if (style.backgroundImage && style.backgroundImage !== 'none') {
@@ -240,13 +252,12 @@ const processElements = (elements) => {
     setElements([...elements, newShapeElement]);
   };
 
-  const handleAddSVG = (svg) => {
-    const uniqueId = `${svg.name}-${Date.now()}`; // Create a unique ID using name and timestamp
-
+  const handleAddSVG = (svgContent, name) => {
     const newSVGElement = {
       type: 'svg',
-      name: uniqueId, // Store the unique name
-      component: svg.component,
+      id: `svgElement-${name}`, // Unique identifier based on the SVG id and timestamp
+      name: name, // Use the provided name in the format `id-timestamp`
+      component: svgContent, // Set SVG content
       position: { x: 50, y: 50 }, // Default position
       size: { width: 200, height: 200 }, // Default size
       rotation: 0, // Initialize rotation
@@ -259,10 +270,10 @@ const processElements = (elements) => {
         zIndex: elements.length + 1, // Set zIndex
       },
     };
-
-    setElements([...elements, newSVGElement]);
+  
+    setElements([...elements, newSVGElement]); // Add the SVG element to the elements array
   };
-
+  
   // Function to handle adding a frame
   const handleFrameSelect = (frame) => {
     const newFrameElement = {
@@ -798,14 +809,31 @@ const processElements = (elements) => {
       if (element.type === "shape") {
         uniqueId = `shapeElement`;
         uniqueName = `shape-${timestamp}`;
-      } else if (element.type === "svg") {
-        uniqueId = `svgElement`;
-        uniqueName = `svg-${timestamp}`;
       } else if (element.type === "frame") {
         uniqueId = `frameElement`;
         uniqueName = `frame-${timestamp}`;
       }
 
+       // Exclude SVG content (component field) while keeping other properties
+    let jsonElement = {
+      id: uniqueId,
+      name: uniqueName,
+      type: element.type,
+      position: element.position,
+      size: element.size,
+      style: element.style,
+      src: element.src,
+      content: element.content,
+    };
+
+ // For SVG elements, keep only essential fields (excluding the component/SVG markup)
+ if (element.type === "svg") {
+  jsonElement = {
+    ...jsonElement,
+    fillColor: element.fillColor, // Keep fill color
+    svgId: element.name, // Use a unique identifier for the SVG
+  };
+}
       // Check if the element is the background element
     if (element.id === "bgElement" || element.type === "background") {
       // Get the original background element from updatedJson
@@ -840,6 +868,7 @@ const processElements = (elements) => {
         style: element.style,
         src: element.src,
         content: element.content,
+   
       };
     });
 
@@ -1304,8 +1333,18 @@ const processElements = (elements) => {
                                   {element.component} {/* Render the shape component */}
                                 </div>
                               ) : element.type === "svg" ? (
-                                element.component(element.fillColor, element.style.opacity ?? 1) // Pass fill color and opacity
-                              ) : element.type === "frame" ? (
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                      __html: element.component.replace(/fill=".*?"/g, `fill="${element.fillColor}"`),
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      opacity: element.style.opacity,
+
+                                    }}
+                                  />
+                                 ) : element.type === "frame" ? (
                                 <div
                                   className="frame"
                                   key={index}
