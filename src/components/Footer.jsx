@@ -14,7 +14,7 @@ const Footer = () => {
 			</div>
 			<div className="w-full md:w-1/2 flex flex-col md:flex-row justify-between text-center md:text-left">
 				<div className="flex flex-col gap-3 md:gap-6 mb-4 md:mb-0">
-					<Link to="#" className="font-bold">
+					{/* <Link to="#" className="font-bold">
 						About
 					</Link>
 					<Link to="#" className="text-sm">
@@ -22,7 +22,7 @@ const Footer = () => {
 					</Link>
 					<Link to="#" className="text-sm">
 						Success Story
-					</Link>
+					</Link> */}
 				</div>
 				<div className="flex flex-col gap-3 md:gap-6 mb-4 md:mb-0 sm:mr-4">
 					<Link to="#" className="font-bold">

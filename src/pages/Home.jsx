@@ -15,7 +15,7 @@ const Home = () => {
 			<Hero />
 			<div className="px-[6rem]">
 				<InfoSection />
-				<AboutSection />
+				{/* <AboutSection /> */}
 				<Features />
 				{/* <Pricing /> */}
 				<Community/>
