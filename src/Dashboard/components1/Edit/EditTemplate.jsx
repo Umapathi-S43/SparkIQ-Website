@@ -597,6 +597,12 @@ const processElements = (elements) => {
 
   const handleExport = async () => {
     try {
+      // Clear active states before exporting
+    setSelectedElementIndex(null); // Clear selection
+    setActiveComponent(null); // Clear active component
+    setActiveMenu(null); // Clear active design menu
+    setTooltip({ ...tooltip, visible: false }); // Hide tooltip
+
         setSelectedElementIndex(null); // Clear selection
 
         const node = templateRef.current;

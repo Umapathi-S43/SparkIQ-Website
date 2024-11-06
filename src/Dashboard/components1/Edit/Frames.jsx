@@ -21,6 +21,12 @@ const FramesComponent = ({ onSelectFrame }) => {
     { name: "Parallelogram", clipPath: "polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)" },
     { name: "Trapezoid", clipPath: "polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%)" },
     { name: "Rounded Triangle", clipPath: "polygon(30% 10%, 80% 90%, 20% 90%)" },
+     // New frames based on your SVGs
+    {
+    name: "CustomShape2",
+    clipPath: "path('M357.51514,12.436a55.38862,55.38862,0,0,1-29.12561-8.30243A28.23173,28.23173,0,0,0,297.14936,5.3603c-6.3797,4.473-13.99538,22.42-22.16889,22.42-8.17374,0-15.78963-17.94707-22.16947-22.42019a28.23156,28.23156,0,0,0-31.24-1.22664c-8.59156,5.28051-18.53434,34.38055-29.12569,34.38055S171.91118,9.414,163.31962,4.1335a28.23156,28.23156,0,0,0-31.24,1.22664C125.69979,9.83326,118.08389,26.707,109.91016,26.707c-8.17351,0-15.7892-16.87364-22.16889-21.34666A28.23173,28.23173,0,0,0,56.5011,4.13355,55.38865,55.38865,0,0,1,27.37549,12.436,54.97457,54.97457,0,0,1,5.744,8.00348C2.98628,6.82758,0,9.04955,0,12.23465H0V299.99982H400V22.24987c0-11.21646-10.60446-18.74345-20.27432-14.49165A55.00039,55.00039,0,0,1,357.51514,12.436Z')",
+  },
+ 
   ];
 
   // Trigger frame selection to be passed back to the parent component
@@ -40,7 +46,7 @@ const FramesComponent = ({ onSelectFrame }) => {
               clipPath: frame.clipPath,
               width: "80px",
               height: "80px",
-              backgroundColor: "#FCFCFC",
+              backgroundColor: "#082A66",
               overflow: "hidden", // Prevents edges from spilling over
               cursor: "pointer",
               display: "flex",
