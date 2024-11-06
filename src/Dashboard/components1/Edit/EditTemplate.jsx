@@ -1133,18 +1133,22 @@ const processElements = (elements) => {
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                   {/* <ShapeStyleLayout handleAddShape={handleAddShape} /> */}
                   <DesignElements handleAddSVG={handleAddSVG} />
-                  <ShapeWithSVG handleAddSVG={handleAddSVG} />
                   <OutlineElements handleAddSVG={handleAddSVG} />
-                  <GeometricalElements handleAddSVG={handleAddSVG} />
-                  <ArrowElements handleAddSVG={handleAddSVG} />
                   <StarElements handleAddSVG={handleAddSVG} />
+                  <BlobElements handleAddSVG={handleAddSVG} />
+                  <SunburstElements handleAddSVG={handleAddSVG} />
+                  
+                  
+                  {/* <GeometricalElements handleAddSVG={handleAddSVG} /> */}
+                  <ArrowElements handleAddSVG={handleAddSVG} />
+                  {/* 
                   <BrushedElements handleAddSVG={handleAddSVG} />
                   <RibbonElements handleAddSVG={handleAddSVG} />
+                  <ShapeWithSVG handleAddSVG={handleAddSVG} />
                   <LabelElements handleAddSVG={handleAddSVG} />
                   <BadgesShieldElements handleAddSVG={handleAddSVG} />
                   <SpeechBubblesElements handleAddSVG={handleAddSVG} />
-                  <BlobElements handleAddSVG={handleAddSVG} />
-                  <SunburstElements handleAddSVG={handleAddSVG} />
+                   */}
                 </div>
               )}
 

@@ -16,7 +16,25 @@ const ArrowElements = ({ handleAddSVG }) => {
             Authorization: `Bearer ${jwtToken}`,
           },
         });
-        setSvgData(response.data); // Assuming response.data is an array of SVG metadata
+        
+        // Filter to include only SVGs with an ID of 76 or less
+        const filteredData = response.data.filter((svg) => svg.id <= 76);
+
+        // Set metadata with placeholder content, to be replaced as we fetch each SVG
+        setSvgData(filteredData.map((svg) => ({ ...svg, svgContent: null })));
+
+        // Fetch each SVG content individually
+        filteredData.forEach(async (svg) => {
+          const svgContent = await fetchSVGById(svg.id);
+          if (svgContent) {
+            // Update svgData with the fetched SVG content
+            setSvgData((prevData) =>
+              prevData.map((item) =>
+                item.id === svg.id ? { ...item, svgContent } : item
+              )
+            );
+          }
+        });
       } catch (error) {
         console.error('Error fetching SVG list:', error);
       }
@@ -58,24 +76,22 @@ const ArrowElements = ({ handleAddSVG }) => {
       </div>
       {isOpen && (
         <div className="grid-container">
-          {svgData
-            .filter((svg) => svg.id <= 76) // Only include SVGs with an ID of 76 or less
-            .map((svg) => (
-              <div
-                className="shape-box"
-                key={svg.id}
-                onClick={() => handleSVGClick(svg.id)}
-                style={{
-                  width: '90px',
-                  height: '90px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-                dangerouslySetInnerHTML={{ __html: svg.svgContent }} // Assuming svgContent contains SVG markup
-              />
-            ))}
+          {svgData.map((svg) => (
+            <div
+              className="shape-box"
+              key={svg.id}
+              onClick={() => handleSVGClick(svg.id)}
+              style={{
+                width: '90px',
+                height: '90px',
+                cursor: 'pointer',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+              dangerouslySetInnerHTML={{ __html: svg.svgContent || "<div>Loading...</div>" }} // Display loading until SVG is loaded
+            />
+          ))}
         </div>
       )}
     </div>
