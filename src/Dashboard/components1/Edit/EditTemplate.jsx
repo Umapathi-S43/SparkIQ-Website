@@ -179,6 +179,8 @@ const processElements = (elements) => {
         borderRadius: style.borderRadius || "5px",
         color: style.color || "#FFFFFF",
         backgroundColor: style.backgroundColor || "#007BFF",
+        boxShadow: style.boxShadow || "0px 4px 6px rgba(0, 0, 0, 0.1)", // Add default shadow if not set
+        whiteSpace: "nowrap", // Ensure text is on a single line
       };
     } 
     else if (type === "text") {
@@ -1015,6 +1017,26 @@ const processElements = (elements) => {
     }
   };
 
+  const handleButtonTextKeyDown = (e, index) => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && editingTextIndex === index) {
+      // Check if the content is empty
+      const isContentEmpty = elements[index].content.trim() === '';
+  
+      if (isContentEmpty) {
+        // If content is empty, remove the button element
+        setElements((prevElements) => {
+          const updatedElements = [...prevElements];
+          updatedElements.splice(index, 1); // Remove the button element
+          return updatedElements;
+        });
+        setEditingTextIndex(null); // Clear editing index
+      } else {
+        // Prevent deletion of the whole button while editing content
+        e.stopPropagation();
+      }
+    }
+  };
+  
   // Function to handle align element
   const handleAlignElement = (alignType) => {
     if (selectedElementIndex !== null) {
@@ -1352,20 +1374,38 @@ const processElements = (elements) => {
                               ) :element.type === "button" ? (
                                 // Render the CTA as a button
                                 <button
-                                    style={{
-                                      ...element.style,
-                                      fontSize: `${parseFloat(element.style.fontSize) * zoom}px`,
-                                      padding: element.style.padding || "10px",
-                                      borderRadius: element.style.borderRadius || "5px",
-                                      color: element.style.color || "#FFFFFF",
-                                      cursor: "default" ,
-                                      backgroundColor: element.style.backgroundColor || "#007BFF",
-                                      width: "100%",                                      
-                                      zIndex: element.style?.zIndex || 1
-                                    }}
-                                  >
-                                    {element.content}
-                                  </button>
+                                contentEditable={editingTextIndex === index} // Enable text editing on double-click
+                                onDoubleClick={() => setEditingTextIndex(index)} // Set editing index on double-click
+                                onBlur={(e) => handleTextBlur(index, e)} // Handle text blur event
+                                onInput={(e) => handleTextChange(e, index)} // Update content on input change
+                                onKeyDown={(e) => handleButtonTextKeyDown(e, index)} // Use specific keydown handler for button text
+                                suppressContentEditableWarning={true} // Suppress contentEditable warning
+                                style={{
+                                  ...element.style,
+                                  fontSize: `${parseFloat(element.style.fontSize) * zoom}px`,
+                                  padding: element.style.padding || "12px 24px",
+                                  //borderRadius: "4px",
+                                  color: element.style.color || "#FFFFFF",
+                                  backgroundColor: element.style.backgroundColor || "#007BFF",
+                                  cursor: "default",
+                                  width: "100%",
+                                  height: "100%",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textAlign: "center",
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  boxSizing: "border-box",
+                                  boxShadow: `
+                                    0px 6px 10px rgba(0, 0, 0, 0.10),  
+                                    inset 0px 2px 5px rgba(0, 0, 0, 0.10)
+                                  `,
+                                  zIndex: element.style?.zIndex || 1
+                                }}
+                              >
+                                {element.content}
+                              </button>
                               ) : element.type === "svg" ? (
                                 <div
                                     dangerouslySetInnerHTML={{
