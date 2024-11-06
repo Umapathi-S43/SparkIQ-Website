@@ -1427,7 +1427,6 @@ const processElements = (elements) => {
                                     height: "100%",
                                     clipPath: element.style.clipPath,
                                     position: "relative",
-                                    border: element.style.border || "2px solid #4A90E2",
                                     backgroundColor: element.content ? "transparent" : "#e0e0e0",
                                   }}
                                 >

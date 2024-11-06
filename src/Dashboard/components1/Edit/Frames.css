@@ -1,9 +1,10 @@
 .hover-frame {
-    transition: all 0.3s ease;
-  }
-  
-  .hover-frame:hover {
-    border: 2px solid #FCFCFC; /* Add white border on hover */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Optional shadow for hover effect */
-  }
-  
+  transition: all 0.3s ease;
+}
+
+.hover-frame:hover {
+  /* Remove border or reduce to a minimal size */
+  border: 1px solid #FCFCFC; /* Thinner border */
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1); /* Softer shadow */
+  transform: scale(1.05); /* Slight scale to avoid visible edge cutting */
+}
