@@ -168,7 +168,20 @@ const processElements = (elements) => {
       };
     } else if (type === "image") {
       updatedElement.src = src;
-    } else if (type === "text") {
+    }
+    else if (type === "button") {
+      // Specific button properties
+      updatedElement.content = content;
+      updatedElement.style = {
+        ...updatedElement.style,
+        fontSize: style.fontSize || "16px",
+        padding: style.padding || "10px",
+        borderRadius: style.borderRadius || "5px",
+        color: style.color || "#FFFFFF",
+        backgroundColor: style.backgroundColor || "#007BFF",
+      };
+    } 
+    else if (type === "text") {
       const color = Array.isArray(style.color)
         ? `rgb(${style.color.join(",")})`
         : style.color || "#000000";
@@ -355,7 +368,7 @@ const processElements = (elements) => {
           updatedElement.fillColor = color; // Update fill color property
         } else if (updatedElement.type === 'shape') {
           updatedElement.style.color = color; // Change color for shapes
-        } else if (updatedElement.type === 'text') {
+        } else if (updatedElement.type === 'text'||updatedElement.type === 'button') {
           updatedElement.style.color = color; // Change text color
         }
 
@@ -377,7 +390,7 @@ const processElements = (elements) => {
         if (updatedElement.type === 'background') {
           updatedElement.style.backgroundColor = gradientColor;
           updatedElement.bgImageURL = null; // Clear the background image
-        } else if (updatedElement.type === 'text') {
+        } else if (updatedElement.type === 'text'||updatedElement.type==='button') {
           updatedElement.style.background = gradientColor; // Apply the gradient to text background
         }
 
@@ -1118,7 +1131,7 @@ const processElements = (elements) => {
 
               {activeComponent === "Shapes" && (
                 <div className="w-1/4 m-4 p-4 shadow-lg border-2 border-[#FCFCFC] rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
-                  <ShapeStyleLayout handleAddShape={handleAddShape} />
+                  {/* <ShapeStyleLayout handleAddShape={handleAddShape} /> */}
                   <DesignElements handleAddSVG={handleAddSVG} />
                   <ShapeWithSVG handleAddSVG={handleAddSVG} />
                   <OutlineElements handleAddSVG={handleAddSVG} />
@@ -1148,7 +1161,7 @@ const processElements = (elements) => {
               )}
 
               {activeMenu === 'gradientColor' &&
-                (activeElement?.type === 'text' || activeElement?.type === 'background') && (
+                (activeElement?.type === 'text' || activeElement?.type === 'background'||activeElement?.type === 'button' ) && (
                   <div className="w-1/4 m-4 p-4 shadow-sm rounded-md h-auto overflow-auto hide-scrollbar bg-[#FCFCFC40]">
                     <GradientColorMenu handleGradientColorChange={handleGradientColorChange} />
                   </div>
@@ -1332,6 +1345,23 @@ const processElements = (elements) => {
                                 >
                                   {element.component} {/* Render the shape component */}
                                 </div>
+                              ) :element.type === "button" ? (
+                                // Render the CTA as a button
+                                <button
+                                    style={{
+                                      ...element.style,
+                                      fontSize: `${parseFloat(element.style.fontSize) * zoom}px`,
+                                      padding: element.style.padding || "10px",
+                                      borderRadius: element.style.borderRadius || "5px",
+                                      color: element.style.color || "#FFFFFF",
+                                      cursor: "default" ,
+                                      backgroundColor: element.style.backgroundColor || "#007BFF",
+                                      width: "100%",                                      
+                                      zIndex: element.style?.zIndex || 1
+                                    }}
+                                  >
+                                    {element.content}
+                                  </button>
                               ) : element.type === "svg" ? (
                                 <div
                                     dangerouslySetInnerHTML={{

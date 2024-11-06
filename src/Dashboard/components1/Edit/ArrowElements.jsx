@@ -58,21 +58,24 @@ const ArrowElements = ({ handleAddSVG }) => {
       </div>
       {isOpen && (
         <div className="grid-container">
-            {svgData.map((svg) => (
-            <div className='shape-box'
-              key={svg.id}
-              onClick={() => handleSVGClick(svg.id)}
-              style={{
-                width: '90px',
-                height: '90px',
-                cursor: 'pointer',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-              dangerouslySetInnerHTML={{ __html: svg.svgContent }} // Assuming svgContent contains SVG markup
-            />
-          ))}
+          {svgData
+            .filter((svg) => svg.id <= 76) // Only include SVGs with an ID of 76 or less
+            .map((svg) => (
+              <div
+                className="shape-box"
+                key={svg.id}
+                onClick={() => handleSVGClick(svg.id)}
+                style={{
+                  width: '90px',
+                  height: '90px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                dangerouslySetInnerHTML={{ __html: svg.svgContent }} // Assuming svgContent contains SVG markup
+              />
+            ))}
         </div>
       )}
     </div>
