@@ -333,9 +333,9 @@ const GeneratedCreatives = ({
     await fetchModelData("most aware", setRetargetingData, setLoadingRetargeting, apiCallsRef);
 
     // Show the error message only once after all API calls if none succeeded
-    if (!apiCallsRef.current) {
-      showToast("Action failed: please try after some time", "error");
-    }
+    // if (!apiCallsRef.current) {
+    //   showToast("Action failed: please try after some time", "error");
+    // }
   };
 
 

@@ -1,23 +1,56 @@
 import React, { useState } from "react";
 import { FaUpload } from "react-icons/fa";
+import axios from "axios";
+import { baseUrl } from "../../../components/utils/Constant";
+import { jwtToken } from "../../../components/utils/jwtToken";
 
 const ImageUploadLayout = ({ onSelectImage }) => { // Add onSelectImage prop
   const [uploadedImages, setUploadedImages] = useState([]);
   const [dragOver, setDragOver] = useState(false);
 
   // Handle file upload through input or drag-and-drop
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     event.preventDefault();
     let files;
-    
+
     if (event.dataTransfer) {
       files = event.dataTransfer.files;
     } else {
       files = event.target.files;
     }
 
-    const newImages = Array.from(files).map((file) => URL.createObjectURL(file));
-    setUploadedImages([...uploadedImages, ...newImages]); // Add to uploaded images state but don't reflect them all
+    const newImageUrls = await Promise.all(
+      Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const uploadResponse = await axios.post(
+            `${baseUrl}/sparkiq/image/upload?customerId=123`,
+            formData,
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          if (uploadResponse.status === 201) {
+            console.log("Image uploaded successfully");
+            const uploadedImageUrl = uploadResponse.data.data.url;
+            return uploadedImageUrl;
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          return null;
+        }
+      })
+    );
+
+    // Filter out any null values from failed uploads and update state
+    const successfulImageUrls = newImageUrls.filter((url) => url !== null);
+    setUploadedImages([...uploadedImages, ...successfulImageUrls]);
   };
 
   // Handle drag over and drop events
