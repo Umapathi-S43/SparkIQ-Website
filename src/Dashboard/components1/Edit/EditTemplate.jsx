@@ -61,7 +61,9 @@ export default function EditTemplate() {
   const params = new URLSearchParams(location.search);
   const productID = params.get("id");
   const [hasUsedRestoredJson, setHasUsedRestoredJson] = useState(false); // New state variable
-  
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+
 
   useEffect(() => {
   const fetchProductDetails = async () => {
@@ -221,6 +223,11 @@ const processElements = (elements) => {
   });
 };
 
+const updateElements = (newElements) => {
+  setHistory((prevHistory) => [...prevHistory, elements]);
+  setElements(newElements);
+  setFuture([]); // Clear future when a new action is made
+};
 
   useEffect(() => {
     if (activeElement && activeElement.style) {
@@ -240,6 +247,7 @@ const processElements = (elements) => {
     newElement.rotation = 0; // Initialize rotation
     newElement.style = { ...newElement.style, zIndex: elements.length + 1 }; // Set initial zIndex
     setElements([...elements, newElement]); // Append new text element to the existing elements
+    updateElements([...elements, newElement]);
   };
 
   // Function to handle adding a shape
@@ -263,7 +271,7 @@ const processElements = (elements) => {
         zIndex: elements.length + 1,
       },
     };
-
+    updateElements([...elements, newShapeElement]);
     setElements([...elements, newShapeElement]);
   };
 
@@ -287,6 +295,7 @@ const processElements = (elements) => {
     };
   
     setElements([...elements, newSVGElement]); // Add the SVG element to the elements array
+    updateElements([...elements, newSVGElement]);
   };
   
   // Function to handle adding a frame
@@ -305,6 +314,7 @@ const processElements = (elements) => {
       content: null, // Placeholder for dropped image
     };
     setElements([...elements, newFrameElement]);
+    updateElements([...elements, newFrameElement]);
     setSelectedFrame(frame);
   };
 
@@ -321,6 +331,7 @@ const processElements = (elements) => {
       }
     };
     setElements([...elements, newImageElement]); // Add the selected image as a new element
+    updateElements([...elements, newImageElement]);
   };
 
   // Function to handle double-click on text element to edit
@@ -332,6 +343,7 @@ const processElements = (elements) => {
   const handleTextChange = (e, index) => {
     const newElements = [...elements];
     newElements[index].content = e.target.textContent;
+    updateElements(newElements);
   };
 
 
@@ -346,6 +358,7 @@ const processElements = (elements) => {
       }
 
       setElements(newElements);
+      updateElements(newElements);
     }
   };
 
@@ -355,7 +368,7 @@ const processElements = (elements) => {
     setSelectedColor(color); // Update selected color
 
     if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
+      updateElements((prevElements) =>  {
         const updatedElements = [...prevElements];
         const updatedElement = updatedElements[selectedElementIndex];
 
@@ -384,7 +397,7 @@ const processElements = (elements) => {
     setSelectedColor(gradientColor); // Store the selected gradient color
 
     if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
+      updateElements((prevElements) => {
         const updatedElements = [...prevElements];
         const updatedElement = updatedElements[selectedElementIndex];
 
@@ -407,7 +420,7 @@ const processElements = (elements) => {
 
     // Apply the transparency to the selected element
     if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
+      updateElements((prevElements) => {
         const updatedElements = [...prevElements];
         const updatedElement = updatedElements[selectedElementIndex];
 
@@ -435,7 +448,7 @@ const processElements = (elements) => {
 
   // Function to update element's rotation
   const updateElementRotation = (index, rotation) => {
-    setElements((prevElements) => {
+    updateElements((prevElements) => {
       const newElements = [...prevElements];
       newElements[index] = { ...newElements[index], rotation };
       return newElements;
@@ -530,7 +543,7 @@ const processElements = (elements) => {
         width: newWidth,
         height: newHeight,
       };
-
+      updateElements(newElements);
       setElements(newElements);
 
       const rect = ref.getBoundingClientRect();
@@ -593,6 +606,7 @@ const processElements = (elements) => {
     } else {
       console.error("Invalid drop operation.");
     }
+    updateElements(newElements);
   };
 
   const handleExport = async () => {
@@ -903,11 +917,10 @@ const processElements = (elements) => {
   };
 
 
-
   // Function to handle Delete Element
   const handleDeleteElement = () => {
     if (selectedElementIndex !== null) {
-      setElements((prevElements) => {
+      updateElements((prevElements) =>  {
         const newElements = [...prevElements];
         const selectedElement = newElements[selectedElementIndex];
 
@@ -927,21 +940,57 @@ const processElements = (elements) => {
     }
   };
 
+  const handleUndo = () => {
+    if (history.length > 0) {
+      const previousElements = history[history.length - 1];
+      setHistory(history.slice(0, history.length - 1));
+      setFuture([elements, ...future]);
+      setElements(previousElements);
+    }
+  };
+
+  // **Redo function**
+  const handleRedo = () => {
+    if (future.length > 0) {
+      const nextElements = future[0];
+      setFuture(future.slice(1));
+      setHistory([...history, elements]);
+      setElements(nextElements);
+    }
+  };
+
   // Keydown event listener for deleting elements
   useEffect(() => {
     const handleKeyDown = (event) => {
-      const isDeleteKey =
-        event.key === "Delete" ||
-        (event.key === "Backspace");
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
+      // Undo (Ctrl+Z or Command+Z)
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key === 'z') {
+        event.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // Redo (Ctrl+Y or Command+Shift+Z)
+      if (
+        ((event.ctrlKey && event.key.toLowerCase() === 'y') && !isMac) ||
+        ((event.metaKey && event.shiftKey && event.key.toLowerCase() === 'z') && isMac)
+      ) {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      // Existing delete logic
+      const isDeleteKey = event.key === "Delete" || event.key === "Backspace";
 
       if (isDeleteKey && selectedElementIndex !== null) {
         const element = elements[selectedElementIndex];
-
         const isTextElement = element.type === "text";
         const isEditable = editingTextIndex !== null && editingTextIndex === selectedElementIndex;
 
         if (!isTextElement || !isEditable) {
-          handleDeleteElement(); // Call the delete function
+          handleDeleteElement();
         }
       }
     };
@@ -951,8 +1000,9 @@ const processElements = (elements) => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedElementIndex, editingTextIndex, elements]);
-
+  }, [selectedElementIndex, editingTextIndex, elements, handleUndo, handleRedo]); 
+  // **Undo function**
+ 
   // Function to adjust tooltip position
   const adjustTooltipPosition = () => {
     const tooltipWidth = 80;
@@ -1021,6 +1071,7 @@ const processElements = (elements) => {
         return updatedElements;
       });
     }
+    updateElements(updatedElements);
   };
 
   const handleButtonTextKeyDown = (e, index) => {
