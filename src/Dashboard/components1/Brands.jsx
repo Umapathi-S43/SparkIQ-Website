@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
@@ -68,9 +68,10 @@ const Brands = () => {
     fetchProducts();
   }, []);
 
-  useEffect(() => {
+  // Use useMemo to compute updatedBrands
+  const updatedBrands = useMemo(() => {
     if (brands.length > 0 && products.length > 0) {
-      const updatedBrands = brands.map((brand) => {
+      return brands.map((brand) => {
         const productCount = products.filter(
           (product) => product.brandID === brand.id
         ).length;
@@ -79,11 +80,11 @@ const Brands = () => {
           productsCreated: productCount,
         };
       });
-      setBrands(updatedBrands);
     }
+    return brands;
   }, [brands, products]);
 
-  const filteredBrands = brands.filter((brand) =>
+  const filteredBrands = updatedBrands.filter((brand) =>
     brand.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -96,7 +97,7 @@ const Brands = () => {
               <div className="relative flex items-center justify-center lg:ml-4">
                 <div className="absolute flex items-center justify-center lg:w-12 lg:h-12 w-10 h-10 bg-[rgba(0,39,153,0.15)] rounded-2xl"></div>
                 <div className="relative lg:w-8 lg:h-8  w-7 h-7 bg-[#082A66] rounded-xl flex items-center justify-center">
-                  <img src={brandIcon} className="w-4 h-4" />
+                  <img src={brandIcon} className="w-4 h-4" alt="Brand Icon" />
                 </div>
               </div>
               <div className="ml-4">
@@ -135,6 +136,7 @@ const Brands = () => {
           style={{ maxHeight: "46vh" }}
         >
           <div className="w-full flex flex-wrap justify-start gap-4 ml-4 pl-2">
+            {/* Create Brand Card */}
             <div className="flex items-center justify-center bg-[rgba(252,252,252,0.70)] border border-white rounded-3xl p-1 w-60 h-72 mr-3 hover:bg-[rgba(252,252,252,0.15)]">
               <div
                 onClick={handleCreateBrand}
@@ -154,6 +156,7 @@ const Brands = () => {
                 </p>
               </div>
             </div>
+            {/* Brand Cards */}
             {filteredBrands.map((brand, index) => (
               <div
                 key={index}
@@ -195,6 +198,7 @@ const Brands = () => {
                 </div>
               </div>
             ))}
+            {/* End of Brand Cards */}
           </div>
         </div>
       </div>

@@ -8,15 +8,15 @@ import {
   FaCheck,
   FaPlus,
 } from "react-icons/fa";
-import Picker from "./colorPicker";
-import brandImage from "../../assets/dashboard_img/brand_img.png";
-import gallery from "../../assets/dashboard_img/gallerylogo.png";
-import sound from "../../assets/dashboard_img/sound.png";
-import brandIcon from "../../assets/dashboard_img/brand.svg";
-import "./brandsetup.css";
+import Picker from "./colorPicker"; // Adjust the import path as needed
+import brandImage from "../../assets/dashboard_img/brand_img.png"; // Replace with your actual image path
+import gallery from "../../assets/dashboard_img/gallerylogo.png"; // Replace with your actual image path
+import sound from "../../assets/dashboard_img/sound.png"; // Replace with your actual image path
+import brandIcon from "../../assets/dashboard_img/brand.svg"; // Replace with your actual image path
+import "./brandsetup.css"; // Adjust the import path as needed
 import toast from "react-hot-toast";
-import { baseUrl } from "../../components/utils/Constant";
-import { jwtToken } from "../../components/utils/jwtToken";
+import { baseUrl } from "../../components/utils/Constant"; // Adjust the import path as needed
+import { jwtToken } from "../../components/utils/jwtToken"; // Adjust the import path as needed
 import axios from "axios";
 
 const BrandSetup = () => {
@@ -57,13 +57,14 @@ const BrandSetup = () => {
     dominantColorsFailed: false,
     monochromeLogo: null,
     monochromeImageFile: null,
-    monoChromicLogoURL: "", // Changed mono_chromic_logo_url to monoChromicLogoURL
+    monoChromicLogoURL: "",
     uploadMonochromeLogo: false,
     fontStyles: [
       {
         uploadOwnFont: false,
         fontStyle: "",
         fontStyleFile: null,
+        fontFileName: "", // Added to store the file name without timestamp and extension
       },
     ],
   });
@@ -97,6 +98,17 @@ const BrandSetup = () => {
       );
     }
     return rgbArray; // If it's already a hex string
+  };
+
+  // Helper function to extract file name from URL
+  const extractFileName = (url) => {
+    const fullFileName = url.split("/").pop(); // Get '1731741976456_Lato-Regular.otf'
+    const fileNameWithoutTimestamp = fullFileName.replace(/^\d+_/, ""); // Remove leading digits and underscore
+    const fileNameWithoutExtension = fileNameWithoutTimestamp.replace(
+      /\.[^/.]+$/,
+      ""
+    ); // Remove extension
+    return fileNameWithoutExtension;
   };
 
   const handleOnChange = (event) => {
@@ -142,23 +154,35 @@ const BrandSetup = () => {
 
             const fontStyles = [];
             if (foundBrand.fontStyle) {
+              const isUploadedFont = foundBrand.fontStyle.startsWith("http");
               fontStyles.push({
-                uploadOwnFont: foundBrand.fontStyle.startsWith("http"),
+                uploadOwnFont: isUploadedFont,
                 fontStyle: foundBrand.fontStyle,
+                fontFileName: isUploadedFont
+                  ? extractFileName(foundBrand.fontStyle)
+                  : foundBrand.fontStyle,
                 fontStyleFile: null,
               });
             }
             if (foundBrand.fontStyle2) {
+              const isUploadedFont = foundBrand.fontStyle2.startsWith("http");
               fontStyles.push({
-                uploadOwnFont: foundBrand.fontStyle2.startsWith("http"),
+                uploadOwnFont: isUploadedFont,
                 fontStyle: foundBrand.fontStyle2,
+                fontFileName: isUploadedFont
+                  ? extractFileName(foundBrand.fontStyle2)
+                  : foundBrand.fontStyle2,
                 fontStyleFile: null,
               });
             }
             if (foundBrand.fontStyle3) {
+              const isUploadedFont = foundBrand.fontStyle3.startsWith("http");
               fontStyles.push({
-                uploadOwnFont: foundBrand.fontStyle3.startsWith("http"),
+                uploadOwnFont: isUploadedFont,
                 fontStyle: foundBrand.fontStyle3,
+                fontFileName: isUploadedFont
+                  ? extractFileName(foundBrand.fontStyle3)
+                  : foundBrand.fontStyle3,
                 fontStyleFile: null,
               });
             }
@@ -170,12 +194,12 @@ const BrandSetup = () => {
               logoURL: foundBrand.logoURL,
               brandId: foundBrand.id,
               domColors: processedColors,
-              monoChromicLogoURL: foundBrand.monoChromicLogoURL || "", // Changed field name
-             isEdit: true,
+              monoChromicLogoURL: foundBrand.monoChromicLogoURL || "",
+              isEdit: true,
               showSubmitButton: true,
               isLoadingColor: false,
               dominantColorsFailed: false,
-              uploadMonochromeLogo: !!foundBrand.mono_chromic_logo_url,
+              uploadMonochromeLogo: !!foundBrand.monoChromicLogoURL,
               fontStyles:
                 fontStyles.length > 0
                   ? fontStyles
@@ -184,6 +208,7 @@ const BrandSetup = () => {
                         uploadOwnFont: false,
                         fontStyle: "",
                         fontStyleFile: null,
+                        fontFileName: "",
                       },
                     ],
             }));
@@ -240,14 +265,15 @@ const BrandSetup = () => {
       } else if (fieldName === "fontStyleFile" && index !== null) {
         const newFontStyles = [...formInputs.fontStyles];
         newFontStyles[index].fontStyleFile = file;
-        newFontStyles[index].fontStyle = file.name; // Set the fontStyle to file name
+        newFontStyles[index].fontStyle = ""; // Clear the fontStyle field
+        newFontStyles[index].fontFileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
         setFormInputs({
           ...formInputs,
           fontStyles: newFontStyles,
         });
       }
+      setIsUploading(false); // End the upload process
     }
-    setIsUploading(false); // End the upload process
   };
 
   const handleColorSelect = (color) => {
@@ -323,10 +349,9 @@ const BrandSetup = () => {
       console.log(error);
       toast.error("File upload failed. Please try again.");
       return null;
-    }
-    finally {
+    } finally {
       setIsUploading(false); // End the upload process
-  }
+    }
   };
 
   const dominantColor = async (url) => {
@@ -405,10 +430,9 @@ const BrandSetup = () => {
     }
 
     // Prepare font styles
-    let fontStyle = "";   // Updated variable name
-    let fontStyle2 = "";  // Updated variable name
-    let fontStyle3 = "";  // Updated variable name
-
+    let fontStyle = "";
+    let fontStyle2 = "";
+    let fontStyle3 = "";
 
     for (let i = 0; i < formInputs.fontStyles.length; i++) {
       const fontStyleObj = formInputs.fontStyles[i];
@@ -430,7 +454,7 @@ const BrandSetup = () => {
       description: formInputs.brandDescription,
       logoURL: formInputs.logoURL,
       brandColours: JSON.stringify(allColors),
-      monoChromicLogoStatus: formInputs.uploadMonochromeLogo, // Added field
+      monoChromicLogoStatus: formInputs.uploadMonochromeLogo,
       monoChromicLogoURL: monoChromicLogoURL || "",
       fontStyle: fontStyle,
       fontStyle2: fontStyle2,
@@ -472,16 +496,14 @@ const BrandSetup = () => {
     let monoChromicLogoURL = formInputs.monoChromicLogoURL; // Updated variable name
 
     // Upload monochrome logo if present
-    // Upload monochrome logo if present
     if (formInputs.uploadMonochromeLogo && formInputs.monochromeImageFile) {
       monoChromicLogoURL = await uploadImage(formInputs.monochromeImageFile);
     }
 
     // Prepare font styles
-    let fontStyle = "";   // Updated variable name
-    let fontStyle2 = "";  // Updated variable name
-    let fontStyle3 = "";  // Updated variable name
-
+    let fontStyle = "";
+    let fontStyle2 = "";
+    let fontStyle3 = "";
 
     for (let i = 0; i < formInputs.fontStyles.length; i++) {
       const fontStyleObj = formInputs.fontStyles[i];
@@ -503,14 +525,13 @@ const BrandSetup = () => {
       description: formInputs.brandDescription,
       logoURL: formInputs.logoURL,
       brandColours: JSON.stringify(allColors),
-      monoChromicLogoStatus: formInputs.uploadMonochromeLogo, // Added field
-      monoChromicLogoURL: monoChromicLogoURL || "",           // Updated variable name
-      fontStyle: fontStyle,       // Updated variable name
-      fontStyle2: fontStyle2,     // Updated variable name
-      fontStyle3: fontStyle3,     // Updated variable name
+      monoChromicLogoStatus: formInputs.uploadMonochromeLogo,
+      monoChromicLogoURL: monoChromicLogoURL || "",
+      fontStyle: fontStyle,
+      fontStyle2: fontStyle2,
+      fontStyle3: fontStyle3,
       companyId: "123",
     };
-
 
     try {
       if (!jwtToken) {
@@ -585,7 +606,7 @@ const BrandSetup = () => {
           <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-white rounded-3xl flex items-center justify-center">
               <div className="absolute w-48 h-48 sm:w-64 sm:h-64 md:w-[21rem] md:h-[20rem] bg-[#859398] rounded-3xl flex items-center justify-center">
-                <div className="absolute w-36 h-28 sm:w-48 sm:h-40 bg-[rgba(255,255,255,0.24)] rounded-2xl flex items-center justify-center border border-red-500">
+                <div className="absolute w-36 h-28 sm:w-48 sm:h-40 bg-[rgba(255,255,255,0.24)] rounded-2xl flex items-center justify-center">
                   <img
                     src={imageSrc}
                     alt="Brand"
@@ -611,7 +632,10 @@ const BrandSetup = () => {
           {/* Right Side */}
           <div className="flex-grow pr-1">
             {/* Section 1 */}
-            {/* ...Section 1 code (unchanged)... */}
+            {/* ...Include your code for Section 1 here... */}
+            {/* Sections 1 to 5 code */}
+            {/* For brevity, I'm including all the sections with the necessary code modifications. */}
+
             {/* Section 1 */}
             <div
               onClick={() => toggleSection(1)}
@@ -692,7 +716,7 @@ const BrandSetup = () => {
               )}
             </div>
             {/* Section 2 */}
-            {/* ...Section 2 code (adjusted)... */}
+            {/* ...Include your code for Section 2 here... */}
             {/* Section 2 */}
             <div
               onClick={() =>
@@ -747,8 +771,8 @@ const BrandSetup = () => {
               {expandedSection === 2 && (
                 <div className="p-4">
                   <p className="text-sm">
-                    Upload your logo here. A dark-colored logo with a
-                    transparent background is recommended.
+                    Upload your logo here. A dark-colored logo with a transparent
+                    background is recommended.
                   </p>
                   <div className="border-2 border-[#fcfcfc] rounded-2xl m-2 p-1 ">
                     <div className="bg-white rounded-xl m-1 p-2 shadow-lg">
@@ -794,143 +818,143 @@ const BrandSetup = () => {
               )}
             </div>
             {/* Section 3 */}
-            {/* ...Section 3 code (modified)... */}
+            {/* ...Include your code for Section 3 here... */}
             {/* Section 3 */}
             <div
-  onClick={() =>
-    formInputs.isEdit || completedSections[2]
-      ? toggleSection(3)
-      : null
-  }
-  className={`relative items-center border border-[#fcfcfc] p-0 mb-4 rounded-2xl cursor-pointer ${
-    expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
-  } ${
-    !formInputs.isEdit && !completedSections[2]
-      ? "opacity-50 cursor-not-allowed"
-      : ""
-  }`}
->
-  {completedSections[3] && (
-    <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
-      <div className="text-xs">Completed</div>
-      <FaCheck className="ml-1" />
-    </div>
-  )}
-  <div
-    className={`flex items-center justify-between ${
-      expandedSection === 3 ? "bg-[#F6F8FE]" : ""
-    } p-4 rounded-t-2xl`}
-  >
-    <div className="flex items-center">
-      <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
-        <FaRegLightbulb className="text-[#374151] text-xl" />
-      </div>
-      <p className="ml-3">Extracted Brand Colors</p>
-    </div>
-    {/* Add the summary display here */}
-    {completedSections[3] && formInputs.domColors.length > 0 && (
-      <div className="flex items-center ml-auto">
-        <button
-          className="h-6 px-2 rounded-lg flex items-center justify-center text-white font-normal text-xs cursor-default"
-          style={{ backgroundColor: formInputs.domColors[0] }}
-        >
-          {formInputs.domColors[0]}
-        </button>
-        {formInputs.domColors.length > 1 && (
-          <span className="ml-2 text-sm">...</span>
-        )}
-      </div>
-    )}
-    <div>
-      {expandedSection === 3 ? (
-        <FaChevronDown />
-      ) : (
-        <FaChevronRight />
-      )}
-    </div>
-  </div>
-  {expandedSection === 3 && (
-                <div className="p-2" onClick={handlePickerClick}>
-                {formInputs.isLoadingColor ? (
-                  <div className="flex flex-wrap gap-4 p-2 rounded-xl">
-                    <div className="animate-pulse flex space-x-4">
-                      <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                      <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                      <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                    </div>
+              onClick={() =>
+                formInputs.isEdit || completedSections[2]
+                  ? toggleSection(3)
+                  : null
+              }
+              className={`relative items-center border border-[#fcfcfc] p-0 mb-4 rounded-2xl cursor-pointer ${
+                expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
+              } ${
+                !formInputs.isEdit && !completedSections[2]
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+            >
+              {completedSections[3] && (
+                <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
+                  <div className="text-xs">Completed</div>
+                  <FaCheck className="ml-1" />
+                </div>
+              )}
+              <div
+                className={`flex items-center justify-between ${
+                  expandedSection === 3 ? "bg-[#F6F8FE]" : ""
+                } p-4 rounded-t-2xl`}
+              >
+                <div className="flex items-center">
+                  <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
+                    <FaRegLightbulb className="text-[#374151] text-xl" />
                   </div>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
-                    {formInputs.dominantColorsFailed &&
-                      formInputs.domColors.length === 0 && (
-                        <p className="text-red-500 w-full">
-                          Unable to load dominant colors. Please add colors manually.
-                        </p>
-                      )}
-                    {formInputs.domColors.map((color, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center bg-white p-2 rounded-xl"
-                      >
-                        <label className="text-sm pl-3 font-semibold lg:pr-9 pr-4 text-nowrap">
-                          Brand Color {index + 1}
-                        </label>
-                        <button
-                          className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
-                          style={{ background: color }}
-                          onClick={() => {
-                            setCustomColor(color);
-                            setColorPickerTarget(index);
-                            setColorPickerOpen(true);
-                          }}
-                        >
-                          {color}
-                        </button>
-                      </div>
-                    ))}
-                    {formInputs.domColors.length < 10 && (
-                      <button
-                        className="custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setColorPickerTarget(null);
-                          setColorPickerOpen(true);
-                        }}
-                      >
-                        <FaPlus className="text-white" />
-                      </button>
-                    )}
-                    {colorPickerOpen && (
-                      <div className="absolute z-10 lg:w-full md:w-full sm:w-1/2">
-                        <div className="flex justify-start">
-                          <Picker
-                            color={customColor}
-                            onChangeComplete={handleColorSelect}
-                          />
-                        </div>
-                        <button
-                          className="custom-button p-2 pl-4 pr-4 mt-2 ml-4 mr-2 text-white rounded-2xl shadow-2xl"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSaveAdditionalColor();
-                          }}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="custom-button p-2 pl-4 pr-4 mt-2 ml-64 text-white rounded-2xl shadow-2xl"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setColorPickerOpen(false);
-                          }}
-                        >
-                          Close
-                        </button>
-                      </div>
+                  <p className="ml-3">Extracted Brand Colors</p>
+                </div>
+                {/* Add the summary display here */}
+                {completedSections[3] && formInputs.domColors.length > 0 && (
+                  <div className="flex items-center ml-auto">
+                    <button
+                      className="h-6 px-2 rounded-lg flex items-center justify-center text-white font-normal text-xs cursor-default"
+                      style={{ backgroundColor: formInputs.domColors[0] }}
+                    >
+                      {formInputs.domColors[0]}
+                    </button>
+                    {formInputs.domColors.length > 1 && (
+                      <span className="ml-2 text-sm">...</span>
                     )}
                   </div>
                 )}
-                <button
+                <div>
+                  {expandedSection === 3 ? (
+                    <FaChevronDown />
+                  ) : (
+                    <FaChevronRight />
+                  )}
+                </div>
+              </div>
+              {expandedSection === 3 && (
+                <div className="p-2" onClick={handlePickerClick}>
+                  {formInputs.isLoadingColor ? (
+                    <div className="flex flex-wrap gap-4 p-2 rounded-xl">
+                      <div className="animate-pulse flex space-x-4">
+                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
+                      {formInputs.dominantColorsFailed &&
+                        formInputs.domColors.length === 0 && (
+                          <p className="text-red-500 w-full">
+                            Unable to load dominant colors. Please add colors manually.
+                          </p>
+                        )}
+                      {formInputs.domColors.map((color, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-white p-2 rounded-xl"
+                        >
+                          <label className="text-sm pl-3 font-semibold lg:pr-9 pr-4 text-nowrap">
+                            Brand Color {index + 1}
+                          </label>
+                          <button
+                            className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
+                            style={{ background: color }}
+                            onClick={() => {
+                              setCustomColor(color);
+                              setColorPickerTarget(index);
+                              setColorPickerOpen(true);
+                            }}
+                          >
+                            {color}
+                          </button>
+                        </div>
+                      ))}
+                      {formInputs.domColors.length < 10 && (
+                        <button
+                          className="custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setColorPickerTarget(null);
+                            setColorPickerOpen(true);
+                          }}
+                        >
+                          <FaPlus className="text-white" />
+                        </button>
+                      )}
+                      {colorPickerOpen && (
+                        <div className="absolute z-10 lg:w-full md:w-full sm:w-1/2">
+                          <div className="flex justify-start">
+                            <Picker
+                              color={customColor}
+                              onChangeComplete={handleColorSelect}
+                            />
+                          </div>
+                          <button
+                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-4 mr-2 text-white rounded-2xl shadow-2xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveAdditionalColor();
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-64 text-white rounded-2xl shadow-2xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setColorPickerOpen(false);
+                            }}
+                          >
+                            Close
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <button
                     className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -943,7 +967,7 @@ const BrandSetup = () => {
               )}
             </div>
             {/* Section 4 */}
-            {/* ...Section 4 code (unchanged)... */}
+            {/* ...Include your code for Section 4 here... */}
             {/* Section 4 */}
             <div
               onClick={() =>
@@ -978,20 +1002,24 @@ const BrandSetup = () => {
                     Monochrome Logo (Optional)
                   </p>
                 </div>
-                {completedSections[4] && formInputs.monoChromicLogoURL && ( // Updated variable name
-              <div className="flex items-center ml-auto bg-white rounded-lg p-1">
-                <img
-                  src={
-                    formInputs.monochromeLogo ||
-                    formInputs.monoChromicLogoURL // Updated variable name
-                  }
-                  alt="Monochrome Logo"
-                  className="w-12 h-7 object-cover rounded-md"
-                />
+                {completedSections[4] && formInputs.monoChromicLogoURL && (
+                  <div className="flex items-center ml-auto bg-white rounded-lg p-1">
+                    <img
+                      src={
+                        formInputs.monochromeLogo ||
+                        formInputs.monoChromicLogoURL
+                      }
+                      alt="Monochrome Logo"
+                      className="w-12 h-7 object-cover rounded-md"
+                    />
                   </div>
                 )}
                 <div className="ml-4">
-                  {expandedSection === 4 ? <FaChevronDown /> : <FaChevronRight />}
+                  {expandedSection === 4 ? (
+                    <FaChevronDown />
+                  ) : (
+                    <FaChevronRight />
+                  )}
                 </div>
               </div>
               {expandedSection === 4 && (
@@ -1068,7 +1096,7 @@ const BrandSetup = () => {
               )}
             </div>
             {/* Section 5 */}
-            {/* ...Section 5 code (modified)... */}
+            {/* ...Include the modified code for Section 5 here... */}
             {/* Section 5 */}
             <div
               onClick={() =>
@@ -1107,7 +1135,9 @@ const BrandSetup = () => {
                   <div className="flex items-center ml-auto bg-white rounded-lg p-1">
                     <p className="m-0 text-sm">
                       {formInputs.fontStyles
-                        .map((fs) => fs.fontStyle)
+                        .map((fs) =>
+                          fs.uploadOwnFont ? fs.fontFileName : fs.fontStyle
+                        )
                         .join(", ")}
                     </p>
                   </div>
@@ -1130,9 +1160,11 @@ const BrandSetup = () => {
                           checked={fontStyleObj.uploadOwnFont}
                           onChange={(e) => {
                             const newFontStyles = [...formInputs.fontStyles];
-                            newFontStyles[index].uploadOwnFont = e.target.checked;
+                            newFontStyles[index].uploadOwnFont =
+                              e.target.checked;
                             newFontStyles[index].fontStyle = "";
                             newFontStyles[index].fontStyleFile = null;
+                            newFontStyles[index].fontFileName = "";
                             setFormInputs({
                               ...formInputs,
                               fontStyles: newFontStyles,
@@ -1145,10 +1177,11 @@ const BrandSetup = () => {
                         </label>
                       </div>
                       {fontStyleObj.uploadOwnFont ? (
-                        fontStyleObj.fontStyleFile ? (
+                        fontStyleObj.fontStyleFile ||
+                        fontStyleObj.fontFileName ? (
                           <div className="flex items-center mb-2">
                             <p className="mr-4">
-                              Uploaded File: {fontStyleObj.fontStyleFile.name}
+                              Uploaded File: {fontStyleObj.fontFileName}
                             </p>
                             <button
                               className="text-blue-500 underline"
@@ -1157,6 +1190,7 @@ const BrandSetup = () => {
                                 const newFontStyles = [...formInputs.fontStyles];
                                 newFontStyles[index].fontStyleFile = null;
                                 newFontStyles[index].fontStyle = "";
+                                newFontStyles[index].fontFileName = "";
                                 setFormInputs({
                                   ...formInputs,
                                   fontStyles: newFontStyles,
@@ -1179,7 +1213,11 @@ const BrandSetup = () => {
                                     type="file"
                                     accept=".otf"
                                     onChange={(e) =>
-                                      handleFileUpload(e, "fontStyleFile", index)
+                                      handleFileUpload(
+                                        e,
+                                        "fontStyleFile",
+                                        index
+                                      )
                                     }
                                     className="w-full h-full absolute inset-0 opacity-0 cursor-pointer"
                                     onClick={(e) => e.stopPropagation()}
@@ -1250,6 +1288,7 @@ const BrandSetup = () => {
                               uploadOwnFont: false,
                               fontStyle: "",
                               fontStyleFile: null,
+                              fontFileName: "",
                             },
                           ],
                         }));
@@ -1274,15 +1313,16 @@ const BrandSetup = () => {
             {formInputs.showSubmitButton && (
               <div className="flex justify-start mt-4">
                 <button
-                  className={`custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`} // Apply styling for disabled state
+                  className={`custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg ${
+                    isUploading ? "opacity-50 cursor-not-allowed" : ""
+                  }`} // Apply styling for disabled state
                   onClick={
                     formInputs.isEdit ? handleEditBrand : handleCreateBrand
                   }
                   disabled={isUploading} // Disable the button during upload
                 >
                   {formInputs.isEdit ? "Update" : "Create Brand"}
-                
-              </button>
+                </button>
               </div>
             )}
           </div>
@@ -1291,4 +1331,5 @@ const BrandSetup = () => {
     </div>
   );
 };
+
 export default BrandSetup;
