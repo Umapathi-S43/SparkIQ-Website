@@ -23,6 +23,7 @@ const BrandSetup = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const brandName = params.get("name");
+  const [isUploading, setIsUploading] = useState(false); // New state to track image upload
 
   const existingFontStyles = [
     "Arial",
@@ -56,17 +57,15 @@ const BrandSetup = () => {
     dominantColorsFailed: false,
     monochromeLogo: null,
     monochromeImageFile: null,
-    mono_chromic_logo_url: "", // Updated field name
+    monoChromicLogoURL: "", // Changed mono_chromic_logo_url to monoChromicLogoURL
     uploadMonochromeLogo: false,
-    font_style: "",
-    font_style_2: "",
-    font_style_3: "",
-    fontStyleFile1: null,
-    fontStyleFile2: null,
-    fontStyleFile3: null,
-    uploadOwnFont1: false,
-    uploadOwnFont2: false,
-    uploadOwnFont3: false,
+    fontStyles: [
+      {
+        uploadOwnFont: false,
+        fontStyle: "",
+        fontStyleFile: null,
+      },
+    ],
   });
 
   const [customColor, setCustomColor] = useState("#000000");
@@ -141,6 +140,29 @@ const BrandSetup = () => {
               }
             });
 
+            const fontStyles = [];
+            if (foundBrand.fontStyle) {
+              fontStyles.push({
+                uploadOwnFont: foundBrand.fontStyle.startsWith("http"),
+                fontStyle: foundBrand.fontStyle,
+                fontStyleFile: null,
+              });
+            }
+            if (foundBrand.fontStyle2) {
+              fontStyles.push({
+                uploadOwnFont: foundBrand.fontStyle2.startsWith("http"),
+                fontStyle: foundBrand.fontStyle2,
+                fontStyleFile: null,
+              });
+            }
+            if (foundBrand.fontStyle3) {
+              fontStyles.push({
+                uploadOwnFont: foundBrand.fontStyle3.startsWith("http"),
+                fontStyle: foundBrand.fontStyle3,
+                fontStyleFile: null,
+              });
+            }
+
             setFormInputs((prev) => ({
               ...prev,
               brandName: foundBrand.name,
@@ -148,18 +170,22 @@ const BrandSetup = () => {
               logoURL: foundBrand.logoURL,
               brandId: foundBrand.id,
               domColors: processedColors,
-              mono_chromic_logo_url: foundBrand.mono_chromic_logo_url || "",
-              font_style: foundBrand.font_style || "",
-              font_style_2: foundBrand.font_style_2 || "",
-              font_style_3: foundBrand.font_style_3 || "",
-              isEdit: true,
+              monoChromicLogoURL: foundBrand.monoChromicLogoURL || "", // Changed field name
+             isEdit: true,
               showSubmitButton: true,
               isLoadingColor: false,
               dominantColorsFailed: false,
               uploadMonochromeLogo: !!foundBrand.mono_chromic_logo_url,
-              uploadOwnFont1: !!foundBrand.font_style,
-              uploadOwnFont2: !!foundBrand.font_style_2,
-              uploadOwnFont3: !!foundBrand.font_style_3,
+              fontStyles:
+                fontStyles.length > 0
+                  ? fontStyles
+                  : [
+                      {
+                        uploadOwnFont: false,
+                        fontStyle: "",
+                        fontStyleFile: null,
+                      },
+                    ],
             }));
             setCompletedSections({
               1: true,
@@ -195,9 +221,10 @@ const BrandSetup = () => {
     }
   }, [formInputs.brandLogo, formInputs.logoURL]);
 
-  const handleFileUpload = (event, fieldName) => {
+  const handleFileUpload = (event, fieldName, index = null) => {
     const file = event.target.files[0];
     if (file) {
+      setIsUploading(true); // Start the upload process
       if (fieldName === "brandLogo") {
         setFormInputs({
           ...formInputs,
@@ -210,13 +237,17 @@ const BrandSetup = () => {
           monochromeLogo: URL.createObjectURL(file),
           monochromeImageFile: file,
         });
-      } else if (fieldName.startsWith("fontStyleFile")) {
+      } else if (fieldName === "fontStyleFile" && index !== null) {
+        const newFontStyles = [...formInputs.fontStyles];
+        newFontStyles[index].fontStyleFile = file;
+        newFontStyles[index].fontStyle = file.name; // Set the fontStyle to file name
         setFormInputs({
           ...formInputs,
-          [fieldName]: file,
+          fontStyles: newFontStyles,
         });
       }
     }
+    setIsUploading(false); // End the upload process
   };
 
   const handleColorSelect = (color) => {
@@ -271,6 +302,8 @@ const BrandSetup = () => {
     uploadData.append("file", file);
     uploadData.append("customerId", "123");
 
+    setIsUploading(true); // Start the upload process
+
     try {
       if (!jwtToken) {
         throw new Error("No JWT token found. Please log in.");
@@ -291,6 +324,9 @@ const BrandSetup = () => {
       toast.error("File upload failed. Please try again.");
       return null;
     }
+    finally {
+      setIsUploading(false); // End the upload process
+  }
   };
 
   const dominantColor = async (url) => {
@@ -323,9 +359,11 @@ const BrandSetup = () => {
         isLoadingColor: false,
         dominantColorsFailed: true,
       }));
-      toast.error(
-        "Failed to load dominant colors. Please add colors manually."
-      );
+      if (prev.domColors.length === 0) {
+        toast.error(
+          "Failed to load dominant colors. Please add colors manually."
+        );
+      }
     }
   };
 
@@ -359,27 +397,30 @@ const BrandSetup = () => {
       return;
     }
 
-    let mono_chromic_logo_url = formInputs.mono_chromic_logo_url;
+    let monoChromicLogoURL = formInputs.monoChromicLogoURL; // Correct variable name
 
     // Upload monochrome logo if present
     if (formInputs.uploadMonochromeLogo && formInputs.monochromeImageFile) {
-      mono_chromic_logo_url = await uploadImage(formInputs.monochromeImageFile);
+      monoChromicLogoURL = await uploadImage(formInputs.monochromeImageFile);
     }
 
-    let font_style = formInputs.font_style;
-    let font_style_2 = formInputs.font_style_2;
-    let font_style_3 = formInputs.font_style_3;
+    // Prepare font styles
+    let fontStyle = "";   // Updated variable name
+    let fontStyle2 = "";  // Updated variable name
+    let fontStyle3 = "";  // Updated variable name
 
-    // Upload font files if any
-    for (let i = 1; i <= 3; i++) {
-      if (
-        formInputs[`uploadOwnFont${i}`] &&
-        formInputs[`fontStyleFile${i}`]
-      ) {
-        const url = await uploadImage(formInputs[`fontStyleFile${i}`]);
-        if (i === 1) font_style = url;
-        if (i === 2) font_style_2 = url;
-        if (i === 3) font_style_3 = url;
+
+    for (let i = 0; i < formInputs.fontStyles.length; i++) {
+      const fontStyleObj = formInputs.fontStyles[i];
+      if (fontStyleObj.uploadOwnFont && fontStyleObj.fontStyleFile) {
+        const url = await uploadImage(fontStyleObj.fontStyleFile);
+        if (i === 0) fontStyle = url;
+        if (i === 1) fontStyle2 = url;
+        if (i === 2) fontStyle3 = url;
+      } else {
+        if (i === 0) fontStyle = fontStyleObj.fontStyle;
+        if (i === 1) fontStyle2 = fontStyleObj.fontStyle;
+        if (i === 2) fontStyle3 = fontStyleObj.fontStyle;
       }
     }
 
@@ -389,10 +430,11 @@ const BrandSetup = () => {
       description: formInputs.brandDescription,
       logoURL: formInputs.logoURL,
       brandColours: JSON.stringify(allColors),
-      mono_chromic_logo_url: mono_chromic_logo_url || "",
-      font_style: font_style,
-      font_style_2: font_style_2,
-      font_style_3: font_style_3,
+      monoChromicLogoStatus: formInputs.uploadMonochromeLogo, // Added field
+      monoChromicLogoURL: monoChromicLogoURL || "",
+      fontStyle: fontStyle,
+      fontStyle2: fontStyle2,
+      fontStyle3: fontStyle3,
       companyId: "123",
     };
 
@@ -427,27 +469,31 @@ const BrandSetup = () => {
 
     const allColors = formInputs.domColors;
 
-    let mono_chromic_logo_url = formInputs.mono_chromic_logo_url;
+    let monoChromicLogoURL = formInputs.monoChromicLogoURL; // Updated variable name
 
     // Upload monochrome logo if present
+    // Upload monochrome logo if present
     if (formInputs.uploadMonochromeLogo && formInputs.monochromeImageFile) {
-      mono_chromic_logo_url = await uploadImage(formInputs.monochromeImageFile);
+      monoChromicLogoURL = await uploadImage(formInputs.monochromeImageFile);
     }
 
-    let font_style = formInputs.font_style;
-    let font_style_2 = formInputs.font_style_2;
-    let font_style_3 = formInputs.font_style_3;
+    // Prepare font styles
+    let fontStyle = "";   // Updated variable name
+    let fontStyle2 = "";  // Updated variable name
+    let fontStyle3 = "";  // Updated variable name
 
-    // Upload font files if any
-    for (let i = 1; i <= 3; i++) {
-      if (
-        formInputs[`uploadOwnFont${i}`] &&
-        formInputs[`fontStyleFile${i}`]
-      ) {
-        const url = await uploadImage(formInputs[`fontStyleFile${i}`]);
-        if (i === 1) font_style = url;
-        if (i === 2) font_style_2 = url;
-        if (i === 3) font_style_3 = url;
+
+    for (let i = 0; i < formInputs.fontStyles.length; i++) {
+      const fontStyleObj = formInputs.fontStyles[i];
+      if (fontStyleObj.uploadOwnFont && fontStyleObj.fontStyleFile) {
+        const url = await uploadImage(fontStyleObj.fontStyleFile);
+        if (i === 0) fontStyle = url;
+        if (i === 1) fontStyle2 = url;
+        if (i === 2) fontStyle3 = url;
+      } else {
+        if (i === 0) fontStyle = fontStyleObj.fontStyle;
+        if (i === 1) fontStyle2 = fontStyleObj.fontStyle;
+        if (i === 2) fontStyle3 = fontStyleObj.fontStyle;
       }
     }
 
@@ -457,12 +503,14 @@ const BrandSetup = () => {
       description: formInputs.brandDescription,
       logoURL: formInputs.logoURL,
       brandColours: JSON.stringify(allColors),
-      mono_chromic_logo_url: mono_chromic_logo_url || "",
-      font_style: font_style,
-      font_style_2: font_style_2,
-      font_style_3: font_style_3,
+      monoChromicLogoStatus: formInputs.uploadMonochromeLogo, // Added field
+      monoChromicLogoURL: monoChromicLogoURL || "",           // Updated variable name
+      fontStyle: fontStyle,       // Updated variable name
+      fontStyle2: fontStyle2,     // Updated variable name
+      fontStyle3: fontStyle3,     // Updated variable name
       companyId: "123",
     };
+
 
     try {
       if (!jwtToken) {
@@ -746,129 +794,143 @@ const BrandSetup = () => {
               )}
             </div>
             {/* Section 3 */}
-            {/* ...Section 3 code (unchanged)... */}
+            {/* ...Section 3 code (modified)... */}
             {/* Section 3 */}
             <div
-              onClick={() =>
-                formInputs.isEdit || completedSections[2]
-                  ? toggleSection(3)
-                  : null
-              }
-              className={`relative items-center border border-[#fcfcfc] p-0 mb-4 rounded-2xl cursor-pointer ${
-                expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
-              } ${
-                !formInputs.isEdit && !completedSections[2]
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-            >
-              {completedSections[3] && (
-                <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
-                  <div className="text-xs">Completed</div>
-                  <FaCheck className="ml-1" />
-                </div>
-              )}
-              <div
-                className={`flex items-center justify-between ${
-                  expandedSection === 3 ? "bg-[#F6F8FE]" : ""
-                } p-4 rounded-t-2xl`}
-              >
-                <div className="flex items-center">
-                  <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
-                    <FaRegLightbulb className="text-[#374151] text-xl" />
-                  </div>
-                  <p className="ml-3">Extracted Brand Colors</p>
-                </div>
-                <div>
-                  {expandedSection === 3 ? (
-                    <FaChevronDown />
-                  ) : (
-                    <FaChevronRight />
-                  )}
-                </div>
-              </div>
-              {expandedSection === 3 && (
+  onClick={() =>
+    formInputs.isEdit || completedSections[2]
+      ? toggleSection(3)
+      : null
+  }
+  className={`relative items-center border border-[#fcfcfc] p-0 mb-4 rounded-2xl cursor-pointer ${
+    expandedSection === 3 ? "bg-[rgba(252,252,252,0.25)]" : ""
+  } ${
+    !formInputs.isEdit && !completedSections[2]
+      ? "opacity-50 cursor-not-allowed"
+      : ""
+  }`}
+>
+  {completedSections[3] && (
+    <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
+      <div className="text-xs">Completed</div>
+      <FaCheck className="ml-1" />
+    </div>
+  )}
+  <div
+    className={`flex items-center justify-between ${
+      expandedSection === 3 ? "bg-[#F6F8FE]" : ""
+    } p-4 rounded-t-2xl`}
+  >
+    <div className="flex items-center">
+      <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
+        <FaRegLightbulb className="text-[#374151] text-xl" />
+      </div>
+      <p className="ml-3">Extracted Brand Colors</p>
+    </div>
+    {/* Add the summary display here */}
+    {completedSections[3] && formInputs.domColors.length > 0 && (
+      <div className="flex items-center ml-auto">
+        <button
+          className="h-6 px-2 rounded-lg flex items-center justify-center text-white font-normal text-xs cursor-default"
+          style={{ backgroundColor: formInputs.domColors[0] }}
+        >
+          {formInputs.domColors[0]}
+        </button>
+        {formInputs.domColors.length > 1 && (
+          <span className="ml-2 text-sm">...</span>
+        )}
+      </div>
+    )}
+    <div>
+      {expandedSection === 3 ? (
+        <FaChevronDown />
+      ) : (
+        <FaChevronRight />
+      )}
+    </div>
+  </div>
+  {expandedSection === 3 && (
                 <div className="p-2" onClick={handlePickerClick}>
-                  {formInputs.isLoadingColor ? (
-                    <div className="flex flex-wrap gap-4 p-2 rounded-xl">
-                      <div className="animate-pulse flex space-x-4">
-                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                        <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
-                      </div>
+                {formInputs.isLoadingColor ? (
+                  <div className="flex flex-wrap gap-4 p-2 rounded-xl">
+                    <div className="animate-pulse flex space-x-4">
+                      <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                      <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
+                      <div className="bg-gray-300 h-10 w-24 rounded-lg"></div>
                     </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
-                      {formInputs.dominantColorsFailed && (
-                        <p className="text-red-500">
-                          Unable to load dominant colors. Please add colors
-                          manually.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-4 p-2 rounded-xl">
+                    {formInputs.dominantColorsFailed &&
+                      formInputs.domColors.length === 0 && (
+                        <p className="text-red-500 w-full">
+                          Unable to load dominant colors. Please add colors manually.
                         </p>
                       )}
-                      {formInputs.domColors.map((color, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-white p-2 rounded-xl"
-                        >
-                          <label className="text-sm pl-3 font-semibold lg:pr-9 pr-4 text-nowrap">
-                            Brand Color {index + 1}
-                          </label>
-                          <button
-                            className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
-                            style={{ background: color }}
-                            onClick={() => {
-                              setCustomColor(color);
-                              setColorPickerTarget(index);
-                              setColorPickerOpen(true);
-                            }}
-                          >
-                            {color}
-                          </button>
-                        </div>
-                      ))}
-                      {formInputs.domColors.length < 10 && (
+                    {formInputs.domColors.map((color, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center bg-white p-2 rounded-xl"
+                      >
+                        <label className="text-sm pl-3 font-semibold lg:pr-9 pr-4 text-nowrap">
+                          Brand Color {index + 1}
+                        </label>
                         <button
-                          className="custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setColorPickerTarget(null);
+                          className="h-8 p-3 rounded-lg flex items-center justify-center text-white font-normal text-sm cursor-pointer"
+                          style={{ background: color }}
+                          onClick={() => {
+                            setCustomColor(color);
+                            setColorPickerTarget(index);
                             setColorPickerOpen(true);
                           }}
                         >
-                          <FaPlus className="text-white" />
+                          {color}
                         </button>
-                      )}
-                      {colorPickerOpen && (
-                        <div className="absolute z-10 lg:w-full md:w-full sm:w-1/2">
-                          <div className="flex justify-start">
-                            <Picker
-                              color={customColor}
-                              onChangeComplete={handleColorSelect}
-                            />
-                          </div>
-                          <button
-                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-4 mr-2 text-white rounded-2xl shadow-2xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSaveAdditionalColor();
-                            }}
-                          >
-                            Save
-                          </button>
-                          <button
-                            className="custom-button p-2 pl-4 pr-4 mt-2 ml-64 text-white rounded-2xl shadow-2xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setColorPickerOpen(false);
-                            }}
-                          >
-                            Close
-                          </button>
+                      </div>
+                    ))}
+                    {formInputs.domColors.length < 10 && (
+                      <button
+                        className="custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setColorPickerTarget(null);
+                          setColorPickerOpen(true);
+                        }}
+                      >
+                        <FaPlus className="text-white" />
+                      </button>
+                    )}
+                    {colorPickerOpen && (
+                      <div className="absolute z-10 lg:w-full md:w-full sm:w-1/2">
+                        <div className="flex justify-start">
+                          <Picker
+                            color={customColor}
+                            onChangeComplete={handleColorSelect}
+                          />
                         </div>
-                      )}
-                    </div>
-                  )}
-                  <button
+                        <button
+                          className="custom-button p-2 pl-4 pr-4 mt-2 ml-4 mr-2 text-white rounded-2xl shadow-2xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveAdditionalColor();
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="custom-button p-2 pl-4 pr-4 mt-2 ml-64 text-white rounded-2xl shadow-2xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setColorPickerOpen(false);
+                          }}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button
                     className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -880,272 +942,353 @@ const BrandSetup = () => {
                 </div>
               )}
             </div>
-           
-           
-  {/* Section 4 */}
-  <div
-    onClick={() =>
-      formInputs.isEdit || completedSections[3] ? toggleSection(4) : null
-    }
-    className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${
-      expandedSection === 4 ? "bg-[rgba(252,252,252,0.25)]" : ""
-    } ${
-      !formInputs.isEdit && !completedSections[3]
-        ? "opacity-50 cursor-not-allowed"
-        : ""
-    }`}
-  >
-    {completedSections[4] && (
-      <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
-        <div className="text-xs">Completed</div>
-        <FaCheck className="ml-1" />
-      </div>
-    )}
-    <div
-      className={`flex items-center justify-between ${
-        expandedSection === 4 ? "bg-[#F6F8FE]" : ""
-      } p-4 rounded-t-2xl`}
-    >
-      <div className="flex items-center">
-        <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
-          <FaRegLightbulb className="text-[#374151] text-xl" />
-        </div>
-        <p className="ml-3 flex items-center justify-center">
-          Monochrome Logo (Optional)
-        </p>
-      </div>
-      {completedSections[4] && formInputs.mono_chromic_logo_url && (
-        <div className="flex items-center ml-auto bg-white rounded-lg p-1">
-          <img
-            src={
-              formInputs.monochromeLogo || formInputs.mono_chromic_logo_url
-            }
-            alt="Monochrome Logo"
-            className="w-12 h-7 object-cover rounded-md"
-          />
-        </div>
-      )}
-      <div className="ml-4">
-        {expandedSection === 4 ? <FaChevronDown /> : <FaChevronRight />}
-      </div>
-    </div>
-    {expandedSection === 4 && (
-      <div className="p-4">
-        <div className="mb-4">
-          <input
-            type="checkbox"
-            checked={formInputs.uploadMonochromeLogo}
-            onChange={(e) =>
-              setFormInputs({
-                ...formInputs,
-                uploadMonochromeLogo: e.target.checked,
-              })
-            }
-            onClick={(e) => e.stopPropagation()}
-          />
-          <label className="ml-2">
-            I want to upload a monochrome logo
-          </label>
-        </div>
-        {formInputs.uploadMonochromeLogo && (
-          <>
-            <p className="text-sm">
-              Upload your monochrome logo here. A monochrome logo with a
-              transparent background is recommended.
-            </p>
-            <div className="border-2 border-[#fcfcfc] rounded-2xl m-2 p-1 ">
-              <div className="bg-white rounded-xl m-1 p-2 shadow-lg">
-                <div className="border-dashed border-2 border-gray-400 bg-white rounded-lg p-1 m-1 text-center cursor-pointer hover:border-gray-600 relative">
-                  <input
-                    type="file"
-                    onChange={(e) =>
-                      handleFileUpload(e, "monochromeLogo")
-                    }
-                    className="w-full h-full absolute inset-0 opacity-0 cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                    id="monochrome-logo-upload"
-                  />
-                  <label
-                    htmlFor="monochrome-logo-upload"
-                    className="flex flex-col items-center justify-center h-full cursor-pointer"
-                  >
-                    <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
-                    <span className="text-gray-500 text-nowrap">
-                      Upload a logo here
-                    </span>
-                  </label>
+            {/* Section 4 */}
+            {/* ...Section 4 code (unchanged)... */}
+            {/* Section 4 */}
+            <div
+              onClick={() =>
+                formInputs.isEdit || completedSections[3]
+                  ? toggleSection(4)
+                  : null
+              }
+              className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${
+                expandedSection === 4 ? "bg-[rgba(252,252,252,0.25)]" : ""
+              } ${
+                !formInputs.isEdit && !completedSections[3]
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+            >
+              {completedSections[4] && (
+                <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
+                  <div className="text-xs">Completed</div>
+                  <FaCheck className="ml-1" />
+                </div>
+              )}
+              <div
+                className={`flex items-center justify-between ${
+                  expandedSection === 4 ? "bg-[#F6F8FE]" : ""
+                } p-4 rounded-t-2xl`}
+              >
+                <div className="flex items-center">
+                  <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
+                    <FaRegLightbulb className="text-[#374151] text-xl" />
+                  </div>
+                  <p className="ml-3 flex items-center justify-center">
+                    Monochrome Logo (Optional)
+                  </p>
+                </div>
+                {completedSections[4] && formInputs.monoChromicLogoURL && ( // Updated variable name
+              <div className="flex items-center ml-auto bg-white rounded-lg p-1">
+                <img
+                  src={
+                    formInputs.monochromeLogo ||
+                    formInputs.monoChromicLogoURL // Updated variable name
+                  }
+                  alt="Monochrome Logo"
+                  className="w-12 h-7 object-cover rounded-md"
+                />
+                  </div>
+                )}
+                <div className="ml-4">
+                  {expandedSection === 4 ? <FaChevronDown /> : <FaChevronRight />}
                 </div>
               </div>
-            </div>
-          </>
-        )}
-        <button
-          className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
-          onClick={async (e) => {
-            e.stopPropagation();
-            handleSaveAndContinue(4);
-            if (formInputs.uploadMonochromeLogo) {
-              if (formInputs.monochromeImageFile) {
-                const url = await uploadImage(
-                  formInputs.monochromeImageFile
-                );
-                setFormInputs((prev) => ({
-                  ...prev,
-                  mono_chromic_logo_url: url,
-                }));
-              }
-            }
-          }}
-        >
-          Save and Continue
-        </button>
-      </div>
-    )}
-  </div>
-  {/* Section 5 */}
-  <div
-    onClick={() =>
-      formInputs.isEdit || completedSections[4] ? toggleSection(5) : null
-    }
-    className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${
-      expandedSection === 5 ? "bg-[rgba(252,252,252,0.25)]" : ""
-    } ${
-      !formInputs.isEdit && !completedSections[4]
-        ? "opacity-50 cursor-not-allowed"
-        : ""
-    }`}
-  >
-    {completedSections[5] && (
-      <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
-        <div className="text-xs">Completed</div>
-        <FaCheck className="ml-1" />
-      </div>
-    )}
-    <div
-      className={`flex items-center justify-between ${
-        expandedSection === 5 ? "bg-[#F6F8FE]" : ""
-      } p-4 rounded-t-2xl`}
-    >
-      <div className="flex items-center">
-        <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
-          <FaRegLightbulb className="text-[#374151] text-xl" />
-        </div>
-        <p className="ml-3 flex items-center justify-center">
-          Font Styles (Optional)
-        </p>
-      </div>
-      {completedSections[5] && formInputs.font_style && (
-        <div className="flex items-center ml-auto bg-white rounded-lg p-1">
-          <p className="m-0 text-sm">{formInputs.font_style}</p>
-        </div>
-      )}
-      <div className="ml-4">
-        {expandedSection === 5 ? <FaChevronDown /> : <FaChevronRight />}
-      </div>
-    </div>
-    {expandedSection === 5 && (
-      <div className="p-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="mb-4">
-            <div className="mb-2">
-              <input
-                type="checkbox"
-                checked={formInputs[`uploadOwnFont${i}`]}
-                onChange={(e) =>
-                  setFormInputs({
-                    ...formInputs,
-                    [`uploadOwnFont${i}`]: e.target.checked,
-                    [`font_style${i > 1 ? `_${i}` : ""}`]: "",
-                  })
-                }
-                onClick={(e) => e.stopPropagation()}
-              />
-              <label className="ml-2">
-                {`Font Style ${i}`} - Upload your own font style
-              </label>
-            </div>
-            {formInputs[`uploadOwnFont${i}`] ? (
-              <>
-                <p className="text-sm">
-                  Upload your font style OTF file for Font Style {i}.
-                </p>
-                <div className="border-2 border-[#fcfcfc] rounded-2xl m-2 p-1 ">
-                  <div className="bg-white rounded-xl m-1 p-2 shadow-lg">
-                    <div className="border-dashed border-2 border-gray-400 bg-white rounded-lg p-1 m-1 text-center cursor-pointer hover:border-gray-600 relative">
-                      <input
-                        type="file"
-                        accept=".otf"
-                        onChange={(e) =>
-                          handleFileUpload(e, `fontStyleFile${i}`)
-                        }
-                        className="w-full h-full absolute inset-0 opacity-0 cursor-pointer"
-                        onClick={(e) => e.stopPropagation()}
-                        id={`font-style-upload-${i}`}
-                      />
-                      <label
-                        htmlFor={`font-style-upload-${i}`}
-                        className="flex flex-col items-center justify-center h-full cursor-pointer"
-                      >
-                        <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
-                        <span className="text-gray-500 text-nowrap">
-                          Upload an OTF file here
-                        </span>
-                      </label>
-                    </div>
+              {expandedSection === 4 && (
+                <div className="p-4">
+                  <div className="mb-4">
+                    <input
+                      type="checkbox"
+                      checked={formInputs.uploadMonochromeLogo}
+                      onChange={(e) =>
+                        setFormInputs({
+                          ...formInputs,
+                          uploadMonochromeLogo: e.target.checked,
+                        })
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label className="ml-2">
+                      I want to upload a monochrome logo
+                    </label>
                   </div>
+                  {formInputs.uploadMonochromeLogo && (
+                    <>
+                      <p className="text-sm">
+                        Upload your monochrome logo here. A monochrome logo with a
+                        transparent background is recommended.
+                      </p>
+                      <div className="border-2 border-[#fcfcfc] rounded-2xl m-2 p-1 ">
+                        <div className="bg-white rounded-xl m-1 p-2 shadow-lg">
+                          <div className="border-dashed border-2 border-gray-400 bg-white rounded-lg p-1 m-1 text-center cursor-pointer hover:border-gray-600 relative">
+                            <input
+                              type="file"
+                              onChange={(e) =>
+                                handleFileUpload(e, "monochromeLogo")
+                              }
+                              className="w-full h-full absolute inset-0 opacity-0 cursor-pointer"
+                              onClick={(e) => e.stopPropagation()}
+                              id="monochrome-logo-upload"
+                            />
+                            <label
+                              htmlFor="monochrome-logo-upload"
+                              className="flex flex-col items-center justify-center h-full cursor-pointer"
+                            >
+                              <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
+                              <span className="text-gray-500 text-nowrap">
+                                Upload a logo here
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <button
+                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      handleSaveAndContinue(4);
+                      if (formInputs.uploadMonochromeLogo) {
+                        if (formInputs.monochromeImageFile) {
+                          const url = await uploadImage(
+                            formInputs.monochromeImageFile
+                          );
+                          setFormInputs((prev) => ({
+                            ...prev,
+                            monoChromicLogoURL: url,
+                          }));
+                        }
+                      }
+                    }}
+                  >
+                    Save and Continue
+                  </button>
                 </div>
-              </>
-            ) : (
-              <select
-                value={formInputs[`font_style${i > 1 ? `_${i}` : ""}`]}
-                onChange={(e) =>
-                  setFormInputs({
-                    ...formInputs,
-                    [`font_style${i > 1 ? `_${i}` : ""}`]: e.target.value,
-                  })
-                }
-                onClick={(e) => e.stopPropagation()}
-                className="w-full p-2 rounded-lg shadow-xl border border-[#fcfcfc] mb-2 bg-[#FCFCFC]"
+              )}
+            </div>
+            {/* Section 5 */}
+            {/* ...Section 5 code (modified)... */}
+            {/* Section 5 */}
+            <div
+              onClick={() =>
+                formInputs.isEdit || completedSections[4]
+                  ? toggleSection(5)
+                  : null
+              }
+              className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${
+                expandedSection === 5 ? "bg-[rgba(252,252,252,0.25)]" : ""
+              } ${
+                !formInputs.isEdit && !completedSections[4]
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+            >
+              {completedSections[5] && (
+                <div className="absolute -top-3 -right-6 flex items-center bg-[#A7F3D0] text-[#059669] px-2 py-1 rounded-xl">
+                  <div className="text-xs">Completed</div>
+                  <FaCheck className="ml-1" />
+                </div>
+              )}
+              <div
+                className={`flex items-center justify-between ${
+                  expandedSection === 5 ? "bg-[#F6F8FE]" : ""
+                } p-4 rounded-t-2xl`}
               >
-                <option value="">Select a font style</option>
-                {existingFontStyles.map((font) => (
-                  <option key={font} value={font}>
-                    {font}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center">
+                  <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
+                    <FaRegLightbulb className="text-[#374151] text-xl" />
+                  </div>
+                  <p className="ml-3 flex items-center justify-center">
+                    Font Styles (Optional)
+                  </p>
+                </div>
+                {completedSections[5] && formInputs.fontStyles.length > 0 && (
+                  <div className="flex items-center ml-auto bg-white rounded-lg p-1">
+                    <p className="m-0 text-sm">
+                      {formInputs.fontStyles
+                        .map((fs) => fs.fontStyle)
+                        .join(", ")}
+                    </p>
+                  </div>
+                )}
+                <div className="ml-4">
+                  {expandedSection === 5 ? (
+                    <FaChevronDown />
+                  ) : (
+                    <FaChevronRight />
+                  )}
+                </div>
+              </div>
+              {expandedSection === 5 && (
+                <div className="p-4">
+                  {formInputs.fontStyles.map((fontStyleObj, index) => (
+                    <div key={index} className="mb-4">
+                      <div className="mb-2">
+                        <input
+                          type="checkbox"
+                          checked={fontStyleObj.uploadOwnFont}
+                          onChange={(e) => {
+                            const newFontStyles = [...formInputs.fontStyles];
+                            newFontStyles[index].uploadOwnFont = e.target.checked;
+                            newFontStyles[index].fontStyle = "";
+                            newFontStyles[index].fontStyleFile = null;
+                            setFormInputs({
+                              ...formInputs,
+                              fontStyles: newFontStyles,
+                            });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <label className="ml-2">
+                          {`Font Style ${index + 1}`} - Upload your own font style
+                        </label>
+                      </div>
+                      {fontStyleObj.uploadOwnFont ? (
+                        fontStyleObj.fontStyleFile ? (
+                          <div className="flex items-center mb-2">
+                            <p className="mr-4">
+                              Uploaded File: {fontStyleObj.fontStyleFile.name}
+                            </p>
+                            <button
+                              className="text-blue-500 underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newFontStyles = [...formInputs.fontStyles];
+                                newFontStyles[index].fontStyleFile = null;
+                                newFontStyles[index].fontStyle = "";
+                                setFormInputs({
+                                  ...formInputs,
+                                  fontStyles: newFontStyles,
+                                });
+                              }}
+                            >
+                              Change File
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm">
+                              Upload your font style OTF file for Font Style{" "}
+                              {index + 1}.
+                            </p>
+                            <div className="border-2 border-[#fcfcfc] rounded-2xl m-2 p-1 ">
+                              <div className="bg-white rounded-xl m-1 p-2 shadow-lg">
+                                <div className="border-dashed border-2 border-gray-400 bg-white rounded-lg p-1 m-1 text-center cursor-pointer hover:border-gray-600 relative">
+                                  <input
+                                    type="file"
+                                    accept=".otf"
+                                    onChange={(e) =>
+                                      handleFileUpload(e, "fontStyleFile", index)
+                                    }
+                                    className="w-full h-full absolute inset-0 opacity-0 cursor-pointer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    id={`font-style-upload-${index}`}
+                                  />
+                                  <label
+                                    htmlFor={`font-style-upload-${index}`}
+                                    className="flex flex-col items-center justify-center h-full cursor-pointer"
+                                  >
+                                    <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
+                                    <span className="text-gray-500 text-nowrap">
+                                      Upload an OTF file here
+                                    </span>
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )
+                      ) : (
+                        <select
+                          value={fontStyleObj.fontStyle}
+                          onChange={(e) => {
+                            const newFontStyles = [...formInputs.fontStyles];
+                            newFontStyles[index].fontStyle = e.target.value;
+                            setFormInputs({
+                              ...formInputs,
+                              fontStyles: newFontStyles,
+                            });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full p-2 rounded-lg shadow-xl border border-[#fcfcfc] mb-2 bg-[#FCFCFC]"
+                        >
+                          <option value="">Select a font style</option>
+                          {existingFontStyles.map((font) => (
+                            <option key={font} value={font}>
+                              {font}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        className="text-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newFontStyles = [...formInputs.fontStyles];
+                          newFontStyles.splice(index, 1);
+                          setFormInputs({
+                            ...formInputs,
+                            fontStyles: newFontStyles,
+                          });
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {formInputs.fontStyles.length < 3 && (
+                    <button
+                      className="custom-button text-white w-10 h-10 rounded-lg border-4 border-[#FCFCFC] flex items-center justify-center hover:bg-[#1E1154]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFormInputs((prev) => ({
+                          ...prev,
+                          fontStyles: [
+                            ...prev.fontStyles,
+                            {
+                              uploadOwnFont: false,
+                              fontStyle: "",
+                              fontStyleFile: null,
+                            },
+                          ],
+                        }));
+                      }}
+                    >
+                      <FaPlus className="text-white" />
+                    </button>
+                  )}
+                  <button
+                    className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      handleSaveAndContinue(5);
+                    }}
+                  >
+                    Save and Continue
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Submit Button */}
+            {formInputs.showSubmitButton && (
+              <div className="flex justify-start mt-4">
+                <button
+                  className={`custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`} // Apply styling for disabled state
+                  onClick={
+                    formInputs.isEdit ? handleEditBrand : handleCreateBrand
+                  }
+                  disabled={isUploading} // Disable the button during upload
+                >
+                  {formInputs.isEdit ? "Update" : "Create Brand"}
+                
+              </button>
+              </div>
             )}
           </div>
-        ))}
-        <button
-          className="custom-button p-2 pl-4 pr-4 mt-4 text-white rounded-2xl shadow-2xl"
-          onClick={async (e) => {
-            e.stopPropagation();
-            handleSaveAndContinue(5);
-          }}
-        >
-          Save and Continue
-        </button>
+        </div>
       </div>
-    )}
-  </div>
-  {/* Submit Button */}
-  {formInputs.showSubmitButton && (
-    <div className="flex justify-start mt-4">
-      <button
-        className="custom-button p-2 pl-6 ml-2 pr-6 text-white rounded-lg"
-        onClick={
-          formInputs.isEdit ? handleEditBrand : handleCreateBrand
-        }
-      >
-        {formInputs.isEdit ? "Update" : "Create Brand"}
-      </button>
     </div>
-  )}
-  </div>
-</div>
-</div>
-</div>
-);
+  );
 };
 export default BrandSetup;
