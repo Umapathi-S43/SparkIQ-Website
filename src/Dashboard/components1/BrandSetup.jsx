@@ -246,36 +246,47 @@ const BrandSetup = () => {
     }
   }, [formInputs.brandLogo, formInputs.logoURL]);
 
-  const handleFileUpload = (event, fieldName, index = null) => {
+  const handleFileUpload = async (event, fieldName, index = null) => {
     const file = event.target.files[0];
     if (file) {
       setIsUploading(true); // Start the upload process
-      if (fieldName === "brandLogo") {
-        setFormInputs({
-          ...formInputs,
-          brandLogo: URL.createObjectURL(file),
-          imageFile: file,
-        });
-      } else if (fieldName === "monochromeLogo") {
-        setFormInputs({
-          ...formInputs,
-          monochromeLogo: URL.createObjectURL(file),
-          monochromeImageFile: file,
-        });
-      } else if (fieldName === "fontStyleFile" && index !== null) {
-        const newFontStyles = [...formInputs.fontStyles];
-        newFontStyles[index].fontStyleFile = file;
-        newFontStyles[index].fontStyle = ""; // Clear the fontStyle field
-        newFontStyles[index].fontFileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-        setFormInputs({
-          ...formInputs,
-          fontStyles: newFontStyles,
-        });
+      try {
+        if (fieldName === "brandLogo") {
+          setFormInputs((prev) => ({
+            ...prev,
+            brandLogo: URL.createObjectURL(file),
+            imageFile: file,
+          }));
+        } else if (fieldName === "monochromeLogo") {
+          setFormInputs((prev) => ({
+            ...prev,
+            monochromeLogo: URL.createObjectURL(file),
+            monochromeImageFile: file,
+          }));
+        } else if (fieldName === "fontStyleFile" && index !== null) {
+          // Upload the font file immediately
+          const uploadedFontURL = await uploadImage(file);
+          const newFontStyles = [...formInputs.fontStyles];
+          newFontStyles[index] = {
+            uploadOwnFont: true,
+            fontStyleFile: file,
+            fontStyle: uploadedFontURL,
+            fontFileName: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+          };
+          setFormInputs((prev) => ({
+            ...prev,
+            fontStyles: newFontStyles,
+          }));
+        }
+      } catch (error) {
+        console.error("Error during file upload:", error);
+        toast.error("Failed to upload file. Please try again.");
+      } finally {
+        setIsUploading(false); // End the upload process
       }
-      setIsUploading(false); // End the upload process
     }
   };
-
+  
   const handleColorSelect = (color) => {
     setCustomColor(color.hex);
     if (colorPickerTarget !== null) {
@@ -360,7 +371,7 @@ const BrandSetup = () => {
         throw new Error("No JWT token found. Please log in.");
       }
       const res = await axios.post(
-        `${baseUrl}/sparkiq/ai/product/dominant-colors`,
+        `${baseUrl}/sparkiq/ai/brand/logo-color`,
         { url: url },
         {
           headers: {
@@ -368,9 +379,17 @@ const BrandSetup = () => {
           },
         }
       );
-
-      const dominantColorsHex = res.data.data.background_colors.map(rgbArrayToHex);
-
+  
+      // Parse the colors field from the response
+      const colorsString = res.data.data.colors; // Adjusted key name
+      const rgbArrayStrings = colorsString
+        .slice(1, -1) // Remove the outer brackets
+        .split("],[") // Split into individual RGB strings
+        .map((rgbStr) => rgbStr.split(",").map(Number)); // Convert to numeric arrays
+  
+      // Convert RGB arrays to hex colors
+      const dominantColorsHex = rgbArrayStrings.map(rgbArrayToHex);
+  
       setFormInputs((prev) => ({
         ...prev,
         domColors: dominantColorsHex,
@@ -384,13 +403,14 @@ const BrandSetup = () => {
         isLoadingColor: false,
         dominantColorsFailed: true,
       }));
-      if (prev.domColors.length === 0) {
+      if (formInputs.domColors.length === 0) {
         toast.error(
           "Failed to load dominant colors. Please add colors manually."
         );
       }
     }
   };
+  
 
   const toggleSection = (section) => {
     if (section === 1 || completedSections[section - 1]) {
@@ -406,37 +426,34 @@ const BrandSetup = () => {
   };
 
   const handleCreateBrand = async () => {
-    if (
-      !formInputs.brandName ||
-      !formInputs.brandDescription ||
-      !formInputs.logoURL
-    ) {
+    if (!formInputs.brandName || !formInputs.brandDescription || !formInputs.logoURL) {
       toast.error("Please fill in all the required fields.");
       return;
     }
-
+  
     const allColors = formInputs.domColors;
-
+  
     if (allColors.length === 0) {
       toast.error("Please add at least one brand color.");
       return;
     }
-
-    let monoChromicLogoURL = formInputs.monoChromicLogoURL; // Correct variable name
-
-    // Upload monochrome logo if present
-    if (formInputs.uploadMonochromeLogo && formInputs.monochromeImageFile) {
+  
+    let monoChromicLogoURL = formInputs.monoChromicLogoURL;
+  
+    // Upload monochrome logo only if it hasn't been uploaded yet
+    if (formInputs.uploadMonochromeLogo && formInputs.monochromeImageFile && !monoChromicLogoURL) {
       monoChromicLogoURL = await uploadImage(formInputs.monochromeImageFile);
     }
-
+  
     // Prepare font styles
     let fontStyle = "";
     let fontStyle2 = "";
     let fontStyle3 = "";
-
+  
     for (let i = 0; i < formInputs.fontStyles.length; i++) {
       const fontStyleObj = formInputs.fontStyles[i];
-      if (fontStyleObj.uploadOwnFont && fontStyleObj.fontStyleFile) {
+      if (fontStyleObj.uploadOwnFont && fontStyleObj.fontStyleFile && !fontStyleObj.fontStyle.startsWith("http")) {
+        // Upload only if the file has not been uploaded
         const url = await uploadImage(fontStyleObj.fontStyleFile);
         if (i === 0) fontStyle = url;
         if (i === 1) fontStyle2 = url;
@@ -447,7 +464,7 @@ const BrandSetup = () => {
         if (i === 2) fontStyle3 = fontStyleObj.fontStyle;
       }
     }
-
+  
     const newBrand = {
       id: "123",
       name: formInputs.brandName,
@@ -461,7 +478,7 @@ const BrandSetup = () => {
       fontStyle3: fontStyle3,
       companyId: "123",
     };
-
+  
     try {
       if (!jwtToken) {
         throw new Error("No JWT token found. Please log in.");
@@ -480,6 +497,7 @@ const BrandSetup = () => {
       console.log(error);
     }
   };
+  
 
   const handleEditBrand = async () => {
     if (
