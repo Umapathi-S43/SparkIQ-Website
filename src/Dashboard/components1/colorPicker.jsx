@@ -1,38 +1,39 @@
-import React, { useRef, useEffect, useState } from 'react';
-import drop from '../../assets/dashboard_img/drop.svg';
-import pen from '../../assets/dashboard_img/pen.svg';
-import { FaChevronDown } from 'react-icons/fa';
+import React, { useRef, useEffect, useState } from "react";
+import drop from "../../assets/dashboard_img/drop.svg";
+import pen from "../../assets/dashboard_img/pen.svg";
+import { FaChevronDown } from "react-icons/fa";
 
 const Picker = ({ color, onChangeComplete }) => {
   const [hue, setHue] = useState(0);
-  const [currentColor, setCurrentColor] = useState({ r: 255, g: 0, b: 0, hex: '#ff0000' });
+  const [currentColor, setCurrentColor] = useState({ r: 255, g: 0, b: 0, hex: "#ff0000" });
   const [colorPosition, setColorPosition] = useState({ x: 0, y: 0 });
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
   const canvasRef = useRef(null);
   const hueCanvasRef = useRef(null);
+  const hueDiskRef = useRef(null);
 
   const drawPalette = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const width = canvas.width;
     const height = canvas.height;
 
     const gradient = ctx.createLinearGradient(0, 0, width, 0);
     gradient.addColorStop(0, `hsl(${hue}, 100%, 50%)`);
-    gradient.addColorStop(1, 'white');
+    gradient.addColorStop(1, "white");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
     const gradientBlack = ctx.createLinearGradient(0, 0, 0, height);
-    gradientBlack.addColorStop(0, 'transparent');
-    gradientBlack.addColorStop(1, 'black');
+    gradientBlack.addColorStop(0, "transparent");
+    gradientBlack.addColorStop(1, "black");
     ctx.fillStyle = gradientBlack;
     ctx.fillRect(0, 0, width, height);
   };
 
   const drawHueBar = () => {
     const canvas = hueCanvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const width = canvas.width;
     const height = canvas.height;
 
@@ -50,11 +51,19 @@ const Picker = ({ color, onChangeComplete }) => {
 
   useEffect(() => {
     drawHueBar();
+    updateHueDiskPosition(hue);
   }, []);
+
+  const updateHueDiskPosition = (hueValue) => {
+    const canvas = hueCanvasRef.current;
+    const width = canvas.width;
+    const position = (hueValue / 360) * width;
+    hueDiskRef.current.style.left = `${position}px`;
+  };
 
   const handleCanvasClick = (e) => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -69,22 +78,77 @@ const Picker = ({ color, onChangeComplete }) => {
   const handleHueChange = (e) => {
     const rect = hueCanvasRef.current.getBoundingClientRect();
     const x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
-    setHue(Math.round((x / rect.width) * 360));
+    const newHue = Math.round((x / rect.width) * 360);
+    setHue(newHue);
+    updateHueDiskPosition(newHue);
+    drawPalette();
   };
 
-  const handleHueMouseDown = (e) => {
-    document.addEventListener('mousemove', handleHueChange);
-    document.addEventListener('mouseup', handleMouseUp);
+  const handleHueMouseDown = () => {
+    document.addEventListener("mousemove", handleHueChange);
+    document.addEventListener("mouseup", handleMouseUp);
   };
 
   const handleMouseUp = () => {
-    document.removeEventListener('mousemove', handleHueChange);
-    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener("mousemove", handleHueChange);
+    document.removeEventListener("mouseup", handleMouseUp);
   };
 
   const rgbToHex = (r, g, b) => {
-    const toHex = (component) => component.toString(16).padStart(2, '0');
+    const toHex = (component) => component.toString(16).padStart(2, "0");
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
+  const hexToRgb = (hex) => {
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+    return { r, g, b };
+  };
+
+  const handleHexInputChange = (e) => {
+    const hex = e.target.value.trim();
+    if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(hex)) {
+      const rgb = hexToRgb(hex);
+      setCurrentColor({ ...rgb, hex });
+      setHue(getHueFromRgb(rgb));
+      drawPalette();
+      updateHueDiskPosition(getHueFromRgb(rgb));
+      onChangeComplete({ hex });
+    }
+  };
+
+  const handleRgbInputChange = (e, channel) => {
+    let value = parseInt(e.target.value, 10);
+    if (isNaN(value) || value < 0) value = 0;
+    if (value > 255) value = 255;
+
+    const newRgb = { ...currentColor, [channel]: value };
+    const hex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+    setCurrentColor({ ...newRgb, hex });
+    const newHue = getHueFromRgb(newRgb);
+    setHue(newHue);
+    updateHueDiskPosition(newHue);
+    drawPalette();
+    onChangeComplete({ hex });
+  };
+
+  const getHueFromRgb = ({ r, g, b }) => {
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let hue = 0;
+    if (max === min) {
+      hue = 0;
+    } else if (max === r) {
+      hue = ((g - b) / (max - min)) % 6;
+    } else if (max === g) {
+      hue = (b - r) / (max - min) + 2;
+    } else if (max === b) {
+      hue = (r - g) / (max - min) + 4;
+    }
+    hue = Math.round(hue * 60);
+    if (hue < 0) hue += 360;
+    return hue;
   };
 
   const toggleDropdown = () => {
@@ -96,82 +160,62 @@ const Picker = ({ color, onChangeComplete }) => {
   };
 
   return (
-    <div className="picker-container rounded-2xl flex justify-center shadow-lg" style={{ backgroundColor: 'rgba(252, 252, 252, 0.50)', borderColor: '#FFFFFF' }}>
-      <div className="picker-content flex flex-col items-center m-2 bg-white shadow-md rounded-xl p-4" style={{ borderColor: '#CFCBDC' }}>
+    <div className="picker-container flex flex-col rounded-2xl shadow-lg max-w-md bg-[#FCFCFC40] p-1">
+      <div className="picker-content flex flex-col items-center bg-white shadow-md rounded-xl p-4" style={{ borderColor: "#CFCBDC" }}>
         <div className="flex items-center mb-4 w-full">
-          <img src={drop} alt="picker" className='w-10 mr-2'/>
-          <h2 className="text-xl font-normal text-[#082A66]">Select Color</h2>
+          <img src={drop} alt="picker" className="w-8 mr-2" />
+          <h2 className="text-lg font-normal text-[#082A66]">Select Color</h2>
         </div>
-        <div className="border p-2 rounded-lg bg-white" style={{ borderColor: '#CFCBDC' }}>
+        <div className="border p-3 rounded-lg bg-white w-full" style={{ borderColor: "#CFCBDC" }}>
           <div className="relative w-full mb-4">
-            <div className="flex items-center mb-2 cursor-pointer" onClick={toggleDropdown}>
-              <img src={pen} alt="droper" className='w-5 m-2'/>
-              <h3 className="text-lg font-normal text-[#082A66]">Select Custom Color</h3>
+            <div className="flex items-center cursor-pointer" onClick={toggleDropdown}>
+              <img src={pen} alt="dropper" className="w-5 mr-2" />
+              <h3 className="text-md font-normal text-[#082A66]">Select Custom Color</h3>
               <FaChevronDown className="text-blue-800 ml-auto" />
             </div>
             {isDropdownOpen && (
-              <>
-                <canvas
-                  ref={canvasRef}
-                  width={380}
-                  height={110}
-                  onClick={handleCanvasClick}
-                  className="color-canvas border p-1 rounded-xl cursor-pointer mb-2"
-                  style={{ borderColor: '#CFCBDC' }}
-                ></canvas>
-                <div
-                  className="color-indicator absolute"
-                  style={{
-                    top: colorPosition.y - 5, // Adjusted to center circle on cursor
-                    left: colorPosition.x - 5, // Adjusted to center circle on cursor
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    border: '2px solid white',
-                    pointerEvents: 'none',
-                  }}
-                ></div>
-                <div className="relative w-full mb-4">
-                  <canvas
-                    ref={hueCanvasRef}
-                    width={380}
-                    height={12}
-                    onMouseDown={handleHueMouseDown}
-                    className="hue-canvas border rounded-lg cursor-pointer mb-2"
-                    style={{ borderColor: '#CFCBDC' }}
-                  ></canvas>
+              <div className="relative">
+                <canvas ref={canvasRef} width={300} height={100} onClick={handleCanvasClick} className="border p-1 rounded-lg cursor-pointer mt-3 w-full" style={{ borderColor: "#CFCBDC" }}></canvas>
+                <div className="relative mt-3">
+                  <canvas ref={hueCanvasRef} width={300} height={12} onMouseDown={handleHueMouseDown} className="border rounded-lg cursor-pointer w-full" style={{ borderColor: "#CFCBDC" }}></canvas>
                   <div
-                    className="hue-indicator absolute"
-                    style={{
-                      top: -1, // Adjusted to better align with the hue bar
-                      left: (hue / 360) * 380 - 7,
-                      width: '14px',
-                      height: '14px',
-                      borderRadius: '50%',
-                      background: 'white',
-                      border: '2px solid white',
-                      pointerEvents: 'none',
-                    }}
+                    ref={hueDiskRef}
+                    className="absolute h-4 w-4 bg-white rounded-full border border-gray-400"
+                    style={{ top: 0, left: "0px", transition: "left 0.1s ease" }}
                   ></div>
                 </div>
-              </>
+              </div>
             )}
           </div>
-          <div className="flex justify-between items-center w-full space-x-2">
-            <div className="flex items-center justify-between p-2 rounded-lg border w-full" style={{ borderColor: '#CFCBDC' }}>
-              <span className="text-sm font-medium text-gray-700">HEX</span>
-              <span className="text-lg font-semibold text-gray-900 pr-8">{currentColor.hex}</span>
+          <div className="flex justify-between w-full">
+            <div className="flex items-center border rounded-lg p-2 w-4/6 mr-2" style={{ borderColor: "#CFCBDC" }}>
+              <span className="text-sm font-medium text-gray-700 mr-2">HEX</span>
+              <input
+                type="text"
+                value={currentColor.hex}
+                onChange={handleHexInputChange}
+                className="text-lg font-semibold text-gray-900 bg-transparent border-none outline-none w-full"
+                style={{ maxWidth: "80px" }}
+              />
             </div>
-            <div className="flex items-center justify-between p-2 mr-2 rounded-lg border w-full" style={{ borderColor: '#CFCBDC' }}>
-              <span className="text-sm font-medium text-gray-700">RGB</span>
-              <span className="text-lg font-semibold text-gray-900 pr-8">{`${currentColor.r} ${currentColor.g} ${currentColor.b}`}</span>
+            <div className="flex items-center border rounded-lg p-2 w-full" style={{ borderColor: "#CFCBDC" }}>
+              <span className="text-sm font-medium text-gray-700 mr-2">RGB</span>
+              <div className="flex space-x-1">
+                {["r", "g", "b"].map((channel) => (
+                  <input
+                    key={channel}
+                    type="number"
+                    value={currentColor[channel]}
+                    onChange={(e) => handleRgbInputChange(e, channel)}
+                    className="text-lg font-semibold text-gray-900 bg-transparent border rounded text-center p-1 w-14"
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-      
     </div>
-    
   );
 };
 
