@@ -9,9 +9,10 @@ import {
   MdRotateLeft,
   MdUndo,
   MdRedo,
+  MdDownload,
 } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "./Sidebar_Edit"; // Your existing sidebar
+import Sidebar from "./Sidebar_Edit"; // Your existing sidebar component
 import TextAdder from "./TextAdder";
 import ImageUploadLayout from "./ImageUpload";
 import ImageSearchLayout from "./ImageSearch";
@@ -22,26 +23,62 @@ import OutlineElements from "./OutlineElements";
 import StarElements from "./StarElements";
 import BlobElements from "./BlobElements";
 import SunburstElements from "./SunburstHalftone";
+import domtoimage from "dom-to-image"; // For image export
 
 export default function DynamicCanvaTemplate() {
   const [elements, setElements] = useState([]);
   const [selectedElementIndex, setSelectedElementIndex] = useState(null);
   const [templates, setTemplates] = useState([[]]);
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
-  const [zoom, setZoom] = useState(0.5);
+  const [zoom, setZoom] = useState(0.5); // Set default zoom to 50%
   const [previousZoom, setPreviousZoom] = useState(0.5);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isGridView, setIsGridView] = useState(false);
   const [activeComponent, setActiveComponent] = useState("");
   const [editingTextIndex, setEditingTextIndex] = useState(null);
+  const [editingContent, setEditingContent] = useState(""); // For text editing
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
-  const templateContainerRef = useRef(null);
-  const templateRef = useRef(null);
+  const [isDownloading, setIsDownloading] = useState(false); // For loader
   const elementRefs = useRef([]);
   const navigate = useNavigate();
 
   const CANVAS_SIZE = 1080; // Default canvas size
+
+  // Function to adjust zoom based on mode
+  const adjustZoomForMode = (mode) => {
+    if (mode === "grid") {
+      // Calculate zoom to fit the template previews
+      const previewSize = 200; // Size of the preview in pixels
+      const zoomLevel = previewSize / CANVAS_SIZE;
+      setZoom(zoomLevel);
+    } else if (mode === "fullscreen") {
+      // Calculate zoom to fit the canvas to the screen
+      const widthRatio = window.innerWidth / CANVAS_SIZE;
+      const heightRatio = window.innerHeight / CANVAS_SIZE;
+      const zoomLevel = Math.min(widthRatio, heightRatio);
+      setZoom(zoomLevel);
+    } else if (mode === "download") {
+      // Do not change the zoom level in the main UI
+    } else {
+      setZoom(0.5); // Default zoom level is 50%
+    }
+  };
+
+  // Handle window resize to adjust zoom in fullscreen mode
+  useEffect(() => {
+    const handleResize = () => {
+      if (isFullscreen) {
+        adjustZoomForMode("fullscreen");
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isFullscreen]);
 
   // Undo and Redo Functions
   const handleUndo = () => {
@@ -69,6 +106,13 @@ export default function DynamicCanvaTemplate() {
     setHistory([...history, elements]);
     setElements(newElements);
     setFuture([]);
+
+    // Update templates array
+    setTemplates((prevTemplates) => {
+      const newTemplates = [...prevTemplates];
+      newTemplates[activeTemplateIndex] = newElements;
+      return newTemplates;
+    });
   };
 
   // Handle Deletion of Elements
@@ -106,8 +150,7 @@ export default function DynamicCanvaTemplate() {
       // Redo (Ctrl+Y or Command+Shift+Z)
       if (
         ((event.ctrlKey && event.key.toLowerCase() === "y") && !isMac) ||
-        ((event.metaKey && event.shiftKey && event.key.toLowerCase() === "z") &&
-          isMac)
+        ((event.metaKey && event.shiftKey && event.key.toLowerCase() === "z") && isMac)
       ) {
         event.preventDefault();
         handleRedo();
@@ -199,118 +242,69 @@ export default function DynamicCanvaTemplate() {
 
   const handleElementDragStop = (e, d, index) => {
     const updatedElements = [...elements];
-    updatedElements[index].position = { x: d.x / zoom, y: d.y / zoom };
+    updatedElements[index].position = { x: d.x, y: d.y };
     updateElements(updatedElements);
   };
 
   const handleElementResize = (e, direction, ref, delta, index) => {
     const updatedElements = [...elements];
     updatedElements[index].size = {
-      width: ref.offsetWidth / zoom,
-      height: ref.offsetHeight / zoom,
+      width: ref.offsetWidth,
+      height: ref.offsetHeight,
     };
     updateElements(updatedElements);
   };
 
   const handleZoomChange = (e) => {
-    setZoom(e.target.value / 100);
+    const newZoom = e.target.value / 100;
+    setZoom(newZoom);
+    setPreviousZoom(newZoom);
   };
 
   const handleFullscreenToggle = () => {
     if (!isFullscreen) {
-      enterFullscreen();
+      setPreviousZoom(zoom);
+      adjustZoomForMode("fullscreen");
+      setIsFullscreen(true);
     } else {
-      exitFullscreen();
+      setIsFullscreen(false);
+      adjustZoomForMode("default"); // Reset to default zoom level
     }
   };
 
-  const enterFullscreen = () => {
-    if (templateRef.current) {
-      templateRef.current.requestFullscreen();
-    }
-  };
-
-  const exitFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
-  };
-
-  // Listen to fullscreen change events
+  // Adjust zoom when entering fullscreen or grid view
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (document.fullscreenElement) {
-        setIsFullscreen(true);
-        adjustZoomForFullscreen();
-      } else {
-        setIsFullscreen(false);
-        // Restore the previous zoom level
-        setZoom(previousZoom);
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, [previousZoom]);
-
-  // Adjust zoom for fullscreen
-  const adjustZoomForFullscreen = () => {
-    // Store the previous zoom level
-    setPreviousZoom(zoom);
-
-    // Calculate new zoom level to fit the canvas to the screen
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    const widthRatio = screenWidth / CANVAS_SIZE;
-    const heightRatio = screenHeight / CANVAS_SIZE;
-
-    const newZoom = Math.min(widthRatio, heightRatio);
-
-    setZoom(newZoom);
-  };
-
-  // Handle window resize in fullscreen
-  useEffect(() => {
-    const handleResize = () => {
-      if (isFullscreen) {
-        adjustZoomForFullscreen();
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [isFullscreen]);
+    if (isFullscreen) {
+      adjustZoomForMode("fullscreen");
+    } else if (isGridView) {
+      adjustZoomForMode("grid");
+    } else {
+      adjustZoomForMode("default");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFullscreen, isGridView]);
 
   const handleSidebarComponent = (componentName) => {
     setActiveComponent(componentName);
   };
 
   const handleDoubleClickText = (index) => {
+    if (isFullscreen) return; // Disable editing in fullscreen mode
     setEditingTextIndex(index);
     setSelectedElementIndex(index);
+    setEditingContent(elements[index].content || "");
   };
 
-  const handleTextChange = (e, index) => {
-    const newElements = [...elements];
-    newElements[index].content = e.target.textContent;
-    updateElements(newElements);
-  };
-
-  const handleTextBlur = (index, e) => {
+  const handleTextBlur = (index) => {
+    const updatedElements = [...elements];
+    updatedElements[index].content = editingContent;
+    updateElements(updatedElements);
     setEditingTextIndex(null);
-    const newElements = [...elements];
-    newElements[index].content = e.target.textContent;
-    updateElements(newElements);
+    setEditingContent("");
   };
 
   const handleImageDrop = (e, frameIndex) => {
+    if (isFullscreen) return; // Disable editing in fullscreen mode
     e.preventDefault();
     e.stopPropagation();
 
@@ -347,6 +341,7 @@ export default function DynamicCanvaTemplate() {
   };
 
   const handleRotationDragStart = (e, index) => {
+    if (isFullscreen) return; // Disable editing in fullscreen mode
     e.preventDefault();
     e.stopPropagation();
 
@@ -390,6 +385,12 @@ export default function DynamicCanvaTemplate() {
   // Grid View Functionality
   const handleGridViewToggle = () => {
     setIsGridView(!isGridView);
+    if (!isGridView) {
+      adjustZoomForMode("grid");
+      setActiveComponent(""); // Close active component panel when entering grid view
+    } else {
+      adjustZoomForMode("default");
+    }
   };
 
   const handleAddTemplate = () => {
@@ -402,28 +403,196 @@ export default function DynamicCanvaTemplate() {
   const handleTemplateSelect = (index) => {
     setActiveTemplateIndex(index);
     setElements(templates[index] || []);
+    setIsGridView(false);
+    adjustZoomForMode("default");
+  };
 
-    // Switch to template view if in grid view
-    if (isGridView) {
-      setIsGridView(false);
-    }
+  // Template Preview Component
+  const TemplatePreview = ({ elements }) => {
+    const previewSize = 200; // Size of the preview
+    const zoomLevel = previewSize / CANVAS_SIZE;
 
-    // Scroll the selected template into the center
-    setTimeout(() => {
-      const templateElement = templateContainerRef.current?.children[index];
-      if (templateElement) {
-        templateElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }, 0);
+    return (
+      <div
+        className="template-preview"
+        style={{
+          width: previewSize,
+          height: previewSize,
+          position: "relative",
+          backgroundColor: "#fff",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: CANVAS_SIZE,
+            height: CANVAS_SIZE,
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: "top left",
+          }}
+        >
+          {elements.map((element, index) => {
+            return (
+              <div
+                key={index}
+                style={{
+                  position: "absolute",
+                  left: element.position.x,
+                  top: element.position.y,
+                  width: element.size.width,
+                  height: element.size.height,
+                  transform: `rotate(${element.rotation || 0}deg)`,
+                  transformOrigin: "center",
+                }}
+              >
+                {element.type === "image" ? (
+                  <img
+                    src={element.src}
+                    alt="element"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  />
+                ) : element.type === "text" ? (
+                  <div
+                    style={{
+                      fontSize: element.style.fontSize,
+                      color: element.style.color,
+                    }}
+                  >
+                    {element.content}
+                  </div>
+                ) : element.type === "svg" ? (
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: element.component.replace(
+                        /fill=".*?"/g,
+                        `fill="${element.fillColor}"`
+                      ),
+                    }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      opacity: element.style.opacity,
+                    }}
+                  />
+                ) : element.type === "shape" ? (
+                  <div
+                    style={{
+                      ...element.style,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor:
+                        element.style.backgroundColor || "transparent",
+                      color: element.style.color || "#082A66",
+                      fontSize: element.style.fontSize,
+                    }}
+                  >
+                    {element.component}
+                  </div>
+                ) : element.type === "frame" ? (
+                  <div
+                    className="frame"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      clipPath: element.style.clipPath,
+                      position: "relative",
+                      backgroundColor: element.content
+                        ? "transparent"
+                        : "#e0e0e0",
+                    }}
+                  >
+                    {element.content && (
+                      <img
+                        src={element.content}
+                        alt="frame content"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: "center",
+                          clipPath: element.style.clipPath,
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                        }}
+                      />
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Handle Download
+  const handleDownload = () => {
+    setIsDownloading(true); // Show loader
+    // Create a clone of the template-area
+    const node = document.querySelector(".template-area");
+    const clone = node.cloneNode(true);
+
+    // Create a wrapper div for cloning
+    const wrapper = document.createElement("div");
+    wrapper.style.width = `${CANVAS_SIZE}px`;
+    wrapper.style.height = `${CANVAS_SIZE}px`;
+    wrapper.style.transform = `scale(1.0)`;
+    wrapper.style.transformOrigin = "top left";
+    wrapper.appendChild(clone);
+
+    // Apply any necessary styles to the clone
+    clone.style.width = `${CANVAS_SIZE}px`;
+    clone.style.height = `${CANVAS_SIZE}px`;
+    clone.style.backgroundColor = "#fff";
+    clone.style.position = "relative";
+
+    document.body.appendChild(wrapper); // Temporarily add to DOM
+
+    domtoimage
+      .toPng(wrapper, {
+        width: CANVAS_SIZE,
+        height: CANVAS_SIZE,
+        style: {
+          margin: 0,
+        },
+      })
+      .then((dataUrl) => {
+        const link = document.createElement("a");
+        link.download = "canvas.png";
+        link.href = dataUrl;
+        link.click();
+        document.body.removeChild(wrapper); // Clean up
+        setIsDownloading(false); // Hide loader
+      })
+      .catch((error) => {
+        console.error("Failed to download image", error);
+        document.body.removeChild(wrapper); // Clean up
+        setIsDownloading(false); // Hide loader
+      });
   };
 
   return (
     <div className="min-h-screen flex flex-col overflow-hidden bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2]">
+      {isDownloading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          {/* Loader */}
+          <div className="loader">Downloading...</div>
+          {/* You can use a spinner or any loading indicator here */}
+        </div>
+      )}
       <div
         className={`m-2 border-2 border-white rounded-[20px] max-w-full relative overflow-hidden ${
           isFullscreen ? "fixed inset-0 m-0 border-none rounded-none" : ""
         }`}
-        style={{ height: isFullscreen ? "100vh" : "calc(100vh - 1rem)" }}
+        style={{ height: isFullscreen ? "100vh overflow-hidden"  : "calc(100vh - 1rem)" }}
       >
         {/* Header */}
         {!isFullscreen && (
@@ -440,7 +609,7 @@ export default function DynamicCanvaTemplate() {
           </div>
         )}
 
-        {/* Sidebar */}
+        {/* Main Sidebar */}
         {!isFullscreen && (
           <div className="absolute top-[80px] bottom-[68px] left-2 rounded-l-[20px]">
             <Sidebar
@@ -451,7 +620,7 @@ export default function DynamicCanvaTemplate() {
         )}
 
         {/* Active Component Panel */}
-        {!isFullscreen && (
+        {!isFullscreen && activeComponent && !isGridView && (
           <div className="absolute top-[80px] bottom-[68px] left-24 rounded-l-[20px] overflow-auto hide-scrollbar">
             {activeComponent === "Text" && (
               <div className="w-2/4 m-4 p-4 mt-1 shadow-lg border-2 border-[#FCFCFC] rounded-md bg-[#FCFCFC40]">
@@ -486,22 +655,18 @@ export default function DynamicCanvaTemplate() {
           </div>
         )}
 
-        <div
-          className={`overflow-auto ${
-            isFullscreen ? "flex items-center justify-center" : ""
-          }`}
-        >
-          <div
-            className={`flex-1 flex flex-col items-center justify-center ${
-              isFullscreen ? "" : "ml-[7%] mt-[80px] mb-[80px]"
-            }`}
-          >
+        {/* Canvas and Grid View */}
+        <div className="overflow-auto flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center">
             {isGridView ? (
               <div
                 className="grid grid-cols-3 gap-4 p-4 overflow-y-auto"
-                style={{ height: "100%" }}
+                style={{
+                  height: "100%",
+                  marginTop: !isFullscreen ? "8%" : "0",
+                }}
               >
-                {templates.map((_, index) => (
+                {templates.map((templateElements, index) => (
                   <div
                     key={index}
                     className={`border-2 rounded-md p-4 cursor-pointer ${
@@ -511,7 +676,7 @@ export default function DynamicCanvaTemplate() {
                     }`}
                     onClick={() => handleTemplateSelect(index)}
                   >
-                    <p className="text-center">{`Template ${index + 1}`}</p>
+                    <TemplatePreview elements={templateElements} />
                   </div>
                 ))}
                 <div
@@ -523,185 +688,237 @@ export default function DynamicCanvaTemplate() {
               </div>
             ) : (
               <div
-                ref={templateRef}
-                className="template-area p-4"
+                className="template-container"
                 style={{
-                  width: CANVAS_SIZE * zoom,
-                  height: CANVAS_SIZE * zoom,
-                  backgroundColor: "#fff",
-                  position: "relative",
+                  marginTop: !isFullscreen ? "8%" : "0",
+                  transform: `scale(${zoom})`,
+                  transformOrigin: "top center",
+                  width: CANVAS_SIZE,
+                  height: CANVAS_SIZE,
+                  overflow: "hidden",
                 }}
               >
-                {/* Render Elements */}
-                {elements.map((element, index) => (
-                  <Rnd
-                    key={element.id}
-                    ref={(ref) => (elementRefs.current[index] = ref)}
-                    size={{
-                      width: element.size.width * zoom,
-                      height: element.size.height * zoom,
-                    }}
-                    position={{
-                      x: element.position.x * zoom,
-                      y: element.position.y * zoom,
-                    }}
-                    onDragStop={(e, d) => handleElementDragStop(e, d, index)}
-                    onResizeStop={(e, direction, ref, delta) =>
-                      handleElementResize(e, direction, ref, delta, index)
-                    }
-                    enableResizing
-                    style={{
-                      zIndex: element.style.zIndex,
-                      border:
-                        selectedElementIndex === index
-                          ? "2px solid #4A90E2"
-                          : "none",
-                    }}
-                    onClick={() => setSelectedElementIndex(index)}
-                    onDoubleClick={(e) => handleDoubleClickText(index)}
-                    onDragOver={(e) => {
-                      if (element.type === "frame") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }
-                    }}
-                    onDrop={(e) => {
-                      if (element.type === "frame") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleImageDrop(e, index);
-                      }
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                        height: "100%",
-                      }}
-                    >
-                      {selectedElementIndex === index && (
-                        <div
-                          className="absolute -top-8 left-1/2 transform -translate-x-1/2 cursor-grab"
-                          onMouseDown={(e) => handleRotationDragStart(e, index)}
-                          style={{
-                            width: "24px",
-                            height: "24px",
-                            backgroundColor: "#082A66",
-                            borderRadius: "50%",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            zIndex: 1000,
-                          }}
-                        >
-                          <MdRotateLeft size={16} color="white" />
-                        </div>
-                      )}
-                      <div
+                <div
+                  className="template-area"
+                  style={{
+                    width: CANVAS_SIZE,
+                    height: CANVAS_SIZE,
+                    backgroundColor: "#fff",
+                    position: "relative",
+                  }}
+                >
+                  {/* Render Elements */}
+                  {elements.map((element, index) => {
+                    const isEditable = !isFullscreen;
+
+                    return (
+                      <Rnd
+                        key={element.id}
+                        ref={(ref) => (elementRefs.current[index] = ref)}
+                        size={{
+                          width: element.size.width,
+                          height: element.size.height,
+                        }}
+                        position={{
+                          x: element.position.x,
+                          y: element.position.y,
+                        }}
+                        onDragStop={(e, d) =>
+                          isEditable && handleElementDragStop(e, d, index)
+                        }
+                        onResizeStop={(e, direction, ref, delta) =>
+                          isEditable &&
+                          handleElementResize(e, direction, ref, delta, index)
+                        }
+                        enableResizing={isEditable}
+                        disableDragging={!isEditable}
                         style={{
-                          width: "100%",
-                          height: "100%",
-                          transform: `rotate(${element.rotation || 0}deg)`,
-                          transformOrigin: "center",
+                          zIndex: element.style.zIndex,
+                          border:
+                            selectedElementIndex === index && isEditable
+                              ? "2px solid #4A90E2"
+                              : "none",
+                        }}
+                        onClick={() =>
+                          isEditable && setSelectedElementIndex(index)
+                        }
+                        onDoubleClick={(e) =>
+                          isEditable && handleDoubleClickText(index)
+                        }
+                        onDragOver={(e) => {
+                          if (element.type === "frame") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                        onDrop={(e) => {
+                          if (element.type === "frame") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleImageDrop(e, index);
+                          }
                         }}
                       >
-                        {element.type === "image" ? (
-                          <img
-                            src={element.src}
-                            alt="Element"
+                        <div
+                          style={{
+                            position: "relative",
+                            width: "100%",
+                            height: "100%",
+                          }}
+                        >
+                          {selectedElementIndex === index && isEditable && (
+                            <div
+                              className="absolute -top-8 left-1/2 transform -translate-x-1/2 cursor-grab"
+                              onMouseDown={(e) => handleRotationDragStart(e, index)}
+                              style={{
+                                width: "24px",
+                                height: "24px",
+                                backgroundColor: "#082A66",
+                                borderRadius: "50%",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                zIndex: 1000,
+                              }}
+                            >
+                              <MdRotateLeft size={16} color="white" />
+                            </div>
+                          )}
+                          <div
                             style={{
                               width: "100%",
                               height: "100%",
-                            }}
-                            draggable={true}
-                            onDragStart={(e) => {
-                              e.stopPropagation();
-                              e.dataTransfer.setData(
-                                "application/element-index",
-                                index.toString()
-                              );
-                            }}
-                          />
-                        ) : element.type === "text" ? (
-                          <div
-                            contentEditable={editingTextIndex === index}
-                            onBlur={(e) => handleTextBlur(index, e)}
-                            onInput={(e) => handleTextChange(e, index)}
-                            suppressContentEditableWarning={true}
-                            style={{
-                              fontSize: element.style.fontSize,
-                              color: element.style.color,
+                              transform: `rotate(${element.rotation || 0}deg)`,
+                              transformOrigin: "center",
                             }}
                           >
-                            {element.content}
-                          </div>
-                        ) : element.type === "shape" ? (
-                          <div
-                            style={{
-                              ...element.style,
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              width: "100%",
-                              height: "100%",
-                              backgroundColor:
-                                element.style.backgroundColor || "transparent",
-                              color: element.style.color || "#082A66",
-                              fontSize: element.style.fontSize || "100px",
-                            }}
-                          >
-                            {element.component}
-                          </div>
-                        ) : element.type === "svg" ? (
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: element.component.replace(
-                                /fill=".*?"/g,
-                                `fill="${element.fillColor}"`
-                              ),
-                            }}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              opacity: element.style.opacity,
-                            }}
-                          />
-                        ) : element.type === "frame" ? (
-                          <div
-                            className="frame"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              clipPath: element.style.clipPath,
-                              position: "relative",
-                              backgroundColor: element.content
-                                ? "transparent"
-                                : "#e0e0e0",
-                            }}
-                          >
-                            {element.content && (
+                            {element.type === "image" ? (
                               <img
-                                src={element.content}
-                                alt="frame content"
+                                src={element.src}
+                                alt="Element"
                                 style={{
                                   width: "100%",
                                   height: "100%",
-                                  objectFit: "cover",
-                                  objectPosition: "center",
-                                  clipPath: element.style.clipPath,
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
+                                }}
+                                draggable={true}
+                                onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  e.dataTransfer.setData(
+                                    "application/element-index",
+                                    index.toString()
+                                  );
                                 }}
                               />
-                            )}
+                            ) : element.type === "text" ? (
+                              <div
+                                contentEditable={
+                                  isEditable && editingTextIndex === index
+                                }
+                                suppressContentEditableWarning={true}
+                                onInput={(e) => {
+                                  if (isEditable && editingTextIndex === index) {
+                                    const updatedElements = [...elements];
+                                    updatedElements[index].content = e.currentTarget.textContent;
+                                    setElements(updatedElements);
+                                  }
+                                }}
+                                
+                                onBlur={() => isEditable && handleTextBlur(index)}
+                                style={{
+                                  fontSize: element.style.fontSize,
+                                  color: element.style.color,
+                                  width: "100%",
+                                  height: "100%",
+                                  border:
+                                    editingTextIndex === index && isEditable
+                                      ? "1px dashed #4A90E2"
+                                      : "none",
+                                  outline: "none",
+                                  background: "transparent",
+                                  overflow: "hidden",
+                                  cursor: isEditable ? "text" : "default",
+                                  wordBreak: "break-word",
+                                }}
+                                onClick={() =>
+                                  isEditable && setSelectedElementIndex(index)
+                                }
+                                onDoubleClick={() =>
+                                  isEditable && handleDoubleClickText(index)
+                                }
+                              >
+                                {editingTextIndex === index
+                                  ? editingContent
+                                  : element.content}
+                              </div>
+                            ) : element.type === "shape" ? (
+                              <div
+                                style={{
+                                  ...element.style,
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  width: "100%",
+                                  height: "100%",
+                                  backgroundColor:
+                                    element.style.backgroundColor ||
+                                    "transparent",
+                                  color: element.style.color || "#082A66",
+                                  fontSize: element.style.fontSize,
+                                }}
+                              >
+                                {element.component}
+                              </div>
+                            ) : element.type === "svg" ? (
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: element.component.replace(
+                                    /fill=".*?"/g,
+                                    `fill="${element.fillColor}"`
+                                  ),
+                                }}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  opacity: element.style.opacity,
+                                }}
+                              />
+                            ) : element.type === "frame" ? (
+                              <div
+                                className="frame"
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  clipPath: element.style.clipPath,
+                                  position: "relative",
+                                  backgroundColor: element.content
+                                    ? "transparent"
+                                    : "#e0e0e0",
+                                }}
+                              >
+                                {element.content && (
+                                  <img
+                                    src={element.content}
+                                    alt="frame content"
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                      objectPosition: "center",
+                                      clipPath: element.style.clipPath,
+                                      position: "absolute",
+                                      top: 0,
+                                      left: 0,
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            ) : null}
                           </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </Rnd>
-                ))}
+                        </div>
+                      </Rnd>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -730,6 +947,12 @@ export default function DynamicCanvaTemplate() {
               <MdGridView size={20} /> {isGridView ? "Exit Grid" : "Grid View"}
             </button>
             <button
+              onClick={handleDownload}
+              className="bg-green-500 text-white px-3 py-2 rounded flex items-center gap-2 mx-2"
+            >
+              <MdDownload size={20} /> Download
+            </button>
+            <button
               onClick={handleUndo}
               className="bg-gray-500 text-white px-3 py-2 rounded flex items-center gap-2 mx-2"
               disabled={history.length === 0}
@@ -746,7 +969,11 @@ export default function DynamicCanvaTemplate() {
             <div className="flex items-center gap-2">
               <MdZoomOut
                 size={24}
-                onClick={() => setZoom(Math.max(zoom - 0.1, 0.1))}
+                onClick={() => {
+                  const newZoom = Math.max(zoom - 0.1, 0.1);
+                  setZoom(newZoom);
+                  setPreviousZoom(newZoom);
+                }}
                 className="cursor-pointer"
               />
               <input
@@ -759,7 +986,11 @@ export default function DynamicCanvaTemplate() {
               />
               <MdZoomIn
                 size={24}
-                onClick={() => setZoom(zoom + 0.1)}
+                onClick={() => {
+                  const newZoom = zoom + 0.1;
+                  setZoom(newZoom);
+                  setPreviousZoom(newZoom);
+                }}
                 className="cursor-pointer"
               />
               <span className="ml-2 text-[#082A66] font-bold gap-4">
@@ -771,7 +1002,7 @@ export default function DynamicCanvaTemplate() {
 
         {/* Fullscreen Header */}
         {isFullscreen && (
-          <div className="absolute top-0 left-0 right-0 bg-gray-800 bg-opacity-50 p-2 flex justify-end items-center">
+          <div className="absolute top-0 left-0 right-0 p-2 flex justify-end items-center">
             <button
               onClick={handleFullscreenToggle}
               className="bg-gray-800 text-white px-4 py-2 rounded flex items-center gap-2 mx-2"
