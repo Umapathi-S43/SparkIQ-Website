@@ -1,0 +1,21 @@
+/* Dark mode styles (already provided by Polotno) */
+.bp5-dark .polotno-side-tabs-container .polotno-side-panel-tab:hover,
+.bp5-dark .polotno-side-tabs-container .polotno-side-panel-tab.active {
+  background-color: #c8c52d;
+  color: white;
+}
+
+.bp5-dark .bp5-button:not([class*='bp5-intent-']):hover {
+  background-color: #c8c52d;
+}
+
+/* Light mode styles */
+.polotno-side-tabs-container .polotno-side-panel-tab:hover,
+.polotno-side-tabs-container .polotno-side-panel-tab.active {
+  background-color: #e0e0e0; /* Light hover background */
+  color: black;
+}
+
+.bp5-button:not([class*='bp5-intent-']):hover {
+  background-color: #e0e0e0; /* Light hover background */
+}

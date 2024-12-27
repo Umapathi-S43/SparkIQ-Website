@@ -35,6 +35,8 @@ import GenerateDAPCreativesPage from './Dashboard/pages1/GenerateDAPCreativesPag
 import EditScreen from './Dashboard/components1/Edit/EditScreen';
 import DynamicCanvaTemplate from './Dashboard/components1/Edit/DynamicTemplate';
 import PreviewTemplate from './Dashboard/components1/Edit/PreviewTemplate';
+import PolotnoEditor from './Dashboard/components1/PolotnoEditor';
+import Templates from './Dashboard/components1/templates';
 
 function App() {
   return (
@@ -151,6 +153,10 @@ function App() {
             element={<ProtectedRoute element={< DynamicCanvaTemplate/>} />}
           />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/editor" element={<PolotnoEditor />} />
+          <Route path='templates' element={<Templates/>} />
+          <Route path="/edit/:id" element={<PolotnoEditor />} />
+
         </Routes>
       </div>
     </Router>

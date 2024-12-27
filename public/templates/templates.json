@@ -1,0 +1,61 @@
+[
+    {
+      "id": "template1",
+      "name": "Fitness Template",
+      "preview": "/templates/fitness-template.jpeg",
+      "layout": {
+        "pages": [
+          {
+            "width": 800,
+            "height": 600,
+            "elements": [
+              {
+                "type": "text",
+                "x": 50,
+                "y": 50,
+                "width": 300,
+                "height": 100,
+                "text": "Stay Fit!",
+                "fontSize": 32,
+                "fill": "black"
+              },
+              {
+                "type": "image",
+                "x": 200,
+                "y": 100,
+                "width": 200,
+                "height": 150,
+                "src": "/templates/fitness.jpg"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "template2",
+      "name": "Sale Template",
+      "preview": "/templates/sale-template.png",
+      "layout": {
+        "pages": [
+          {
+            "width": 800,
+            "height": 600,
+            "elements": [
+              {
+                "type": "text",
+                "x": 100,
+                "y": 100,
+                "width": 400,
+                "height": 150,
+                "text": "Big Sale!",
+                "fontSize": 40,
+                "fill": "red"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+  

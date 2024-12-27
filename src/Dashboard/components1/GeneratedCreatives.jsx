@@ -517,7 +517,8 @@ const GeneratedCreatives = ({
         const { templateColor, modelName, id } = selectedImage; // Assuming `id` is part of the selected image object
         console.log("Navigating to edit template with ID:", id);
 
-        navigate(`/edit_template?id=${encodeURIComponent(id)}`, {
+        // navigate(`/edit_template?id=${encodeURIComponent(id)}`, {
+        navigate(`/editor`,{
           state: {
             aimodel: modelName,
             templateColor: templateColor,
