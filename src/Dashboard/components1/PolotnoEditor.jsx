@@ -56,33 +56,103 @@ const CustomSection = {
     const [activeTab, setActiveTab] = useState("palettes");
 
     // Apply palette colors to the elements permanently on click
-    const applyPalette = (palette) => {
-      store.history.startTransaction(); // Start a transaction to save changes as one history entry
-      store.pages.forEach((page) => {
-        page.children.forEach((child, index) => {
-          if (child.type === "text" || child.type === "shape") {
-            child.set({
-              fill: palette.colors[index % palette.colors.length],
-            });
-          }
-        });
+   const applyPalette = (palette) => {
+  if (palette.colors.length < 3) {
+    console.warn("Palette must have at least three colors.");
+    return;
+  }
+
+  const [svgColor, backgroundColor, textColor] = palette.colors;
+
+  const activePage = store.activePage; // Get the active page
+  if (!activePage) {
+    console.warn("No active page found.");
+    return;
+  }
+
+  // Update the background of the active page
+  activePage.set({
+    background: backgroundColor,
+    width: "auto", // Retain the existing structure
+    height: "auto", // Retain the existing structure
+    bleed: activePage.bleed || 0, // Preserve existing bleed
+  });
+
+  // Update child elements
+  activePage.children.forEach((child) => {
+    if (child.type === "svg") {
+      applyColorsReplace(child, child.colorsReplace);
+    }else if (child.type === "text") {
+      // Apply the third color to text elements
+      child.set({ fill: textColor });
+    }
+  });
+
+  store.history.save(); // Save the changes
+};
+
+const applyColorsReplace = (svgElement, colorsReplace) => {
+  if (!svgElement || !colorsReplace) return;
+
+  Object.entries(colorsReplace).forEach(([originalColor, newColor]) => {
+    if (svgElement.colorsReplace) {
+      svgElement.colorsReplace[originalColor] = newColor;
+    } else {
+      svgElement.set({
+        colorsReplace: {
+          ...svgElement.colorsReplace,
+          [originalColor]: newColor,
+        },
       });
-      store.history.save(); // Save the transaction
-      store.history.endTransaction(); // End the transaction
-    };
+    }
+  });
+
+  // Trigger a redraw of the element to reflect changes
+  svgElement.trigger("change");
+};
+
+
 
     // Apply palette colors to the elements on hover
     const handlePaletteHover = (palette) => {
+      if (!palette || palette.colors.length < 3) {
+        console.warn("Palette must have at least three colors.");
+        return;
+      }
+    
+      const [svgColor, backgroundColor, textColor] = palette.colors;
+    
       store.pages.forEach((page) => {
-        page.children.forEach((child, index) => {
-          if (child.type === "text" || child.type === "shape") {
-            child.set({
-              fill: palette.colors[index % palette.colors.length],
-            });
+        // Update the page's background color
+        page.set({
+          backgroundColor: backgroundColor,
+        });
+        const activePage = store.activePage; // Get the active page
+        if (!activePage) {
+          console.warn("No active page found.");
+          return;
+        }
+      
+        // Update the background of the active page
+        activePage.set({
+          background: backgroundColor,
+          width: "auto", // Retain the existing structure
+          height: "auto", // Retain the existing structure
+          bleed: activePage.bleed || 0, // Preserve existing bleed
+        });
+    
+        // Update child elements
+        page.children.forEach((child) => {
+          if (child.type === "svg") {
+            child.set({ fill: svgColor });
+          } else if (child.type === "text") {
+            child.set({ fill: textColor });
           }
         });
       });
     };
+    
+    
 
     // Clear hover effect when the mouse leaves
     const clearHoverEffect = () => {
@@ -124,28 +194,29 @@ const CustomSection = {
         {activeTab === "palettes" && (
           <div>
             <h3>Choose a Palette</h3>
-            {colorPalettes.map((palette) => (
-              <div
-                key={palette.id}
-                onMouseOver={() => handlePaletteHover(palette)} // Apply palette on hover
-                onMouseOut={clearHoverEffect} // Clear hover effect on mouse out
-                onClick={() => applyPalette(palette)} // Apply palette permanently on click
-                style={{
-                  display: "flex",
-                  cursor: "pointer",
-                  alignItems: "center",
-                  border: "1px solid #ccc",
-                  marginBottom: "8px",
-                }}
-              >
-                {palette.colors.map((color, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      width: "90px",
-                      height: "30px",
-                      backgroundColor: color,
-                    }}
+  {colorPalettes.map((palette) => (
+    <div
+      key={palette.id}
+      onMouseOver={() => handlePaletteHover(palette)} // Apply palette on hover
+      onMouseOut={clearHoverEffect} // Clear hover effect on mouse out
+      onClick={() => applyPalette(palette)} // Apply palette permanently on click
+      style={{
+        display: "flex",
+        cursor: "pointer",
+        alignItems: "center",
+        border: "1px solid #ccc",
+        marginBottom: "8px",
+      }}
+    >
+      {palette.colors.map((color, index) => (
+        <div
+          key={index}
+          style={{
+            width: "90px",
+            height: "30px",
+            backgroundColor: color,
+          }}
+        
                   ></div>
                 ))}
               </div>
@@ -228,18 +299,48 @@ const PolotnoEditor = () => {
       alert("An error occurred while loading the template.");
     }
   };
-
   const applyPalette = (palette) => {
-    store.pages.forEach((page) => {
-      page.children.forEach((child, index) => {
-        if (child.type === "text" || child.type === "shape") {
-          child.set({
-            fill: palette.colors[index % palette.colors.length],
-          });
-        }
-      });
+    if (palette.colors.length < 3) {
+      console.warn("Palette must have at least three colors.");
+      return;
+    }
+  
+    const [svgColor, backgroundColor, textColor] = palette.colors;
+  
+    const activePage = store.activePage; // Get the active page
+    if (!activePage) {
+      console.warn("No active page found.");
+      return;
+    }
+  
+    // Update the background of the active page
+    activePage.set({
+      background: backgroundColor,
+      width: "auto", // Retain the existing structure
+      height: "auto", // Retain the existing structure
+      bleed: activePage.bleed || 0, // Preserve existing bleed
     });
+  
+    // Update child elements
+    activePage.children.forEach((child) => {
+      if (child.type === "svg") {
+        // Apply the first color to SVG elements
+        child.set({
+          fill: svgColor,
+        });
+      } else if (child.type === "text") {
+        // Apply the third color to text elements
+        child.set({
+          fill: textColor,
+        });
+      }
+    });
+  
+    store.history.save(); // Save the changes
   };
+  
+  
+  
 
   const generateThumbnail = async () => {
     try {
