@@ -761,11 +761,11 @@ function BrandAssets({ onPrev, onFinish }) {
 
  
   return (
-    <div className="p-4 border border-[#FCFCFC] rounded-2xl">
+    <div className="p-2 rounded-2xl">
       <h2 className="text-xl font-semibold mb-4">Brand Assets</h2>
 
       {/** ICONS SECTION **/}
-      <div className="mb-8 bg-[rgba(252,252,252,0.25)] rounded-xl p-4 border">
+      <div className="mb-8 bg-[rgba(252,252,252,0.25)]  border border-[#FCFCFC] rounded-xl p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold mb-1">Icons</h3>
           <button
@@ -824,7 +824,7 @@ function BrandAssets({ onPrev, onFinish }) {
       </div>
 
       {/** MEDIA SECTION **/}
-      <div className="mb-8 bg-[rgba(252,252,252,0.25)] rounded-xl p-4 border">
+      <div className="mb-8 bg-[rgba(252,252,252,0.25)] rounded-xl p-4  border border-[#FCFCFC]">
         <h3 className="text-lg font-semibold mb-1">Media</h3>
         <p className="text-sm text-gray-600 mb-3">
           Select relevant media icons. Click an icon to toggle selection:
