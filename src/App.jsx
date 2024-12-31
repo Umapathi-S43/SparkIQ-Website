@@ -37,7 +37,7 @@ import DynamicCanvaTemplate from './Dashboard/components1/Edit/DynamicTemplate';
 import PreviewTemplate from './Dashboard/components1/Edit/PreviewTemplate';
 import PolotnoEditor from './Dashboard/components1/PolotnoEditor';
 import Templates from './Dashboard/components1/templates';
-
+import BrandSettingsPage from './Dashboard/pages1/BrandSettingsPage';
 function App() {
   return (
     <Router>
@@ -71,6 +71,10 @@ function App() {
           <Route
             path="/brandspage"
             element={<ProtectedRoute element={<BrandsPage />} />}
+          />
+           <Route
+            path="/brand-settings"
+            element={<ProtectedRoute element={<BrandSettingsPage />} />}
           />
            <Route
             path="/editscreen"

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components1/sidebar';
-import BrandSetup from '../components1/brandsetup/BrandSetup';
+import BrandSetting from '../components1/brandsetup/brandSetting';
 import Header from '../components1/header';
 
-const BrandSetupPage = () => {
+const BrandSettingsPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
   
     const toggleSidebar = () => {
@@ -35,7 +35,7 @@ const BrandSetupPage = () => {
             <div className="flex flex-grow">
               <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
               <div className={`flex-grow transition-transform duration-300 ${isSidebarOpen ? '-ml-6' : 'ml-0'}`} >
-                <div className='m-2 ' style={{ height: 'calc(100vh' }}><BrandSetup/></div>
+                <div className='m-2' ><BrandSetting/></div>
               </div>
             </div>
           </div>
@@ -44,4 +44,4 @@ const BrandSetupPage = () => {
     );
   }
   
-export default BrandSetupPage;
+export default BrandSettingsPage;
