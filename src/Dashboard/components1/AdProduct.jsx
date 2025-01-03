@@ -7,12 +7,13 @@ import toast from "react-hot-toast";
 import { baseUrl } from "../../components/utils/Constant";
 import { useLocation, useNavigate } from "react-router-dom";
 import { jwtToken } from '../../components/utils/jwtToken';
-
+import { FaCartShopping } from "react-icons/fa6";
+import { FcServices } from "react-icons/fc";
 const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
 const discountOptions = ["Price", "Percentage"];
 
 const AdProduct = () => {
-    
+
     const [productDetails, setProductDetails] = useState({
         productName: "",
         productDescription: "",
@@ -26,6 +27,7 @@ const AdProduct = () => {
         prompt: "",
         isEdit: false,
     });
+    const [isProduct, setIsProduct] = useState(true); // Track whether it's Product or Service
     const [imageSrc, setImageSrc] = useState(null);
     const [brands, setBrands] = useState([]);
     const [images, setImages] = useState([]);
@@ -34,9 +36,11 @@ const AdProduct = () => {
     const [selectedImageType, setSelectedImageType] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [isOpen, setIsOpen] = useState(true);
-    const [expandedSubsection1, setExpandedSubsection1] = useState(true);
+    const [expandedSubsection0, setExpandedSubsection0] = useState(true);
+    const [expandedSubsection1, setExpandedSubsection1] = useState(false);
     const [expandedSubsection2, setExpandedSubsection2] = useState(false);
     const [completedSections, setCompletedSections] = useState({
+        0: false,
         1: false,
         2: false,
     });
@@ -141,52 +145,52 @@ const AdProduct = () => {
     };
 
     const handleProductSubmission = async (e) => {
-      e.preventDefault();
-       // Set default values if they are not provided
-    const defaultProductPrice = productDetails.productPrice === "" ? "0" : productDetails.productPrice;
-    const defaultCurrency = productDetails.currency === "" ? "USD" : productDetails.currency;
-    const defaultCustomDiscount = productDetails.customDiscount === "" ? "0" : productDetails.customDiscount;
-    const defaultDiscountType = productDetails.discount === "" ? "Percentage" : productDetails.discount;
+        e.preventDefault();
+        // Set default values if they are not provided
+        const defaultProductPrice = productDetails.productPrice === "" ? "0" : productDetails.productPrice;
+        const defaultCurrency = productDetails.currency === "" ? "USD" : productDetails.currency;
+        const defaultCustomDiscount = productDetails.customDiscount === "" ? "0" : productDetails.customDiscount;
+        const defaultDiscountType = productDetails.discount === "" ? "Percentage" : productDetails.discount;
 
-  
-      try {
-          const isEditMode = productDetails.isEdit && storedProductID;
-          const productPayload = {
-              id: isEditMode ? storedProductID : undefined,
-              brandID: productDetails.brandID,
-              name: productDetails.productName,
-              description: productDetails.productDescription,
-              price: defaultProductPrice,
-              priceType: defaultCurrency,
-              discount: defaultCustomDiscount,
-              discountType: defaultDiscountType,
-              productImagesList: [
-                  {
-                      imageURL: productDetails.logoURL,
-                  },
-              ],
-          };
-  
-          const response = await axios.post(`${baseUrl}/product`, productPayload, {
-              headers: {
-                  Authorization: `Bearer ${jwtToken}`,
-              },
-          });
-  
-          if (isEditMode) {
-              toast.success("Product updated successfully");
-          } else {
-              toast.success("Product created successfully");
-          }
-  
-          navigate("/productspage"); // Redirect to productspage upon successful creation or edit
-  
-      } catch (error) {
-          console.error("Error during product submission:", error);
-          toast.error("Failed to submit product");
-      }
-  };
-  
+
+        try {
+            const isEditMode = productDetails.isEdit && storedProductID;
+            const productPayload = {
+                id: isEditMode ? storedProductID : undefined,
+                brandID: productDetails.brandID,
+                name: productDetails.productName,
+                description: productDetails.productDescription,
+                price: defaultProductPrice,
+                priceType: defaultCurrency,
+                discount: defaultCustomDiscount,
+                discountType: defaultDiscountType,
+                productImagesList: [
+                    {
+                        imageURL: productDetails.logoURL,
+                    },
+                ],
+            };
+
+            const response = await axios.post(`${baseUrl}/product`, productPayload, {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+            });
+
+            if (isEditMode) {
+                toast.success("Product updated successfully");
+            } else {
+                toast.success("Product created successfully");
+            }
+
+            navigate("/productspage"); // Redirect to productspage upon successful creation or edit
+
+        } catch (error) {
+            console.error("Error during product submission:", error);
+            toast.error("Failed to submit product");
+        }
+    };
+
     const handleOnChangeProductDetails = (e) => {
         const { id, value } = e.target;
 
@@ -251,35 +255,35 @@ const AdProduct = () => {
     };
 
     const handleImageClick = (imageUrl, isGenerated = false) => {
-      if (isGenerated) {
-          // Clear any previous uploads if selecting from generated images
-          setImages([]); 
-          setSelectedImageUrl(imageUrl);
-          setSelectedImageType('generated');
-          setProductDetails((prevDetails) => ({
-              ...prevDetails,
-              imageFile: null,
-              logoURL: imageUrl,
-          }));
-          setImageSrc(imageUrl);
-          toast.success("Image selected successfully");
-      } else {
-          const selectedImage = images.find(img => img.url === imageUrl);
-          setSelectedImageUrl(imageUrl);
-          setSelectedImageType('uploaded');
-          setProductDetails((prevDetails) => ({
-              ...prevDetails,
-              imageFile: selectedImage.file,
-              logoURL: "",
-          }));
-          if (!selectedImage.uploaded) {
-              uploadImage(selectedImage.file);
-          }
-          setImageSrc(imageUrl);
-      }
-  };
-  
-  
+        if (isGenerated) {
+            // Clear any previous uploads if selecting from generated images
+            setImages([]);
+            setSelectedImageUrl(imageUrl);
+            setSelectedImageType('generated');
+            setProductDetails((prevDetails) => ({
+                ...prevDetails,
+                imageFile: null,
+                logoURL: imageUrl,
+            }));
+            setImageSrc(imageUrl);
+            toast.success("Image selected successfully");
+        } else {
+            const selectedImage = images.find(img => img.url === imageUrl);
+            setSelectedImageUrl(imageUrl);
+            setSelectedImageType('uploaded');
+            setProductDetails((prevDetails) => ({
+                ...prevDetails,
+                imageFile: selectedImage.file,
+                logoURL: "",
+            }));
+            if (!selectedImage.uploaded) {
+                uploadImage(selectedImage.file);
+            }
+            setImageSrc(imageUrl);
+        }
+    };
+
+
 
     const handleDeleteImage = (index) => {
         if (images[index]) {
@@ -402,72 +406,134 @@ const AdProduct = () => {
             console.error(error);
         }
     };
+    const handleToggleType = (type) => {
+        if (type === "Product") {
+            setIsProduct(true);
+        } else if (type === "Service") {
+            setIsProduct(false);
+        }
+    };
 
     const isNextStepDisabled =
         productDetails.productName === "" ||
         productDetails.productDescription === "" ||
-        productDetails.brandName === "" 
-        // productDetails.productPrice === "" ||
-        // productDetails.customDiscount === "" ||
-        // (productDetails.discount === "Price" &&
-        //     (isNaN(parseFloat(productDetails.customDiscount)) ||
-        //         parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
-        // (productDetails.discount === "Percentage" &&
-        //     (isNaN(parseFloat(productDetails.customDiscount)) ||
-        //         parseFloat(productDetails.customDiscount) <= 0 ||
-        //         parseFloat(productDetails.customDiscount) > 100));
-
-    const handleSaveAndContinue = (section) => {
-        if (isNextStepDisabled) {
+        productDetails.brandName === ""
+    // productDetails.productPrice === "" ||
+    // productDetails.customDiscount === "" ||
+    // (productDetails.discount === "Price" &&
+    //     (isNaN(parseFloat(productDetails.customDiscount)) ||
+    //         parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
+    // (productDetails.discount === "Percentage" &&
+    //     (isNaN(parseFloat(productDetails.customDiscount)) ||
+    //         parseFloat(productDetails.customDiscount) <= 0 ||
+    //         parseFloat(productDetails.customDiscount) > 100));
+    const handleSaveAndContinue = (currentSection) => {
+        // Validation logic based on the current section
+        if (currentSection === 0 && !productDetails.productURL) {
+            toast.error("Please enter a Url before proceeding.");
+            return false;
+        }
+        if (currentSection === 1 && isNextStepDisabled) {
             toast.error("Please fill in all the required fields correctly.");
-            return;
+            return false;
         }
-
-        if (section === 2 && !productDetails.logoURL) {
+        if (currentSection === 2 && !productDetails.logoURL) {
             toast.error("Please upload or select an image before proceeding.");
-            return;
+            return false;
         }
 
+        // Mark the current section as completed
         const newCompletedSections = { ...completedSections };
-        newCompletedSections[section] = true;
+        newCompletedSections[currentSection] = true;
         setCompletedSections(newCompletedSections);
 
-        if (section === 1) {
+        // Expand the next subsection based on the current section
+        if (currentSection === 0) {
+            setExpandedSubsection0(false);
+            setExpandedSubsection1(true);
+        }
+        if (currentSection === 1) {
             setExpandedSubsection1(false);
             setExpandedSubsection2(true);
         }
-        if (section === 2) {
+        if (currentSection === 2) {
             setExpandedSubsection2(false);
+            // Optionally, handle completion or further steps here
+            toast.success("All sections completed!");
         }
+
+        return true; // Indicate successful validation and progression
+    };
+    const handleIndustrySelect = (industry) => {
+        setProductDetails((prevDetails) => ({
+            ...prevDetails,
+            industry,
+        }));
+    };
+
+    // General toggle function to handle both forward and backward navigation
+    const toggleAccordion = (section, event) => {
+        const tagName = event.target.tagName;
+
+        // Define which elements should not trigger the toggle
+        const excludedTags = ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "IMG"];
+
+        if (excludedTags.includes(tagName)) {
+            return; // Do not toggle if the clicked element is excluded
+        }
+
+        if (completedSections[section]) {
+            // If the section is already completed, simply toggle its expansion state
+            if (section === 0) {
+                setExpandedSubsection0(!expandedSubsection0);
+            }
+            if (section === 1) {
+                setExpandedSubsection1(!expandedSubsection1);
+            }
+            if (section === 2) {
+                setExpandedSubsection2(!expandedSubsection2);
+            }
+        } else {
+            // If the section is not completed, attempt to save and continue
+            const canProceed = handleSaveAndContinue(section);
+            if (!canProceed) {
+                // If validation fails, do not toggle the section
+                return;
+            }
+        }
+    };
+
+    // Individual toggle functions now use the general toggleAccordion
+    const toggleAccordionSection0 = (event) => {
+        toggleAccordion(0, event);
+
     };
 
     const toggleAccordionSection1 = (event) => {
-        if (event.target.tagName !== "INPUT" && event.target.tagName !== "TEXTAREA" && event.target.tagName !== "SELECT" && event.target.tagName !== "BUTTON") {
-            setExpandedSubsection1(!expandedSubsection1);
+        // Ensure that the first section is completed before allowing to toggle section 1
+        if (!completedSections[0]) {
+            toast.error("Please complete the first section before proceeding.");
+            return;
         }
+        toggleAccordion(1, event);
     };
 
     const toggleAccordionSection2 = (event) => {
-      if (!completedSections[1]) {
-          toast.error("Please complete the first section before proceeding.");
-          return;
-      }
-  
-      if (event.target.tagName !== "INPUT" && 
-          event.target.tagName !== "TEXTAREA" && 
-          event.target.tagName !== "SELECT" && 
-          event.target.tagName !== "BUTTON" && 
-          event.target.tagName !== "IMG") { // Added 'IMG' to prevent toggling on image click
-          setExpandedSubsection2(!expandedSubsection2);
-      }
-  };
-  
+        // Ensure that the second section is completed before allowing to toggle section 2
+        if (!completedSections[1]) {
+            toast.error("Please complete the second section before proceeding.");
+            return;
+        }
+        toggleAccordion(2, event);
+    };
+
+
 
     return (
         <div className="flex-grow mr-8">
-           <div className={`border border-white max-w-7xl bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 overflow-auto ${isOpen ? 'p-0' : 'p-3'}`}>
+            <div className={`border border-white max-w-7xl bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 overflow-auto ${isOpen ? 'p-0' : 'p-3'}`}>
                 <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'} relative cursor-pointer`} onClick={() => setIsOpen(!isOpen)}>
-                    
+
                     <span className="flex items-center gap-4">
                         <img src="/icon2.svg" alt="" />
                         <span className="flex flex-col">
@@ -494,7 +560,7 @@ const AdProduct = () => {
                 </div>
 
                 {isOpen && (
-                    <div className="flex flex-col lg:flex-row p-8 w-full overflow-auto hide-scrollbar" style={{maxHeight:'69vh'}}>
+                    <div className="flex flex-col lg:flex-row p-8 w-full overflow-auto hide-scrollbar" style={{ maxHeight: '69vh' }}>
                         <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
                             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-gradient-to-r from-[#F0F4F8] via-[#D9E9F2] to-[#F0F4F8] rounded-3xl flex items-center justify-center shadow-2xl transition-transform transform hover:scale-105 hover:rotate-2 duration-300">
                                 <div className="absolute w-[85%] h-[85%] sm:w-[90%] sm:h-[90%] md:w-[95%] md:h-[95%] bg-white rounded-3xl flex items-center justify-center shadow-inner overflow-hidden">
@@ -528,15 +594,80 @@ const AdProduct = () => {
 
                         <div className="flex-grow pr-1">
                             <div
+                                onClick={toggleAccordionSection0}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection0 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                            >
+                                <div className={`flex items-center justify-between ${expandedSubsection0 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
+                                    <div className="flex items-center">
+                                        <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
+                                            <IoImageOutline className="text-[#374151] text-xl" />
+                                        </div>
+                                        <p className="ml-3 text-lg font-semibold mt-0 pt-0">Basic Information</p>
+                                    </div>
+                                    <div>
+                                        {expandedSubsection0 ? <FaChevronDown /> : <FaChevronRight />}
+                                    </div>
+                                </div>
+                                {expandedSubsection0 && (
+                                    <div className="p-4">
+                                        <div className="flex flex-col md:flex-row items-center gap-5 mb-4">
+                                            <p className="text-base">What do you want to add?</p>
+                                        </div>
+                                        <div className="flex gap-4 mb-4">
+                                            <button
+                                                className={`w-1/4 p-3 py-5 rounded-lg shadow-xl border-2 ${isProduct ? "bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border-blue-500" : "bg-gray-200 border-gray-400"
+                                                    } font-medium flex items-center justify-center gap-2`}
+                                                onClick={() => handleToggleType("Product")}
+                                            >
+                                                <FaCartShopping className="text-xl" /> Product
+                                            </button>
+                                            <button
+                                                className={`w-1/4 p-3 py-5 rounded-lg shadow-xl border-2 ${!isProduct ? "bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border-blue-500" : "bg-gray-200 border-gray-400"
+                                                    } font-medium flex items-center justify-center gap-2`}
+                                                onClick={() => handleToggleType("Service")}
+                                            >
+                                                <FcServices className="text-xl" /> Service
+                                            </button>
+                                        </div>
+
+
+                                        <div className="flex flex-col md:flex-row items-center gap-5 mb-4">
+                                            <input
+                                                type="text"
+                                                placeholder={`Your landing page for ${isProduct ? "Product" : "Service"} or website (e.g., spark.ai)`}
+                                                name="productURL"
+                                                value={productDetails.productURL}
+                                                onChange={handleOnChange}
+                                                className="rounded-lg py-3 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                                            />
+                                            <button
+                                                className="w-fit custom-button rounded-2xl text-white py-3 px-8 whitespace-pre font-medium"
+                                                onClick={handleScanUrl}
+                                            >
+                                                Scan the URL
+                                            </button>
+                                        </div>
+                                        <div className="flex justify-start mt-4">
+                                            <button
+                                                className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
+                                                onClick={() => handleSaveAndContinue(0)}
+                                            >
+                                                Save and Continue
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div
                                 onClick={toggleAccordionSection1}
-                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection1 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${!completedSections[0] ? "opacity-50 cursor-not-allowed" : ""}  ${expandedSubsection1 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
                             >
                                 <div className={`flex items-center justify-between ${expandedSubsection1 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
                                     <div className="flex items-center">
                                         <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
                                             <IoImageOutline className="text-[#374151] text-xl" />
                                         </div>
-                                        <p className="ml-3 text-lg font-semibold mt-0 pt-0">Product Details</p>
+                                        <p className="ml-3 text-lg font-semibold mt-0 pt-0">  {isProduct ? "Product Details" : "Service Details"}</p>
                                     </div>
                                     {completedSections[1] && (
                                         <div className="flex items-end rounded-xl shadow-xl bg-white border-2 p-1 px-6">
@@ -551,7 +682,7 @@ const AdProduct = () => {
                                 </div>
                                 {expandedSubsection1 && (
                                     <div className="p-4">
-                                        <div className="flex flex-col md:flex-row items-center gap-5 mb-4">
+                                        {/* <div className="flex flex-col md:flex-row items-center gap-5 mb-4">
                                             <input
                                                 type="text"
                                                 placeholder="Your landing page or website (Example: spark.ai)"
@@ -566,13 +697,13 @@ const AdProduct = () => {
                                             >
                                                 Scan the URL
                                             </button>
-                                        </div>
+                                        </div> */}
 
                                         <div className="flex flex-col md:flex-row gap-5 mb-4">
                                             <input
                                                 type="text"
                                                 name="productName"
-                                                placeholder="Product Name"
+                                                placeholder={isProduct ? "Product Name" : "Service Name"}
                                                 value={productDetails.productName}
                                                 onChange={handleOnChange}
                                                 className=" w-full p-2 py-3 rounded-lg shadow-xl border border-[#fcfcfc] bg-[#FCFCFC] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
@@ -601,7 +732,7 @@ const AdProduct = () => {
                                         <div className="mb-4">
                                             <textarea
                                                 name="productDescription"
-                                                placeholder="Product Description"
+                                                placeholder={isProduct ? "Product Description" : "Service Description"}
                                                 rows="3"
                                                 value={productDetails.productDescription}
                                                 onChange={handleOnChange}
@@ -673,6 +804,64 @@ const AdProduct = () => {
                                                 </div>
                                             </div>
                                         </div>
+                                        <div className="mb-4">
+                                            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-3">
+                                                Select Industry
+                                            </label>
+                                            <div className="flex gap-4 flex-wrap">
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "E-com"
+                                                            ? "bg-orange-100 border-orange-500 text-orange-700"
+                                                            : "bg-orange-50 border-orange-300 text-orange-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("E-com")}
+                                                >
+                                                    <span>E-com</span>
+                                                    {productDetails.industry === "E-com" && <FaCheck className="text-orange-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "Automotive"
+                                                            ? "bg-green-100 border-green-500 text-green-700"
+                                                            : "bg-green-50 border-green-300 text-green-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("Automotive")}
+                                                >
+                                                    <span>Automotive</span>
+                                                    {productDetails.industry === "Automotive" && <FaCheck className="text-green-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "Marketing"
+                                                            ? "bg-blue-100 border-blue-500 text-blue-700"
+                                                            : "bg-blue-50 border-blue-300 text-blue-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("Marketing")}
+                                                >
+                                                    <span>Marketing</span>
+                                                    {productDetails.industry === "Marketing" && <FaCheck className="text-blue-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "B2B Consultant"
+                                                            ? "bg-yellow-100 border-yellow-500 text-yellow-700"
+                                                            : "bg-yellow-50 border-yellow-300 text-yellow-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("B2B Consultant")}
+                                                >
+                                                    <span>B2B Consultant</span>
+                                                    {productDetails.industry === "B2B Consultant" && <FaCheck className="text-yellow-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "Other"
+                                                            ? "bg-gray-100 border-gray-500 text-gray-700"
+                                                            : "bg-gray-50 border-gray-300 text-gray-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("Other")}
+                                                >
+                                                    <span>Other</span>
+                                                    {productDetails.industry === "Other" && <FaCheck className="text-gray-700 ml-2" />}
+                                                </button>
+                                            </div>
+                                        </div>
+
 
                                         <div className="flex justify-start mt-4">
                                             <button
@@ -691,7 +880,7 @@ const AdProduct = () => {
                                 className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer overflow-auto hide-scrollbar ${!completedSections[1] ? "opacity-50 cursor-not-allowed" : ""} ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
                                 style={{
                                     pointerEvents: !completedSections[1] ? "none" : "auto",
-                                    maxHeight:'51vh'
+                                    maxHeight: '51vh'
                                 }}
                             >
                                 <div className={`flex items-center justify-between ${expandedSubsection2 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
@@ -699,7 +888,8 @@ const AdProduct = () => {
                                         <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
                                             <IoImageOutline className="text-[#374151] text-xl" />
                                         </div>
-                                        <p className="ml-3 text-lg font-semibold">Upload or Select Product Image</p>
+                                        <p className="ml-3 text-lg font-semibold">{isProduct ? "Upload or Select Product Image" : "Upload or Select Service Image"}
+                                        </p>
                                     </div>
                                     {completedSections[2] && (
                                         <div className="flex items-center ml-auto bg-white rounded-lg p-1">
@@ -742,7 +932,9 @@ const AdProduct = () => {
                                                     >
                                                         <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
                                                         <span className="text-gray-500 text-nowrap sm:text-xs">
-                                                            Upload a product image here or drag and drop a product image here.
+                                                            {isProduct
+                                                                ? "Upload a product image here or drag and drop a product image here."
+                                                                : "Upload a service image here or drag and drop a service image here."}
                                                         </span>
                                                     </label>
                                                 </div>
@@ -753,7 +945,7 @@ const AdProduct = () => {
                                         </div>
                                         <div className="flex flex-col md:flex-row p-2">
                                             <div className={`bg-[#FCFCFC40] shadow-md rounded-md border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-2`}>
-                                                
+
                                                 <span className="flex flex-col md:flex-row items-center gap-5">
                                                     <input
                                                         type="text"
@@ -778,16 +970,16 @@ const AdProduct = () => {
                                                 <div>
                                                     <div className="relative w-full overflow-x-scroll border border-[#FCFCFC] p-1 rounded-md">
                                                         <div className="flex space-x-4">
-                                                        {generatedImages.map((image, index) => (
-                                                            <div key={index} className="relative flex-shrink-0 border rounded-lg">
-                                                                <img
-                                                                    src={image.imgUrl}
-                                                                    alt={image.description}
-                                                                    className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
-                                                                    onClick={() => handleImageClick(image.imgUrl, true)}
-                                                                />
-                                                            </div>
-                                                        ))}
+                                                            {generatedImages.map((image, index) => (
+                                                                <div key={index} className="relative flex-shrink-0 border rounded-lg">
+                                                                    <img
+                                                                        src={image.imgUrl}
+                                                                        alt={image.description}
+                                                                        className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
+                                                                        onClick={() => handleImageClick(image.imgUrl, true)}
+                                                                    />
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                     <div className="flex justify-end gap-4 mt-2">
@@ -821,18 +1013,18 @@ const AdProduct = () => {
                                 )}
                             </div>
                             <div className="flex justify-start items-center">
-                        {completedSections[1] && completedSections[2] && (
-                        <div className="flex justify-start p-4 pl-2">
-                            <button
-                                className="w-fit rounded-xl text-white py-3 px-6 font-medium custom-button"
-                                disabled={isNextStepDisabled}
-                                onClick={handleProductSubmission}
-                            >
-                                {!productDetails.isEdit ? "Create Product" : "Edit Product"}
-                            </button>
-                        </div>
-                    )}
-                    </div>
+                                {completedSections[1] && completedSections[2] && (
+                                    <div className="flex justify-start p-4 pl-2">
+                                        <button
+                                            className="w-fit rounded-xl text-white py-3 px-6 font-medium custom-button"
+                                            disabled={isNextStepDisabled}
+                                            onClick={handleProductSubmission}
+                                        >
+                                            {!productDetails.isEdit ? "Create Product" : "Edit Product"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

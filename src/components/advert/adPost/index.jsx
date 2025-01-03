@@ -1,0 +1,607 @@
+import { useState, useRef, useEffect } from "react";
+import { FaCheck, FaGlobe } from "react-icons/fa";
+import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
+import { FaFacebookF, FaGoogle, FaYoutube, FaInstagram, FaTwitter, FaLinkedinIn, FaWhatsapp } from "react-icons/fa";
+
+export default function SocialMediaPost({
+    isNextSectionOpen,
+    toggleNextSectionAccordion,
+    handleNextSection,
+    isCompleted,
+}) {
+    const [selectedPlatforms, setSelectedPlatforms] = useState([]);
+    const [selectedSize, setSelectedSize] = useState("");
+    const [objective, setObjective] = useState("");
+
+    const [selectedCampaign, setSelectedCampaign] = useState(""); // Added state for campaign type
+    const sectionRef = useRef(null);
+
+    const [isManualSetup, setIsManualSetup] = useState(false);
+    const [cohorts, setCohorts] = useState([]);
+    const [formValues, setFormValues] = useState({
+        cohortName: "",
+        ageGroup: { min: "", max: "" },
+        gender: "",
+        interests: [],
+    });
+    const [interestInput, setInterestInput] = useState("");
+    const [selectedSuggestions, setSelectedSuggestions] = useState([]);
+
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormValues((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    const handleInterestKeyDown = (e) => {
+        if (e.key === "Enter" && interestInput) {
+            setFormValues((prev) => ({
+                ...prev,
+                interests: [...prev.interests, interestInput],
+            }));
+            setInterestInput("");
+        }
+    };
+
+    const handleAddCohort = () => {
+        setCohorts([...cohorts, formValues]);
+        setFormValues({
+            cohortName: "",
+            ageGroup: { min: "", max: "" },
+            gender: "",
+            interests: [],
+        });
+    };
+
+    const toggleSuggestionSelection = (title) => {
+        setSelectedSuggestions((prev) =>
+            prev.includes(title)
+                ? prev.filter((suggestion) => suggestion !== title)
+                : [...prev, title]
+        );
+    };
+
+
+    const platforms = [
+        { name: "Instagram", icon: "src/assets/media/insta.png" },
+        { name: "Facebook", icon: "src/assets/media/facebook.png" },
+        { name: "LinkedIn", icon: "src/assets/media/linkedin.png" },
+        { name: "Twitter", icon: "src/assets/media/twitter.png" },
+        { name: "WhatsApp", icon: "src/assets/media/whatsapp.png" },
+        { name: "YouTube", icon: "src/assets/media/youtube.png" },
+    ];
+
+    const mediaSizes = [
+        { name: "Post Size", size: "(1080*1080)" },
+        { name: "Landscape Size", size: "(1200*628)" },
+        { name: "Story Size", size: "(1080*1920)" },
+        { name: "Portrait Size", size: "(1080*1350)" },
+        { name: "Pin Size", size: "(1000*1500)" },
+    ];
+
+    const facebookSizes = [
+        { name: "Post Size", size: "(1080*1080)" },
+        { name: "Landscape Size", size: "(1200*628)" },
+        { name: "Story Size", size: "(1080*1920)" },
+    ];
+
+    const googleSizes = [
+        { name: "Story Size", size: "(1080*1920)" },
+        { name: "Portrait Size", size: "(1080*1350)" },
+        { name: "Pin Size", size: "(1000*1500)" },
+    ];
+    const linkedInSizes = [
+        { name: "Post Size", size: "(1200*628)" },
+        { name: "Ad Size", size: "(1200*300)" },
+        { name: "Banner Size", size: "(1584*396)" },
+    ];
+
+    const twitterSizes = [
+        { name: "Post Size", size: "(1024*512)" },
+        { name: "Ad Size", size: "(1200*600)" },
+        { name: "Header Size", size: "(1500*500)" },
+    ];
+
+    const whatsappSizes = [
+        { name: "Status Size", size: "(1080*1920)" },
+        { name: "Profile Photo Size", size: "(500*500)" },
+        { name: "Ad Banner Size", size: "(1200*600)" },
+    ];
+
+    const instagramSizes = [
+        { name: "Post Size", size: "(1080*1080)" },
+        { name: "Story Size", size: "(1080*1920)" },
+        { name: "Reel Size", size: "(1080*1350)" },
+    ];
+
+    const youtubeSizes = [
+        { name: "Thumbnail Size", size: "(1280*720)" },
+        { name: "Channel Art Size", size: "(2560*1440)" },
+        { name: "Ad Video Size", size: "(1920*1080)" },
+    ];
+
+
+    const [selectedPlatform, setSelectedPlatform] = useState(null);
+    localStorage.setItem('imageSize', JSON.stringify(selectedSize));
+
+    useEffect(() => {
+        if (isNextSectionOpen && sectionRef.current) {
+            sectionRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [isNextSectionOpen]);
+
+    const handleSizeClick = (size) => {
+        setSelectedSize(size);
+    };
+
+    const handlePlatformClick = (platform) => {
+        setSelectedPlatform(platform);
+        setSelectedSize("");
+    };
+
+    const getSizes = () => {
+        if (selectedPlatform === "facebook") {
+            return facebookSizes;
+        } else if (selectedPlatform === "google") {
+            return googleSizes;
+        } else if (selectedPlatform === "linkedin") {
+            return linkedInSizes;
+        } else if (selectedPlatform === "whatsapp") {
+            return whatsappSizes;
+        } else if (selectedPlatform === "twitter") {
+            return twitterSizes;
+        } else if (selectedPlatform === "instagram") {
+            return instagramSizes;
+        } else if (selectedPlatform === "youtube") {
+            return youtubeSizes;
+        }
+        return mediaSizes;
+    };
+
+    const campaigns = [
+        {
+            title: "Brand Awareness",
+            icon: (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="24px"
+                    viewBox="0 -960 960 960"
+                    width="24px"
+                    fill="#082A66"
+                >
+                    <path d="M640-440v-80h160v80H640Zm48 280-128-96 48-64 128 96-48 64Zm-80-480-48-64 128-96 48 64-128 96ZM120-360v-240h160l200-200v640L280-360H120Zm280-246-86 86H200v80h114l86 86v-252ZM300-480Z" />
+                </svg>
+            ),
+        },
+        {
+            title: "Sale",
+            icon: (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="24px"
+                    viewBox="0 -960 960 960"
+                    width="24px"
+                    fill="#082A66"
+                >
+                    <path d="M280-640q-33 0-56.5-23.5T200-720v-80q0-33 23.5-56.5T280-880h400q33 0 56.5 23.5T760-800v80q0 33-23.5 56.5T680-640H280Zm0-80h400v-80H280v80ZM160-80q-33 0-56.5-23.5T80-160v-40h800v40q0 33-23.5 56.5T800-80H160ZM80-240l139-313q10-22 30-34.5t43-12.5h376q23 0 43 12.5t30 34.5l139 313H80Zm260-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Z" />
+                </svg>
+            ),
+        },
+        {
+            title: "Retargeting Audience",
+            icon: (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="24px"
+                    viewBox="0 -960 960 960"
+                    width="24px"
+                    fill="#082A66"
+                >
+                    <path d="M468-240q-96-5-162-74t-66-166q0-100 70-170t170-70q97 0 166 66t74 162l-84-25q-13-54-56-88.5T480-640q-66 0-113 47t-47 113q0 57 34.5 100t88.5 56l25 84Zm48 158q-9 2-18 2h-18q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480v18q0-9-2-18l-78-24v-12q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93h12l24 78Zm305 22L650-231 600-80 480-480l400 120-151 50 171 171-79 79Z" />
+                </svg>
+            ),
+        },
+    ];
+
+    useEffect(() => {
+        if (isNextSectionOpen && sectionRef.current) {
+            sectionRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [isNextSectionOpen]);
+
+    const togglePlatformSelection = (platformName) => {
+        setSelectedPlatforms((prev) => {
+            if (prev.includes(platformName)) {
+                return prev.filter((platform) => platform !== platformName);
+            }
+            return [...prev, platformName];
+        });
+        setSelectedSize(""); // Reset size selection when platforms are toggled
+    };
+
+
+    return (
+        <div ref={sectionRef}>
+            <section
+                className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] pb-2 ${!isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
+                    } flex flex-col gap-6 relative z-10`}
+                style={{ height: "auto" }} // Ensure the height is dynamic
+            >
+                <div
+                    className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
+                        } relative cursor-pointer`}
+                    onClick={toggleNextSectionAccordion}
+                >
+                    {isCompleted && (
+                        <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
+                            Completed <MdArrowDropUp size={20} />
+                        </span>
+                    )}
+                    <span className="flex items-center gap-4">
+                        <img src="/icon4.svg" alt="Icon" />
+                        <span className="flex flex-col">
+                            <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">
+                                Creative Objective
+                            </h4>
+                            <p className="text-[#374151] text-xs lg:text-sm">
+                                Select your preferred platforms and sizes below.
+                            </p>
+                        </span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                        {isNextSectionOpen ? (
+                            <MdArrowDropUp size={32} className="cursor-pointer" />
+                        ) : (
+                            <MdArrowDropDown size={32} className="cursor-pointer" />
+                        )}
+                    </div>
+                </div>
+
+                {isNextSectionOpen && (
+                    <div className="p-6 pt-0">
+                        <span className="text-[#082A66] font-bold lg:text-xl text-base">Ad Networks</span>
+                        {/* Platform Selection */}
+
+                        {/* Select Platforms */}
+                        <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-4">
+                            <h4 className="text-[#082A66] font-bold lg:text-lg text-base">
+                                Select Social Media Platform
+                            </h4>
+                            <div className="flex flex-wrap gap-4 p-4">
+                                {platforms.map((platform, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`relative w-36 h-36 rounded-md bg-gray-50 border hover:shadow-md cursor-pointer p-4 flex flex-col items-center justify-center ${selectedPlatforms.includes(platform.name) ? "" : ""
+                                            }`}
+                                        onClick={() => togglePlatformSelection(platform.name)}
+                                    >
+                                        {/* Platform Icon */}
+                                        <img
+                                            src={platform.icon}
+                                            alt={platform.name}
+                                            className="w-20 h-20 object-contain mb-2" // Adjusted for proper spacing
+                                        />
+                                        {/* Platform Name */}
+                                        <span className="text-sm font-medium text-center">{platform.name}</span>
+                                        {/* BiCheck for Selected Platforms */}
+                                        {selectedPlatforms.includes(platform.name) && (
+                                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
+                                                <FaCheck className="text-white text-sm" />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-6">
+                            <h3 className="text-[#082A66] text-lg font-bold mb-4">Select Campaign type</h3>
+                            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                                {campaigns.map((campaign, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] cursor-pointer ${selectedCampaign === campaign.title
+                                            ? "bg-[#00A0F5] text-white"
+                                            : "bg-white text-[#082A66]"
+                                            }`}
+                                        onClick={() => setSelectedCampaign(campaign.title)}
+                                    >
+                                        {campaign.icon}
+                                        <p className="font-bold text-center">{campaign.title}</p>
+                                        {selectedCampaign === campaign.title && (
+                                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
+                                                <FaCheck className="text-white text-sm" />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Select Size */}
+                        <>
+                            {/* <h3 className="text-[#374151] text-lg mt-4 mb-3">Select Size</h3> */}
+                            <div className="mt-6">
+                                <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
+                                    <div className="flex flex-wrap justify-between items-center">
+                                        <span>
+                                            <h4 className="text-[#082A66] font-bold lg:text-lg text-base">
+                                                Select Social Media Size
+                                            </h4>
+                                            <p className="text-[#374151] lg:text-lg text-xs">
+                                                Most common size for social media advertising
+                                            </p>
+                                        </span>
+                                        <span className="flex gap-4">
+                                            <FaFacebookF
+                                                className="bg-[#00279926] p-1 cursor-pointer"
+                                                size={20}
+                                                onClick={() => handlePlatformClick("facebook")}
+                                            />
+                                            <FaGoogle
+                                                className="bg-[#00279926] p-1 cursor-pointer"
+                                                size={20}
+                                                onClick={() => handlePlatformClick("google")}
+                                            />
+                                            <FaLinkedinIn
+                                                className="bg-[#00279926] p-1 cursor-pointer"
+                                                size={20}
+                                                onClick={() => handlePlatformClick("linkedin")}
+                                            />
+                                            <FaWhatsapp
+                                                className="bg-[#00279926] p-1 cursor-pointer"
+                                                size={20}
+                                                onClick={() => handlePlatformClick("whatsapp")}
+                                            />
+                                            <FaTwitter
+                                                className="bg-[#00279926] p-1 cursor-pointer"
+                                                size={20}
+                                                onClick={() => handlePlatformClick("twitter")}
+                                            />
+                                            <FaInstagram
+                                                className="bg-[#00279926] p-1 cursor-pointer"
+                                                size={20}
+                                                onClick={() => handlePlatformClick("instagram")}
+                                            />
+                                            <FaYoutube
+                                                className="bg-[#00279926] p-1 cursor-pointer"
+                                                size={20}
+                                                onClick={() => handlePlatformClick("youtube")}
+                                            />
+                                        </span>
+
+                                    </div>
+                                    <div
+                                        className={`pt-4 grid gap-4 ${selectedPlatform
+                                            ? "grid-cols-1 sm:grid-cols-3"
+                                            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
+                                            }`}
+                                    >
+                                        {getSizes().map((item, index) => (
+                                            <div
+                                                key={index}
+                                                className={`flex flex-col items-center justify-center gap-2 w-full py-4 rounded-[20px] shadow cursor-pointer ${selectedSize === item.size
+                                                    ? "bg-[#00A0F5] text-white"
+                                                    : "bg-white"
+                                                    }`}
+                                                onClick={() => handleSizeClick(item.size)}
+                                            >
+                                                <img src="/image2.svg" alt="" className="" />
+                                                <p className="font-bold text-center">{item.name}</p>
+                                                <p className="text-sm">{item.size}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                        <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-6">
+                            <h3 className="text-[#082A66] text-lg font-bold mb-4">AI Suggestions</h3>
+                            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                                {[
+                                    {
+                                        icon: <FaFacebookF />,
+                                        title: "Brand Awareness",
+                                        profile: {
+                                            age: "18-35",
+                                            gender: "All",
+                                            interests: "Marketing, Branding",
+                                        },
+                                    },
+                                    {
+                                        icon: <FaFacebookF />,
+                                        title: "Sale Campaign",
+                                        profile: {
+                                            age: "25-45",
+                                            gender: "Male",
+                                            interests: "E-commerce, Deals",
+                                        },
+                                    },
+                                    {
+                                        icon: <FaFacebookF />,
+                                        title: "Retargeting",
+                                        profile: {
+                                            age: "30-50",
+                                            gender: "Female",
+                                            interests: "Shopping, Lifestyle",
+                                        },
+                                    },
+                                ].map((suggestion, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${selectedSuggestions.includes(suggestion.title)
+                                            ? "bg-blue-100"
+                                            : ""
+                                            }`}
+                                        onClick={() => toggleSuggestionSelection(suggestion.title)}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                                                {suggestion.icon}
+                                            </span>
+                                            <p className="font-bold text-center">{suggestion.title}</p>
+                                        </div>
+                                        <div className="mt-2 text-sm text-center">
+                                            <p>Audience Profile:</p>
+                                            <p>Age: {suggestion.profile.age}</p>
+                                            <p>Gender: {suggestion.profile.gender}</p>
+                                            <p>Interest: {suggestion.profile.interests}</p>
+                                        </div>
+                                        {selectedSuggestions.includes(suggestion.title) && (
+                                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
+                                                <FaCheck className="text-white text-sm" />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                className="custom-button mt-6 px-4 py-2 bg-blue-500 text-white rounded-md"
+                                onClick={() => setIsManualSetup(!isManualSetup)}
+                            >
+                                I will setup Manually
+                            </button>
+                            {isManualSetup && (
+                                <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-4">
+                                    <h4 className="text-lg font-bold mb-4">Targeting Cohort</h4>
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex flex-col">
+                                            <label className="font-bold">Cohort Name</label>
+                                            <input
+                                                className="border p-2 rounded"
+                                                name="cohortName"
+                                                value={formValues.cohortName}
+                                                onChange={handleFormChange}
+                                                placeholder="Enter Cohort Name"
+                                            />
+                                        </div>
+                                        <div className="flex gap-24 items-center">
+                                            <div className="flex flex-col flex-2">
+                                                <label className="font-bold">Age Group</label>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="number"
+                                                        className="border p-2 rounded w-1/2"
+                                                        name="ageGroup.min"
+                                                        value={formValues.ageGroup.min}
+                                                        onChange={(e) =>
+                                                            setFormValues((prev) => ({
+                                                                ...prev,
+                                                                ageGroup: { ...prev.ageGroup, min: e.target.value },
+                                                            }))
+                                                        }
+                                                        placeholder="Min-Age"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        className="border p-2 rounded w-1/2"
+                                                        name="ageGroup.max"
+                                                        value={formValues.ageGroup.max}
+                                                        onChange={(e) =>
+                                                            setFormValues((prev) => ({
+                                                                ...prev,
+                                                                ageGroup: { ...prev.ageGroup, max: e.target.value },
+                                                            }))
+                                                        }
+                                                        placeholder="Max-Age"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <label className="font-bold">Gender</label>
+                                                <select
+                                                    className="border p-2 rounded w-full"
+                                                    name="gender"
+                                                    value={formValues.gender}
+                                                    onChange={handleFormChange}
+                                                >
+                                                    <option value="">Select Gender</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <label className="font-bold">Interests</label>
+                                            <div className="flex flex-wrap items-start border rounded overflow-auto ">
+                                                {formValues.interests.map((interest, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="px-2 py-1 m-1 bg-blue-100 text-blue-700 rounded "
+                                                    >
+                                                        {interest}
+                                                        <button
+                                                            type="button "
+                                                            className="ml-2 text-red-500"
+                                                            onClick={() =>
+                                                                setFormValues((prev) => ({
+                                                                    ...prev,
+                                                                    interests: prev.interests.filter((_, i) => i !== idx),
+                                                                }))
+                                                            }
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                                <input
+                                                    className="flex-1 border p-2 rounded h-10 focus:ring-2 focus-within:ring-blue-400 focus:outline-none "
+                                                    value={interestInput}
+                                                    onChange={(e) => setInterestInput(e.target.value)}
+                                                    onKeyDown={handleInterestKeyDown}
+                                                    placeholder="Add Interests"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        className="custom-button mt-4 px-4 py-2 bg-green-500 text-white rounded-md"
+                                        onClick={handleAddCohort}
+                                    >
+                                        Add Cohort
+                                    </button>
+                                    <div className="mt-4">
+                                        <h4 className="font-bold">Preview</h4>
+                                        {cohorts.map((cohort, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="border p-4 rounded mt-2 bg-gray-200 text-sm"
+                                            >
+                                                <p>
+                                                    <strong>Name:</strong> {cohort.cohortName}
+                                                </p>
+                                                <p>
+                                                    <strong>Age Group:</strong> {cohort.ageGroup.min} -{" "}
+                                                    {cohort.ageGroup.max}
+                                                </p>
+                                                <p>
+                                                    <strong>Gender:</strong> {cohort.gender}
+                                                </p>
+                                                <p>
+                                                    <strong>Interests:</strong> {cohort.interests.join(", ")}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {/* Generate Creatives */}
+                        <div className="flex items-center justify-center w-full py-8">
+                            <button
+                                className="custom-button rounded-[20px] text-white py-4 px-10 font-medium"
+                                onClick={() => {
+                                    handleNextSection();
+                                    setIsCompleted(true);
+                                }}
+                            >
+                                Generate Creatives
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </section>
+        </div>
+    );
+}

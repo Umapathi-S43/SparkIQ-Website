@@ -3,6 +3,9 @@ import ProductDetails from "./productDetails";
 import CreativeSize from "./creativeSize";
 import GeneratedCreatives from "../../Dashboard/components1/GeneratedCreatives";
 import ExistingProducts from "./productDetails/ExistingProducts";
+import LookingFor from "./lookingFor";
+import SocialMediaPost from "./socialMediaPost";
+import AdPost from "./adPost";
 
 export default function GenerateAd({ setPage, pages }) {
   const [isNextSectionOpen, setIsNextSectionOpen] = useState(false);
@@ -11,6 +14,7 @@ export default function GenerateAd({ setPage, pages }) {
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
   const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
   const [showProductDetails, setShowProductDetails] = useState(false);
+  const [openModalLookingFor,setOpenModalLookingFor]=useState(false);
 
   // State for storing data from each section
   const [brandAwarenessData, setBrandAwarenessData] = useState([]);
@@ -21,7 +25,10 @@ export default function GenerateAd({ setPage, pages }) {
   const [creativeSize, setCreativeSize] = useState(null);
 
   const creativeSizeRef = useRef(null);
+  const lookingForRef = useRef(null);
   const generatedCreativesRef = useRef(null);
+  const SocialMediaPostRef = useRef(null);
+  const AdPostRef= useRef(null);
 
   // Function to toggle between "Brand Color" and "Single Color"
   const toggleSelectedTab = () => {
@@ -65,6 +72,7 @@ export default function GenerateAd({ setPage, pages }) {
       selectedTab,
       openModalProductDetails,
       openModalCreativeSize,
+      openModalLookingFor,
       brandAwarenessData,
       saleData,
       retargetingData,
@@ -155,8 +163,41 @@ export default function GenerateAd({ setPage, pages }) {
               setShowProductDetails={setShowProductDetails}
             />
           )}
-          <div ref={creativeSizeRef}>
+          {/* <div ref={creativeSizeRef}>
             <CreativeSize
+              isNextSectionOpen={isNextSectionOpen}
+              isCompleted={openModalProductDetails}
+              toggleNextSectionAccordion={toggleNextSectionAccordion}
+              handleNextSection={handleNextSection}
+              setIsLoading={setIsLoading}
+              openModalProductDetails={openModalProductDetails}
+              setIsCompleted={setOpenModalCreativeSize}
+            />
+          </div> */}
+          <div ref={lookingForRef}>
+            <LookingFor
+              isNextSectionOpen={isNextSectionOpen}
+              isCompleted={openModalProductDetails}
+              toggleNextSectionAccordion={toggleNextSectionAccordion}
+              handleNextSection={handleNextSection}
+              setIsLoading={setIsLoading}
+              openModalProductDetails={openModalProductDetails}
+              setIsCompleted={setOpenModalLookingFor}
+            />
+          </div>
+          <div ref={SocialMediaPostRef}>
+            <SocialMediaPost
+              isNextSectionOpen={isNextSectionOpen}
+              isCompleted={openModalProductDetails}
+              toggleNextSectionAccordion={toggleNextSectionAccordion}
+              handleNextSection={handleNextSection}
+              setIsLoading={setIsLoading}
+              openModalProductDetails={openModalProductDetails}
+              setIsCompleted={setOpenModalCreativeSize}
+            />
+          </div>
+          <div ref={AdPostRef}>
+            <AdPost
               isNextSectionOpen={isNextSectionOpen}
               isCompleted={openModalProductDetails}
               toggleNextSectionAccordion={toggleNextSectionAccordion}
