@@ -9,7 +9,10 @@ import { Workspace } from "polotno/canvas/workspace";
 import { observer } from "mobx-react-lite"; // Required for custom section
 import { RiArrowDropUpLine, RiArrowDropDownLine } from "react-icons/ri";
 import { SiAffinitydesigner } from "react-icons/si";
-
+import axios from "axios";
+import toast from "react-hot-toast";
+import { baseUrl } from "../../components/utils/Constant";
+import { jwtToken } from '../../components/utils/jwtToken';
 import {
   TextSection,
   PhotosSection,
@@ -81,11 +84,11 @@ const CustomSection = {
   // Update child elements
   activePage.children.forEach((child) => {
     if (child.type === "svg" || child.type === "figure") {
-      // Apply the first color to SVG or figure elements
-      child.set({
-        fill: svgColor,
-      })
-     } else if (child.type === "text") {
+        // Apply the first color to SVG or figure elements
+        child.set({
+          fill: svgColor,
+        })
+       }else if (child.type === "text") {
       // Apply the third color to text elements
       child.set({ fill: textColor });
     }
@@ -146,12 +149,12 @@ const applyColorsReplace = (svgElement, colorsReplace) => {
     
         // Update child elements
         page.children.forEach((child) => {
-          if (child.type === "svg" || child.type === "figure") {
-            // Apply the first color to SVG or figure elements
-            child.set({
-              fill: svgColor,
-            })
-           } else if (child.type === "text") {
+            if (child.type === "svg" || child.type === "figure") {
+                // Apply the first color to SVG or figure elements
+                child.set({
+                  fill: svgColor,
+                })
+               } else if (child.type === "text") {
             child.set({ fill: textColor });
           }
         });
@@ -258,7 +261,7 @@ const sections = [
 ];
 
 
-const PolotnoEditor = () => {
+const PolotnoAdmin = () => {
   const { state } = useLocation();
   const templateData = state?.templateData;
 
@@ -321,6 +324,7 @@ const PolotnoEditor = () => {
       alert("An error occurred while saving the template.");
     }
   };
+  
 
   const loadFromJSON = async () => {
     try {
@@ -366,12 +370,12 @@ const PolotnoEditor = () => {
   
     // Update child elements
     activePage.children.forEach((child) => {
-      if (child.type === "svg" || child.type === "figure") {
-        // Apply the first color to SVG or figure elements
-        child.set({
-          fill: svgColor,
-        })
-       }  else if (child.type === "text") {
+        if (child.type === "svg" || child.type === "figure") {
+            // Apply the first color to SVG or figure elements
+            child.set({
+              fill: svgColor,
+            })
+           } else if (child.type === "text") {
         // Apply the third color to text elements
         child.set({
           fill: textColor,
@@ -614,4 +618,4 @@ const PolotnoEditor = () => {
   );
 };
 
-export default PolotnoEditor;
+export default PolotnoAdmin;

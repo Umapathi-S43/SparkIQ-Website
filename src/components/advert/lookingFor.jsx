@@ -5,12 +5,13 @@ import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 export default function LookingFor({
   isNextSectionOpen,
   toggleNextSectionAccordion,
+  setSelectedOption,
   handleNextSection,
   setIsLoading,
   isCompleted,
   setIsCompleted,
 }) {
-  const [selectedOption, setSelectedOption] = useState("");
+  const [localSelectedOption, setLocalSelectedOption] = useState("Advertisement (Ad)");
   const sectionRef = useRef(null);
 
   useEffect(() => {
@@ -20,8 +21,8 @@ export default function LookingFor({
   }, [isNextSectionOpen]);
 
   const handleOptionClick = (option) => {
-    setSelectedOption(option);
-    localStorage.setItem("lookingFor", option); // Store the selected option in localStorage
+    setLocalSelectedOption(option);
+    localStorage.setItem("lookingFor", option); // Save selection to localStorage
   };
 
   const options = [
@@ -39,9 +40,15 @@ export default function LookingFor({
 
   return (
     <div ref={sectionRef}>
-      <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${!isNextSectionOpen ? 'p-2 lg:p-3' : 'p-0'} flex flex-col gap-6 relative z-10`}>
+      <section
+        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${
+          !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
+        } flex flex-col gap-6 relative z-10`}
+      >
         <div
-          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? 'rounded-[20px] p-2' : 'rounded-t-[20px] p-4'} relative cursor-pointer`}
+          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${
+            !isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
+          } relative cursor-pointer`}
           onClick={toggleNextSectionAccordion}
         >
           {isCompleted && (
@@ -71,17 +78,25 @@ export default function LookingFor({
         {isNextSectionOpen && (
           <div className="px-6">
             <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
-              <h3 className="text-[#374151] text-lg mb-3">Common Formats for Sharing Creatives Across Platforms</h3>
+              <h3 className="text-[#374151] text-lg mb-3">
+                Common Formats for Sharing Creatives Across Platforms
+              </h3>
               <div className="grid w-1/2 gap-4 grid-cols-1 sm:grid-cols-2">
                 {options.map((item, index) => (
                   <div
                     key={index}
                     className={`flex flex-col items-center justify-center gap-2 py-4 rounded-[20px] shadow cursor-pointer ${
-                      selectedOption === item.name ? "bg-[#00A0F5] text-white" : "bg-white"
+                      localSelectedOption === item.name
+                        ? "bg-[#00A0F5] text-white"
+                        : "bg-white"
                     }`}
                     onClick={() => handleOptionClick(item.name)}
                   >
-                    <img src={item.image} alt={item.name} className="w-12 h-12" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-12 h-12"
+                    />
                     <p className="font-bold text-center">{item.name}</p>
                     <p className="text-sm text-center">{item.description}</p>
                   </div>
@@ -90,12 +105,13 @@ export default function LookingFor({
             </div>
             <div className="flex items-center justify-center w-full py-12">
               <button
-                disabled={!selectedOption}
+                disabled={!localSelectedOption}
                 className={`custom-button rounded-[20px] text-white py-4 px-20 whitespace-pre font-medium ${
-                  selectedOption ? "" : "opacity-50 cursor-not-allowed"
+                  localSelectedOption ? "" : "opacity-50 cursor-not-allowed"
                 }`}
                 onClick={() => {
-                  handleNextSection();
+                  setSelectedOption(localSelectedOption); // Update selected option in parent
+                  handleNextSection(); // Navigate to CreativeFormat
                   setIsCompleted(true);
                   setIsLoading(true);
                 }}

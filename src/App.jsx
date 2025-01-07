@@ -38,6 +38,7 @@ import PreviewTemplate from './Dashboard/components1/Edit/PreviewTemplate';
 import PolotnoEditor from './Dashboard/components1/PolotnoEditor';
 import Templates from './Dashboard/components1/templates';
 import BrandSettingsPage from './Dashboard/pages1/BrandSettingsPage';
+import PolotnoAdmin from './Dashboard/components1/PolotnoAdmin';
 function App() {
   return (
     <Router>
@@ -87,6 +88,10 @@ function App() {
           <Route
             path="/productdetails"
             element={<ProtectedRoute element={<ProductDetailsPage />} />}
+          />
+          <Route
+            path="/adminEditor"
+            element={<ProtectedRoute element={<PolotnoAdmin />} />}
           />
           <Route
             path="/profile"

@@ -27,41 +27,50 @@ const BrandSetup = () => {
     setLoadingStep(0);
   
     try {
-      // Fetch all brand data from a single endpoint
+      // Call the API with the entered URL
       const response = await fetchBrandData(url);
   
-      // Log or use the response data if needed
+      // Log and navigate with the fetched data
       console.log("Fetched data:", response);
+      navigateToBrandSettings(response);
     } catch (error) {
       console.error("Error fetching brand data:", error);
     } finally {
-      // Redirect to the next page regardless of success or failure
       setIsLoading(false); // Stop the loading state
-      navigateToBrandSettings();
     }
   };
   
   
   
-  const fetchBrandData = async (url) => {
-    
-    try {
-        const res = await axios.get(`${baseUrl}/brand/extract`,url, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        });        
-
-        const data = res.data.data; // Accessing the `data` object from the response
-        return data;
-
-    }catch (e) {    
-        console.error("Error fetching brand data:", e);
-    }
-    // Simulate an API call with a delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
   
-   };
+  const fetchBrandData = async (url) => {
+    try {
+      const response = await axios.post(
+        `http://dev.api.sparkiq.ai/v2/api/brands/extract?websiteUrl=${encodeURIComponent(url)}`, // Encode the URL to handle special characters
+        {}, // Empty body for POST
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`, // Include the Authorization header
+          },
+        }
+      );
+  
+      // Access the response data
+      const data = response.data.data;
+      console.log("API Response:", data);
+      return data;
+    } catch (error) {
+      // Enhanced error handling
+      if (error.response) {
+        console.error("API Error:", error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      } else {
+        console.error("Error setting up request:", error.message);
+      }
+      throw error;
+    }
+  };
   
   const navigateToBrandSettings = (response) => {
     // Navigate or pass the fetched data to the BrandSettings page

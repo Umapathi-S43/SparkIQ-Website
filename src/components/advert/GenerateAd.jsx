@@ -6,6 +6,7 @@ import ExistingProducts from "./productDetails/ExistingProducts";
 import LookingFor from "./lookingFor";
 import SocialMediaPost from "./socialMediaPost";
 import AdPost from "./adPost";
+import CreativeFormat from "./creativeFormat";
 
 export default function GenerateAd({ setPage, pages }) {
   const [isNextSectionOpen, setIsNextSectionOpen] = useState(false);
@@ -184,20 +185,9 @@ export default function GenerateAd({ setPage, pages }) {
               openModalProductDetails={openModalProductDetails}
               setIsCompleted={setOpenModalLookingFor}
             />
-          </div>
-          <div ref={SocialMediaPostRef}>
-            <SocialMediaPost
-              isNextSectionOpen={isNextSectionOpen}
-              isCompleted={openModalProductDetails}
-              toggleNextSectionAccordion={toggleNextSectionAccordion}
-              handleNextSection={handleNextSection}
-              setIsLoading={setIsLoading}
-              openModalProductDetails={openModalProductDetails}
-              setIsCompleted={setOpenModalCreativeSize}
-            />
-          </div>
-          <div ref={AdPostRef}>
-            <AdPost
+          </div>          
+          <div ref={CreativeFormat}>
+            <CreativeFormat
               isNextSectionOpen={isNextSectionOpen}
               isCompleted={openModalProductDetails}
               toggleNextSectionAccordion={toggleNextSectionAccordion}
