@@ -37,7 +37,7 @@ const Brands = () => {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
-        const response = await axios.get(`${baseUrl}/brand/company/123`, {
+        const response = await axios.get(`${baseUrl}/v2/api/brands`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
           },
@@ -85,7 +85,7 @@ const Brands = () => {
   }, [brands, products]);
 
   const filteredBrands = updatedBrands.filter((brand) =>
-    brand.name.toLowerCase().includes(searchQuery.toLowerCase())
+    brand.brandName?.toLowerCase().includes(searchQuery?.toLowerCase() || "")
   );
 
   return (
@@ -162,7 +162,7 @@ const Brands = () => {
                 key={index}
                 className="group brand-card1 flex items-center justify-center w-64 h-80"
                 onClick={() =>
-                  navigate(`/brandsetup?name=${encodeURIComponent(brand.name)}`)
+                  navigate(`/brand-settings?id=${encodeURIComponent(brand.id)}`)
                 }
               >
                 <div className="relative flex flex-col items-center justify-center text-white w-full h-full overflow-hidden">
@@ -171,17 +171,17 @@ const Brands = () => {
                   </div>
                   <div className="absolute top-8 bg-white p-2 rounded-lg mt-0 mb-8">
                     <img
-                      src={brand.logoURL}
-                      alt={brand.name}
+                      src={brand.logos?.[0]?.logoUrl || ""}
+                      alt={brand.brandName}
                       className="w-16 h-16 object-cover rounded-lg group-hover:mt-0"
                     />
                   </div>
                   <div className="absolute top-30 text-center">
                     <h3 className="text-xl font-bold mb-2 group-hover:text-xl">
-                      {brand.name}
+                      {brand.brandName}
                     </h3>
                     <p className="text-md font-thin text-start ml-4 truncate-line-clamp group-hover:font-light">
-                      {truncateText(brand?.description, 55)}
+                      {truncateText(brand?.brandVoice, 55)}
                     </p>
                   </div>
                   <div className="absolute top-52 text-sm mt-4 flex items-center">

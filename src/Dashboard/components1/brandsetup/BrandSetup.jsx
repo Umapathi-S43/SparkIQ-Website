@@ -40,13 +40,10 @@ const BrandSetup = () => {
     }
   };
   
-  
-  
-  
   const fetchBrandData = async (url) => {
     try {
       const response = await axios.post(
-        `http://dev.api.sparkiq.ai/v2/api/brands/extract?websiteUrl=${encodeURIComponent(url)}`, // Encode the URL to handle special characters
+        `${baseUrl}/v2/api/brands/extract?websiteUrl=${encodeURIComponent(url)}`, // Encode the URL to handle special characters
         {}, // Empty body for POST
         {
           headers: {
