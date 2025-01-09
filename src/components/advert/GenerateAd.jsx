@@ -30,6 +30,13 @@ export default function GenerateAd({ setPage, pages }) {
   const generatedCreativesRef = useRef(null);
   const SocialMediaPostRef = useRef(null);
   const AdPostRef= useRef(null);
+  const [localSelectedOption, setLocalSelectedOption] = useState("Advertisement (Ad)");
+
+// Ensure fallback in case of accidental null/undefined
+if (!localSelectedOption) {
+  setLocalSelectedOption("Social Media Post");
+}
+
 
   // Function to toggle between "Brand Color" and "Single Color"
   const toggleSelectedTab = () => {
@@ -187,15 +194,16 @@ export default function GenerateAd({ setPage, pages }) {
             />
           </div>          
           <div ref={CreativeFormat}>
-            <CreativeFormat
-              isNextSectionOpen={isNextSectionOpen}
-              isCompleted={openModalProductDetails}
-              toggleNextSectionAccordion={toggleNextSectionAccordion}
-              handleNextSection={handleNextSection}
-              setIsLoading={setIsLoading}
-              openModalProductDetails={openModalProductDetails}
-              setIsCompleted={setOpenModalCreativeSize}
-            />
+          <CreativeFormat
+            selectedOption={localSelectedOption || "Social Media Post"}
+            isNextSectionOpen={isNextSectionOpen}
+            isCompleted={openModalProductDetails}
+            toggleNextSectionAccordion={toggleNextSectionAccordion}
+            handleNextSection={handleNextSection}
+            setIsLoading={setIsLoading}
+            openModalProductDetails={openModalProductDetails}
+            setIsCompleted={setOpenModalCreativeSize}
+          />
           </div>
         </div>
       </div>

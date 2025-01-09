@@ -1,0 +1,65 @@
+.button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.3s ease;
+}
+
+.button-clear:hover .button-container svg path,
+.button-clear:hover .button-container svg rect {
+  fill: url(#hoverGradient); /* Reference the gradient defined in SVG */
+}
+
+.button-clear:hover .button-container span {
+  background: linear-gradient(115deg, #004367 0%, #00A7FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.button-clear:hover .button-container span {
+  color: #00a7ff;
+  font-weight: 600;
+}
+
+  .launch-button {
+    background: linear-gradient(115deg, #004367 0%, #00A7FF 100%);
+    color: white;
+  }
+  
+  .launch-button:hover {
+    background: #082A66;
+    color: white;
+  }
+  
+  .button-wrapper {
+    display: flex;
+    justify-content: flex-start; /* Align buttons to the left */
+    gap: 4px; /* Adjusted gap between buttons */
+    width: 100%;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  
+  .card-shimmer {
+    background: linear-gradient(
+      to right,  /* Ensure this is 'to right' */
+      #f2f4f8 0%,
+      #e6e6e6 20%,
+      #f2f4f8 40%,
+      #f2f4f8 100%
+    );
+    background-size: 200% 100%;  /* Ensure the background size is set correctly */
+    animation: shimmer 2s infinite linear;
+    opacity: 0.8;
+    border-radius: 12px;
+  }

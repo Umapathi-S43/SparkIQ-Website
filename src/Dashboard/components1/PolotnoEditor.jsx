@@ -9,6 +9,11 @@ import { Workspace } from "polotno/canvas/workspace";
 import { observer } from "mobx-react-lite"; // Required for custom section
 import { RiArrowDropUpLine, RiArrowDropDownLine } from "react-icons/ri";
 import { SiAffinitydesigner } from "react-icons/si";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { baseUrl } from "../../components/utils/Constant";
+import { jwtToken } from '../../components/utils/jwtToken';
+
 
 import {
   TextSection,
@@ -321,7 +326,7 @@ const PolotnoEditor = () => {
       alert("An error occurred while saving the template.");
     }
   };
-
+  
   const loadFromJSON = async () => {
     try {
       const input = document.createElement("input");
