@@ -8,11 +8,46 @@ import defaultAdImage from "../../assets/dashboard_img/saved_products.svg";
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
 import "./SavedProducts.css";
+import toast from "react-hot-toast";
 
+
+
+
+const DeleteConfirmationModal = ({ isOpen, onClose, onDelete }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Delete Template</h2>
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to delete this template? This action cannot be undone.
+        </p>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onDelete}
+            className="px-4 py-2 text-sm text-white bg-red-500 rounded hover:bg-red-600"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 const SavedProducts = () => {
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,37 +75,52 @@ const SavedProducts = () => {
   };
 
   const handleEdit = (template) => {
+    console.log(template);
     navigate("/editor", { state: { templateData: template } });
   };
 
   const handleDownload = (url) => {
-    const link = document.createElement("a");
+    if (!url) {
+      alert("No URL available for download.");
+      return;
+    }
+  
+    const fileName = url.split('/').pop() || 'downloaded-image';
+    const fileExtension = fileName.split('.').pop();
+  
+    const link = document.createElement('a');
     link.href = url;
-    link.download = "template-image.png";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      link.download = "SavedProduct.png";
+      link.click();
+      document.body.removeChild(link);
+  };
+  
+  const openDeleteModal = (id) => {
+    setSelectedTemplateId(id);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this template permanently? This action cannot be undone."
-    );
-    if (confirmDelete) {
-      try {
-        await axios.delete(`${baseUrl}/v2/user/templates/${id}`, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        });
-        setProducts(products.filter((product) => product.templateId !== id));
-        alert("Template deleted successfully.");
-      } catch (error) {
-        console.error("Error deleting template:", error);
-        alert("Failed to delete the template. Please try again.");
-      }
+  const closeDeleteModal = () => {
+    setIsModalOpen(false);
+    setSelectedTemplateId(null);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${baseUrl}/v2/user/templates/${selectedTemplateId}`, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+      setProducts(products.filter((product) => product.templateId !== selectedTemplateId));
+      setIsModalOpen(false);
+      toast("Saved product deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      toast("Failed to delete the template. Please try again.");
     }
   };
+
 
   const filteredProducts = products.filter((product) =>
     product.templateJson.toLowerCase().includes(searchQuery.toLowerCase())
@@ -191,7 +241,7 @@ const SavedProducts = () => {
                   </button> */}
                   <button
                     className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
-                    onClick={() => handleDownloadClick(product.imageURL || product.generatedImage)}
+                    onClick={() => handleDownload(product.url || product.generatedImage)}
                   >
                     <div className="button-container flex items-center">
                       <svg
@@ -229,10 +279,7 @@ const SavedProducts = () => {
                   </button>
                   <button
                     className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
-                    onClick={() => {
-                      const confirmDelete = window.confirm("Are you sure you want to delete this item?");
-                      if (confirmDelete) handleRemove(product.templateId);
-                    }}
+                    onClick={() => openDeleteModal(product.templateId)}
                   >
                     <div className="button-container flex items-center">
                     <svg
@@ -259,8 +306,10 @@ const SavedProducts = () => {
 
                       <span>Delete</span>
                     </div>
-                  </button>
+                   </button>
+
                 </div>
+                
 
               </div>
             ))}
@@ -268,6 +317,11 @@ const SavedProducts = () => {
 
         )}
       </div>
+      <DeleteConfirmationModal
+        isOpen={isModalOpen}
+        onClose={closeDeleteModal}
+        onDelete={confirmDelete}
+      />
     </div>
   );
 };

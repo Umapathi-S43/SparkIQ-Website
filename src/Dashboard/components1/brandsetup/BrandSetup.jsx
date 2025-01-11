@@ -70,9 +70,8 @@ const BrandSetup = () => {
   };
   
   const navigateToBrandSettings = (response) => {
-    // Navigate or pass the fetched data to the BrandSettings page
-    console.log("Navigating to BrandSettings with data:", response);   
-    navigate('/brand-settings', { state: response });
+    console.log("Navigating to BrandSettings with data:", response);
+    navigate('/brand-settings', { state: { response } });
   };
   
 const navigate=useNavigate();

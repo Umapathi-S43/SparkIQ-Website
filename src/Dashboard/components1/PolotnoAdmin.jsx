@@ -1,29 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import { createStore } from "polotno/model/store";
-import { PolotnoContainer, SidePanelWrap, WorkspaceWrap } from "polotno";
+import {
+  PolotnoContainer,
+  SidePanelWrap,
+  WorkspaceWrap,
+} from "polotno";
 import { Toolbar } from "polotno/toolbar/toolbar";
 import { ZoomButtons } from "polotno/toolbar/zoom-buttons";
 import { SidePanel, SectionTab } from "polotno/side-panel";
 import { Workspace } from "polotno/canvas/workspace";
-import { observer } from "mobx-react-lite"; // Required for custom section
-import { RiArrowDropUpLine, RiArrowDropDownLine } from "react-icons/ri";
+import { observer } from "mobx-react-lite";
 import { SiAffinitydesigner } from "react-icons/si";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { baseUrl } from "../../components/utils/Constant";
-import { jwtToken } from '../../components/utils/jwtToken';
+import { jwtToken } from "../../components/utils/jwtToken";
+import { FaCloudUploadAlt } from "react-icons/fa";
 import {
   TextSection,
   PhotosSection,
   ElementsSection,
-  UploadSection,
   BackgroundSection,
   SizeSection,
   LayersSection,
   TemplatesSection,
-} from "polotno/side-panel"; // Import all necessary sections
-import FaShapes from "@meronex/icons/fa/FaShapes"; // Icon for custom section
+} from "polotno/side-panel";
 import "./PolotnoEditor.css";
 
 // Create Polotno store
@@ -32,234 +34,163 @@ const store = createStore({
   showCredit: true,
 });
 
-// Define color palettes
-const colorPalettes = [
-  { id: 1, colors: ["#FF5733", "#33FF57", "#3357FF", "#FFF033"] },
-  { id: 2, colors: ["#FF33A8", "#33FFF5", "#FF9133", "#F5FF33"] },
-  { id: 3, colors: ["#A833FF", "#33A8FF", "#FF3333", "#33FF91"] },
-  { id: 4, colors: ["#FF7F50", "#4682B4", "#6A5ACD", "#00CED1"] },
-];
+// Create a context for uploaded files
+const UploadedFilesContext = createContext();
 
-const CustomSection = {
-  name: "custom",
+const UploadedFilesProvider = ({ children }) => {
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+
+  // If needed, you can re-enable the fetch code:
+  // const fetchUploadedFiles = async () => {
+  //   try {
+  //     const response = await axios.get(`${baseUrl}/sparkiq/image/list`, {
+  //       headers: {
+  //         Authorization: `Bearer ${jwtToken}`,
+  //       },
+  //     });
+  //     setUploadedFiles(response.data.urls || []);
+  //   } catch (error) {
+  //     console.error("Error fetching uploaded files:", error);
+  //     toast.error("Failed to fetch uploaded files.");
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchUploadedFiles();
+  // }, []);
+
+  const addUploadedFile = (fileUrl) => {
+    setUploadedFiles((prev) => [...prev, fileUrl]);
+  };
+
+  return (
+    <UploadedFilesContext.Provider value={{ uploadedFiles, addUploadedFile }}>
+      {children}
+    </UploadedFilesContext.Provider>
+  );
+};
+
+const useUploadedFiles = () => useContext(UploadedFilesContext);
+
+/**
+ * Upload Section with your custom API upload logic
+ */
+const UploadSectionWithAPI = {
+  name: "upload-api",
   Tab: (props) => (
-    <SectionTab name="Design" {...props}>
+    <SectionTab name="Upload" {...props}>
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          fontSize: "20px",
         }}
       >
-        <SiAffinitydesigner style={{ fontSize: "14px" }} />
+        <FaCloudUploadAlt />
       </div>
     </SectionTab>
   ),
   Panel: observer(({ store }) => {
-    const [activeTab, setActiveTab] = useState("palettes");
+    const { uploadedFiles, addUploadedFile } = useUploadedFiles();
+    const [isUploading, setIsUploading] = useState(false);
 
-    // Apply palette colors to the elements permanently on click
-   const applyPalette = (palette) => {
-  if (palette.colors.length < 3) {
-    console.warn("Palette must have at least three colors.");
-    return;
-  }
+    const handleFileUpload = async (file) => {
+      if (!file) return;
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+      uploadData.append("customerId", "123");
 
-  const [svgColor, backgroundColor, textColor] = palette.colors;
-
-  const activePage = store.activePage; // Get the active page
-  if (!activePage) {
-    console.warn("No active page found.");
-    return;
-  }
-
-  // Update the background of the active page
-  activePage.set({
-    background: backgroundColor,
-    width: "auto", // Retain the existing structure
-    height: "auto", // Retain the existing structure
-    bleed: activePage.bleed || 0, // Preserve existing bleed
-  });
-
-  // Update child elements
-  activePage.children.forEach((child) => {
-    if (child.type === "svg" || child.type === "figure") {
-        // Apply the first color to SVG or figure elements
-        child.set({
-          fill: svgColor,
-        })
-       }else if (child.type === "text") {
-      // Apply the third color to text elements
-      child.set({ fill: textColor });
-    }
-  });
-
-  store.history.save(); // Save the changes
-};
-
-const applyColorsReplace = (svgElement, colorsReplace) => {
-  if (!svgElement || !colorsReplace) return;
-
-  Object.entries(colorsReplace).forEach(([originalColor, newColor]) => {
-    if (svgElement.colorsReplace) {
-      svgElement.colorsReplace[originalColor] = newColor;
-    } else {
-      svgElement.set({
-        colorsReplace: {
-          ...svgElement.colorsReplace,
-          [originalColor]: newColor,
-        },
-      });
-    }
-  });
-
-  // Trigger a redraw of the element to reflect changes
-  svgElement.trigger("change");
-};
-
-
-
-    // Apply palette colors to the elements on hover
-    const handlePaletteHover = (palette) => {
-      if (!palette || palette.colors.length < 3) {
-        console.warn("Palette must have at least three colors.");
-        return;
-      }
-    
-      const [svgColor, backgroundColor, textColor] = palette.colors;
-    
-      store.pages.forEach((page) => {
-        // Update the page's background color
-        page.set({
-          backgroundColor: backgroundColor,
-        });
-        const activePage = store.activePage; // Get the active page
-        if (!activePage) {
-          console.warn("No active page found.");
-          return;
-        }
-      
-        // Update the background of the active page
-        activePage.set({
-          background: backgroundColor,
-          width: "auto", // Retain the existing structure
-          height: "auto", // Retain the existing structure
-          bleed: activePage.bleed || 0, // Preserve existing bleed
-        });
-    
-        // Update child elements
-        page.children.forEach((child) => {
-            if (child.type === "svg" || child.type === "figure") {
-                // Apply the first color to SVG or figure elements
-                child.set({
-                  fill: svgColor,
-                })
-               } else if (child.type === "text") {
-            child.set({ fill: textColor });
+      setIsUploading(true);
+      try {
+        const response = await axios.post(
+          `${baseUrl}/sparkiq/image/upload`,
+          uploadData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${jwtToken}`,
+            },
           }
-        });
-      });
-    };
-    
-    
-
-    // Clear hover effect when the mouse leaves
-    const clearHoverEffect = () => {
-      store.history.undo();
+        );
+        const imageUrl = response.data.data.url;
+        addUploadedFile(imageUrl);
+        toast.success("File upload successful");
+      } catch (error) {
+        console.error(error);
+        toast.error("File upload failed. Please try again.");
+      } finally {
+        setIsUploading(false);
+      }
     };
 
     return (
-      <div style={{ padding: "10px" }}>
-        <div style={{ marginBottom: "10px" }}>
-          <button
-            onClick={() => setActiveTab("palettes")}
-            style={{
-              padding: "8px 16px",
-              marginRight: "8px",
-              cursor: "pointer",
-              backgroundColor: activeTab === "palettes" ? "#007BFF" : "#e0e0e0",
-              color: activeTab === "palettes" ? "#fff" : "#000",
-              border: "none",
-              borderRadius: "5px",
-            }}
-          >
-            Palettes
-          </button>
-          <button
-            onClick={() => setActiveTab("templates")}
-            style={{
-              padding: "8px 16px",
-              cursor: "pointer",
-              backgroundColor: activeTab === "templates" ? "#007BFF" : "#e0e0e0",
-              color: activeTab === "templates" ? "#fff" : "#000",
-              border: "none",
-              borderRadius: "5px",
-            }}
-          >
-            Templates
-          </button>
-        </div>
-
-        {activeTab === "palettes" && (
-          <div>
-            <h3>Choose a Palette</h3>
-  {colorPalettes.map((palette) => (
-    <div
-      key={palette.id}
-      onMouseOver={() => handlePaletteHover(palette)} // Apply palette on hover
-      onMouseOut={clearHoverEffect} // Clear hover effect on mouse out
-      onClick={() => applyPalette(palette)} // Apply palette permanently on click
-      style={{
-        display: "flex",
-        cursor: "pointer",
-        alignItems: "center",
-        border: "1px solid #ccc",
-        marginBottom: "8px",
-      }}
-    >
-      {palette.colors.map((color, index) => (
-        <div
-          key={index}
+      <div style={{ padding: "10px", height: "100%" }}>
+        <h3 style={{ marginBottom: "10px" }}>Uploaded Files</h3>
+        <label
+          htmlFor="fileUpload"
           style={{
-            width: "90px",
-            height: "30px",
-            backgroundColor: color,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "8px",
+            backgroundColor: "#333",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
           }}
-        
-                  ></div>
-                ))}
-              </div>
-            ))}
-          </div>
+        >
+          <FaCloudUploadAlt style={{ marginRight: "8px" }} />
+          Upload Image
+        </label>
+        <input
+          id="fileUpload"
+          type="file"
+          onChange={(e) => handleFileUpload(e.target.files[0])}
+          style={{ display: "none" }}
+        />
+        {isUploading && (
+          <p style={{ marginTop: "10px", textAlign: "center" }}>Uploading...</p>
         )}
 
-        {activeTab === "templates" && (
-          <div>
-            <h3>Templates Section</h3>
-            <p>Here you can add templates functionality or display templates.</p>
-          </div>
-        )}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "10px",
+            overflowY: "auto",
+            maxHeight: "60vh",
+          }}
+        >
+          {uploadedFiles.map((file, index) => (
+            <div
+              key={index}
+              style={{
+                border: "1px solid #ccc",
+                borderRadius: "5px",
+                overflow: "hidden",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                store.activePage?.addElement({
+                  type: "image",
+                  src: file,
+                });
+              }}
+            >
+              <img
+                src={file}
+                alt={`Uploaded ${index}`}
+                style={{ width: "100%", height: "auto" }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }),
 };
-
-
-
-// Combine default sections with the custom section
-const sections = [
-  CustomSection,
-  TemplatesSection,
-  TextSection,
-  PhotosSection,
-  ElementsSection,
-  UploadSection,
-  BackgroundSection,
-  LayersSection,
-  SizeSection,
-  
-];
-
 
 const PolotnoAdmin = () => {
   const { state } = useLocation();
@@ -268,8 +199,9 @@ const PolotnoAdmin = () => {
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
-  const [selectedPalette, setSelectedPalette] = useState(null);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
+
+  // This state holds the templateId of the selected template
+  const [currentTemplateId, setCurrentTemplateId] = useState(null);
 
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
@@ -277,21 +209,72 @@ const PolotnoAdmin = () => {
     localStorage.setItem("theme", newTheme ? "dark" : "light");
   };
 
-  const saveAsJSON = async () => {
+  // Compress image before upload
+  const compressImage = async (
+    dataURL,
+    maxWidth = 1000,
+    maxHeight = 1000,
+    quality = 0.2
+  ) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = dataURL;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // Maintain aspect ratio while resizing
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = (maxHeight / width) * height;
+            width = maxWidth;
+          } else {
+            width = (maxWidth / height) * width;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress and convert to Blob
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Image compression failed."));
+            }
+          },
+          "image/png",
+          quality // 0.1 ~ 1.0
+        );
+      };
+      img.onerror = (err) => reject(err);
+    });
+  };
+
+  /**
+   * Save to backend. If `isUpdate` is `true` and we do have a `currentTemplateId`,
+   * we send that ID so the backend will update rather than create a new record.
+   */
+  const saveAsJSON = async (isUpdate = false) => {
     try {
-      // Generate thumbnail
       const dataURL = await store.toDataURL({
         pixelRatio: 1,
         mimeType: "image/png",
       });
-  
-      // Prepare thumbnail for upload
+
+      const compressedBlob = await compressImage(dataURL);
+
       const uploadData = new FormData();
-      const blob = await fetch(dataURL).then((res) => res.blob());
-      uploadData.append("file", blob, "thumbnail.png");
-  
-      // Upload thumbnail to the server
-      const response = await axios.post(
+      uploadData.append("file", compressedBlob, "compressed-thumbnail.png");
+
+      // 1. First upload the image to get a URL
+      const uploadResponse = await axios.post(
         `${baseUrl}/sparkiq/image/upload?customerId=123`,
         uploadData,
         {
@@ -301,31 +284,55 @@ const PolotnoAdmin = () => {
           },
         }
       );
-  
-      // Extract the uploaded thumbnail URL from the response
-      const thumbnailURL = response.data.data.url;
-  
-      // Add thumbnail URL to the JSON data
+
+      const thumbnailURL = uploadResponse.data.data.url;
+
+      // 2. Prepare the JSON data
       const json = store.toJSON();
-      json.thumbnail = thumbnailURL; // Include the thumbnail URL in the JSON
-  
-      // Save the JSON
-      const jsonBlob = new Blob([JSON.stringify(json, null, 2)], {
-        type: "application/json",
+
+      // `templateId` is only sent if we are updating and we have a current ID
+      const payload = {
+        templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
+        url: thumbnailURL,
+        templateOrientation:
+          json.width > json.height ? "landscape" : "portrait",
+        priority: json.priority || 0,
+        templateSize: `${json.width}x${json.height}`,
+        postType: json.postType || "default",
+        customTemplate: true,
+        mediaType: "image",
+        videoDuration: json.videoDuration || "00:00",
+        voiceoverEnabled: json.voiceoverEnabled || false,
+        templateJson: JSON.stringify(json),
+      };
+
+      // 3. POST the template
+      const apiResponse = await axios.post(`${baseUrl}/v2/template`, payload, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
       });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(jsonBlob);
-      link.download = "template.json";
-      link.click();
-  
-      alert("Template saved successfully with thumbnail!");
+
+      // if successful, set the ID if it doesn't exist
+      if (!isUpdate) {
+        setCurrentTemplateId(apiResponse.data?.templateId);
+      }
+
+      toast.success(
+        isUpdate
+          ? "Template updated successfully!"
+          : "Template saved successfully!"
+      );
     } catch (error) {
       console.error("Error saving template:", error);
-      alert("An error occurred while saving the template.");
+      toast.error("An error occurred while saving the template.");
     }
   };
-  
 
+  /**
+   * Load from JSON (manually, from local file). 
+   * Not required for your system, but left here if you want local loading.
+   */
   const loadFromJSON = async () => {
     try {
       const input = document.createElement("input");
@@ -346,78 +353,8 @@ const PolotnoAdmin = () => {
       alert("An error occurred while loading the template.");
     }
   };
-  const applyPalette = (palette) => {
-    if (palette.colors.length < 3) {
-      console.warn("Palette must have at least three colors.");
-      return;
-    }
-  
-    const [svgColor, backgroundColor, textColor] = palette.colors;
-  
-    const activePage = store.activePage; // Get the active page
-    if (!activePage) {
-      console.warn("No active page found.");
-      return;
-    }
-  
-    // Update the background of the active page
-    activePage.set({
-      background: backgroundColor,
-      width: "auto", // Retain the existing structure
-      height: "auto", // Retain the existing structure
-      bleed: activePage.bleed || 0, // Preserve existing bleed
-    });
-  
-    // Update child elements
-    activePage.children.forEach((child) => {
-        if (child.type === "svg" || child.type === "figure") {
-            // Apply the first color to SVG or figure elements
-            child.set({
-              fill: svgColor,
-            })
-           } else if (child.type === "text") {
-        // Apply the third color to text elements
-        child.set({
-          fill: textColor,
-        });
-      }
-    });
-  
-    store.history.save(); // Save the changes
-  };
-  
-  
-  
 
-  const generateThumbnail = async () => {
-    try {
-      const dataURL = await store.toDataURL({
-        pixelRatio: 1,
-        mimeType: "image/png",
-      });
-
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = "thumbnail.png";
-      link.click();
-      alert("Thumbnail generated successfully!");
-    } catch (error) {
-      console.error("Error generating thumbnail:", error);
-      alert("An error occurred while generating the thumbnail.");
-    }
-  };
-
-  const handlePaletteHover = (palette) => {
-    applyPalette(palette); // Temporarily apply the palette on hover
-  };
-
-  const handlePaletteClick = (palette) => {
-    applyPalette(palette);
-    setSelectedPalette(palette); // Persist the selected palette
-    setDropdownVisible(false);
-    store.history.save(); // Save the changes
-  };
-
+  // If there is incoming template data from route state, load it into store.
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
@@ -427,12 +364,187 @@ const PolotnoAdmin = () => {
     if (templateData) {
       store.loadJSON(templateData);
     } else {
-      console.warn("No template data provided. Adding a default page.");
+      // If there's no data, ensure there's at least one page
       if (store.pages.length === 0) {
-        store.addPage(); // Only add a page if no pages exist
+        store.addPage();
       }
     }
   }, [templateData]);
+
+  // -------------------------
+  // IMPORTANT: define the custom "Design" section **inside** your component
+  // so it can access setCurrentTemplateId
+  // -------------------------
+  const CustomSection = {
+    name: "custom",
+    Tab: (props) => (
+      <SectionTab name="Design" {...props}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <SiAffinitydesigner style={{ fontSize: "14px" }} />
+        </div>
+      </SectionTab>
+    ),
+    Panel: observer(({ store }) => {
+      const [templates, setTemplates] = useState([]);
+      const [page, setPage] = useState(0);
+      const [loading, setLoading] = useState(false);
+      const [hasMore, setHasMore] = useState(true);
+
+      // Fetch templates from the server
+      const fetchTemplates = async (pageNum) => {
+        if (loading) return; // skip if already loading
+        setLoading(true);
+
+        try {
+          const response = await axios.get(
+            `${baseUrl}/v2/template?page=${pageNum}&size=10`,
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
+
+          const newTemplates = response.data.data.content || [];
+          const totalAvailablePages = response.data.data.totalPages;
+
+          setTemplates((prev) =>
+            pageNum === 0 ? newTemplates : [...prev, ...newTemplates]
+          );
+
+          // whether we can load more or not
+          const canLoadMore = pageNum + 1 < totalAvailablePages;
+          setHasMore(canLoadMore);
+        } catch (error) {
+          console.error("Failed to fetch templates:", error);
+          toast.error("Error loading templates. Please try again.");
+          setHasMore(false);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // This is triggered when user selects a template in the side panel
+      const applyTemplate = (template) => {
+        try {
+          if (!template.templateJson) {
+            toast.error("Template JSON is not available.");
+            return;
+          }
+          const parsedTemplateJson = JSON.parse(template.templateJson);
+          console.log("Selected Template Id:", template.templateId);
+          console.log("Full Template object:", template);
+
+          store.loadJSON(parsedTemplateJson);
+          // Important: set the ID to allow updating
+          setCurrentTemplateId(template.templateId);
+          console.log("Updated Template Id:", currentTemplateId);
+          toast.success("Template applied successfully!");
+        } catch (error) {
+          console.error("Error applying template:", error);
+          toast.error("Failed to apply template. Please try again.");
+        }
+      };
+
+      // infinite scroll
+      const handleScroll = (e) => {
+        const container = e.target;
+        const isBottom =
+          container.scrollHeight - container.scrollTop - container.clientHeight <
+          1;
+
+        if (isBottom && hasMore && !loading) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      };
+
+      // fetch first page on mount
+      useEffect(() => {
+        if (templates.length === 0) {
+          fetchTemplates(0);
+        }
+        // eslint-disable-next-line
+      }, []);
+
+      // whenever page changes, fetch next page
+      useEffect(() => {
+        if (page > 0) {
+          fetchTemplates(page);
+        }
+        // eslint-disable-next-line
+      }, [page]);
+
+      // attach/detach scroll listener
+      useEffect(() => {
+        const container = document.querySelector(".template-container");
+        if (container) {
+          container.addEventListener("scroll", handleScroll);
+          return () => container.removeEventListener("scroll", handleScroll);
+        }
+      }, [hasMore, loading]);
+
+      return (
+        <div
+          className="overflow-auto hide-scrollbar template-container"
+          style={{ padding: "10px", maxHeight: "90vh" }}
+        >
+          <div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: "10px",
+              }}
+            >
+              {templates.map((template) => (
+                <div
+                  key={template.templateId} // or template.id, whichever is unique
+                  style={{
+                    borderRadius: "5px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => applyTemplate(template)}
+                >
+                  <img
+                    src={template.url}
+                    alt={template.name}
+                    style={{ width: "100%", height: "auto" }}
+                  />
+                </div>
+              ))}
+            </div>
+            {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
+            {/* {!hasMore && templates.length > 0 && (
+              <p style={{ textAlign: "center" }}>No more templates to load</p>
+            )}
+            {!hasMore && templates.length === 0 && (
+              <p style={{ textAlign: "center" }}>No templates available</p>
+            )} */}
+          </div>
+        </div>
+      );
+    }),
+  };
+
+  // Combine your sections
+  const sections = [
+    CustomSection,          // your custom "Design" section
+    TemplatesSection,
+    TextSection,
+    PhotosSection,
+    ElementsSection,
+    UploadSectionWithAPI,  // your custom Upload with API
+    BackgroundSection,
+    LayersSection,
+    SizeSection,
+  ];
 
   return (
     <div
@@ -447,8 +559,10 @@ const PolotnoAdmin = () => {
           padding: "6px",
           textAlign: "center",
           color: isDarkMode ? "white" : "black",
+          position: "relative",
         }}
       >
+        {/* THEME TOGGLE BUTTON */}
         <button
           onClick={toggleTheme}
           style={{
@@ -463,8 +577,26 @@ const PolotnoAdmin = () => {
         >
           Switch to {isDarkMode ? "Light" : "Dark"} Mode
         </button>
+
+        {/* SAVE AS NEW TEMPLATE BUTTON */}
         <button
-          onClick={saveAsJSON}
+          onClick={() => saveAsJSON(false)}
+          style={{
+            backgroundColor: "#FFD700",
+            color: "white",
+            border: "none",
+            padding: "4px 16px",
+            cursor: "pointer",
+            borderRadius: "5px",
+            marginRight: "10px",
+          }}
+        >
+          Save as New
+        </button>
+
+        {/* UPDATE TEMPLATE BUTTON */}
+        <button
+          onClick={() => saveAsJSON(true)}
           style={{
             backgroundColor: "#4CAF50",
             color: "white",
@@ -475,8 +607,10 @@ const PolotnoAdmin = () => {
             marginRight: "10px",
           }}
         >
-          Save Template as JSON
+          Update Template
         </button>
+
+        {/* LOAD FROM JSON BUTTON (optional) */}
         <button
           onClick={loadFromJSON}
           style={{
@@ -491,129 +625,52 @@ const PolotnoAdmin = () => {
         >
           Load Template from JSON
         </button>
+
+        {/* CLOSE BUTTON */}
         <button
-          onClick={generateThumbnail}
+          className="close"
+          onClick={() => window.history.back()}
           style={{
-            backgroundColor: "#FF9800",
+            position: "absolute",
+            top: "-2px",
+            right: "1px",
+            backgroundColor: "#f44336",
             color: "white",
             border: "none",
-            padding: "4px 16px",
+            padding: "6px",
             cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
+            fontSize: "20px",
+            lineHeight: "1",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "30px",
+            height: "40px",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+            transition: "background-color 0.3s, transform 0.2s",
           }}
+          onMouseEnter={(e) => (e.target.style.backgroundColor = "#d32f2f")}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = "#f44336")}
+          onMouseDown={(e) => (e.target.style.transform = "scale(0.9)")}
+          onMouseUp={(e) => (e.target.style.transform = "scale(1)")}
         >
-          Generate Thumbnail
+          X
         </button>
-        <div style={{ display: "inline-block", position: "relative" }}>
-          <button
-            onClick={() => setDropdownVisible(!dropdownVisible)}
-            style={{
-              padding: "4px 16px",
-              border: "1px solid #ccc",
-              borderRadius: "5px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-            }}
-          >
-            Select Palette{" "}
-            {dropdownVisible ? <RiArrowDropUpLine /> : <RiArrowDropDownLine />}
-          </button>
-          {dropdownVisible && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                border: "1px solid #ccc",
-                borderRadius: "5px",
-                zIndex: 10,
-                width: "110px",
-                maxHeight: "300px",
-                marginTop: "8px",
-                backgroundColor: "#fff",
-                overflowY: "auto",
-              }}
-            >
-              {colorPalettes.map((palette) => (
-                <div
-                  key={palette.id}
-                  onMouseOver={() => handlePaletteHover(palette)}
-                  onClick={() => handlePaletteClick(palette)}
-                  style={{
-                    display: "flex",
-                    gap: "4px",
-                    padding: "8px",
-                    cursor: "pointer",
-                    alignItems: "center",
-                    border:
-                      selectedPalette?.id === palette.id
-                        ? "2px solid #007BFF"
-                        : "1px solid #ccc",
-                    borderRadius: "5px",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {palette.colors.map((color, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        backgroundColor: color,
-                        borderRadius: "3px",
-                      }}
-                    ></div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <button
-    className="close"
-    onClick={() => window.history.back()} // Or any close action
-    style={{
-      position: "absolute", // Position relative to the parent container
-      top: "-2px", // Distance from the top
-      right: "1px", // Distance from the right
-      backgroundColor: "#f44336",
-      color: "white",
-      border: "none",
-      padding: "6px",
-      cursor: "pointer",
-      fontSize: "20px",
-      lineHeight: "1",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: "30px",
-      height: "40px",
-      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-      transition: "background-color 0.3s, transform 0.2s",
-    }}
-    onMouseEnter={(e) => (e.target.style.backgroundColor = "#d32f2f")}
-    onMouseLeave={(e) => (e.target.style.backgroundColor = "#f44336")}
-    onMouseDown={(e) => (e.target.style.transform = "scale(0.9)")}
-    onMouseUp={(e) => (e.target.style.transform = "scale(1)")}
-  >
-    X
-  </button>
       </div>
 
-      <PolotnoContainer style={{ width: "100vw", height: "90vh" }}>
-        <SidePanelWrap>
-          {/* Include default and additional sections */}
-          <SidePanel store={store} sections={sections} />
-        </SidePanelWrap>
-        <WorkspaceWrap>
-          <Toolbar store={store} downloadButtonEnabled />
-          <Workspace store={store} />
-          <ZoomButtons store={store} />
-        </WorkspaceWrap>
-      </PolotnoContainer>
+      {/* Polotno Container */}
+      <UploadedFilesProvider>
+        <PolotnoContainer style={{ width: "100vw", height: "93vh" }}>
+          <SidePanelWrap>
+            <SidePanel store={store} sections={sections} />
+          </SidePanelWrap>
+          <WorkspaceWrap>
+            <Toolbar store={store} />
+            <Workspace store={store} />
+            <ZoomButtons store={store} />
+          </WorkspaceWrap>
+        </PolotnoContainer>
+      </UploadedFilesProvider>
     </div>
   );
 };

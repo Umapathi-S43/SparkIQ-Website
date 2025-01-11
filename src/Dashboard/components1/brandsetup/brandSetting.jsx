@@ -76,7 +76,8 @@ export default function BrandSetting() {
   // Step
   const initialStep = location.state?.step || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
-
+  
+   
   // Single brandData state
   const [brandData, setBrandData] = useState({
     id: null,
@@ -166,13 +167,55 @@ export default function BrandSetting() {
   });
 
   // 2) We'll fetch all brands from /v2/api/brands when mounting, find by name if brandName is given
+  const { state } = useLocation();
+  const brandInfo = state?.response;
+  
+  useEffect(() => {
+    if (brandInfo) {
+      const foundBrand = brandInfo.data;
+      console.log("Found Brand:", foundBrand); // Log to confirm state reception
+
+    if (foundBrand) {
+      // console.log("Brand Found:", foundBrand);
+
+      // Populate the brand data into state
+      setBrandData((prev) => ({
+        ...prev,
+        brandName: foundBrand.brandName || "",
+        brandVoice: foundBrand.brandVoice || "",
+        mission: foundBrand.mission || "",
+        vision: foundBrand.vision || "",
+        brandStory: foundBrand.brandStory || "",
+        niche: foundBrand.niche || "",
+        targetAudience: foundBrand.targetAudience || "",
+        audienceObjective: foundBrand.audienceObjective || "",
+        logos: (foundBrand.logos || []).map((lg) => lg.logoUrl),
+        colors: parseColorsToState(foundBrand.colors || []),
+        colorPalettes: (foundBrand.colorPalettes || []).map((cp) => cp.palette),
+        brandElements: (foundBrand.brandElements || []).map((elem) => ({
+          id: elem.id || "",
+          name: elem.name || "Icon",
+          url: elem.url || "",
+          brandId: foundBrand.id || "",
+        })),
+        fonts: parseFontsToState(foundBrand.fonts || [], foundBrand.id),
+      }));
+    } else {
+      console.log("No brand found from state " + foundBrand);
+    }
+  }
+  else {
+    console.log("No brandInfo found in state.");
+  }
+}, [brandInfo]);
+ 
   useEffect(() => {
     async function fetchBrandById() {
       try {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
-  
+       
         // Check if brandNameFromUrl (brand ID) exists
         if (brandNameFromUrl) {
           // console.log("Brand ID from URL:", brandNameFromUrl); // Log the brand ID
@@ -185,8 +228,10 @@ export default function BrandSetting() {
           });
   
           // Extract brand data from the response
-          const foundBrand = response.data?.data;
-  
+          const foundBrand = response?.data?.data || null; // Ensure response.data exists
+          console.log("Found Brand:", foundBrand);
+          
+
           if (foundBrand) {
             // console.log("Brand Found:", foundBrand);
   
@@ -225,7 +270,7 @@ export default function BrandSetting() {
       }
     }
   
-    fetchBrandById(); // Trigger the fetch logic
+    if(fetchBrandById()||brandInfo); // Trigger the fetch logic
   }, [brandNameFromUrl]);
   
 
