@@ -14,7 +14,10 @@ import { observer } from "mobx-react-lite";
 import { SiAffinitydesigner } from "react-icons/si";
 import axios from "axios";
 import toast from "react-hot-toast";
-
+import { MdOutlineLightMode } from "react-icons/md";
+import { CiDark } from "react-icons/ci";
+import { FaCloudUploadAlt } from "react-icons/fa";
+import { FaSave } from "react-icons/fa";
 import {
   TextSection,
   PhotosSection,
@@ -38,249 +41,435 @@ const store = createStore({
 });
 
 // 2) Define a custom "Design" section that includes color palettes + templates
-const createCustomSection = (currentTemplateId, setCurrentTemplateId) => {
-  return {
-    name: "custom",
-    Tab: (props) => (
-      <SectionTab name="Design" {...props}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <SiAffinitydesigner style={{ fontSize: "14px" }} />
-        </div>
-      </SectionTab>
-    ),
-    Panel: observer(({ store }) => {
-      const [activeTab, setActiveTab] = useState("palettes");
-      const [colorPalettes, setColorPalettes] = useState([]);
-      const [templates, setTemplates] = useState([]);
-      const [loadingPalettes, setLoadingPalettes] = useState(false);
-      const [loadingTemplates, setLoadingTemplates] = useState(false);
 
-      // 2A) Fetch color palettes dynamically
-      const fetchColorPalettes = async () => {
-        try {
-          setLoadingPalettes(true);
-          // Example: GET /v2/user/colorpalettes
-          // Response shape assumed: { data: [ { id, palette }, { ... } ] }
-          const response = await axios.get(`${baseUrl}/v2/user/${brandId}/colorpalettes`, {
+const CustomSection = {
+  name: "custom",
+  Tab: (props) => (
+    <SectionTab name="Design" {...props}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <SiAffinitydesigner style={{ fontSize: "14px" }} />
+      </div>
+    </SectionTab>
+  ),
+  Panel: observer(({ store }) => {
+    const [templates, setTemplates] = useState([]);
+    const [activeTab, setActiveTab] = useState("palettes");
+    const [colorPalettes, setColorPalettes] = useState([]);
+    const [loadingPalettes, setLoadingPalettes] = useState(false);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
+    let brandId = localStorage.getItem('brandId');
+    let isDarkMode = localStorage.getItem('isDarkMode');
+
+    // 2A) Fetch color palettes dynamically
+    // For adding a new palette, we hold 3 color pickers
+    const [newPaletteColors, setNewPaletteColors] = useState(["#000000", "#ffffff", "#cccccc"]);
+
+    // 2A) Fetch color palettes dynamically
+    const fetchColorPalettes = async () => {
+      if (!brandId) {
+        console.warn("No brandId provided, skipping palette fetch.");
+        return;
+      }
+      try {
+        setLoadingPalettes(true);
+        // Example: GET /v2/api/brands/:brandId/colorpalettes
+        const response = await axios.get(
+          `${baseUrl}/v2/api/brands/${brandId}/colorpalettes`,
+          {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
             },
-          });
-          const raw = response.data?.data || [];
-          // Suppose each object is { id: string, palette: "#FF5733,#33FF57,#3357FF" }
-          // Convert them to { id, colors: [ '#FF5733', '#33FF57', '#3357FF' ] }
-          const parsed = raw.map((item) => {
-            const colorsArray = item.palette.split(",").map((s) => s.trim());
-            return {
-              id: item.id,
-              colors: colorsArray,
-            };
-          });
-          setColorPalettes(parsed);
-        } catch (error) {
-          console.error("Error fetching color palettes:", error);
-          toast.error("Failed to load color palettes.");
-        } finally {
-          setLoadingPalettes(false);
-        }
-      };
+          }
+        );
+        const raw = response.data?.data || [];
+        // Suppose each object is { id, palette: "#FF5733,#33FF57,#3357FF" }
+        // Convert them to { id, colors: ["#FF5733", "#33FF57", "#3357FF"] }
+        const parsed = raw.map((item) => {
+          const colorsArray = item.palette.split(",").map((s) => s.trim());
+          return {
+            id: item.id,
+            colors: colorsArray,
+          };
+        });
+        setColorPalettes(parsed);
+      } catch (error) {
+        console.error("Error fetching color palettes:", error);
+        toast.error("Failed to load color palettes.");
+      } finally {
+        setLoadingPalettes(false);
+      }
+    };
 
-      // 2B) Fetch user templates
-      const fetchTemplates = async () => {
-        try {
-          setLoadingTemplates(true);
-          // Example: GET /v2/user/templates
-          const response = await axios.get(`${baseUrl}/v2/user/templates`, {
+
+    // 2B) Add new palette
+    const addNewPalette = async () => {
+      if (!brandId) return;
+      try {
+        const paletteString = newPaletteColors.join(",");
+        // POST /v2/api/brands/:brandId/colorpalettes
+        await axios.post(
+          `${baseUrl}/v2/api/brands/${brandId}/colorpalettes`,
+          { palette: paletteString },
+          {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
             },
-          });
-          // Suppose response.data?.data is an array of templates
-          setTemplates(response.data?.data || []);
-        } catch (error) {
-          console.error("Error fetching templates:", error);
-          toast.error("Failed to load templates.");
-        } finally {
-          setLoadingTemplates(false);
-        }
-      };
-
-      useEffect(() => {
+          }
+        );
+        toast.success("New palette added!");
+        // refresh the list
         fetchColorPalettes();
-        fetchTemplates();
-        // eslint-disable-next-line
-      }, []);
+      } catch (err) {
+        console.error("Error adding palette:", err);
+        toast.error("Could not add palette.");
+      }
+    };
 
-      // ========== Palette logic ==========
-      const applyPalette = (palette) => {
-        if (!palette || palette.colors.length < 3) {
+    // 2B) Fetch user templates
+    const fetchTemplates = async () => {
+      try {
+        setLoadingTemplates(true);
+        // Example: GET /v2/user/templates
+        const response = await axios.get(`${baseUrl}/v2/user/templates`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
+        // Suppose response.data?.data is an array of templates
+        setTemplates(response.data?.data || []);
+      } catch (error) {
+        console.error("Error fetching templates:", error);
+        toast.error("Failed to load templates.");
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    useEffect(() => {
+      fetchColorPalettes();
+      fetchTemplates();
+      // eslint-disable-next-line
+    }, []);
+
+    // ========== Palette logic ==========
+    // Apply palette colors to the elements permanently on click
+    // Apply palette colors to the elements permanently on click
+    const applyPalette = (palette) => {
+      if (palette.colors.length < 3) {
+        console.warn("Palette must have at least three colors.");
+        return;
+      }
+
+      const [svgColor, backgroundColor, textColor] = palette.colors;
+
+      const activePage = store.activePage; // Get the active page
+      if (!activePage) {
+        console.warn("No active page found.");
+        return;
+      }
+
+      // Update the background of the active page
+      activePage.set({
+        background: backgroundColor,
+        width: "auto", // Retain the existing structure
+        height: "auto", // Retain the existing structure
+        bleed: activePage.bleed || 0, // Preserve existing bleed
+      });
+
+      // Update child elements
+      activePage.children.forEach((child) => {
+        if (child.type === "svg" || child.type === "figure") {
+          // Apply the first color to SVG or figure elements
+          child.set({
+            fill: svgColor,
+          })
+        } else if (child.type === "text") {
+          // Apply the third color to text elements
+          child.set({ fill: textColor });
+        }
+      });
+
+      store.history.save(); // Save the changes
+    };
+
+    const applyColorsReplace = (svgElement, colorsReplace) => {
+      if (!svgElement || !colorsReplace) return;
+
+      Object.entries(colorsReplace).forEach(([originalColor, newColor]) => {
+        if (svgElement.colorsReplace) {
+          svgElement.colorsReplace[originalColor] = newColor;
+        } else {
+          svgElement.set({
+            colorsReplace: {
+              ...svgElement.colorsReplace,
+              [originalColor]: newColor,
+            },
+          });
+        }
+      });
+
+      // Trigger a redraw of the element to reflect changes
+      svgElement.trigger("change");
+    };
+
+
+
+    // Apply palette colors to the elements on hover
+    const handlePaletteHover = (palette) => {
+      if (!palette || palette.colors.length < 3) {
+        console.warn("Palette must have at least three colors.");
+        return;
+      }
+
+      const [svgColor, backgroundColor, textColor] = palette.colors;
+
+      store.pages.forEach((page) => {
+        // Update the page's background color
+        page.set({
+          backgroundColor: backgroundColor,
+        });
+        const activePage = store.activePage; // Get the active page
+        if (!activePage) {
+          console.warn("No active page found.");
           return;
         }
 
-        const [svgColor, backgroundColor, textColor] = palette.colors;
-        const activePage = store.activePage;
-        if (!activePage) return;
-
-        // Update page background
+        // Update the background of the active page
         activePage.set({
           background: backgroundColor,
+          width: "auto", // Retain the existing structure
+          height: "auto", // Retain the existing structure
+          bleed: activePage.bleed || 0, // Preserve existing bleed
         });
 
         // Update child elements
-        activePage.children.forEach((child) => {
+        page.children.forEach((child) => {
           if (child.type === "svg" || child.type === "figure") {
-            child.set({ fill: svgColor });
+            // Apply the first color to SVG or figure elements
+            child.set({
+              fill: svgColor,
+            })
           } else if (child.type === "text") {
             child.set({ fill: textColor });
           }
         });
+      });
+    };
 
-        store.history.save(); // Save changes
-      };
 
-      const handlePaletteHover = (palette) => {
-        applyPalette(palette); // temporarily apply
-      };
-      const clearHoverEffect = () => {
-        store.history.undo(); // revert
-      };
 
-      // ========== Template logic ==========
-      // On template click, load its JSON & set current template ID
-      const applyTemplate = (tmpl) => {
-        try {
-          if (!tmpl.templateJson) {
-            toast.error("Template JSON not available.");
-            return;
-          }
-          const parsedJson = tmpl.templateJson;
-          store.loadJSON(parsedJson);
-          // store the ID so we can "update" it on Save
-          setCurrentTemplateId(tmpl.templateId);
-          toast.success("Template applied!");
-        } catch (err) {
-          console.error("Error applying template:", err);
-          toast.error("Failed to apply template.");
+    // Clear hover effect when the mouse leaves
+    const clearHoverEffect = () => {
+      store.history.undo();
+    };
+
+
+    // ========== Template logic ==========
+    // On template click, load its JSON & set current template ID
+    const applyTemplate = (template) => {
+      try {
+        if (!template.templateJson) {
+          toast.error("Template JSON is not available.");
+          return;
         }
-      };
+        const parsedTemplateJson = JSON.parse(template.templateJson);
+        console.log("Selected Template Id:", template.templateId);
+        console.log("Full Template object:", template);
 
-      return (
-        <div style={{ padding: "10px" }}>
-          <div style={{ marginBottom: "10px" }}>
-            <button
-              onClick={() => setActiveTab("palettes")}
+        store.loadJSON(parsedTemplateJson);
+        // Important: set the ID to allow updating
+        localStorage.setItem("loadedtemplate", template);
+        setCurrentTemplateId(template.templateId);
+        console.log("Updated Template Id:", currentTemplateId);
+        toast.success("Template applied successfully!");
+      } catch (error) {
+        console.error("Error applying template:", error);
+      }
+    };
+
+    return (
+      <div style={{ padding: "4px" }}>
+        <div style={{ display: "flex", width: "100%", marginBottom: "0" }}>
+          <button
+            onClick={() => setActiveTab("palettes")}
+            style={{
+              flex: 1, // Makes the button take up equal width
+              padding: "0px 0", // Adjust padding for a tab-like look
+              cursor: "pointer",
+              backgroundColor: isDarkMode
+                ? "#555555" // Unified inactive background for dark mode
+                : "#f4f4f4", // Unified inactive background for light mode
+              color: isDarkMode
+                ? "#fcfcfc" // Consistent text color in dark mode
+                : "#333333", // Consistent text color in light mode
+              border: "none",
+              borderBottom: activeTab === "palettes" ? "2px solid #007BFF" : "none", // Underline for active tab
+              textAlign: "center",
+              transition: "background-color 0.3s, border-bottom 0.3s", // Smooth transitions
+            }}
+          >
+            Palettes
+          </button>
+          <button
+            onClick={() => setActiveTab("templates")}
+            style={{
+              flex: 1, // Makes the button take up equal width
+              padding: "8px 0",
+              cursor: "pointer",
+              backgroundColor: isDarkMode
+                ? "#555555"
+                : "#f4f4f4",
+              color: isDarkMode
+                ? "#fcfcfc"
+                : "#333333",
+              border: "none",
+              borderBottom: activeTab === "templates" ? "2px solid #007BFF" : "none", // Underline for active tab
+              textAlign: "center",
+              transition: "background-color 0.3s, border-bottom 0.3s",
+            }}
+          >
+            Templates
+          </button>
+        </div>
+
+
+
+        {/* Palettes tab */}
+        {activeTab === "palettes" && (
+          <div style={{ width: "100%", marginTop: "14px" }}>
+            {/*  A) Add new palette row  */}
+            <h3 style={{ marginBottom: "8px" }}>Add a New Palette</h3>
+            <div
               style={{
-                padding: "8px 16px",
-                marginRight: "8px",
-                cursor: "pointer",
-                backgroundColor:
-                  activeTab === "palettes" ? "#007BFF" : "#e0e0e0",
-                color: activeTab === "palettes" ? "#fff" : "#000",
-                border: "none",
-                borderRadius: "5px",
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+                marginBottom: "10px",
+                // Ensure all items remain in a row (disable wrapping):
+                flexWrap: "nowrap",
               }}
             >
-              Palettes
-            </button>
-            <button
-              onClick={() => setActiveTab("templates")}
-              style={{
-                padding: "8px 16px",
-                cursor: "pointer",
-                backgroundColor:
-                  activeTab === "templates" ? "#007BFF" : "#e0e0e0",
-                color: activeTab === "templates" ? "#fff" : "#000",
-                border: "none",
-                borderRadius: "5px",
-              }}
-            >
-              Templates
-            </button>
-          </div>
-
-          {/* Palettes tab */}
-          {activeTab === "palettes" && (
-            <div>
-              <h3>Choose a Palette</h3>
-              {loadingPalettes && <p>Loading color palettes...</p>}
-              {!loadingPalettes && colorPalettes.length === 0 && (
-                <p>No color palettes found.</p>
-              )}
-              {colorPalettes.map((palette) => (
-                <div
-                  key={palette.id}
-                  onMouseOver={() => handlePaletteHover(palette)}
-                  onMouseOut={clearHoverEffect}
-                  onClick={() => applyPalette(palette)}
+              {newPaletteColors.map((col, index) => (
+                <input
+                  key={index}
+                  type="color"
+                  value={col}
+                  onChange={(e) => handleNewPaletteColorChange(index, e.target.value)}
                   style={{
-                    display: "flex",
                     cursor: "pointer",
-                    alignItems: "center",
-                    border: "1px solid #ccc",
-                    marginBottom: "8px",
+                    width: "50px",
+                    height: "40px",
+                    border: "none",
+                    outline: "none",
+                    padding: 0,
                   }}
+                />
+              ))}
+
+              <button
+                onClick={addNewPalette}
+                style={{
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  backgroundColor:
+                    activeTab === "templates" ? "#007BFF" : "#e0e0e0",
+                  color: activeTab === "templates" ? "#fff" : "#000",
+                  border: "none",
+                  borderRadius: "5px",
+                }}
+              >
+                Add Palette
+              </button>
+            </div>
+
+
+            <hr style={{ margin: "10px 0" }} />
+
+            {/*  B) List of fetched palettes  */}
+            <h3>Choose a Palette</h3>
+            {loadingPalettes && <p>Loading color palettes...</p>}
+            {!loadingPalettes && colorPalettes.length === 0 && (
+              <p>No color palettes found.</p>
+            )}
+            {colorPalettes.map((palette) => (
+              <div
+                key={palette.id}
+                onMouseOver={() => handlePaletteHover(palette)} // Apply palette on hover
+                onClick={() => applyPalette(palette)} // Apply palette permanently on click
+
+                style={{
+                  display: "flex",
+                  cursor: "pointer",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                  width: "100%",
+                  border: isDarkMode ? "1px solid #444" : "1px solid #fcfcfc",
+
+                  borderRadius: "5px",
+                  overflow: "hidden",
+                }}
+              >
+                {palette.colors.map((color, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      flex: 1,
+                      height: "30px",
+                      backgroundColor: color,
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Templates tab */}
+        {activeTab === "templates" && (
+          <div>
+            <h3>Templates Section</h3>
+            {loadingTemplates && <p>Loading templates...</p>}
+            {!loadingTemplates && templates.length === 0 && (
+              <p>No templates available.</p>
+            )}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: "10px",
+              }}
+            >
+              {templates.map((tmpl) => (
+                <div
+                  key={tmpl.templateId}
+                  style={{
+                    borderRadius: "5px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => applyTemplate(tmpl)}
                 >
-                  {palette.colors.map((color, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        width: "70px",
-                        height: "30px",
-                        backgroundColor: color,
-                      }}
-                    />
-                  ))}
+                  <img
+                    src={tmpl.url}
+                    alt={tmpl.name || "template"}
+                    style={{ width: "100%", height: "auto" }}
+                  />
                 </div>
               ))}
             </div>
-          )}
-
-          {/* Templates tab */}
-          {activeTab === "templates" && (
-            <div>
-              <h3>Templates Section</h3>
-              {loadingTemplates && <p>Loading templates...</p>}
-              {!loadingTemplates && templates.length === 0 && (
-                <p>No templates available.</p>
-              )}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "10px",
-                }}
-              >
-                {templates.map((tmpl) => (
-                  <div
-                    key={tmpl.templateId}
-                    style={{
-                      borderRadius: "5px",
-                      overflow: "hidden",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => applyTemplate(tmpl)}
-                  >
-                    <img
-                      src={tmpl.url}
-                      alt={tmpl.name || "template"}
-                      style={{ width: "100%", height: "auto" }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }),
-  };
+          </div>
+        )}
+      </div>
+    );
+  }),
 };
+
 
 // 3) Combine default sections with the custom section
 //    We'll create the custom section inside the component so we can pass local state
@@ -291,6 +480,8 @@ const PolotnoEditor = () => {
   const template = state?.templateData || {};
   console.log("Incoming template data:", template);
   const brandId = template.brandId;
+  localStorage.setItem("brandId", brandId);
+  localStorage.setItem("loadedtemplate", template);
   console.log(brandId);
 
   // If a template is passed, parse the JSON
@@ -300,10 +491,8 @@ const PolotnoEditor = () => {
 
   // We'll store the current template ID. If the route state has `templateId`,
   // use that as default. Otherwise null.
-  const [currentTemplateId, setCurrentTemplateId] = useState(
-    template.templateId || null
-  );
 
+  const [currentTemplateId, setCurrentTemplateId] = useState(null);
   // We also note if the user wants dark mode
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
@@ -317,26 +506,70 @@ const PolotnoEditor = () => {
 
   // 4) Save the template (only update, not "save as new")
   //    We'll do an HTTP PUT or POST to /v2/user/templates/{id}, whichever your backend expects
-  const saveAsJSON = async () => {
-    if (!currentTemplateId) {
-      toast.error("No template ID selected to update.");
-      return;
-    }
+  // Compress image before upload
+  const compressImage = async (
+    dataURL,
+    maxWidth = 1000,
+    maxHeight = 1000,
+    quality = 0.2
+  ) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = dataURL;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // Maintain aspect ratio while resizing
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = (maxHeight / width) * height;
+            width = maxWidth;
+          } else {
+            width = (maxWidth / height) * width;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress and convert to Blob
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Image compression failed."));
+            }
+          },
+          "image/png",
+          quality // 0.1 ~ 1.0
+        );
+      };
+      img.onerror = (err) => reject(err);
+    });
+  };
+
+  const saveAsJSON = async (isUpdate = false) => {
     try {
-      // 4a) Generate a thumbnail
       const dataURL = await store.toDataURL({
         pixelRatio: 1,
         mimeType: "image/png",
       });
-      const blob = await fetch(dataURL).then((r) => r.blob());
 
-      // 4b) Upload the thumbnail to your image server
-      const formData = new FormData();
-      formData.append("file", blob, "thumbnail.png");
+      const compressedBlob = await compressImage(dataURL);
 
-      const uploadRes = await axios.post(
+      const uploadData = new FormData();
+      uploadData.append("file", compressedBlob, "compressed-thumbnail.png");
+
+      // 1. First upload the image to get a URL
+      const uploadResponse = await axios.post(
         `${baseUrl}/sparkiq/image/upload?customerId=123`,
-        formData,
+        uploadData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -344,34 +577,49 @@ const PolotnoEditor = () => {
           },
         }
       );
-      const thumbnailURL = uploadRes.data?.data?.url;
 
-      // 4c) Gather Polotno JSON
-      const polotnoJson = store.toJSON();
+      const thumbnailURL = uploadResponse.data.data.url;
 
-      // 4d) Update template on backend (PUT or POST, whichever your backend expects)
-      //     Example: PUT /v2/user/templates/:templateId
+      // 2. Prepare the JSON data
+      const json = store.toJSON();
+      const template_original = localStorage.getItem("loadedtemplate");
+      // `templateId` is only sent if we are updating and we have a current ID
       const payload = {
-        // your backend might require these fields
-        templateId: currentTemplateId,
-        url: thumbnailURL, // updated thumbnail
-        templateJson: JSON.stringify(polotnoJson),
+        templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
+        url: thumbnailURL,
+        url: thumbnailURL,
+        templateOrientation: template_original.templateOrientation || json.width > json.height ? "landscape" : "portrait" || "1:1",
+        priority: json.priority || 0,
+        templateSize: `${json.width}x${json.height}`,
+        brandId: template_original.brandId || brandId || "", // Include brandId
+        postType: template_original.postType || json.postType || "standard", //
+        customTemplate: template_original.customTemplate || false, //
+        mediaType: "image",
+        videoDuration: json.videoDuration || "00:00",
+        voiceoverEnabled: json.voiceoverEnabled || false,
+        templateJson: JSON.stringify(json),
       };
-      const updateRes = await axios.put(
-        `${baseUrl}/v2/user/templates/${currentTemplateId}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        }
-      );
 
-      toast.success("Template updated successfully!");
-      console.log("Update response:", updateRes.data);
+      // 3. POST the template
+      const apiResponse = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+
+      // if successful, set the ID if it doesn't exist
+      if (!isUpdate) {
+        setCurrentTemplateId(apiResponse.data?.templateId);
+      }
+
+      toast.success(
+        isUpdate
+          ? "Template updated successfully!"
+          : "Template saved successfully!"
+      );
     } catch (error) {
-      console.error("Error updating template:", error);
-      toast.error("Failed to update template.");
+      console.error("Error saving template:", error);
+      toast.error("An error occurred while saving the template.");
     }
   };
 
@@ -420,28 +668,198 @@ const PolotnoEditor = () => {
     }
   }, [template.templateId, templateData]);
 
-  // 7) Build sections with our custom section
-  const customSection = createCustomSection(
-    currentTemplateId,
-    setCurrentTemplateId
-  );
+  const UploadSectionWithAPI = {
+    name: "upload-api",
+    Tab: (props) => (
+      <SectionTab name="Upload" {...props}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "20px",
+          }}
+        >
+          <FaCloudUploadAlt />
+        </div>
+      </SectionTab>
+    ),
+    Panel: observer(({ store }) => {
+      // 2) brandId from local storage
+      const brandId = localStorage.getItem("brandId");
+
+      // 3) State for brand elements and upload status
+      const [brandElements, setBrandElements] = useState([]);
+      const [isUploading, setIsUploading] = useState(false);
+
+      // 4) Fetch brand elements from /v2/api/brands/{brandId}/brandelements
+      const fetchBrandElements = async () => {
+        if (!brandId) {
+          console.warn("No brandId found in localStorage. Skipping fetchBrandElements.");
+          return;
+        }
+        try {
+          const response = await axios.get(
+            `${baseUrl}/v2/api/brands/${brandId}/brandelements`,
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
+          setBrandElements(response.data?.data || []);
+        } catch (error) {
+          console.error("Error fetching brand elements:", error);
+          toast.error("Failed to fetch brand elements.");
+        }
+      };
+
+      // 5) Handle file upload => get URL => post brand element => refetch
+      const handleFileUpload = async (file) => {
+        if (!file) return;
+        if (!brandId) {
+          toast.error("No brandId found in localStorage. Cannot upload.");
+          return;
+        }
+
+        setIsUploading(true);
+        try {
+          // A) Upload to /sparkiq/image/upload
+          const uploadForm = new FormData();
+          uploadForm.append("file", file);
+          uploadForm.append("customerId", "123"); // or brandId if needed
+
+          const uploadResponse = await axios.post(
+            `${baseUrl}/sparkiq/image/upload`,
+            uploadForm,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
+          const imageUrl = uploadResponse.data.data.url;
+
+          // B) Post brand element to /v2/api/brands/{brandId}/brandelements
+          await axios.post(
+            `${baseUrl}/v2/api/brands/${brandId}/brandelements`,
+            { name: "Uploaded Element", url: imageUrl },
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
+          toast.success("File uploaded & brand element saved!");
+
+          // C) Re-fetch brand elements to update UI
+          fetchBrandElements();
+        } catch (error) {
+          console.error("Upload or brand element creation failed:", error);
+          toast.error("File upload failed. Please try again.");
+        } finally {
+          setIsUploading(false);
+        }
+      };
+
+      // 6) On mount, fetch existing brand elements
+      useEffect(() => {
+        fetchBrandElements();
+        // eslint-disable-next-line
+      }, []);
+
+      return (
+        <div style={{ padding: "10px", height: "100%" }}>
+          <h3 style={{ marginBottom: "10px" }}>Uploaded Brand Elements</h3>
+
+          {/* Upload Button */}
+          <label
+            htmlFor="fileUpload"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "8px",
+              backgroundColor: "#333",
+              color: "#fff",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+              marginBottom: "10px",
+            }}
+          >
+            <FaCloudUploadAlt style={{ marginRight: "8px" }} />
+            Upload Image
+          </label>
+          <input
+            id="fileUpload"
+            type="file"
+            style={{ display: "none" }}
+            onChange={(e) => handleFileUpload(e.target.files[0])}
+          />
+
+          {isUploading && (
+            <p style={{ marginTop: "10px", textAlign: "center" }}>Uploading...</p>
+          )}
+
+          {/* Brand Elements Grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "10px",
+              overflowY: "auto",
+              maxHeight: "60vh",
+            }}
+          >
+            {brandElements.map((element, index) => (
+              <div
+                key={element.id || index}
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: "5px",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  // Add image element into Polotno store
+                  store.activePage?.addElement({
+                    type: "image",
+                    src: element.url,
+                  });
+                }}
+              >
+                <img
+                  src={element.url}
+                  alt={element.name || `Element ${index}`}
+                  style={{ width: "100%", height: "auto" }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }),
+  };
+
   const sections = [
-    customSection,
-    TemplatesSection, // or remove if you don't need Polotno's default templates
+    CustomSection,
+    //TemplatesSection, // or remove if you don't need Polotno's default templates
     TextSection,
     PhotosSection,
     ElementsSection,
-    UploadSection,
+    UploadSectionWithAPI,  // your custom Upload with API
     BackgroundSection,
     LayersSection,
     SizeSection,
   ];
-
+  localStorage.setItem('isDarkMode', isDarkMode);
   return (
     <div
       className={isDarkMode ? "bp5-dark" : ""}
       style={{
-        height: "100vh",
+        height: "99vh",
         backgroundColor: isDarkMode ? "#000000" : "#f4f4f4",
         position: "relative",
       }}
@@ -449,84 +867,154 @@ const PolotnoEditor = () => {
       {/* Top Controls */}
       <div
         style={{
-          padding: "6px",
-          textAlign: "center",
-          color: isDarkMode ? "white" : "black",
+          padding: "8px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <button
-          onClick={toggleTheme}
-          style={{
-            backgroundColor: isDarkMode ? "#555" : "#e0e0e0",
-            color: isDarkMode ? "#fff" : "#000",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
-          }}
-        >
-          Switch to {isDarkMode ? "Light" : "Dark"} Mode
-        </button>
-        <button
-          onClick={saveAsJSON}
-          style={{
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
-          }}
-        >
-          Update Template
-        </button>
-        <button
-          onClick={loadFromJSON}
-          style={{
-            backgroundColor: "#007BFF",
-            color: "white",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
-          }}
-        >
-          Load Template from JSON
-        </button>
+        {/* Left Controls: Theme and Save */}
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", marginLeft: "12px" }}>
+          {/* Theme Toggle Button */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={toggleTheme}
+              style={{
+                backgroundColor: isDarkMode ? "#555" : "#e0e0e0",
+                color: isDarkMode ? "#fff" : "#000",
+                border: "none",
+                padding: "4px",
+                cursor: "pointer",
+                borderRadius: "50%", // Circular button
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // Subtle shadow
+                transition: "background-color 0.3s, transform 0.2s",
+              }}
+              onMouseEnter={(e) => (e.target.style.transform = "scale(1.1)")}
+              onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
+            >
+              {isDarkMode ? <MdOutlineLightMode size={20} /> : <CiDark size={20} />}
+            </button>
+            {/* Tooltip */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "-25px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                color: "#fff",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                whiteSpace: "nowrap",
+                opacity: 0,
+                pointerEvents: "none",
+                transition: "opacity 0.2s",
+              }}
+              className="tooltip"
+            >
+              {isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            </div>
+          </div>
 
-        {/* Close Button */}
-        <button
-          className="close"
-          onClick={() => window.history.back()}
-          style={{
-            position: "absolute",
-            top: "-2px",
-            right: "1px",
-            backgroundColor: "#f44336",
-            color: "white",
-            border: "none",
-            padding: "6px",
-            cursor: "pointer",
-            fontSize: "20px",
-            lineHeight: "1",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "30px",
-            height: "40px",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-            transition: "background-color 0.3s, transform 0.2s",
-          }}
-          onMouseEnter={(e) => (e.target.style.backgroundColor = "#d32f2f")}
-          onMouseLeave={(e) => (e.target.style.backgroundColor = "#f44336")}
-          onMouseDown={(e) => (e.target.style.transform = "scale(0.9)")}
-          onMouseUp={(e) => (e.target.style.transform = "scale(1)")}
-        >
-          X
-        </button>
+          {/* Save Button */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={saveAsJSON}
+              style={{
+                backgroundColor: "#FFD700",
+                color: "white",
+                border: "none",
+                padding: "4px 16px",
+                cursor: "pointer",
+                borderRadius: "5px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onMouseEnter={(e) => (e.target.style.transform = "scale(1.05)")}
+              onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
+            >
+              <FaSave size={20} />
+            </button>
+            {/* Tooltip */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "-25px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                color: "#fff",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                whiteSpace: "nowrap",
+                opacity: 0,
+                pointerEvents: "none",
+                transition: "opacity 0.2s",
+              }}
+              className="tooltip"
+            >
+              Save Template
+            </div>
+          </div>
+        </div>
+
+        {/* Right Controls: Close Button */}
+        <div style={{ position: "relative" }}>
+          <button
+            className="close"
+            onClick={() => window.history.back()}
+            style={{
+              backgroundColor: "#f44336",
+              color: "white",
+              border: "none",
+              padding: "6px",
+              cursor: "pointer",
+              fontSize: "20px",
+              lineHeight: "1",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "30px",
+              height: "30px",
+              borderRadius: "50%", // Circular close button
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+              transition: "background-color 0.3s, transform 0.2s",
+            }}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = "#d32f2f")}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = "#f44336")}
+            onMouseDown={(e) => (e.target.style.transform = "scale(0.9)")}
+            onMouseUp={(e) => (e.target.style.transform = "scale(1)")}
+          >
+            X
+          </button>
+          {/* Tooltip */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "-25px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              color: "#fff",
+              padding: "4px 8px",
+              borderRadius: "4px",
+              fontSize: "12px",
+              whiteSpace: "nowrap",
+              opacity: 0,
+              pointerEvents: "none",
+              transition: "opacity 0.2s",
+            }}
+            className="tooltip"
+          >
+            Close
+          </div>
+        </div>
       </div>
 
       {/* Polotno Container */}

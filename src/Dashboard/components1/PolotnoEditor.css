@@ -19,3 +19,7 @@
 .bp5-button:not([class*='bp5-intent-']):hover {
   background-color: #e0e0e0; /* Light hover background */
 }
+button:hover + .tooltip {
+  opacity: 1;
+  pointer-events: auto;
+}
