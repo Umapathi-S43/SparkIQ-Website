@@ -67,22 +67,18 @@ export default function BrandSetting() {
   const location = useLocation();
 
   // We might get brandName from location.search or from location.state
-  // e.g. location.state = { brandName: 'AcmeInc' }
-  // Or you can parse from query string. 
-  // For example:
   const params = new URLSearchParams(location.search);
   const brandNameFromUrl = params.get("id") || location.state?.id || null;
 
   // Step
   const initialStep = location.state?.step || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
-  
-   
+
   // Single brandData state
   const [brandData, setBrandData] = useState({
     id: null,
     websiteUrl: "",
-    brandName:  "",
+    brandName: "",
     brandVoice: "",
     mission: "",
     vision: "",
@@ -166,76 +162,66 @@ export default function BrandSetting() {
     brandElements: [],
   });
 
-  // 2) We'll fetch all brands from /v2/api/brands when mounting, find by name if brandName is given
+  // 2) Possibly get brand info from location.state
   const { state } = useLocation();
   const brandInfo = state?.response;
-  
+
+  // On mount, if brandInfo passed in location.state, set brand data
   useEffect(() => {
     if (brandInfo) {
       const foundBrand = brandInfo.data;
-      console.log("Found Brand:", foundBrand); // Log to confirm state reception
+      console.log("Found Brand:", foundBrand);
 
-    if (foundBrand) {
-      // console.log("Brand Found:", foundBrand);
-
-      // Populate the brand data into state
-      setBrandData((prev) => ({
-        ...prev,
-        brandName: foundBrand.brandName || "",
-        brandVoice: foundBrand.brandVoice || "",
-        mission: foundBrand.mission || "",
-        vision: foundBrand.vision || "",
-        brandStory: foundBrand.brandStory || "",
-        niche: foundBrand.niche || "",
-        targetAudience: foundBrand.targetAudience || "",
-        audienceObjective: foundBrand.audienceObjective || "",
-        logos: (foundBrand.logos || []).map((lg) => lg.logoUrl),
-        colors: parseColorsToState(foundBrand.colors || []),
-        colorPalettes: (foundBrand.colorPalettes || []).map((cp) => cp.palette),
-        brandElements: (foundBrand.brandElements || []).map((elem) => ({
-          id: elem.id || "",
-          name: elem.name || "Icon",
-          url: elem.url || "",
-          brandId: foundBrand.id || "",
-        })),
-        fonts: parseFontsToState(foundBrand.fonts || [], foundBrand.id),
-      }));
-    } else {
-      console.log("No brand found from state " + foundBrand);
+      if (foundBrand) {
+        setBrandData((prev) => ({
+          ...prev,
+          brandName: foundBrand.brandName || "",
+          brandVoice: foundBrand.brandVoice || "",
+          mission: foundBrand.mission || "",
+          vision: foundBrand.vision || "",
+          brandStory: foundBrand.brandStory || "",
+          niche: foundBrand.niche || "",
+          targetAudience: foundBrand.targetAudience || "",
+          audienceObjective: foundBrand.audienceObjective || "",
+          logos: (foundBrand.logos || []).map((lg) => lg.logoUrl),
+          colors: parseColorsToState(foundBrand.colors || []),
+          colorPalettes: (foundBrand.colorPalettes || []).map((cp) => cp.palette),
+          brandElements: (foundBrand.brandElements || []).map((elem) => ({
+            id: elem.id || "",
+            name: elem.name || "Icon",
+            url: elem.url || "",
+            brandId: foundBrand.id || "",
+          })),
+          fonts: parseFontsToState(foundBrand.fonts || [], foundBrand.id),
+        }));
+      } else {
+        console.log("No brand found from state " + foundBrand);
+      }
     }
-  }
-  else {
-    console.log("No brandInfo found in state.");
-  }
-}, [brandInfo]);
- 
+    else {
+      console.log("No brandInfo found in state.");
+    }
+  }, [brandInfo]);
+
+  // Or fetch brand by ID from the URL
   useEffect(() => {
     async function fetchBrandById() {
       try {
         if (!jwtToken) {
           throw new Error("No JWT token found. Please log in.");
         }
-       
-        // Check if brandNameFromUrl (brand ID) exists
+
         if (brandNameFromUrl) {
-          // console.log("Brand ID from URL:", brandNameFromUrl); // Log the brand ID
-  
-          // Fetch the brand directly by its ID
           const response = await axios.get(`${baseUrl}/v2/api/brands/${brandNameFromUrl}`, {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
             },
           });
-  
-          // Extract brand data from the response
-          const foundBrand = response?.data?.data || null; // Ensure response.data exists
+
+          const foundBrand = response?.data?.data || null;
           console.log("Found Brand:", foundBrand);
-          
 
           if (foundBrand) {
-            // console.log("Brand Found:", foundBrand);
-  
-            // Populate the brand data into state
             setBrandData((prev) => ({
               ...prev,
               id: foundBrand.id || null,
@@ -269,14 +255,12 @@ export default function BrandSetting() {
         console.error("Error fetching brand by ID:", error);
       }
     }
-  
-    if(fetchBrandById()||brandInfo); // Trigger the fetch logic
-  }, [brandNameFromUrl]);
-  
 
-  // Helpers for converting arrays => brandData
+    if (fetchBrandById() || brandInfo);
+  }, [brandNameFromUrl]);
+
+  // Helpers
   function parseColorsToState(apiColors) {
-    // e.g. [ {id:'', type:'PRIMARY', colorCode:'#...', brandId:''}, ...]
     const primaryArr = [];
     const secondaryArr = [];
     apiColors.forEach((c) => {
@@ -289,7 +273,6 @@ export default function BrandSetting() {
   }
 
   function parseFontsToState(apiFonts, brandId) {
-    // e.g. [ {id:'', name:'Heading', type:'CUSTOM'|'SYSTEM', fontStyle:'italic'|'normal', ...}, ...]
     return apiFonts.map((f) => {
       const isCustom = f.type === "CUSTOM";
       return {
@@ -301,7 +284,7 @@ export default function BrandSetting() {
         italic: f.fontStyle === "italic",
         underline: false,
         isCustom,
-        customFile: null, 
+        customFile: null,
         isEditing: false,
       };
     });
@@ -322,7 +305,6 @@ export default function BrandSetting() {
       }
 
       if (brandData.id) {
-        // We have an ID => let's assume we want to update
         await axios.post(`${baseUrl}/v2/api/brands?update=true`, finalJson, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
@@ -330,7 +312,6 @@ export default function BrandSetting() {
         });
         toast.success("Brand updated successfully");
       } else {
-        // Otherwise => create brand
         await axios.post(`${baseUrl}/v2/api/brands`, finalJson, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
@@ -482,7 +463,7 @@ function buildFinalBrandPayload(brandData) {
 
   // fonts => array
   const fontObjs = fonts.map((f) => ({
-    id: f.id || "", 
+    id: f.id || "",
     name: f.role || "Title",
     type: f.isCustom ? "CUSTOM" : "SYSTEM",
     fontStyle: f.italic ? "italic" : "normal",
@@ -629,33 +610,14 @@ function BrandDetailsInner({ brandData, setBrandData }) {
   );
 }
 
-/** Step 2: BrandOverview */
+/** Step 2: BrandOverview (all fields optional) */
 function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
   const handlePrevClick = () => {
     onPrev && onPrev();
   };
 
+  // No validations for these fields, since all optional now
   const handleNextClick = () => {
-    if (!brandData.brandVoice.trim()) {
-      toast.error("Brand Voice is required.");
-      return;
-    }
-    if (!brandData.mission.trim()) {
-      toast.error("Mission is required.");
-      return;
-    }
-    if (!brandData.vision.trim()) {
-      toast.error("Vision is required.");
-      return;
-    }
-    if (!brandData.targetAudience.trim()) {
-      toast.error("Target Audience is required.");
-      return;
-    }
-    if (!brandData.audienceObjective.trim()) {
-      toast.error("Audience Objective is required.");
-      return;
-    }
     onNext && onNext();
   };
 
@@ -673,7 +635,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
 
         {/* Brand Voice */}
         <label className="block font-semibold mb-1" htmlFor="brandVoice">
-          Brand Voice *
+          Brand Voice (Optional)
         </label>
         <textarea
           id="brandVoice"
@@ -687,7 +649,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
 
         {/* Mission */}
         <label className="block font-semibold mb-1" htmlFor="mission">
-          Mission *
+          Mission (Optional)
         </label>
         <textarea
           id="mission"
@@ -701,7 +663,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
 
         {/* Vision */}
         <label className="block font-semibold mb-1" htmlFor="vision">
-          Vision *
+          Vision (Optional)
         </label>
         <textarea
           id="vision"
@@ -747,7 +709,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
 
         {/* Target Audience */}
         <label className="block font-semibold mb-1" htmlFor="targetAudience">
-          Target Audience *
+          Target Audience (Optional)
         </label>
         <textarea
           id="targetAudience"
@@ -761,7 +723,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
 
         {/* Audience Objective */}
         <label className="block font-semibold mb-1" htmlFor="audienceObjective">
-          Audience Objective *
+          Audience Objective (Optional)
         </label>
         <textarea
           id="audienceObjective"
@@ -815,12 +777,11 @@ function BrandAssets({ brandData, setBrandData, onPrev, onFinish }) {
           Previous
         </button>
         <button
-  className="custom-button text-white px-4 py-2 rounded-md hover:bg-blue-700"
-  onClick={handleFinishClick}
->
-  {brandData?.id ? "Update Brand" : "Create Brand"}
-</button>
-
+          className="custom-button text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          onClick={handleFinishClick}
+        >
+          {brandData?.id ? "Update Brand" : "Create Brand"}
+        </button>
       </div>
     </div>
   );
@@ -831,21 +792,19 @@ function BrandElements({ brandData, setBrandData }) {
   const [showIconUpload, setShowIconUpload] = useState(false);
   const [uploadingIcon, setUploadingIcon] = useState(false);
 
-  // brandData.brandElements => array of {id:'', name:'', url:'', brandId:'' }
-
   const handleIconUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // For icons, must be .svg:
-    if (!file.name.toLowerCase().endsWith(".svg")) {
-      toast.error("Please upload an SVG file.");
+    // If you specifically do NOT want .svg, you can check like this:
+    if (file.name.toLowerCase().endsWith(".svg")) {
+      toast.error("Please upload a PNG or JPEG/JPG file.");
       return;
     }
 
     setUploadingIcon(true);
     try {
-      const url = await uploadImage(file, setUploadingIcon); 
+      const url = await uploadImage(file, setUploadingIcon);
       if (url) {
         setBrandData((prev) => ({
           ...prev,
@@ -896,7 +855,10 @@ function BrandElements({ brandData, setBrandData }) {
 
       <div className="flex flex-wrap gap-4">
         {brandData.brandElements?.map((elem, idx) => (
-          <div key={idx} className="relative w-20 h-20 border rounded-md bg-gray-100">
+          <div
+            key={idx}
+            className="relative w-20 h-20 border rounded-md bg-gray-100"
+          >
             <img
               src={elem.url}
               alt={elem.name}
@@ -912,31 +874,33 @@ function BrandElements({ brandData, setBrandData }) {
         ))}
         {brandData.brandElements.length === 0 && (
           <p className="text-gray-400 italic">
-            No icons uploaded yet. Click "Add new" to upload an SVG.
+            No icons uploaded yet. Click "Add new" to upload a file (png/jpg).
           </p>
         )}
       </div>
 
       {showIconUpload && (
-        <div className="border-2 border-dashed border-gray-400 bg-white rounded-lg p-3 mt-4 w-[200px] text-center relative">
-          {uploadingIcon ? (
-            <p className="text-sm text-gray-600 italic">Uploading...</p>
-          ) : (
-            <>
-              <input
-                type="file"
-                accept=".svg"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={handleIconUpload}
-              />
-              <label className="flex flex-col items-center justify-center h-full cursor-pointer">
-                <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
-                <span className="text-gray-500 text-sm">
-                  Upload an SVG file
-                </span>
-              </label>
-            </>
-          )}
+        <div className="border-2 border-[#fcfcfc] rounded-2xl p-2 mb-2 mt-2">
+          <div
+            className="border-dashed border-2 border-gray-400 bg-white 
+                        rounded-lg p-2 text-center relative hover:border-gray-600 cursor-pointer"
+          >
+            {uploadingIcon ? (
+              <p className="text-sm text-gray-600 italic">Uploading...</p>
+            ) : (
+              <>
+                <input
+                  type="file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleIconUpload}
+                />
+                <label className="flex flex-col items-center justify-center h-full cursor-pointer">
+                  <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
+                  <span className="text-gray-500 text-sm">Upload a file</span>
+                </label>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -954,7 +918,6 @@ function MultiLogoUpload({ brandData, setBrandData }) {
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [imageToRemove, setImageToRemove] = useState(null);
 
-  // Handle the actual file selection + upload
   const handleMultipleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -971,7 +934,6 @@ function MultiLogoUpload({ brandData, setBrandData }) {
     }
   };
 
-  // Remove
   const handleRemoveLogo = () => {
     if (!imageToRemove) return;
     const updated = [...brandData.logos];
@@ -1109,7 +1071,7 @@ function MultiLogoUpload({ brandData, setBrandData }) {
   );
 }
 
-/** 
+/**
  * BrandColors subcomponent:
  * Manages brandData.colors.primary, brandData.colors.secondary, plus brandData.colorPalettes
  */
@@ -1126,10 +1088,12 @@ function BrandColors({ brandData, setBrandData }) {
   const [newTextColor, setNewTextColor] = useState("#ffffff");
   const [newEffectColor, setNewEffectColor] = useState("#cccccc");
 
+  // Only triggered when user picks a color in the popup
   const handleColorSelect = (colorResult) => {
     setCustomColor(colorResult.hex);
   };
 
+  // Called after "Save" is clicked in the popup
   const handleSaveAdditionalColor = () => {
     if (!colorPickerTarget) {
       setColorPickerOpen(false);
@@ -1160,7 +1124,7 @@ function BrandColors({ brandData, setBrandData }) {
             colorsCopy.secondary.push(customColor);
           }
         } else {
-          // Replace
+          // Replace existing
           if (arrName === "primaryColors") {
             colorsCopy.primary[idx] = customColor;
           } else if (arrName === "secondaryColors") {
@@ -1210,7 +1174,7 @@ function BrandColors({ brandData, setBrandData }) {
           <p className="ml-3">Brand Colors</p>
         </div>
       </div>
-      <div className="p-4">
+      <div className="p-4 relative">
         {/* Primary */}
         <h3 className="font-semibold mb-2">Primary Colors</h3>
         <ColorArray
@@ -1273,6 +1237,7 @@ function BrandColors({ brandData, setBrandData }) {
                     className="h-8 px-3 rounded-lg flex items-center justify-center font-normal text-sm cursor-pointer"
                     style={{ backgroundColor: c, color: getTextColor(c) }}
                     onClick={() => {
+                      // Open color picker for a palette color
                       setColorPickerOpen(true);
                       setCustomColor(c);
                       setColorPickerTarget({
@@ -1296,68 +1261,92 @@ function BrandColors({ brandData, setBrandData }) {
         >
           <FaPlus className="text-white" />
         </button>
-      </div>
 
-      {/* 3-Color Palette Modal */}
-      {showPaletteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="relative bg-white rounded-xl p-4 shadow-2xl w-full max-w-md">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-black text-xl font-bold"
-              onClick={() => setShowPaletteModal(false)}
-            >
-              ×
-            </button>
-            <h3 className="text-lg font-bold mb-4">Add a New 3-Color Palette</h3>
-            <div className="flex flex-col gap-3">
-              <PaletteSubColor
-                label="Background"
-                color={newBgColor}
-                setColor={setNewBgColor}
-                pickerOpen={pickerOpen}
-                setPickerOpen={setPickerOpen}
-                tempColor={tempColor}
-                setTempColor={setTempColor}
-                targetName="bg"
-              />
-              <PaletteSubColor
-                label="Text"
-                color={newTextColor}
-                setColor={setNewTextColor}
-                pickerOpen={pickerOpen}
-                setPickerOpen={setPickerOpen}
-                tempColor={tempColor}
-                setTempColor={setTempColor}
-                targetName="text"
-              />
-              <PaletteSubColor
-                label="Effects"
-                color={newEffectColor}
-                setColor={setNewEffectColor}
-                pickerOpen={pickerOpen}
-                setPickerOpen={setPickerOpen}
-                tempColor={tempColor}
-                setTempColor={setTempColor}
-                targetName="effect"
-              />
+        {/* 3-Color Palette Modal */}
+        {showPaletteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="relative bg-white rounded-xl p-4 shadow-2xl w-full max-w-md">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-black text-xl font-bold"
+                onClick={() => setShowPaletteModal(false)}
+              >
+                ×
+              </button>
+              <h3 className="text-lg font-bold mb-4">Add a New 3-Color Palette</h3>
+              <div className="flex flex-col gap-3">
+                <PaletteSubColor
+                  label="Background"
+                  color={newBgColor}
+                  setColor={setNewBgColor}
+                  pickerOpen={pickerOpen}
+                  setPickerOpen={setPickerOpen}
+                  tempColor={tempColor}
+                  setTempColor={setTempColor}
+                  targetName="bg"
+                />
+                <PaletteSubColor
+                  label="Text"
+                  color={newTextColor}
+                  setColor={setNewTextColor}
+                  pickerOpen={pickerOpen}
+                  setPickerOpen={setPickerOpen}
+                  tempColor={tempColor}
+                  setTempColor={setTempColor}
+                  targetName="text"
+                />
+                <PaletteSubColor
+                  label="Effects"
+                  color={newEffectColor}
+                  setColor={setNewEffectColor}
+                  pickerOpen={pickerOpen}
+                  setPickerOpen={setPickerOpen}
+                  tempColor={tempColor}
+                  setTempColor={setTempColor}
+                  targetName="effect"
+                />
+              </div>
+              <div className="flex justify-end mt-6 gap-2">
+                <button
+                  className="custom-button p-2 px-4 text-white rounded-2xl shadow-2xl"
+                  onClick={handlePaletteSave}
+                >
+                  Save
+                </button>
+                <button
+                  className="custom-button p-2 px-4 text-white bg-gray-400 rounded-2xl shadow-2xl"
+                  onClick={() => setShowPaletteModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <div className="flex justify-end mt-6 gap-2">
+          </div>
+        )}
+
+        {/* NEW BLOCK: Show color-picker for palette colors */}
+        {colorPickerOpen && colorPickerTarget?.type === "palette" && (
+          <div className="absolute z-10 p-2 shadow-xl rounded-md bg-white mt-2">
+            <Picker color={customColor} onChangeComplete={handleColorSelect} />
+            <div className="mt-2 flex gap-2">
               <button
                 className="custom-button p-2 px-4 text-white rounded-2xl shadow-2xl"
-                onClick={handlePaletteSave}
+                onClick={handleSaveAdditionalColor}
               >
                 Save
               </button>
               <button
-                className="custom-button p-2 px-4 text-white bg-gray-400 rounded-2xl shadow-2xl"
-                onClick={() => setShowPaletteModal(false)}
+                className="custom-button p-2 px-4 text-white rounded-2xl shadow-2xl"
+                onClick={() => {
+                  setColorPickerOpen(false);
+                  setColorPickerTarget(null);
+                }}
               >
-                Cancel
+                Close
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -1367,8 +1356,8 @@ function getTextColor(hex) {
 }
 
 /**
- * ColorArray subcomponent 
- * Now with logic preventing the user from removing the *last* color in primary/secondary.
+ * ColorArray subcomponent for handling primary/secondary colors.
+ * Prevents removing the *last* color. If user clicks a color, open color picker for that array.
  */
 function ColorArray({
   arrayName,
@@ -1384,7 +1373,8 @@ function ColorArray({
   handleColorSelect,
   handleSaveAdditionalColor,
 }) {
-  const getTextColor = (hex) => (hex.toLowerCase() === "#ffffff" ? "#000000" : "#ffffff");
+  const getTextColor = (hex) =>
+    hex.toLowerCase() === "#ffffff" ? "#000000" : "#ffffff";
 
   const handleRemoveColor = (idx) => {
     // If there's only 1 color left, do not remove
@@ -1413,27 +1403,29 @@ function ColorArray({
   return (
     <div className="flex flex-wrap items-center gap-4 p-2">
       {colorArray.map((color, idx) => (
-        <div key={idx} className="relative flex items-center bg-white p-1 rounded-xl">
-  <button
-    className="h-8 px-6 rounded-lg flex items-center justify-start font-normal text-sm cursor-pointer"
-    style={{ background: color, color: getTextColor(color) }}
-    onClick={() => {
-      setCustomColor(color);
-      setColorPickerTarget({ array: arrayName, index: idx });
-      setColorPickerOpen(true);
-    }}
-  >
-    {color}
-  </button>
-  {/* Remove button (top right with red background) */}
-  <button
-    className="absolute top-1 right-1 text-xs text-white bg-red-600 px-2 rounded hover:bg-red-700"
-    onClick={() => handleRemoveColor(idx)}
-  >
-   -
-  </button>
-</div>
-
+        <div
+          key={idx}
+          className="relative flex items-center bg-white p-1 rounded-xl"
+        >
+          <button
+            className="h-8 px-6 rounded-lg flex items-center justify-start font-normal text-sm cursor-pointer"
+            style={{ background: color, color: getTextColor(color) }}
+            onClick={() => {
+              setCustomColor(color);
+              setColorPickerTarget({ array: arrayName, index: idx });
+              setColorPickerOpen(true);
+            }}
+          >
+            {color}
+          </button>
+          {/* Remove button */}
+          <button
+            className="absolute top-1 right-1 text-xs text-white bg-red-600 px-2 rounded hover:bg-red-700"
+            onClick={() => handleRemoveColor(idx)}
+          >
+            -
+          </button>
+        </div>
       ))}
       {/* Add color button */}
       {colorArray.length < 10 && (
@@ -1450,33 +1442,28 @@ function ColorArray({
         </button>
       )}
 
-      {/* The color picker popup */}
-      {colorPickerOpen && colorPickerTarget && (
-        <>
-          {(colorPickerTarget.array === arrayName ||
-            colorPickerTarget.type === "palette") && (
-            <div className="absolute z-10 p-2 shadow-xl rounded-md bg-white">
-              <Picker color={customColor} onChangeComplete={handleColorSelect} />
-              <div className="mt-2 flex gap-2">
-                <button
-                  className="custom-button p-2 px-4 text-white rounded-2xl shadow-2xl"
-                  onClick={handleSaveAdditionalColor}
-                >
-                  Save
-                </button>
-                <button
-                  className="custom-button p-2 px-4 text-white rounded-2xl shadow-2xl"
-                  onClick={() => {
-                    setColorPickerOpen(false);
-                    setColorPickerTarget(null);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+      {/* The color picker popup for primary/secondary */}
+      {colorPickerOpen && colorPickerTarget?.array === arrayName && (
+        <div className="absolute z-10 p-2 shadow-xl rounded-md bg-white">
+          <Picker color={customColor} onChangeComplete={handleColorSelect} />
+          <div className="mt-2 flex gap-2">
+            <button
+              className="custom-button p-2 px-4 text-white rounded-2xl shadow-2xl"
+              onClick={handleSaveAdditionalColor}
+            >
+              Save
+            </button>
+            <button
+              className="custom-button p-2 px-4 text-white rounded-2xl shadow-2xl"
+              onClick={() => {
+                setColorPickerOpen(false);
+                setColorPickerTarget(null);
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1495,7 +1482,8 @@ function PaletteSubColor({
   setTempColor,
   targetName,
 }) {
-  const getTextColor = (hex) => (hex.toLowerCase() === "#ffffff" ? "#000000" : "#ffffff");
+  const getTextColor = (hex) =>
+    hex.toLowerCase() === "#ffffff" ? "#000000" : "#ffffff";
 
   const handleOpenPicker = () => {
     setPickerOpen(targetName);
@@ -1561,7 +1549,6 @@ function BrandFonts({ brandData, setBrandData }) {
     }));
   };
 
-  // Edit, confirm, remove
   const handleOpenEditor = (fontId) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1570,6 +1557,7 @@ function BrandFonts({ brandData, setBrandData }) {
       ),
     }));
   };
+
   const handleConfirm = (fontId) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1578,6 +1566,7 @@ function BrandFonts({ brandData, setBrandData }) {
       ),
     }));
   };
+
   const handleCancel = (fontId) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1586,6 +1575,7 @@ function BrandFonts({ brandData, setBrandData }) {
       ),
     }));
   };
+
   const handleRemoveFont = (fontId) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1593,7 +1583,6 @@ function BrandFonts({ brandData, setBrandData }) {
     }));
   };
 
-  // Additional updates
   const onFontFamilyChange = (fontId, newValue) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1612,10 +1601,6 @@ function BrandFonts({ brandData, setBrandData }) {
     if (!file) return;
     toast.success(`Selected custom font file: ${file.name}`);
 
-    // If you want to upload the font file to the server, do so here:
-    // const fontUrl = await uploadImage(file, setIsUploading);
-    // Then store it in f.customFile or something
-
     setBrandData((prev) => ({
       ...prev,
       fonts: prev.fonts.map((f) =>
@@ -1632,6 +1617,7 @@ function BrandFonts({ brandData, setBrandData }) {
       ),
     }));
   };
+
   const onToggleBold = (fontId) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1640,6 +1626,7 @@ function BrandFonts({ brandData, setBrandData }) {
       ),
     }));
   };
+
   const onToggleItalic = (fontId) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1648,6 +1635,7 @@ function BrandFonts({ brandData, setBrandData }) {
       ),
     }));
   };
+
   const onToggleUnderline = (fontId) => {
     setBrandData((prev) => ({
       ...prev,
@@ -1697,7 +1685,7 @@ function BrandFonts({ brandData, setBrandData }) {
 }
 
 /** 
- * FontRowPen (unchanged except we do store results in brandData).
+ * FontRowPen (unchanged except storing results in brandData).
  */
 function FontRowPen({
   fontObj,
@@ -1705,7 +1693,6 @@ function FontRowPen({
   onConfirm,
   onCancel,
   onRemove,
-
   onFontFamilyChange,
   onFontFileUpload,
   onSizeChange,
@@ -1801,7 +1788,6 @@ function FontRowPen({
           style={{ minWidth: "100px" }}
           value={role || "Title"}
           onChange={(e) => {
-            // If you want to store changes immediately, do so:
             fontObj.role = e.target.value;
           }}
         >
@@ -1831,7 +1817,9 @@ function FontRowPen({
         </button>
         <button
           onClick={onToggleItalic}
-          className={`border p-1 rounded ${italic ? "bg-gray-300" : "bg-white"}`}
+          className={`border p-1 rounded ${
+            italic ? "bg-gray-300" : "bg-white"
+          }`}
         >
           <FaItalic />
         </button>
