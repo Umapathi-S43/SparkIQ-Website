@@ -39,6 +39,7 @@ import PolotnoEditor from './Dashboard/components1/PolotnoEditor';
 import Templates from './Dashboard/components1/templates';
 import BrandSettingsPage from './Dashboard/pages1/BrandSettingsPage';
 import PolotnoAdmin from './Dashboard/components1/PolotnoAdmin';
+import TemplateMapper from './Dashboard/components1/templateMapper';
 function App() {
   return (
     <Router>
@@ -82,6 +83,10 @@ function App() {
             element={<ProtectedRoute element={<EditScreen />} />}
           />
           <Route
+            path="/templatemapper"
+            element={<ProtectedRoute element={<TemplateMapper />} />}
+          />
+          <Route
             path="/productspage"
             element={<ProtectedRoute element={<ProductsPage />} />}
           />
@@ -90,7 +95,7 @@ function App() {
             element={<ProtectedRoute element={<ProductDetailsPage />} />}
           />
           <Route
-            path="/adminEditor"
+            path="/admineditor"
             element={<ProtectedRoute element={<PolotnoAdmin />} />}
           />
           <Route

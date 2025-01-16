@@ -616,7 +616,7 @@ const MyLineWithLabel = observer(({ store, element, elements }) => {
 // ----------------------------------------------
 // 6) POLOTNOADMIN MAIN COMPONENT
 // ----------------------------------------------
-const PolotnoAdmin = () => {
+const  TemplateMapper = () => {
   const { state } = useLocation();
   const templateData = state?.templateData;
 
@@ -813,22 +813,59 @@ const PolotnoAdmin = () => {
         }
       };
 
-      const applyTemplate = (template) => {
+      const medicineData = {
+        title: "Renocare Plus",
+        description:"Eliminates toxins and supports kidney function",
+        feature_tag_1: "Supports Kidney Function",
+        cohort: "Adults",
+        price: "$29.99",
+        rating: "4.5",
+      };
+
+      const applyTemplate = async (template) => {
         try {
           if (!template.templateJson) {
             toast.error("Template JSON is not available.");
             return;
           }
+    
+          // Parse the template JSON
           const parsedJson = JSON.parse(template.templateJson);
+    
+          // Replace dynamic variables in the template JSON
+          parsedJson.pages.forEach((page) => {
+            page.children.forEach((element) => {
+              if (element.custom && element.custom.variable) {
+                const variableName = element.custom.variable.replace(/[{}]/g, ""); // Remove curly braces
+                const newValue = medicineData[variableName];
+    
+                if (newValue) {
+                  if (element.type === "text") {
+                    element.text = newValue;
+                  } else if (element.type === "image") {
+                    element.src = newValue;
+                  }
+                }
+              }
+            });
+          });
+    
+          // Load the updated JSON into the store
           store.loadJSON(parsedJson);
+    
+          // Log the updated JSON with replaced values
+          console.log("Generated JSON with real values:", parsedJson);
+    
+          // Set the current template ID
           setCurrentTemplateId(template.templateId);
-          toast.success("Template applied successfully!");
+    
+          toast.success("Template applied with dynamic variables replaced!");
         } catch (err) {
           console.error("Error applying template:", err);
           toast.error("Failed to apply template. Please try again.");
         }
       };
-
+    
       const handleScroll = (e) => {
         const container = e.target;
         const isBottom =
@@ -1051,4 +1088,4 @@ const PolotnoAdmin = () => {
   );
 };
 
-export default PolotnoAdmin;
+export default  TemplateMapper;
