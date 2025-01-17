@@ -1,228 +1,217 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ProductDetails from "./productDetails";
-import CreativeSize from "./creativeSize";
-import GeneratedCreatives from "../../Dashboard/components1/GeneratedCreatives";
 import ExistingProducts from "./productDetails/ExistingProducts";
 import LookingFor from "./lookingFor";
-import SocialMediaPost from "./socialMediaPost";
-import AdPost from "./adPost";
 import CreativeFormat from "./creativeFormat";
+import Creatives from "./Creatives";
 
-export default function GenerateAd({ setPage, pages }) {
-  const [isNextSectionOpen, setIsNextSectionOpen] = useState(false);
-  const [isThirdSectionOpen, setIsThirdSectionOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+export default function GenerateAd() {
+  // -----------------------------
+  // ACCORDION-LIKE STATES
+  // -----------------------------
+  const [isLookingForOpen, setIsLookingForOpen] = useState(false);
+  const [isCreativeFormatOpen, setIsCreativeFormatOpen] = useState(false);
+  const [isCreativesOpen, setIsCreativesOpen] = useState(false);
+
+  // COMPLETION BADGE STATES
   const [openModalProductDetails, setOpenModalProductDetails] = useState(false);
-  const [openModalCreativeSize, setOpenModalCreativeSize] = useState(false);
+  const [openModalLookingFor, setOpenModalLookingFor] = useState(false);
+  const [openModalCreativeFormat, setOpenModalCreativeFormat] = useState(false);
+  const [openModalCreatives, setOpenModalCreatives] = useState(false);
+
+  // Toggle between showing (steps 1–3) vs. hiding them
+  const [showGenerateAdSteps, setShowGenerateAdSteps] = useState(true);
+
+  // Show either "ExistingProducts" or "ProductDetails" in step 1
   const [showProductDetails, setShowProductDetails] = useState(false);
-  const [openModalLookingFor,setOpenModalLookingFor]=useState(false);
 
-  // State for storing data from each section
-  const [brandAwarenessData, setBrandAwarenessData] = useState([]);
-  const [saleData, setSaleData] = useState([]);
-  const [retargetingData, setRetargetingData] = useState([]);
-  const [selectedTab, setSelectedTab] = useState("Brand Color");
-  const [productDetails, setProductDetails] = useState(null);
-  const [creativeSize, setCreativeSize] = useState(null);
+  // For scrolling
+  const stepsRef = useRef(null);
 
-  const creativeSizeRef = useRef(null);
-  const lookingForRef = useRef(null);
-  const generatedCreativesRef = useRef(null);
-  const SocialMediaPostRef = useRef(null);
-  const AdPostRef= useRef(null);
-  const [localSelectedOption, setLocalSelectedOption] = useState("Advertisement (Ad)");
-
-// Ensure fallback in case of accidental null/undefined
-if (!localSelectedOption) {
-  setLocalSelectedOption("Social Media Post");
-}
-
-
-  // Function to toggle between "Brand Color" and "Single Color"
-  const toggleSelectedTab = () => {
-    setSelectedTab((prevTab) =>
-      prevTab === "Brand Color" ? "Single Color" : "Brand Color"
-    );
-    localStorage.removeItem("generateAdState");
-  };
-
-  // Restore state from localStorage on mount
+  // Optionally clear localStorage on mount
   useEffect(() => {
-    const savedState = JSON.parse(localStorage.getItem("generateAdState"));
-    if (savedState) {
-      setIsThirdSectionOpen(savedState.isThirdSectionOpen);
-      setSelectedTab(savedState.selectedTab);  // Restore the selected tab
-      console.log(savedState.selectedTab);  // This should show 'Single Color' when that's what you selected
-      setOpenModalCreativeSize(savedState.openModalCreativeSize);
-      setBrandAwarenessData(savedState.brandAwarenessData);
-      setSaleData(savedState.saleData);
-      setRetargetingData(savedState.retargetingData);
-  
-      // Scroll to GeneratedCreatives if the third section was previously open
-      if (savedState.isThirdSectionOpen) {
-        setTimeout(() => {
-          if (generatedCreativesRef.current) {
-            generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
-          }
-        }, 100); // Adding a slight delay to ensure that the component has fully rendered
-      }
-  
-      // Clear the saved state once restored
-      localStorage.removeItem("generateAdState");
-    }
+    localStorage.removeItem("brand_id");
+    localStorage.removeItem("product_id");
+    // localStorage.removeItem("lookingFor");
   }, []);
 
-  // Save the state when necessary
-  const saveCurrentState = () => {
-    const currentState = {
-      isNextSectionOpen,
-      isThirdSectionOpen,
-      selectedTab,
-      openModalProductDetails,
-      openModalCreativeSize,
-      openModalLookingFor,
-      brandAwarenessData,
-      saleData,
-      retargetingData,
-      productDetails,
-      creativeSize,
-    };
-    localStorage.setItem("generateAdState", JSON.stringify(currentState));
-  };
-
-  const toggleNextSectionAccordion = () => {
-    setIsNextSectionOpen(!isNextSectionOpen);
-  };
-
-  const toggleThirdSectionAccordion = () => {
-    if (openModalProductDetails && openModalCreativeSize) {
-      setIsThirdSectionOpen(!isThirdSectionOpen);
-      toggleSelectedTab(); // Toggle the tab when the third section is opened
+  // -----------------------------------
+  // SCROLL HELPERS
+  // -----------------------------------
+  const scrollToGenerateAdSteps = () => {
+    if (stepsRef.current) {
+      stepsRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
-  const handleNextSection = () => {
-    if (openModalProductDetails) {
-      setIsNextSectionOpen(false);
-      setIsThirdSectionOpen(true);
-      scrollToGeneratedCreatives(); // Scroll to GeneratedCreatives when both sections are completed
-      toggleSelectedTab(); // Toggle the tab when navigating to the next section
-    }
-    saveCurrentState(); // Save state before navigating
+  // If user re-opens the steps, we want them scrolled into view
+  const openGenerateAdSteps = () => {
+    setShowGenerateAdSteps(true);
+    // wait for DOM update, then scroll
+    setTimeout(() => {
+      scrollToGenerateAdSteps();
+    }, 50);
   };
 
-  const handleBack = () => {
-    setShowProductDetails(false); // Show the ExistingProducts component
-    setIsNextSectionOpen(false); // Ensure the next section is not open
-    setOpenModalProductDetails(false); // Mark the ProductDetails step as incomplete
-    saveCurrentState(); // Save state before navigating back
+  // -----------------------------------
+  // STEP NAV / FLOW
+  // -----------------------------------
+
+  // 1) Product => LookingFor
+  const handleNextToLookingFor = () => {
+    setOpenModalProductDetails(true);
+    setShowProductDetails(false);
+    setOpenModalLookingFor(false);
+    setIsLookingForOpen(true);
   };
 
-  const scrollToGeneratedCreatives = () => {
-    if (generatedCreativesRef.current) {
-      generatedCreativesRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+  // 2) LookingFor => CreativeFormat
+  const handleNextToCreativeFormat = () => {
+    setOpenModalLookingFor(true);
+    setIsLookingForOpen(false);
+    setIsCreativeFormatOpen(true);
+    setOpenModalCreativeFormat(false);
   };
 
-  useEffect(() => {
-    if (isNextSectionOpen && creativeSizeRef.current) {
-      creativeSizeRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [isNextSectionOpen]);
+  // 3) CreativeFormat => Creatives
+  const handleOpenCreatives = () => {
+    setOpenModalCreativeFormat(true);
+    setIsCreativeFormatOpen(false);
+    // Hide steps 1-3
+    setShowGenerateAdSteps(false);
+    // Now open Creatives
+    setIsCreativesOpen(true);
+    setOpenModalCreatives(false);
+  };
+
+  // If user wants to go back to step 1, for example
+  const handleBackToExisting = () => {
+    // Show step 1 again
+    setShowProductDetails(false);
+    setOpenModalProductDetails(false);
+    setIsLookingForOpen(false);
+    setIsCreativeFormatOpen(false);
+    setShowGenerateAdSteps(true);
+    // Optionally scroll
+    scrollToGenerateAdSteps();
+  };
+
+  // If user was in LookingFor, clicks "Back to Product"
+  const handleBackToProduct = () => {
+    setOpenModalLookingFor(false);
+    setIsLookingForOpen(false);
+    setShowProductDetails(true);
+    // Keep steps visible
+  };
+
+  // -----------------------------------
+  // TOGGLE ACCORDIONS
+  // -----------------------------------
+  const toggleLookingForAccordion = () => {
+    setShowProductDetails(false);
+    setOpenModalProductDetails(false);
+    setIsCreativeFormatOpen(false);
+    setIsCreativesOpen(false);
+    setIsLookingForOpen(!isLookingForOpen);
+  };
+
+  const toggleCreativeFormatAccordion = () => {
+    setShowProductDetails(false);
+    setOpenModalProductDetails(false);
+    setIsLookingForOpen(false);
+    setIsCreativesOpen(false);
+    setIsCreativeFormatOpen(!isCreativeFormatOpen);
+  };
+
+  const toggleCreativesAccordion = () => {
+    // If the user wants to see Creatives again, we can keep
+    // steps hidden or you might choose to re-show them
+    setIsLookingForOpen(false);
+    setIsCreativeFormatOpen(false);
+    setIsCreativesOpen(!isCreativesOpen);
+  };
 
   return (
     <div className="flex-grow lg:mr-8 lg:ml-0 ml-2 mx-auto overflow-auto">
-      <div className="max-w-7xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl">
-        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0  relative">
-          <span className="flex items-center gap-2 lg:gap-4">
-            <img src="/icon1.svg" alt="" className="w-10 lg:w-12" />
-            <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold text-lg lg:text-2xl">
-                Generate an Ad Creatives
-              </h4>
-              <p className="text-[#374151] text-xs lg:text-sm">
-                Generate conversion-focused ad creatives using our unique AI.
-              </p>
+      {/* If we want the steps visible, show them */}
+      {showGenerateAdSteps && (
+        <div
+          ref={stepsRef}
+          className="max-w-7xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl mb-4"
+        >
+          {/* ========== HEADER ========== */}
+          <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0 relative">
+            <span className="flex items-center gap-2 lg:gap-4">
+              <img src="/icon1.svg" alt="" className="w-10 lg:w-12" />
+              <span className="flex flex-col">
+                <h4 className="text-[#082A66] font-bold text-lg lg:text-2xl">
+                  Generate an Ad Creatives
+                </h4>
+                <p className="text-[#374151] text-xs lg:text-sm">
+                  Generate conversion-focused ad creatives using our unique AI.
+                </p>
+              </span>
             </span>
-          </span>
-          <img
-            src="/image1.png"
-            alt=""
-            className="absolute bottom-0 right-24 w-28 lg:w-36 hidden md:block"
-          />
-        </div>
-        <div className="px-4 lg:px-6 flex flex-col gap-4 mb-4">
-          {showProductDetails ? (
-            <>
-              <ProductDetails
-                setIsNextSectionOpen={setIsNextSectionOpen}
+            <img
+              src="/image1.png"
+              alt=""
+              className="absolute bottom-0 right-24 w-28 lg:w-36 hidden md:block"
+            />
+          </div>
+
+          {/* ========== BODY ========== */}
+          <div className="px-4 lg:px-6 flex flex-col gap-4 mb-4">
+            {/* STEP 1) Existing or ProductDetails */}
+            {!showProductDetails && (
+              <ExistingProducts
+                setIsNextSectionOpen={setIsLookingForOpen}
                 isCompleted={openModalProductDetails}
                 setIsCompleted={setOpenModalProductDetails}
                 setShowProductDetails={setShowProductDetails}
-                isNewUser={true}
-                handleBack={handleBack}
               />
-            </>
-          ) : (
-            <ExistingProducts
-              setIsNextSectionOpen={setIsNextSectionOpen}
-              isCompleted={openModalProductDetails}
-              setIsCompleted={setOpenModalProductDetails}
-              setShowProductDetails={setShowProductDetails}
-            />
-          )}
-          {/* <div ref={creativeSizeRef}>
-            <CreativeSize
-              isNextSectionOpen={isNextSectionOpen}
-              isCompleted={openModalProductDetails}
-              toggleNextSectionAccordion={toggleNextSectionAccordion}
-              handleNextSection={handleNextSection}
-              setIsLoading={setIsLoading}
-              openModalProductDetails={openModalProductDetails}
-              setIsCompleted={setOpenModalCreativeSize}
-            />
-          </div> */}
-          <div ref={lookingForRef}>
+            )}
+
+            {showProductDetails && (
+              <ProductDetails
+                isCompleted={openModalProductDetails}
+                setIsCompleted={setOpenModalProductDetails}
+                setShowProductDetails={setShowProductDetails}
+                handleNext={handleNextToLookingFor}
+                handleBack={handleBackToExisting}
+              />
+            )}
+
+            {/* STEP 2) LookingFor */}
             <LookingFor
-              isNextSectionOpen={isNextSectionOpen}
-              isCompleted={openModalProductDetails}
-              toggleNextSectionAccordion={toggleNextSectionAccordion}
-              handleNextSection={handleNextSection}
-              setIsLoading={setIsLoading}
-              openModalProductDetails={openModalProductDetails}
+              isNextSectionOpen={isLookingForOpen}
+              toggleNextSectionAccordion={toggleLookingForAccordion}
+              handleNextSection={handleNextToCreativeFormat}
+              isCompleted={openModalLookingFor}
               setIsCompleted={setOpenModalLookingFor}
             />
-          </div>          
-          <div ref={CreativeFormat}>
-          <CreativeFormat
-            selectedOption={localSelectedOption || "Social Media Post"}
-            isNextSectionOpen={isNextSectionOpen}
-            isCompleted={openModalProductDetails}
-            toggleNextSectionAccordion={toggleNextSectionAccordion}
-            handleNextSection={handleNextSection}
-            setIsLoading={setIsLoading}
-            openModalProductDetails={openModalProductDetails}
-            setIsCompleted={setOpenModalCreativeSize}
-          />
+
+            {/* STEP 3) CreativeFormat */}
+            <CreativeFormat
+              isNextSectionOpen={isCreativeFormatOpen}
+              toggleNextSectionAccordion={toggleCreativeFormatAccordion}
+              isCompleted={openModalCreativeFormat}
+              setIsCompleted={setOpenModalCreativeFormat}
+              handleNextSection={handleOpenCreatives}
+            />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* GeneratedCreatives Section */}
-      <div ref={generatedCreativesRef}>
-      <GeneratedCreatives
-        isThirdSectionOpen={isThirdSectionOpen}
-        toggleThirdSectionAccordion={toggleThirdSectionAccordion}
-        isLoading={isLoading}
-        setIsLoading={setIsLoading}
-        setPage={setPage}
-        openModalCreativeSize={openModalCreativeSize}
-        initialBrandAwarenessData={brandAwarenessData}
-        initialSaleData={saleData}
-        initialRetargetingData={retargetingData}
-        initialSelectedTab={selectedTab}  // Pass the restored selected tab
+      {/* STEP 4) Creatives */}
+      <Creatives
+        isNextSectionOpen={isCreativesOpen}
+        toggleNextSectionAccordion={toggleCreativesAccordion}
+        isCompleted={openModalCreatives}
+        setIsCompleted={setOpenModalCreatives}
+        // If user wants to go back to steps, we can do so:
+        showGenerateAdSteps={openGenerateAdSteps} 
+        // ^ A custom prop we define so user can re-show steps
       />
-      </div>
     </div>
   );
 }

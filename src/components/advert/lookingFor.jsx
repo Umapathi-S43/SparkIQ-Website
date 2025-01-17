@@ -1,40 +1,45 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BiCheck } from "react-icons/bi";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 
 export default function LookingFor({
   isNextSectionOpen,
   toggleNextSectionAccordion,
-  setSelectedOption,
   handleNextSection,
-  setIsLoading,
-  isCompleted,
   setIsCompleted,
+  isCompleted,
 }) {
-  const [localSelectedOption, setLocalSelectedOption] = useState("Advertisement (Ad)");
   const sectionRef = useRef(null);
 
+  // Read from localStorage or default to "Advertisement (Ad)"
+  const [localSelectedOption, setLocalSelectedOption] = useState(() => {
+    const stored = localStorage.getItem("lookingFor");
+    return stored || "Advertisement (Ad)";
+  });
+
+  // Smooth scroll on open
   useEffect(() => {
     if (isNextSectionOpen && sectionRef.current) {
       sectionRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [isNextSectionOpen]);
 
+  // Update local state & localStorage whenever user picks
   const handleOptionClick = (option) => {
     setLocalSelectedOption(option);
-    localStorage.setItem("lookingFor", option); // Save selection to localStorage
+    localStorage.setItem("lookingFor", option);
   };
 
   const options = [
     {
       name: "Social Media Post",
       description: "Generate creative for social media platforms",
-      image: "src/assets/dashboard_img/ads.svg",
+      image: "src/assets/dashboard_img/social_media.svg",
     },
     {
       name: "Advertisement (Ad)",
       description: "Generate creatives for advertising campaigns",
-      image: "src/assets/dashboard_img/social_media.svg",
+      image: "src/assets/dashboard_img/ads.svg",
     },
   ];
 
@@ -45,6 +50,7 @@ export default function LookingFor({
           !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
         } flex flex-col gap-6 relative z-10`}
       >
+        {/* Section Header */}
         <div
           className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${
             !isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
@@ -75,6 +81,8 @@ export default function LookingFor({
             )}
           </div>
         </div>
+
+        {/* Section Body */}
         {isNextSectionOpen && (
           <div className="px-6">
             <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
@@ -103,6 +111,7 @@ export default function LookingFor({
                 ))}
               </div>
             </div>
+
             <div className="flex items-center justify-center w-full py-12">
               <button
                 disabled={!localSelectedOption}
@@ -110,10 +119,9 @@ export default function LookingFor({
                   localSelectedOption ? "" : "opacity-50 cursor-not-allowed"
                 }`}
                 onClick={() => {
-                  setSelectedOption(localSelectedOption); // Update selected option in parent
-                  handleNextSection(); // Navigate to CreativeFormat
                   setIsCompleted(true);
-                  setIsLoading(true);
+                  // This calls parent's handleNextSection => e.g. "handleNextToCreativeFormat"
+                  handleNextSection();
                 }}
               >
                 Next

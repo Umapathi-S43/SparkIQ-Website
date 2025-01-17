@@ -40,6 +40,8 @@ import Templates from './Dashboard/components1/templates';
 import BrandSettingsPage from './Dashboard/pages1/BrandSettingsPage';
 import PolotnoAdmin from './Dashboard/components1/PolotnoAdmin';
 import TemplateMapper from './Dashboard/components1/templateMapper';
+import PolotnoRenderExample from './components/advert/polotnoImage';
+
 function App() {
   return (
     <Router>
@@ -54,6 +56,7 @@ function App() {
             path="/homepage"
             element={<ProtectedRoute element={<HomePage />} />}
           />
+          <Route path="/imageexample" element={<ProtectedRoute element={<PolotnoRenderExample />} />} />
           <Route
             path="/socialmedia"
             element={<ProtectedRoute element={<SocialMedia />} />}
