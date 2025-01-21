@@ -16,8 +16,28 @@ const Brands = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
-  const handleCreateBrand = () => {
-    navigate("/brandsetup/");
+  const handleCreateBrand = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/user/info`, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+
+      const userInfo = response.data.data;
+
+      if (userInfo.brandsCompleted < userInfo.maxBrands) {
+        // Redirect to brand setup if brands are within the limit
+        navigate("/brandsetup/");
+      } else {
+        // Redirect to upgrade if brands exceed the limit
+        toast.error("You have reached the maximum number of brands. Upgrade your plan to add more.");
+        navigate("/upgrade");
+      }
+    } catch (error) {
+      console.error("Failed to fetch user info:", error);
+      toast.error("An error occurred. Please try again.");
+    }
   };
 
   const handleSearchChange = (event) => {

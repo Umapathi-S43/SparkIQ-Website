@@ -43,7 +43,9 @@ const LoginPage = () => {
       toast.error("Login failed!");
     }
   };
-
+const handleForgot = () => {
+    navigate("/resetpassword");
+};
   const handleSignUpNavigation = () => {
     navigate("/signup"); // Navigate to the signup page
   };
@@ -133,9 +135,9 @@ const LoginPage = () => {
                   {showPassword ? <FaEyeSlash /> : <PiEyeLight />}
                 </span>
               </div>
-              <p className="text-blue-600 text-center cursor-pointer">
+              <button onClick={handleForgot}><p className="text-blue-600 text-center cursor-pointer">
                 Forgot password?
-              </p>
+              </p></button>
             </div>
           </div>
           <div className="flex justify-center m-4 mt-6">

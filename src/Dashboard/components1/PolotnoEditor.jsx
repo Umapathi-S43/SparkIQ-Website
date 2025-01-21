@@ -585,9 +585,12 @@ const PolotnoEditor = () => {
       const template_original = localStorage.getItem("loadedtemplate");
       // `templateId` is only sent if we are updating and we have a current ID
       const payload = {
-        templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
-        url: thumbnailURL,
-        url: thumbnailURL,
+        templateId:
+    isUpdate && currentTemplateId && currentTemplateId !== ''
+      ? currentTemplateId
+      : "",
+      url: thumbnailURL,
+        user_id:"siu-b192460a-b",
         templateOrientation: template_original.templateOrientation || json.width > json.height ? "landscape" : "portrait" || "1:1",
         priority: json.priority || 0,
         templateSize: `${json.width}x${json.height}`,
@@ -608,8 +611,11 @@ const PolotnoEditor = () => {
       });
 
       // if successful, set the ID if it doesn't exist
+     
       if (!isUpdate) {
+        if(apiResponse.data?.templateId) {
         setCurrentTemplateId(apiResponse.data?.templateId);
+        }
       }
 
       toast.success(

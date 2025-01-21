@@ -41,6 +41,9 @@ import BrandSettingsPage from './Dashboard/pages1/BrandSettingsPage';
 import PolotnoAdmin from './Dashboard/components1/PolotnoAdmin';
 import TemplateMapper from './Dashboard/components1/templateMapper';
 import PolotnoRenderExample from './components/advert/polotnoImage';
+import upgradePlansPage from './Dashboard/pages1/upgradePlanPage';
+import UpgradePlansPage from './Dashboard/pages1/upgradePlanPage';
+import ResetPassword from './components/Dashboard/ResetPassword';
 
 function App() {
   return (
@@ -52,6 +55,7 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/resetpassword" element={<ResetPassword />} />
           <Route
             path="/homepage"
             element={<ProtectedRoute element={<HomePage />} />}
@@ -60,6 +64,10 @@ function App() {
           <Route
             path="/socialmedia"
             element={<ProtectedRoute element={<SocialMedia />} />}
+          />
+          <Route
+            path="/upgrade"
+            element={<ProtectedRoute element={<UpgradePlansPage />} />}
           />
           <Route
             path="/DAPCreatives"

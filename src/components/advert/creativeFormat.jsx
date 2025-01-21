@@ -7,11 +7,88 @@ import {
   FaGoogle,
   FaYoutube,
   FaInstagram,
-  FaTwitter,
   FaLinkedinIn,
   FaWhatsapp,
 } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
+
+// -------------------------------------
+// SIZE MAPS (Common for both UI's)
+// -------------------------------------
+const mediaSizes = [
+  { name: "Post Size", size: "(1080*1080)" },
+  { name: "Landscape Size", size: "(1200*628)" },
+  { name: "Story Size", size: "(1080*1920)" },
+  { name: "Portrait Size", size: "(1080*1350)" },
+  { name: "Pin Size", size: "(1000*1500)" },
+];
+
+const facebookSizes = [
+  { name: "Post Size", size: "(1080*1080)" },
+  { name: "Landscape Size", size: "(1200*628)" },
+  { name: "Story Size", size: "(1080*1920)" },
+];
+
+const googleSizes = [
+  { name: "Story Size", size: "(1080*1920)" },
+  { name: "Portrait Size", size: "(1080*1350)" },
+  { name: "Pin Size", size: "(1000*1500)" },
+];
+
+const linkedInSizes = [
+  { name: "Post Size", size: "(1200*628)" },
+  { name: "Ad Size", size: "(1200*300)" },
+  { name: "Banner Size", size: "(1584*396)" },
+];
+
+const twitterSizes = [
+  { name: "Post Size", size: "(1024*512)" },
+  { name: "Ad Size", size: "(1200*600)" },
+  { name: "Header Size", size: "(1500*500)" },
+];
+
+const whatsappSizes = [
+  { name: "Status Size", size: "(1080*1920)" },
+  { name: "Profile Photo Size", size: "(500*500)" },
+  { name: "Ad Banner Size", size: "(1200*600)" },
+];
+
+const instagramSizes = [
+  { name: "Post Size", size: "(1080*1080)" },
+  { name: "Story Size", size: "(1080*1920)" },
+  { name: "Reel Size", size: "(1080*1350)" },
+];
+
+const youtubeSizes = [
+  { name: "Thumbnail Size", size: "(1280*720)" },
+  { name: "Channel Art Size", size: "(2560*1440)" },
+  { name: "Ad Video Size", size: "(1920*1080)" },
+];
+
+// -------------------------------------
+// Helper function to return sizes based on platform slug
+// -------------------------------------
+function getPlatformSizes(slug) {
+  switch (slug) {
+    case "facebook":
+      return facebookSizes;
+    case "google":
+      return googleSizes;
+    case "linkedin":
+      return linkedInSizes;
+    case "whatsapp":
+      return whatsappSizes;
+    case "twitter":
+      return twitterSizes;
+    case "instagram":
+      return instagramSizes;
+    case "youtube":
+      return youtubeSizes;
+    default:
+      return mediaSizes; // default to "most common"
+  }
+}
 
 export default function CreativeFormat({
   isNextSectionOpen,
@@ -36,7 +113,6 @@ export default function CreativeFormat({
       setSelectedOption(storedValue);
     }
   }, [isNextSectionOpen]);
-  
 
   // Shared "Generate Creatives" handler
   const handleGenerateCreatives = () => {
@@ -44,59 +120,6 @@ export default function CreativeFormat({
     if (setIsLoading) setIsLoading(true);
     if (handleNextSection) handleNextSection();
   };
-
-  // -------------------------------------
-  // SIZE MAPS
-  // -------------------------------------
-  const mediaSizes = [
-    { name: "Post Size", size: "(1080*1080)" },
-    { name: "Landscape Size", size: "(1200*628)" },
-    { name: "Story Size", size: "(1080*1920)" },
-    { name: "Portrait Size", size: "(1080*1350)" },
-    { name: "Pin Size", size: "(1000*1500)" },
-  ];
-
-  const facebookSizes = [
-    { name: "Post Size", size: "(1080*1080)" },
-    { name: "Landscape Size", size: "(1200*628)" },
-    { name: "Story Size", size: "(1080*1920)" },
-  ];
-
-  const googleSizes = [
-    { name: "Story Size", size: "(1080*1920)" },
-    { name: "Portrait Size", size: "(1080*1350)" },
-    { name: "Pin Size", size: "(1000*1500)" },
-  ];
-
-  const linkedInSizes = [
-    { name: "Post Size", size: "(1200*628)" },
-    { name: "Ad Size", size: "(1200*300)" },
-    { name: "Banner Size", size: "(1584*396)" },
-  ];
-
-  const twitterSizes = [
-    { name: "Post Size", size: "(1024*512)" },
-    { name: "Ad Size", size: "(1200*600)" },
-    { name: "Header Size", size: "(1500*500)" },
-  ];
-
-  const whatsappSizes = [
-    { name: "Status Size", size: "(1080*1920)" },
-    { name: "Profile Photo Size", size: "(500*500)" },
-    { name: "Ad Banner Size", size: "(1200*600)" },
-  ];
-
-  const instagramSizes = [
-    { name: "Post Size", size: "(1080*1080)" },
-    { name: "Story Size", size: "(1080*1920)" },
-    { name: "Reel Size", size: "(1080*1350)" },
-  ];
-
-  const youtubeSizes = [
-    { name: "Thumbnail Size", size: "(1280*720)" },
-    { name: "Channel Art Size", size: "(2560*1440)" },
-    { name: "Ad Video Size", size: "(1920*1080)" },
-  ];
 
   // ======================================
   // SOCIAL MEDIA POST UI
@@ -118,21 +141,16 @@ export default function CreativeFormat({
       { name: "Facebook", icon: "src/assets/media/facebook.png" },
       { name: "LinkedIn", icon: "src/assets/media/linkedin.png" },
       { name: "Twitter", icon: "src/assets/media/twitter.png" },
-      { name: "WhatsApp", icon: "src/assets/media/whatsapp.png" },
-      { name: "YouTube", icon: "src/assets/media/youtube.png" },
+      // { name: "WhatsApp", icon: "src/assets/media/whatsapp.png" },
+      // { name: "YouTube", icon: "src/assets/media/youtube.png" },
       { name: "Google", icon: "src/assets/media/google.png" },
     ];
 
-    // Toggle platforms
+    // When a platform is selected, update the selection and store its slug.
     const togglePlatformSelection = (platformName) => {
-      setSelectedPlatforms((prev) => {
-        if (prev.includes(platformName)) {
-          return prev.filter((p) => p !== platformName);
-        }
-        return [...prev, platformName];
-      });
-      setSelectedPlatformSlug(null);
-      setSelectedSize("");
+      setSelectedPlatforms([platformName]); // Only one platform can be selected
+      setSelectedPlatformSlug(platformName.toLowerCase());
+      setSelectedSize(""); // Reset size selection
     };
 
     // When user clicks top-right icon for a platform
@@ -156,29 +174,7 @@ export default function CreativeFormat({
       );
     };
 
-    // Return sizes for a given slug
-    function getPlatformSizes(slug) {
-      switch (slug) {
-        case "facebook":
-          return facebookSizes;
-        case "google":
-          return googleSizes;
-        case "linkedin":
-          return linkedInSizes;
-        case "whatsapp":
-          return whatsappSizes;
-        case "twitter":
-          return twitterSizes;
-        case "instagram":
-          return instagramSizes;
-        case "youtube":
-          return youtubeSizes;
-        default:
-          return mediaSizes; // default to "most common"
-      }
-    }
-
-    // Which sizes do we show?
+    // Compute the available sizes based on the selected platform slug.
     const displayedSizes = selectedPlatformSlug
       ? getPlatformSizes(selectedPlatformSlug)
       : mediaSizes;
@@ -273,7 +269,7 @@ export default function CreativeFormat({
                 </p>
               </span>
               <span className="flex gap-4">
-                {/* For each platform selected, show an icon to filter sizes */}
+                {/* Show icons for the selected platforms for easy filtering */}
                 {selectedPlatforms.map((plat) => {
                   const slug = plat.toLowerCase();
                   let IconEl = null;
@@ -315,7 +311,7 @@ export default function CreativeFormat({
                     );
                   } else if (slug === "twitter") {
                     IconEl = (
-                      <FaTwitter
+                      <FaXTwitter
                         key={plat}
                         className="bg-[#00279926] p-1 cursor-pointer"
                         size={20}
@@ -350,7 +346,9 @@ export default function CreativeFormat({
                 <div
                   key={idx}
                   className={`flex flex-col items-center justify-center gap-2 w-full py-4 rounded-[20px] shadow cursor-pointer ${
-                    selectedSize === item.size ? "bg-[#00A0F5] text-white" : "bg-white"
+                    selectedSize === item.size
+                      ? "bg-[#00A0F5] text-white"
+                      : "bg-white"
                   }`}
                   onClick={() => setSelectedSize(item.size)}
                 >
@@ -382,6 +380,7 @@ export default function CreativeFormat({
   function AdvertisementAdUI() {
     const [objective, setObjective] = useState("");
     const [selectedPlatforms, setSelectedPlatforms] = useState([]);
+    const [selectedPlatformSlug, setSelectedPlatformSlug] = useState(null);
     const [selectedSize, setSelectedSize] = useState("");
     const [selectedCampaign, setSelectedCampaign] = useState("");
     const [isManualSetup, setIsManualSetup] = useState(false);
@@ -396,7 +395,7 @@ export default function CreativeFormat({
     const [interestInput, setInterestInput] = useState("");
     const [selectedSuggestions, setSelectedSuggestions] = useState([]);
 
-    // Save the chosen size in localStorage
+    // Save the chosen size in localStorage whenever it changes
     useEffect(() => {
       localStorage.setItem("imageSize", selectedSize);
     }, [selectedSize]);
@@ -439,8 +438,8 @@ export default function CreativeFormat({
       { name: "Facebook", icon: "src/assets/media/facebook.png" },
       { name: "LinkedIn", icon: "src/assets/media/linkedin.png" },
       { name: "Twitter", icon: "src/assets/media/twitter.png" },
-      { name: "WhatsApp", icon: "src/assets/media/whatsapp.png" },
-      { name: "YouTube", icon: "src/assets/media/youtube.png" },
+      // { name: "WhatsApp", icon: "src/assets/media/whatsapp.png" },
+      // { name: "YouTube", icon: "src/assets/media/youtube.png" },
       { name: "Google", icon: "src/assets/media/google.png" },
     ];
 
@@ -469,7 +468,7 @@ export default function CreativeFormat({
             width="24px"
             fill="#082A66"
           >
-            <path d="M280-640q-33 0-56.5-23.5T200-720v-80q0-33 23.5-56.5T280-880h400q33 0 56.5 23.5T760-800v80q0 33-23.5 56.5T680-640H280Zm0-80h400v-80H280v80ZM160-80q-33 0-56.5-23.5T80-160v-40h800v40q0 33-23.5 56.5T800-80H160ZM80-240l139-313q10-22 30-34.5t43-12.5h376q23 0 43 12.5t30 34.5l139 313H80Zm260-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Z" />
+            <path d="M280-640q-33 0-56.5-23.5T200-720v-80q0-33 23.5-56.5T280-880h400q33 0 56.5 23.5T760-800v80q0 33-23.5 56.5T680-640H280Zm0-80h400v-80H280v80ZM160-80q-33 0-56.5-23.5T80-160v-40h800v40q0 33-23.5 56.5T800-80H160ZM80-240l139-313q10-22 30-34.5t43-12.5h376q23 0 43 12.5t30 34.5l139 313H80Zm260-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Z" />
           </svg>
         ),
       },
@@ -489,29 +488,22 @@ export default function CreativeFormat({
       },
     ];
 
+    // When a platform is selected, update the selection and store its slug.
     const togglePlatformSelection = (platformName) => {
-      setSelectedPlatforms((prev) => {
-        if (prev.includes(platformName)) {
-          return prev.filter((p) => p !== platformName);
-        }
-        return [...prev, platformName];
-      });
-      setSelectedSize("");
+      setSelectedPlatforms([platformName]); // Only one platform can be selected
+      setSelectedPlatformSlug(platformName.toLowerCase());
+      setSelectedSize(""); // Reset size selection
     };
+
+    // Determine the creative sizes dynamically based on the selected platform.
+    const displayedSizes = selectedPlatformSlug
+      ? getPlatformSizes(selectedPlatformSlug)
+      : mediaSizes;
 
     return (
       <div className="p-6 pt-0">
         {/* 1) Describe Objective */}
-        {/* <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
-          <h3 className="text-[#374151] text-lg mb-3">Describe Your Ad Objective</h3>
-          <textarea
-            className="w-full p-3 rounded-lg shadow-md border border-[#E5E7EB] mb-2"
-            rows="4"
-            placeholder="Example: I want to create a retargeting campaign..."
-            value={objective}
-            onChange={(e) => setObjective(e.target.value)}
-          />
-        </div> */}
+        {/* (You can add an objective textarea if needed) */}
 
         {/* 2) Ad Networks */}
         <h4 className="text-[#082A66] font-bold lg:text-xl text-base">Ad Networks</h4>
@@ -581,9 +573,81 @@ export default function CreativeFormat({
                 Most common size for social media advertising
               </p>
             </span>
+            <span className="flex gap-4">
+                {/* Show icons for the selected platforms for easy filtering */}
+                {selectedPlatforms.map((plat) => {
+                  const slug = plat.toLowerCase();
+                  let IconEl = null;
+                  if (slug === "facebook") {
+                    IconEl = (
+                      <FaFacebookF
+                        key={plat}
+                        className="bg-[#00279926] p-1 cursor-pointer"
+                        size={20}
+                        onClick={() => handleTopIconClick(plat)}
+                      />
+                    );
+                  } else if (slug === "google") {
+                    IconEl = (
+                      <FaGoogle
+                        key={plat}
+                        className="bg-[#00279926] p-1 cursor-pointer"
+                        size={20}
+                        onClick={() => handleTopIconClick(plat)}
+                      />
+                    );
+                  } else if (slug === "linkedin") {
+                    IconEl = (
+                      <FaLinkedinIn
+                        key={plat}
+                        className="bg-[#00279926] p-1 cursor-pointer"
+                        size={20}
+                        onClick={() => handleTopIconClick(plat)}
+                      />
+                    );
+                  } else if (slug === "whatsapp") {
+                    IconEl = (
+                      <FaWhatsapp
+                        key={plat}
+                        className="bg-[#00279926] p-1 cursor-pointer"
+                        size={20}
+                        onClick={() => handleTopIconClick(plat)}
+                      />
+                    );
+                  } else if (slug === "twitter") {
+                    IconEl = (
+                      <FaXTwitter
+                        key={plat}
+                        className="bg-[#00279926] p-1 cursor-pointer"
+                        size={20}
+                        onClick={() => handleTopIconClick(plat)}
+                      />
+                    );
+                  } else if (slug === "instagram") {
+                    IconEl = (
+                      <FaInstagram
+                        key={plat}
+                        className="bg-[#00279926] p-1 cursor-pointer"
+                        size={20}
+                        onClick={() => handleTopIconClick(plat)}
+                      />
+                    );
+                  } else if (slug === "youtube") {
+                    IconEl = (
+                      <FaYoutube
+                        key={plat}
+                        className="bg-[#00279926] p-1 cursor-pointer"
+                        size={20}
+                        onClick={() => handleTopIconClick(plat)}
+                      />
+                    );
+                  }
+                  return IconEl;
+                })}
+              </span>
           </div>
           <div className="pt-4 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-            {mediaSizes.map((item, idx) => (
+            {displayedSizes.map((item, idx) => (
               <div
                 key={idx}
                 className={`flex flex-col items-center justify-center gap-2 w-full py-4 rounded-[20px] shadow cursor-pointer ${
@@ -635,8 +699,6 @@ export default function CreativeFormat({
               <div
                 key={idx}
                 className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer`}
-                // If you want to highlight selected suggestions, do similarly:
-                // className={`... ${ selectedSuggestions.includes(sugg.title) ? "bg-blue-100" : "" }`}
                 onClick={() => toggleSuggestionSelection(sugg.title)}
               >
                 <div className="flex items-center gap-2">
@@ -776,8 +838,7 @@ export default function CreativeFormat({
                       <strong>Name:</strong> {cohort.cohortName}
                     </p>
                     <p>
-                      <strong>Age Group:</strong> {cohort.ageGroup.min} -{" "}
-                      {cohort.ageGroup.max}
+                      <strong>Age Group:</strong> {cohort.ageGroup.min} - {cohort.ageGroup.max}
                     </p>
                     <p>
                       <strong>Gender:</strong> {cohort.gender}

@@ -10,6 +10,8 @@ import viewPlanIcon from "../../assets/dashboard_img/plan.svg";
 import profileIcon from "../../assets/dashboard_img/user.svg";
 import signoutIcon from "../../assets/dashboard_img/signout.svg";
 import savedproducts from "../../assets/dashboard_img/savedProducts.svg";
+import upgradeIcon from "../../assets/dashboard_img/upgradeIcon.svg";
+
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [selectedItem, setSelectedItem] = useState("");
@@ -23,7 +25,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: "Generate Creatives", icon: savedproducts, path: "/Campaigns" },    
    // {name:"Generate DAP Creatives", icon:campaignsIcon,path:"/DAPCreatives"},
     { name: "Saved Creatives", icon: savedproducts, path: "/savedproductspage" },
-    { name: "Campaigns", icon: campaignsIcon, path: "/Ecampaigns" },
+    // { name: "Campaigns", icon: campaignsIcon, path: "/Ecampaigns" },
+    {name:"Upgrade", icon:upgradeIcon, path:"/upgrade"},
     { name: "View Plan", icon: viewPlanIcon, path: "/viewplans" },
     { name: "Profile", icon: profileIcon, path: "/profile" },
   ];

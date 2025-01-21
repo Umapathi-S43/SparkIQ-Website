@@ -381,7 +381,7 @@ const MyTextFillWithLabel = observer(({ store, element, elements }) => {
       {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
-          backgroundColor: labelBtnBg,
+          backgroundColor: "transparent",
           color: "#00000",
           border: "none",
           padding: "4px 8px",
@@ -434,7 +434,7 @@ const MyImageWithLabel = observer(({ store, element, elements }) => {
       {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
-          backgroundColor: labelBtnBg,
+          backgroundColor: "transparent",
           color: "#00000",
           border: "none",
           padding: "4px 8px",
@@ -486,7 +486,7 @@ const MySvgWithLabel = observer(({ store, element, elements }) => {
       {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
-          backgroundColor: labelBtnBg,
+          backgroundColor: "transparent",
           color: "#00000",
           border: "none",
           padding: "4px 8px",
@@ -538,7 +538,7 @@ const MyFigureWithLabel = observer(({ store, element, elements }) => {
       {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
-          backgroundColor: labelBtnBg,
+          backgroundColor: "transparent",
           color: "#00000",
           border: "none",
           padding: "4px 8px",
@@ -590,7 +590,7 @@ const MyLineWithLabel = observer(({ store, element, elements }) => {
       {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
-          backgroundColor: labelBtnBg,
+          backgroundColor: "transparent",
           color: "#00000",
           border: "none",
           padding: "4px 8px",
