@@ -8,16 +8,46 @@ import toast from "react-hot-toast";
 import { MdArrowDropUp, MdArrowDropDown } from "react-icons/md";
 import { baseUrl } from "../../utils/Constant";
 import { useLocation } from "react-router-dom";
-import { jwtToken } from '../../utils/jwtToken';
+import { jwtToken } from "../../utils/jwtToken";
+import { FaCartShopping } from "react-icons/fa6";
+import { FcServices } from "react-icons/fc";
 
-const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"];
+const currencies = [
+    "USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY",
+    "CHF", "SEK", "NZD", "SGD", "HKD", "NOK", "KRW"
+];
+
 const discountOptions = ["Price", "Percentage"];
 
-const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCompleted, setShowProductDetails }) => {
-    const [expandedSection, setExpandedSection] = useState(1);
-    const [isOpen, setIsOpen] = useState(true);
-    const [expandedSubsection1, setExpandedSubsection1] = useState(true);
-    const [expandedSubsection2, setExpandedSubsection2] = useState(false);
+// Add your industry options here:
+const industryOptions = [
+    "E-com",
+    "Automotive",
+    "Marketing",
+    "B2B Consultant",
+    "Other",
+];
+
+const ProductDetails = ({
+    handleBack,
+    setIsNextSectionOpen,
+    isCompleted,
+    setIsCompleted,
+    setShowProductDetails,
+}) => {
+    const [isOpen, setIsOpen] = useState(true); // Controls the entire accordion
+    const [expandedSubsection0, setExpandedSubsection0] = useState(true); // "Basic Information"
+    const [expandedSubsection1, setExpandedSubsection1] = useState(false); // "Product Details"
+    const [expandedSubsection2, setExpandedSubsection2] = useState(false); // "Upload or Select Image"
+    const [completedSections, setCompletedSections] = useState({
+        0: false,
+        1: false,
+        2: false,
+    });
+
+    // State to differentiate between Product vs. Service
+    const [isProduct, setIsProduct] = useState(true);
+
     const [productDetails, setProductDetails] = useState({
         productName: "",
         productDescription: "",
@@ -32,7 +62,9 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         brandID: "",
         prompt: "",
         isEdit: false,
+        industry: "", // add industry here
     });
+
     const [imageSrc, setImageSrc] = useState(null);
     const [brands, setBrands] = useState([]);
     const [images, setImages] = useState([]);
@@ -40,18 +72,15 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
     const [selectedImageType, setSelectedImageType] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const [completedSections, setCompletedSections] = useState({
-        1: false,
-        2: false,
-    });
 
+    // Retrieve product ID if editing
     const location = useLocation();
     const storedProductID = JSON.parse(localStorage.getItem("productID")) || null;
 
+    // Fetch brand list
     useEffect(() => {
         const fetchBrands = async () => {
             try {
-                console.log("Fetching brands...");
                 if (!jwtToken) {
                     throw new Error("No JWT token found. Please log in.");
                 }
@@ -65,9 +94,10 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                     productsCreated: 0,
                 }));
                 setBrands(fetchedBrands);
-    
+
+                // If only 1 brand, auto-select it
                 if (fetchedBrands.length === 1) {
-                    setProductDetails(prevDetails => ({
+                    setProductDetails((prevDetails) => ({
                         ...prevDetails,
                         brandID: fetchedBrands[0].id,
                         brandName: fetchedBrands[0].name,
@@ -78,11 +108,11 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                 toast.error("Failed to fetch brands");
             }
         };
-    
+
         fetchBrands();
     }, []);
-    
 
+    // Fetch existing product details if editing
     useEffect(() => {
         const fetchProducts = async (id) => {
             try {
@@ -108,6 +138,7 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                         productPrice: foundProduct.price || "",
                         currency: foundProduct.priceType || "INR",
                         isEdit: true,
+                        industry: foundProduct.industry || "", // if your API provides an "industry" field
                     });
 
                     const existingImages = foundProduct.productImagesList.map((img) => ({
@@ -118,7 +149,7 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                     }));
                     setImages(existingImages);
                     setSelectedImageUrl(existingImages[0]?.url || null);
-                    setSelectedImageType(existingImages.length > 0 ? 'uploaded' : null);
+                    setSelectedImageType(existingImages.length > 0 ? "uploaded" : null);
                     setImageSrc(existingImages[0]?.url || null);
                 }
             } catch (error) {
@@ -132,22 +163,23 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         }
     }, [storedProductID]);
 
+    // General handleOnChange
     const handleOnChange = (e) => {
         const { name, value } = e.target;
-    
+
         if (name === "brandName") {
             const selectedBrand = brands.find((brand) => brand.name === value);
-            setProductDetails(prev => ({
+            setProductDetails((prev) => ({
                 ...prev,
                 brandName: value,
                 brandID: selectedBrand ? selectedBrand.id : "",
             }));
         } else {
-            setProductDetails(prev => ({ ...prev, [name]: value }));
+            setProductDetails((prev) => ({ ...prev, [name]: value }));
         }
     };
-    
 
+    // For numeric fields and special discount logic
     const handleOnChangeProductDetails = (e) => {
         const { id, value } = e.target;
 
@@ -160,7 +192,10 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                     setProductDetails({ ...productDetails, customDiscount: value });
                 }
             } else if (productDetails.discount === "Price") {
-                if (value === "" || (!isNaN(discountValue) && discountValue <= productPrice)) {
+                if (
+                    value === "" ||
+                    (!isNaN(discountValue) && discountValue <= productPrice)
+                ) {
                     setProductDetails({ ...productDetails, customDiscount: value });
                 }
             }
@@ -169,19 +204,29 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         }
     };
 
+    // Toggle between Product or Service
+    const handleToggleType = (type) => {
+        setIsProduct(type === "Product");
+    };
+
+    // Drag and drop file handling
     const handleFileChange = (event) => {
         if (event.target.files) {
             const file = event.target.files[0];
             const newFile = {
                 file,
                 id: `${file.name}-${file.size}-0`,
-                url: URL.createObjectURL(file)
+                url: URL.createObjectURL(file),
             };
 
             setImages([newFile]);
             setSelectedImageUrl(newFile.url);
-            setSelectedImageType('uploaded');
-            setProductDetails({ ...productDetails, imageFile: newFile.file, logoURL: "" });
+            setSelectedImageType("uploaded");
+            setProductDetails({
+                ...productDetails,
+                imageFile: newFile.file,
+                logoURL: "",
+            });
             uploadImage(newFile.file);
             setImageSrc(newFile.url);
         }
@@ -194,13 +239,17 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
             const newFile = {
                 file,
                 id: `${file.name}-${file.size}-0`,
-                url: URL.createObjectURL(file)
+                url: URL.createObjectURL(file),
             };
 
             setImages([newFile]);
             setSelectedImageUrl(newFile.url);
-            setSelectedImageType('uploaded');
-            setProductDetails({ ...productDetails, imageFile: newFile.file, logoURL: "" });
+            setSelectedImageType("uploaded");
+            setProductDetails({
+                ...productDetails,
+                imageFile: newFile.file,
+                logoURL: "",
+            });
             uploadImage(newFile.file);
             toast.success("Image uploaded successfully");
             setImageSrc(newFile.url);
@@ -211,31 +260,36 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         event.preventDefault();
     };
 
+    // Image selection logic
     const handleImageClick = (imageUrl, isGenerated = false, event) => {
-        event.stopPropagation(); // Stop the event from propagating up to the parent
-    
-        console.log("Image clicked, URL:", imageUrl);
-    
+        event.stopPropagation();
         if (isGenerated) {
-            setImages([]); // Clear any previous uploads if selecting from generated images
+            // Clear any previous uploads if selecting from generated images
+            setImages([]);
             setSelectedImageUrl(imageUrl);
-            setSelectedImageType('generated');
-            setProductDetails({ ...productDetails, imageFile: null, logoURL: imageUrl });
+            setSelectedImageType("generated");
+            setProductDetails({
+                ...productDetails,
+                imageFile: null,
+                logoURL: imageUrl,
+            });
             setImageSrc(imageUrl);
-            console.log("image selected successfully");
             toast.success("Image selected successfully");
         } else {
-            const selectedImage = images.find(img => img.url === imageUrl);
+            const selectedImage = images.find((img) => img.url === imageUrl);
             setSelectedImageUrl(imageUrl);
-            setSelectedImageType('uploaded');
-            setProductDetails({ ...productDetails, imageFile: selectedImage.file, logoURL: "" });
+            setSelectedImageType("uploaded");
+            setProductDetails({
+                ...productDetails,
+                imageFile: selectedImage.file,
+                logoURL: "",
+            });
             if (!selectedImage.uploaded) {
                 uploadImage(selectedImage.file);
             }
             setImageSrc(imageUrl);
         }
     };
-    
 
     const handleDeleteImage = (index) => {
         if (images[index]) {
@@ -243,10 +297,14 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
             const newImages = images.filter((_, i) => i !== index);
             setImages(newImages);
 
-            if (selectedImageUrl === removedImage.url && selectedImageType === 'uploaded') {
+            if (selectedImageUrl === removedImage.url && selectedImageType === "uploaded") {
                 setSelectedImageUrl(null);
                 setSelectedImageType(null);
-                setProductDetails({ ...productDetails, imageFile: null, logoURL: "" });
+                setProductDetails({
+                    ...productDetails,
+                    imageFile: null,
+                    logoURL: "",
+                });
                 setImageSrc(null);
             }
         } else {
@@ -254,40 +312,42 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         }
     };
 
+    // Scan URL
     const handleScanUrl = async () => {
         try {
             if (!jwtToken) {
                 throw new Error("No JWT token found. Please log in.");
             }
-    
-            console.log("Starting scan for URL:", productDetails.productURL);
-    
-            const response = await axios.get(`${baseUrl}/scrap/product?url=${encodeURIComponent(productDetails.productURL)}`, {
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
-                },
-            });
-    
+
+            const response = await axios.get(
+                `${baseUrl}/scrap/product?url=${encodeURIComponent(
+                    productDetails.productURL
+                )}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${jwtToken}`,
+                    },
+                }
+            );
+
             if (response.status === 200) {
-                console.log("Scan successful:", response.data);
                 toast.success("Scan successful");
-    
                 setProductDetails({
                     ...productDetails,
                     productName: response.data.productTitle || productDetails.productName,
-                    productDescription: response.data.productDesc || productDetails.productDescription,
+                    productDescription:
+                        response.data.productDesc || productDetails.productDescription,
                 });
             } else {
-                console.log("Scan failed with status:", response.status);
                 toast.error("Scan failed. Please try again.");
             }
-    
         } catch (error) {
             console.log("Error scanning URL:", error);
             toast.error("Failed to scan the URL.");
         }
     };
-    
+
+    // Handle discount type
     const handleDiscountChange = (e) => {
         const discountType = e.target.value;
         setProductDetails({
@@ -297,6 +357,7 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         });
     };
 
+    // Search images (AI / prompt-based)
     const handlePageChange = async (page) => {
         setCurrentPage(page);
         try {
@@ -312,7 +373,7 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
             });
             setGeneratedImages(response.data.result.data);
         } catch (error) {
-            console.log("failed to generate images next page",error);
+            console.log("failed to generate images next page", error);
             toast.error("Failed to generate images.");
         }
     };
@@ -336,17 +397,22 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         }
     };
 
+    // Image upload
     const uploadImage = async (imageFile) => {
         const uploadData = new FormData();
         uploadData.append("file", imageFile);
 
         try {
-            const response = await axios.post(`${baseUrl}/sparkiq/image/upload?customerId=123`, uploadData, {
-                headers: { 
-                    "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${jwtToken}`,
-                },
-            });
+            const response = await axios.post(
+                `${baseUrl}/sparkiq/image/upload?customerId=123`,
+                uploadData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${jwtToken}`,
+                    },
+                }
+            );
 
             if (response.status === 201) {
                 toast.success("Image uploaded successfully");
@@ -363,17 +429,19 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
         }
     };
 
+    // Submit product
     const handleProductSubmission = async (e) => {
         e.preventDefault();
-        const defaultProductPrice = productDetails.productPrice === "" ? "0" : productDetails.productPrice;
-        const defaultCurrency = productDetails.currency === "" ? "USD" : productDetails.currency;
-        const defaultCustomDiscount = productDetails.customDiscount === "" ? "0" : productDetails.customDiscount;
-        const defaultDiscountType = productDetails.discount === "" ? "Percentage" : productDetails.discount;
+        const defaultProductPrice =
+            productDetails.productPrice === "" ? "0" : productDetails.productPrice;
+        const defaultCurrency =
+            productDetails.currency === "" ? "USD" : productDetails.currency;
+        const defaultCustomDiscount =
+            productDetails.customDiscount === "" ? "0" : productDetails.customDiscount;
+        const defaultDiscountType =
+            productDetails.discount === "" ? "Percentage" : productDetails.discount;
 
-        
         try {
-            console.log("Product submission initiated...");
-    
             const isEditMode = productDetails.isEdit && storedProductID;
             const productPayload = {
                 id: isEditMode ? storedProductID : undefined,
@@ -384,123 +452,168 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                 priceType: defaultCurrency,
                 discount: defaultCustomDiscount,
                 discountType: defaultDiscountType,
+                // If your backend expects an "industry" field, include it here:
+                industry: productDetails.industry,
                 productImagesList: [
                     {
                         imageURL: productDetails.logoURL,
                     },
                 ],
             };
-    
-            console.log("Payload:", productPayload);
-    
+
             const response = await axios.post(`${baseUrl}/product`, productPayload, {
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
                 },
             });
-    
-            console.log("Response received:", response);
-    
+
             if (isEditMode) {
                 toast.success("Product updated successfully");
             } else {
                 toast.success("Product created successfully");
                 localStorage.setItem("productID", JSON.stringify(response.data.data.id));
             }
-    
+
             setIsCompleted(true);
             setIsNextSectionOpen(true);
-            setIsOpen(false); // Close current section
-    
+            setIsOpen(false); // Close current accordion after creation/update
         } catch (error) {
             console.error("Error during product submission:", error);
             toast.error("Failed to submit product");
         }
     };
-    
-      const toggleAccordion = () => {
-        setIsOpen(!isOpen);
-      };
 
-    const toggleAccordionSection1 = (event) => {
-        if (event.target.tagName !== "INPUT" && event.target.tagName !== "TEXTAREA" && event.target.tagName !== "SELECT" && event.target.tagName !== "BUTTON") {
-            setExpandedSubsection1(!expandedSubsection1);
-        }
+    // Toggle entire accordion
+    const toggleAccordion = () => {
+        setIsOpen(!isOpen);
     };
 
+    // Validation and progression for sections
     const handleSaveAndContinue = (section) => {
-        const isNextStepDisabled =
-            productDetails.productName === "" ||
-            productDetails.productDescription === "" ||
-            productDetails.brandName === "" 
-            // productDetails.productPrice === "" ||
-            // productDetails.customDiscount === "" ||
-            // (productDetails.discount === "Price" &&
-            //     (isNaN(parseFloat(productDetails.customDiscount)) ||
-            //         parseFloat(productDetails.customDiscount) > parseFloat(productDetails.productPrice))) ||
-            // (productDetails.discount === "Percentage" &&
-            //     (isNaN(parseFloat(productDetails.customDiscount)) ||
-            //         parseFloat(productDetails.customDiscount) <= 0 ||
-            //         parseFloat(productDetails.customDiscount) > 100));
-        
-        if (isNextStepDisabled) {
-            toast.error("Please fill in all the required fields correctly.");
-            return;
+        // Basic validation checks:
+        if (section === 0) {
+            // For Basic Info: ensure there's at least a product/service URL
+            if (!productDetails.productURL) {
+                toast.error("Please enter a URL before proceeding.");
+                return;
+            }
+        } else if (section === 1) {
+            // For Product/Service details
+            if (
+                productDetails.productName === "" ||
+                productDetails.productDescription === "" ||
+                productDetails.brandName === "" ||
+                productDetails.industry === ""
+            ) {
+                toast.error("Please fill in all the required fields correctly.");
+                return;
+            }
+        } else if (section === 2) {
+            // For Image selection
+            if (!productDetails.logoURL) {
+                toast.error("Please upload or select an image before proceeding.");
+                return;
+            }
         }
-    
-        if (section === 2 && !productDetails.logoURL) {
-            toast.error("Please upload or select an image before proceeding.");
-            return;
-        }
-    
+
+        // Mark section completed
         const newCompletedSections = { ...completedSections };
         newCompletedSections[section] = true;
         setCompletedSections(newCompletedSections);
-    
+
+        // Move to next section
+        if (section === 0) {
+            setExpandedSubsection0(false);
+            setExpandedSubsection1(true);
+        }
         if (section === 1) {
             setExpandedSubsection1(false);
             setExpandedSubsection2(true);
         }
         if (section === 2) {
+            // All done with sub-sections
             setExpandedSubsection2(false);
         }
     };
 
-    const toggleAccordionSection2 = (event) => {
-        if (!completedSections[1]) {
-            toast.error("Please complete the first section before proceeding.");
+    // Toggle each subsection
+    const toggleAccordionSection0 = (e) => {
+        // Only toggle if user didn't click on input elements
+        if (
+            ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "IMG"].includes(e.target.tagName)
+        ) {
             return;
         }
-    
-        if (event.target.tagName !== "INPUT" && event.target.tagName !== "TEXTAREA" && event.target.tagName !== "SELECT" && event.target.tagName !== "BUTTON") {
-            setExpandedSubsection2(!expandedSubsection2);
-        }
+        setExpandedSubsection0(!expandedSubsection0);
     };
-    
+
+    const toggleAccordionSection1 = (e) => {
+        // Must complete Basic Info first:
+        if (!completedSections[0]) {
+            toast.error("Please complete Basic Information before proceeding.");
+            return;
+        }
+        if (
+            ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "IMG"].includes(e.target.tagName)
+        ) {
+            return;
+        }
+        setExpandedSubsection1(!expandedSubsection1);
+    };
+
+    const toggleAccordionSection2 = (e) => {
+        // Must complete Product/Service details first:
+        if (!completedSections[1]) {
+            toast.error("Please complete the Product Details before proceeding.");
+            return;
+        }
+        if (
+            ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "IMG"].includes(e.target.tagName)
+        ) {
+            return;
+        }
+        setExpandedSubsection2(!expandedSubsection2);
+    };
+
+    // Final check to enable "Next Step / Edit" button
     const isNextStepDisabled =
         productDetails.productName === "" ||
         productDetails.productDescription === "" ||
         productDetails.brandName === "" ||
-        // productDetails.productPrice === "" ||
-        // productDetails.customDiscount === "" ||
+        productDetails.industry === "" ||
         productDetails.logoURL === "";
 
     return (
         <div>
+            {/* Back to previous page / section */}
             <span
                 className="flex cursor-pointer items-center pb-2 pt-0 mt-0"
                 onClick={() => setShowProductDetails(false)}
             >
-                <span onClick={handleBack}><RiArrowGoBackLine /> back</span>
+                <span onClick={handleBack}>
+                    <RiArrowGoBackLine /> back
+                </span>
             </span>
 
-            <section className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 ${isOpen ? 'p-0' : 'p-3'}`}>
-                <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'} relative cursor-pointer`} onClick={toggleAccordion}>
+            {/* Main Accordion Container */}
+            <section
+                className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] flex flex-col gap-1 relative z-10 ${isOpen ? "p-0" : "p-3"
+                    }`}
+            >
+                {/* Accordion Header */}
+                <div
+                    className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? "rounded-t-[20px] p-4" : "rounded-[20px] p-2"
+                        } relative cursor-pointer`}
+                    onClick={toggleAccordion}
+                >
+                    {/* Completed badge */}
                     {completedSections[2] && (
                         <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
                             Completed <FaCheck size={20} />
                         </span>
                     )}
+
+                    {/* Title and subtitle */}
                     <span className="flex items-center gap-4">
                         <img src="/icon2.svg" alt="" />
                         <span className="flex flex-col">
@@ -512,15 +625,19 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                             </p>
                         </span>
                     </span>
+
+                    {/* If completed, show basic info about the product */}
                     <div className="flex items-center gap-6">
                         {isCompleted && (
                             <div className="flex items-center gap-2">
-                            <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
-                                <p className="text-[#1E1154] font-medium">Created Product</p>
-                            </div>
-                            <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
-                                <p className="text-[#1E1154] font-medium">{productDetails.productName}</p>
-                            </div>
+                                <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
+                                    <p className="text-[#1E1154] font-medium">Created Product</p>
+                                </div>
+                                <div className="bg-transparent rounded-[20px] px-4 py-[10px] shadow">
+                                    <p className="text-[#1E1154] font-medium">
+                                        {productDetails.productName}
+                                    </p>
+                                </div>
                             </div>
                         )}
                         {isOpen ? (
@@ -531,8 +648,9 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                     </div>
                 </div>
 
-                {isOpen && expandedSection === 1 && (
+                {isOpen && (
                     <div className="flex flex-col lg:flex-row p-8 w-full">
+                        {/* Left Image Preview */}
                         <div className="flex justify-center lg:justify-start mb-8 lg:mb-0 lg:mr-8">
                             <div className="relative w-60 h-60 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-gradient-to-r from-[#F0F4F8] via-[#D9E9F2] to-[#F0F4F8] rounded-3xl flex items-center justify-center shadow-2xl transition-transform transform hover:scale-105 hover:rotate-2 duration-300">
                                 <div className="absolute w-[85%] h-[85%] sm:w-[90%] sm:h-[90%] md:w-[95%] md:h-[95%] bg-white rounded-3xl flex items-center justify-center shadow-inner overflow-hidden">
@@ -549,14 +667,18 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                     ) : (
                                         <div className="flex flex-col items-center justify-center">
                                             <IoImageOutline className="text-gray-300 text-6xl mb-4" />
-                                            <p className="text-gray-500 font-semibold">Drag & Drop or Select an Image</p>
+                                            <p className="text-gray-500 font-semibold">
+                                                Drag & Drop or Select an Image
+                                            </p>
                                         </div>
                                     )}
                                 </div>
                                 {imageSrc && (
                                     <button
                                         className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition duration-200 transform hover:scale-110"
-                                        onClick={() => handleDeleteImage(images.findIndex(img => img.url === imageSrc))}
+                                        onClick={() =>
+                                            handleDeleteImage(images.findIndex((img) => img.url === imageSrc))
+                                        }
                                     >
                                         <FaTrash />
                                     </button>
@@ -564,35 +686,60 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                             </div>
                         </div>
 
+                        {/* Right Content: Subsections */}
                         <div className="flex-grow pr-1">
+                            {/* 0. Basic Information */}
                             <div
-                                onClick={toggleAccordionSection1}
-                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection1 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                                onClick={toggleAccordionSection0}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${expandedSubsection0 ? "bg-[rgba(252,252,252,0.25)]" : ""
+                                    }`}
                             >
-                                <div className={`flex items-center justify-between ${expandedSubsection1 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
+                                <div
+                                    className={`flex items-center justify-between ${expandedSubsection0 ? "bg-[#F6F8FE]" : ""
+                                        } p-4 rounded-t-2xl`}
+                                >
                                     <div className="flex items-center">
                                         <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
                                             <IoImageOutline className="text-[#374151] text-xl" />
                                         </div>
-                                        <p className="ml-3 text-lg font-semibold mt-0 pt-0">Product Details</p>
+                                        <p className="ml-3 text-lg font-semibold mt-0 pt-0">
+                                            Basic Information
+                                        </p>
                                     </div>
-                                    {completedSections[1] && (
-                                        <div className="flex items-end rounded-xl shadow-xl bg-white border-2 p-1 px-6">
-                                            <p className="m-0 text-sm sm:text-base md:text-lg">
-                                                {productDetails.productName.split(' ')}
-                                            </p>
-                                        </div>
-                                    )}
                                     <div>
-                                        {expandedSubsection1 ? <FaChevronDown /> : <FaChevronRight />}
+                                        {expandedSubsection0 ? <FaChevronDown /> : <FaChevronRight />}
                                     </div>
                                 </div>
-                                {expandedSubsection1 && (
+
+                                {expandedSubsection0 && (
                                     <div className="p-4">
+                                        {/* Toggle between Product or Service */}
+                                        <div className="flex flex-col md:flex-row items-center gap-5 mb-4">
+                                            <p className="text-base">What do you want to add?</p>
+                                        </div>
+                                        <div className="flex gap-4 mb-4">
+                                            <button
+                                                className={`w-1/4 p-3 py-5 rounded-lg shadow-xl border-2 ${isProduct ? "bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border-blue-500" : "bg-gray-200 border-gray-400"
+                                                    } font-medium flex items-center justify-center gap-2`}
+                                                onClick={() => handleToggleType("Product")}
+                                            >
+                                                <FaCartShopping className="text-xl" /> Product
+                                            </button>
+                                            <button
+                                                className={`w-1/4 p-3 py-5 rounded-lg shadow-xl border-2 ${!isProduct ? "bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border-blue-500" : "bg-gray-200 border-gray-400"
+                                                    } font-medium flex items-center justify-center gap-2`}
+                                                onClick={() => handleToggleType("Service")}
+                                            >
+                                                <FcServices className="text-xl" /> Service
+                                            </button>
+                                        </div>
+
+                                        {/* URL + Scan */}
                                         <div className="flex flex-col md:flex-row items-center gap-5 mb-4">
                                             <input
                                                 type="text"
-                                                placeholder="Your landing page or website (Example: spark.ai)"
+                                                placeholder={`Your landing page for ${isProduct ? "Product" : "Service"
+                                                    } (e.g., spark.ai)`}
                                                 name="productURL"
                                                 value={productDetails.productURL}
                                                 onChange={handleOnChange}
@@ -606,15 +753,70 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                             </button>
                                         </div>
 
+                                        <div className="flex justify-start mt-4">
+                                            <button
+                                                className="custom-button p-2 pl-4 pr-4 text-white rounded-2xl shadow-2xl"
+                                                onClick={() => handleSaveAndContinue(0)}
+                                            >
+                                                Save and Continue
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 1. Product or Service Details */}
+                            <div
+                                onClick={toggleAccordionSection1}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${!completedSections[0]
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : ""
+                                    } ${expandedSubsection1 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                                style={{
+                                    pointerEvents: !completedSections[0] ? "none" : "auto",
+                                }}
+                            >
+                                <div
+                                    className={`flex items-center justify-between ${expandedSubsection1 ? "bg-[#F6F8FE]" : ""
+                                        } p-4 rounded-t-2xl`}
+                                >
+                                    <div className="flex items-center">
+                                        <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
+                                            <IoImageOutline className="text-[#374151] text-xl" />
+                                        </div>
+                                        <p className="ml-3 text-lg font-semibold mt-0 pt-0">
+                                            {isProduct ? "Product Details" : "Service Details"}
+                                        </p>
+                                    </div>
+
+                                    {completedSections[1] && (
+                                        <div className="flex items-end rounded-xl shadow-xl bg-white border-2 p-1 px-6">
+                                            <p className="m-0 text-sm sm:text-base md:text-lg">
+                                                {productDetails.productName.split(" ")}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        {expandedSubsection1 ? <FaChevronDown /> : <FaChevronRight />}
+                                    </div>
+                                </div>
+
+                                {expandedSubsection1 && (
+                                    <div className="p-4">
+                                        {/* Product/Service Name + Brand */}
                                         <div className="flex flex-col md:flex-row gap-5 mb-4">
                                             <input
                                                 type="text"
                                                 name="productName"
-                                                placeholder="Product Name"
+                                                placeholder={
+                                                    isProduct ? "Product Name" : "Service Name"
+                                                }
                                                 value={productDetails.productName}
                                                 onChange={handleOnChange}
                                                 className=" w-full p-2 py-3 rounded-lg shadow-xl border border-[#fcfcfc] bg-[#FCFCFC] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                                             />
+
                                             <select
                                                 className="w-full p-2 rounded-lg shadow-xl border border-[#fcfcfc] bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                                                 name="brandName"
@@ -622,8 +824,8 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                 onChange={handleOnChange}
                                                 style={{
                                                     backgroundRepeat: "no-repeat",
-                                                    backgroundColor: '#D9E9F2',
-                                                    backgroundSize: 'auto',
+                                                    backgroundColor: "#D9E9F2",
+                                                    backgroundSize: "auto",
                                                 }}
                                             >
                                                 <option value="">Select Brand Name</option>
@@ -633,13 +835,15 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                     </option>
                                                 ))}
                                             </select>
-
                                         </div>
 
+                                        {/* Description */}
                                         <div className="mb-4">
                                             <textarea
                                                 name="productDescription"
-                                                placeholder="Product Description"
+                                                placeholder={
+                                                    isProduct ? "Product Description" : "Service Description"
+                                                }
                                                 rows="3"
                                                 value={productDetails.productDescription}
                                                 onChange={handleOnChange}
@@ -647,6 +851,7 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                             />
                                         </div>
 
+                                        {/* Price + Discount */}
                                         <div className="flex flex-col md:flex-row gap-5 mb-4">
                                             <div className="relative w-full md:w-1/2">
                                                 <input
@@ -666,8 +871,8 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                         className="bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC] rounded-[12px] px-6 m-2 h-[44px] focus:outline-none"
                                                         style={{
                                                             backgroundRepeat: "no-repeat",
-                                                            backgroundColor: '#D9E9F2',
-                                                            backgroundSize: 'auto',
+                                                            backgroundColor: "#D9E9F2",
+                                                            backgroundSize: "auto",
                                                         }}
                                                     >
                                                         {currencies.map((currency, index) => (
@@ -678,14 +883,20 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                     </select>
                                                 </div>
                                             </div>
+
                                             <div className="relative w-full md:w-1/2">
                                                 <input
                                                     type="number"
-                                                    placeholder={`Enter Discount in ${productDetails.discount || 'Percentage'}`}
+                                                    placeholder={`Enter Discount in ${productDetails.discount ||
+                                                        "Percentage"}`}
                                                     id="customDiscount"
                                                     min="0"
-                                                    max={productDetails.discount === "Percentage" ? "100" : undefined}
-                                                    value={productDetails.customDiscount || ''}
+                                                    max={
+                                                        productDetails.discount === "Percentage"
+                                                            ? "100"
+                                                            : undefined
+                                                    }
+                                                    value={productDetails.customDiscount || ""}
                                                     onChange={handleOnChangeProductDetails}
                                                     className="rounded-lg py-4 pl-44 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                                                     autoComplete="off"
@@ -698,8 +909,8 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                         className="bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] border border-[#FCFCFC] rounded-[12px] px-6 m-2 h-[44px] focus:outline-none"
                                                         style={{
                                                             backgroundRepeat: "no-repeat",
-                                                            backgroundColor: '#D9E9F2',
-                                                            backgroundSize: 'auto',
+                                                            backgroundColor: "#D9E9F2",
+                                                            backgroundSize: "auto",
                                                         }}
                                                     >
                                                         {discountOptions.map((discount, index) => (
@@ -710,6 +921,30 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                     </select>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        {/* Industry Dropdown */}
+                                        <div className="mb-4">
+                                            <label
+                                                htmlFor="industry"
+                                                className="block text-sm font-medium text-gray-700 mb-3"
+                                            >
+                                                Select Industry
+                                            </label>
+                                            <select
+                                                id="industry"
+                                                name="industry"
+                                                value={productDetails.industry}
+                                                onChange={handleOnChange}
+                                                className="rounded-lg py-3 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                                            >
+                                                <option value="">-- Select an Industry --</option>
+                                                {industryOptions.map((industry, idx) => (
+                                                    <option key={idx} value={industry}>
+                                                        {industry}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
 
                                         <div className="flex justify-start mt-4">
@@ -724,19 +959,30 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                 )}
                             </div>
 
+                            {/* 2. Upload or Select Image */}
                             <div
                                 onClick={toggleAccordionSection2}
-                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${!completedSections[1] ? "opacity-50 cursor-not-allowed" : ""} ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
+                                className={`relative border border-[#fcfcfc] p-0 rounded-2xl mb-4 cursor-pointer ${!completedSections[1]
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : ""
+                                    } ${expandedSubsection2 ? "bg-[rgba(252,252,252,0.25)]" : ""}`}
                                 style={{
-                                    pointerEvents: !completedSections[1] ? "none" : "auto"
+                                    pointerEvents: !completedSections[1] ? "none" : "auto",
                                 }}
                             >
-                                <div className={`flex items-center justify-between ${expandedSubsection2 ? "bg-[#F6F8FE]" : ""} p-4 rounded-t-2xl`}>
+                                <div
+                                    className={`flex items-center justify-between ${expandedSubsection2 ? "bg-[#F6F8FE]" : ""
+                                        } p-4 rounded-t-2xl`}
+                                >
                                     <div className="flex items-center">
                                         <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
                                             <IoImageOutline className="text-[#374151] text-xl" />
                                         </div>
-                                        <p className="ml-3 text-lg font-semibold">Upload or Select Product Image</p>
+                                        <p className="ml-3 text-lg font-semibold">
+                                            {isProduct
+                                                ? "Upload or Select Product Image"
+                                                : "Upload or Select Service Image"}
+                                        </p>
                                     </div>
                                     {completedSections[2] && (
                                         <div className="flex items-center ml-auto bg-white rounded-lg p-1">
@@ -779,18 +1025,24 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                     >
                                                         <PiFileArrowUpDuotone className="rounded-xl w-6 h-6" />
                                                         <span className="text-gray-500 text-nowrap sm:text-xs">
-                                                            Upload a product image here or or drag and drop a product image here.
+                                                            {isProduct
+                                                                ? "Upload a product image or drag and drop here."
+                                                                : "Upload a service image or drag and drop here."}
                                                         </span>
                                                     </label>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div className="flex justify-center">
-                                        <img src="/orIcon.svg" alt="" />
+                                            <img src="/orIcon.svg" alt="" />
                                         </div>
+
+                                        {/* Prompt-based image generation */}
                                         <div className="flex flex-col md:flex-row p-2">
-                                            <div className={`bg-[#FCFCFC40] shadow-md rounded-md border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-2`}>
-                                                
+                                            <div
+                                                className={`bg-[#FCFCFC40] shadow-md rounded-md border border-[#FCFCFC] flex flex-col gap-[18px] w-full p-2`}
+                                            >
                                                 <span className="flex flex-col md:flex-row items-center gap-5">
                                                     <input
                                                         type="text"
@@ -810,21 +1062,32 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                                 </span>
                                             </div>
                                         </div>
+
+                                        {/* Render generated images */}
                                         <div className="flex-row">
                                             {generatedImages.length > 0 && (
                                                 <div>
                                                     <div className="relative w-full overflow-x-scroll border border-[#FCFCFC] p-1 rounded-md">
                                                         <div className="flex space-x-4">
-                                                        {generatedImages.map((image, index) => (
-                                                            <div key={index} className="relative flex-shrink-0 border rounded-lg">
-                                                                <img
-                                                                    src={image.imgUrl}
-                                                                    alt={image.description}
-                                                                    className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
-                                                                    onClick={(event) => handleImageClick(image.imgUrl, true, event)} // Pass the event here
-                                                                />
-                                                            </div>
-                                                        ))}
+                                                            {generatedImages.map((image, index) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className="relative flex-shrink-0 border rounded-lg"
+                                                                >
+                                                                    <img
+                                                                        src={image.imgUrl}
+                                                                        alt={image.description}
+                                                                        className="w-40 h-40 object-cover rounded-lg shadow-lg cursor-pointer"
+                                                                        onClick={(event) =>
+                                                                            handleImageClick(
+                                                                                image.imgUrl,
+                                                                                true,
+                                                                                event
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                     <div className="flex justify-end gap-4 mt-2">
@@ -857,24 +1120,25 @@ const ProductDetails = ({ handleBack, setIsNextSectionOpen, isCompleted, setIsCo
                                     </div>
                                 )}
                             </div>
+
+                            {/* Final submission button once all sections are completed */}
                             <div className="flex justify-start items-center">
-                        {completedSections[1] && completedSections[2] && (
-                        <div className="flex justify-start p-4 pl-2">
-                            <button
-                                className="w-fit rounded-xl text-white py-3 px-10 font-medium custom-button"
-                                disabled={isNextStepDisabled}
-                                onClick={handleProductSubmission}
-                            >
-                                {!productDetails.isEdit ? "Next Step" : "Edit Product"}
-                            </button>
-                        </div>
-                    )}
-                    </div>
+                                {completedSections[1] && completedSections[2] && (
+                                    <div className="flex justify-start p-4 pl-2">
+                                        <button
+                                            className="w-fit rounded-xl text-white py-3 px-10 font-medium custom-button"
+                                            disabled={isNextStepDisabled}
+                                            onClick={handleProductSubmission}
+                                        >
+                                            {!productDetails.isEdit ? "Next Step" : "Edit Product"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
             </section>
-            
         </div>
     );
 };

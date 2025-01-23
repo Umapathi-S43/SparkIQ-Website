@@ -5,24 +5,42 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import logo from '../../assets/dashboard_img/logo.png';
+import axios from 'axios';
+import { baseUrl } from '../../components/utils/Constant';
+import { jwtToken } from '../../components/utils/jwtToken';
 
 const Header = ({ toggleSidebar }) => {
   const [notificationCount, setNotificationCount] = useState(2);
-  const [userName, setUserName] = useState(''); // Initially empty
-  const [totalImages, setTotalImages] = useState(150); // Total number of images
-  const [completedImages, setCompletedImages] = useState(110); // Number of completed images
-  const [hover, setHover] = useState(false); // Hover state
+  const [userName, setUserName] = useState('');
+  const [totalImages, setTotalImages] = useState(150);
+  const [completedImages, setCompletedImages] = useState(110);
+  const [hover, setHover] = useState(false);
   const navigate = useNavigate();
 
-  // Retrieve the userName from localStorage when the component mounts
-  useEffect(() => {
-    const storedUserName = localStorage.getItem('username'); // Use 'username' with lowercase 'n'
-    if (storedUserName) {
-      setUserName(storedUserName); // Set the retrieved userName to the state
-    } else {
-      console.log("No userName found in localStorage");
+  const fetchUserInfo = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/user/info`, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+
+      const userInfo = response.data.data;
+      const storedUserName = localStorage.getItem('username'); // Use 'username' with lowercase 'n'
+      if (storedUserName) {
+        setUserName(storedUserName); // Set the retrieved userName to the state
+      } else {
+        console.log("No userName found in localStorage");
+      }setTotalImages(userInfo.totalImages || 150);
+      setCompletedImages(userInfo.generatedImages || 110);
+    } catch (error) {
+      console.error("Failed to fetch user info:", error);
     }
-  }, []); // Empty dependency array ensures this runs once when the component mounts
+  };
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
 
   const getProfileInitials = (name) => {
     if (!name) return ''; // Handle case where name is undefined or empty
@@ -34,11 +52,11 @@ const Header = ({ toggleSidebar }) => {
     }
   };
 
+  const progressPercentage = Math.floor((completedImages / totalImages) * 100);
+
   const handleProfileClick = () => {
     navigate('/profile');
   };
-
-  const progressPercentage = Math.floor((completedImages / totalImages) * 100);
 
   return (
     <div className="flex justify-between items-center p-2 pt-2 relative w-full z-10 lg:relative lg:w-auto">
@@ -109,7 +127,6 @@ const Header = ({ toggleSidebar }) => {
             </Box>
           </Box>
         </div>
-
         {/* Notification icon */}
         <div className="relative flex items-center justify-center border border-[#FCFCFC] w-[40px] h-[40px] max-sm:w-[36px] max-sm:h-[36px] lg:w-[50px] lg:h-[50px] bg-[rgba(252, 252, 252, 0.25)] shadow-md rounded-2xl">
           <div className="w-[24px] h-[24px] lg:w-[30px] lg:h-[30px] bg-[#00A0F5] max-sm:w-[22px] max-sm:h-[22px] shadow-lg rounded-xl flex items-center justify-center">

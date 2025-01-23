@@ -590,7 +590,6 @@ const PolotnoEditor = () => {
       ? currentTemplateId
       : "",
       url: thumbnailURL,
-        user_id:"siu-b192460a-b",
         templateOrientation: template_original.templateOrientation || json.width > json.height ? "landscape" : "portrait" || "1:1",
         priority: json.priority || 0,
         templateSize: `${json.width}x${json.height}`,
@@ -601,6 +600,7 @@ const PolotnoEditor = () => {
         videoDuration: json.videoDuration || "00:00",
         voiceoverEnabled: json.voiceoverEnabled || false,
         templateJson: JSON.stringify(json),
+        isFavourite:template_original.isFavourite || false,
       };
 
       // 3. POST the template

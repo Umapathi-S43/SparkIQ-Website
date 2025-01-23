@@ -14,32 +14,47 @@ const HomePage = () => {
   const [task1Completed, setTask1Completed] = useState(false);
   const [task2Completed, setTask2Completed] = useState(false);
   const [task3Completed, setTask3Completed] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(1); // Open the first task by default
+  const [selectedTask, setSelectedTask] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const task1 = localStorage.getItem("task1Completed") === "true";
-    const task2 = localStorage.getItem("task2Completed") === "true";
-    const task3 = localStorage.getItem("task3Completed") === "true";
+    const fetchUserInfo = async () => {
+      try {
+        const response = await axios.get(`${baseUrl}/user/info`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
 
-    setTask1Completed(task1);
-    setTask2Completed(task2);
-    setTask3Completed(task3);
+        const userInfo = response.data.data;
+        const task1 = userInfo.brandsCompleted >= 1;
+        const task2 = userInfo.productsCreated >= 1;
+        const task3 = userInfo.generatedImages >= 1;
 
-    let completedCount = 0;
-    if (task1) completedCount++;
-    if (task2) completedCount++;
-    if (task3) completedCount++;
-    setTasksCompleted(completedCount);
+        setTask1Completed(task1);
+        setTask2Completed(task2);
+        setTask3Completed(task3);
 
-    // Automatically expand the appropriate task based on completion status
-    if (task1 && !task2) {
-      setSelectedTask(2);
-    } else if (task1 && task2 && !task3) {
-      setSelectedTask(3);
-    } else {
-      setSelectedTask(1);
-    }
+        let completedCount = 0;
+        if (task1) completedCount++;
+        if (task2) completedCount++;
+        if (task3) completedCount++;
+        setTasksCompleted(completedCount);
+
+        if (task1 && !task2) {
+          setSelectedTask(2);
+        } else if (task1 && task2 && !task3) {
+          setSelectedTask(3);
+        } else {
+          setSelectedTask(1);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user info:", error);
+        toast.error("An error occurred while fetching user info. Please try again.");
+      }
+    };
+
+    fetchUserInfo();
   }, []);
 
   const handleNavigateToBrandSetup = async () => {
@@ -129,7 +144,7 @@ const HomePage = () => {
               isActive={selectedTask === 2}
               canAccess={canAccessTask(2)}
               handleTaskAction={handleNavigateToProductSetup}
-              image={productSetup}
+              image={campaign}
             />
 
             {/* Task 3: Generate Creatives */}
