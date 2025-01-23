@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import { MdMail } from "react-icons/md";
 import logo from "../../assets/logo.png";
 import toast from "react-hot-toast";
+import axios from "axios";
+import { baseUrl } from "../utils/Constant";
 
 const ResetPassword = () => {
+  const [email, setEmail] = useState(""); // Input field for email
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [username, setUsername] = useState(localStorage.getItem("username") || "");
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [timer, setTimer] = useState(30);
-  const staticOtp = "1234"; // Static OTP for validation
-  const navigate = useNavigate(); // Initialize useNavigate
+  const [payload, setPayload] = useState(null); // Store user payload
+  const navigate = useNavigate();
 
   useEffect(() => {
     let interval = null;
@@ -28,37 +30,85 @@ const ResetPassword = () => {
     return () => clearInterval(interval);
   }, [otpSent, timer]);
 
-  const handleSendOtp = () => {
-    setOtpSent(true);
-    setShowOtpInput(true);
-    setTimer(30);
-    toast.success("OTP sent successfully! (Use OTP: 1234)");
+  // Function to send OTP
+  const handleSendOtp = async () => {
+    if (!email) {
+      toast.error("Please enter your registered email.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${baseUrl}/user/reset/${email}`);
+      const { data } = response.data;
+
+      setPayload(data); // Store payload for further user
+      setOtpSent(true);
+      setShowOtpInput(true);
+      setTimer(30);
+      toast.success("OTP sent successfully!");
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      toast.error("Failed to send OTP. Please try again.");
+    }
   };
 
+  // Function to resend OTP
   const handleResendOtp = () => {
     if (timer === 0) {
-      setTimer(30);
-      toast.info("OTP resent successfully! (Use OTP: 1234)");
+      handleSendOtp();
     }
   };
 
-  const handleVerifyOtp = () => {
+  // Function to verify OTP
+  const handleVerifyOtp = async () => {
     const enteredOtp = otp.join("");
-    if (enteredOtp === staticOtp) {
-      toast.success("OTP validated successfully!");
-      setShowOtpInput(false);
-    } else {
-      toast.error("Invalid OTP. Please try again.");
+    if (enteredOtp.length !== 4) {
+      toast.error("Please enter a valid 4-digit OTP.");
+      return;
+    }
+  
+    try {
+      const response = await axios.post(`${baseUrl}/user/validateOtp/${enteredOtp}`, payload);
+  
+      // Check the response body for validation
+      if (response.status === 200) {
+        const responseData = response.data;
+        if (responseData.data === "Entered Otp is valid") {
+          toast.success("OTP validated successfully!");
+          setShowOtpInput(false); // Proceed to password reset
+        } else {
+          // Show error if OTP is not valid
+          toast.error("Invalid OTP. Please try again.");
+        }
+      } else {
+        // Handle non-200 responses (fallback)
+        toast.error("Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error validating OTP:", error);
+      toast.error("Failed to validate OTP. Please try again.");
     }
   };
+  
 
-  const handleResetPassword = () => {
+  // Function to reset password
+  const handleResetPassword = async () => {
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match!");
       return;
     }
-    toast.success("Password reset successfully!");
-    navigate("/login"); // Redirect to login page after success
+
+    try {
+      const updatedPayload = { ...payload, password: newPassword };
+      const response = await axios.post(`${baseUrl}/user/setpassword`, updatedPayload);
+      if (response.status === 200) {
+        toast.success("Password reset successfully!");
+        navigate("/login"); // Redirect to login page
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error("Failed to reset password. Please try again.");
+    }
   };
 
   const handleChangeOtp = (e, index) => {
@@ -92,9 +142,18 @@ const ResetPassword = () => {
               <p className="text-center text-md mb-4">
                 An OTP will be sent to the email associated with your account.
               </p>
-              <div className="flex items-center mb-4">
-                <MdMail className="text-blue-600 text-xl mr-2" />
-                <span className="text-blue-600 text-md font-medium">{username}</span>
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Enter Your Registered Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="example@example.com"
+                  className="w-full mt-1 p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                />
               </div>
               <button
                 onClick={handleSendOtp}
@@ -125,6 +184,7 @@ const ResetPassword = () => {
               </h2>
               {showOtpInput ? (
                 <>
+                  
                   <div className="flex justify-center gap-3 mb-6">
                     {[...Array(4)].map((_, index) => (
                       <input
@@ -144,6 +204,9 @@ const ResetPassword = () => {
                   >
                     Verify OTP
                   </button>
+                  <span className="text-center text-md mb-4 text-gray-600">
+                    OTP has been sent to <strong>{email}</strong>.
+                  </span>
                 </>
               ) : (
                 <>

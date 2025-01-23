@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { createStore } from "polotno/model/store";
+import { useNavigate } from "react-router-dom";
 import {
   PolotnoContainer,
   SidePanelWrap,
@@ -39,6 +40,7 @@ const store = createStore({
   key: "nFA5H9elEytDyPyvKL7T", // Replace with your Polotno API key
   showCredit: true,
 });
+
 
 // 2) Define a custom "Design" section that includes color palettes + templates
 
@@ -477,6 +479,8 @@ const CustomSection = {
 const PolotnoEditor = () => {
   // Retrieve route state
   const { state } = useLocation();
+
+  const navigate = useNavigate();
   const template = state?.templateData || {};
   console.log("Incoming template data:", template);
   const brandId = template.brandId;
@@ -488,7 +492,35 @@ const PolotnoEditor = () => {
   const templateData = template?.templateJson
     ? JSON.parse(template.templateJson)
     : template.templateJson;
+    const { templateId } = location.state || {};
 
+    useEffect(() => {
+      if (!templateId) return;
+  
+      setLoading(true);
+      // GET /v2/user/templates/{templateId}
+      axios
+        .get(`${baseUrl}/v2/user/templates/${templateId}`, {
+          headers: { Authorization: `Bearer ${jwtToken}` }
+        })
+        .then((res) => {
+          const serverData = res.data?.data;
+          if (!serverData?.templateJson) {
+            toast.error("No template JSON found for this ID.");
+            return;
+          }
+          const json = JSON.parse(serverData.templateJson);
+          store.loadJSON(json);
+          setCurrentTemplateId(templateId);
+        })
+        .catch((err) => {
+          console.error("Error fetching template:", err);
+          toast.error("Failed to load template data.");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }, [templateId]);
   // We'll store the current template ID. If the route state has `templateId`,
   // use that as default. Otherwise null.
 
@@ -974,7 +1006,7 @@ const PolotnoEditor = () => {
         <div style={{ position: "relative" }}>
           <button
             className="close"
-            onClick={() => window.history.back()}
+            onClick={() => navigate('/savedProductsPage')}
             style={{
               backgroundColor: "#f44336",
               color: "white",

@@ -129,8 +129,8 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
           </span>
           <img src={pimage} alt="Decoration" className="absolute bottom-0 right-4 lg:right-24 w-24 lg:w-44 hidden md:block" />
         </div>
-        <div className="flex flex-col gap-2 p-2 lg:p-4 lg:pt-8 lg:m-4 m-2 lg:mx-12 border border-[#FCFCFC] rounded-3xl overflow-auto hide-scrollbar lg:max-h-[52vh]">
-          <div className="flex items-center justify-center lg:m-0">
+        {/* <div className="flex flex-col gap-2 p-2 lg:p-4 lg:pt-8 lg:m-4 m-2 lg:mx-12 border border-[#FCFCFC] rounded-3xl overflow-auto hide-scrollbar lg:max-h-[52vh]"> */}
+          {/* <div className="flex items-center justify-center lg:m-0">
             <div className="flex flex-col sm:flex-row gap-2 items-center justify-center bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] rounded-3xl p-2">
               <button
                 className={`px-4 py-1 lg:px-4 lg:py-2 rounded-2xl text-[#082A66] outline-none text-nowrap font-bold sm:w-auto ${selectedSection === 'accountDetails' ? 'bg-[#FCFCFC]' : 'bg-transparent text-gray-700'}`}
@@ -151,9 +151,9 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
                 Channels
               </button>
             </div>
-          </div>
+          </div> */}
 
-          {selectedSection === 'accountDetails' && (
+          {/* {selectedSection === 'accountDetails' && (
           <div className="p-4 lg:p-6 pb-0 rounded-xl bg-[rgba(252,252,252,0.25)] mt-4 lg:mt-6 mb-4 lg:mb-6 mx-2 sm:mx-4 lg:mx-12 border border-[#FCFCFC]">
             <h3 className="text-xl lg:text-2xl font-bold mb-2 lg:mb-4 mt-2">Account Details</h3>
             <div className="flex gap-4 lg:gap-6 items-center flex-col sm:flex-row">
@@ -179,7 +179,9 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
                     readOnly
                   />
                 </div>
-                <div className="w-full sm:w-1/3 lg:w-1/3">
+               
+              </div>
+              <div className="w-full sm:w-1/3 lg:w-1/3">
                   <label className="block text-gray-400 font-semibold">Email ID</label>
                   <input
                     type="text"
@@ -190,7 +192,6 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
                     readOnly
                   />
                 </div>
-              </div>
               <div>
                 <label className="block text-gray-400 font-semibold">Phone Number</label>
                 <input
@@ -215,17 +216,78 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
                 Update
               </button>
             </div>
-            <div className="flex justify-end items-center mt-4">
+            <div className="flex justify-end items-center mt-1">
               <TrialPeriodBox daysLeft={daysLeft} totalDays={totalDays} trialEndDate={trialEndDate} />
             </div>
           </div>
-        )}
+        )} */}
 
-        {selectedSection === 'brandInformation' && userBrands.length > 0 && (
+
+{
+  selectedSection === 'accountDetails' && (
+    <div className="p-4 lg:p-6 pb-0 rounded-xl bg-[rgba(252,252,252,0.25)] mt-4 lg:mt-6 mb-4 lg:mb-6 mx-2 sm:mx-4 lg:mx-12 border border-[#FCFCFC]">
+      <h3 className="text-xl lg:text-2xl font-bold mb-2 lg:mb-4 mt-2">Account Details</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Username */}
+    <div>
+      <label className="block text-gray-600 font-semibold mb-1">
+        Username
+      </label>
+      <input
+        type="text"
+        className="block w-full px-4 py-2 border border-gray-300 rounded-lg 
+                   focus:ring-2 focus:ring-blue-400 focus:outline-none 
+                   cursor-not-allowed bg-gray-100"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="Enter your username"
+        readOnly
+      />
+    </div>
+
+    {/* Email */}
+    <div>
+      <label className="block text-gray-600 font-semibold mb-1">
+        Email ID
+      </label>
+      <input
+        type="text"
+        className="block w-full px-4 py-2 border border-gray-300 rounded-lg 
+                   focus:ring-2 focus:ring-blue-400 focus:outline-none 
+                   cursor-not-allowed bg-gray-100"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        readOnly
+      />
+    </div>
+
+    {/* Phone Number */}
+    <div>
+      <label className="block text-gray-600 font-semibold mb-1">
+        Phone Number
+      </label>
+      <input
+        type="text"
+        className="block w-full px-4 py-2 border border-gray-300 rounded-lg
+                   focus:ring-2 focus:ring-blue-400 focus:outline-none 
+                   cursor-not-allowed bg-gray-100"
+        value={phoneNumber}
+        onChange={(e) => setPhoneNumber(e.target.value)}
+        placeholder="Enter your phone number"
+        readOnly
+      />
+    </div>
+  </div>
+      <div className="flex justify-end items-center mt-4">
+              <TrialPeriodBox daysLeft={daysLeft} totalDays={totalDays} trialEndDate={trialEndDate} />
+            </div>
+      </div>)}
+
+        {/* {selectedSection === 'brandInformation' && userBrands.length > 0 && (
           <div className="p-4 lg:p-6 pb-0 rounded-xl bg-[rgba(252,252,252,0.25)] mt-4 lg:mt-6 mb-4 lg:mb-6 mx-2 sm:mx-4 lg:mx-12 border border-[#FCFCFC]">
             <h3 className="text-xl lg:text-2xl font-bold mb-2 lg:mb-4 mt-2 text-[#1E1154]">Brand Information</h3>
 
-            {/* Brand Logo */}
             <div className="flex items-center gap-4 flex-col sm:flex-row">
               <p className="text-[#1E1154] font-semibold text-lg lg:text-xl">Brand Logo</p>
               <div className="bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] p-2 rounded-xl">
@@ -233,7 +295,6 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
               </div>
             </div>
 
-            {/* Brand Name Dropdown */}
             <div className="mt-4 w-full sm:w-2/5">
               <label className="block text-[#1E1154] font-semibold">Brand Name</label>
               <select
@@ -249,7 +310,6 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
               </select>
             </div>
 
-            {/* Brand Description */}
             <div className="flex flex-col gap-4 mt-4 w-full sm:w-2/5 text-justify">
               <div>
                 <label className="block text-[#1E1154] font-semibold">Brand Description</label>
@@ -262,21 +322,19 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
               </div>
             </div>
 
-            {/* Update Button */}
             <button className="custom-button p-2 pl-6 pr-6 text-white rounded-2xl shadow-2xl flex justify-center w-fit mt-4">
               Update
             </button>
 
-            {/* Trial Period Box */}
             <div className="flex justify-end items-center mt-4">
               <TrialPeriodBox daysLeft={daysLeft} totalDays={totalDays} trialEndDate={trialEndDate} />
             </div>
           </div>
-        )}
+        )} */}
 
 
 
-          {selectedSection === 'channels' && (
+          {/* {selectedSection === 'channels' && (
             <div className="p-2 lg:p-6 pb-0 rounded-xl bg-[rgba(252,252,252,0.25)] mt-4 lg:mt-6 mb-4 lg:mb-6 mx-2 sm:mx-4 lg:mx-12 border border-[#FCFCFC]">
               <h3 className="text-xl lg:text-2xl font-bold mb-2 lg:mb-4 mt-2">Channels</h3>
               <div className="flex flex-col gap-4 w-full lg:w-2/3 md:w-2/3 bg-[rgba(252,252,252,0.25)] border border-[#FCFCFC] shadow-md p-4 lg:p-8 pb-6 rounded-2xl">
@@ -305,10 +363,9 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
                 <TrialPeriodBox daysLeft={daysLeft} totalDays={totalDays} trialEndDate={trialEndDate} />
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </div>
-    </div>
   );
 };
 

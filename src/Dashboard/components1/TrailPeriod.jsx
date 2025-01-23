@@ -21,7 +21,7 @@ const TrialPeriodBoxSmall = ({ daysLeft, totalDays, trialEndDate }) => {
         <div
           style={{
             position: 'absolute',
-            top: '27%',
+            top: '30%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
             textAlign: 'center',
@@ -68,7 +68,7 @@ const TrialPeriodBoxLarge = ({ daysLeft, totalDays, trialEndDate }) => {
         <div
           style={{
             position: 'absolute',
-            top: '42%',
+            top: '45%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
             textAlign: 'center',
