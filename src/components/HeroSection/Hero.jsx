@@ -45,6 +45,10 @@ const Hero = () => {
         setCurrentIndex((prevIndex) =>
             prevIndex > 0 ? prevIndex - 1 : heroCards.length - 1
         );
+    };    
+
+    const navigateToCalendly = () => {
+        window.open("https://calendly.com/sparkiqdemo/30min", "_blank");
     };
 
     return (
@@ -78,8 +82,8 @@ const Hero = () => {
                             />
                         </div>
                         <div className="py-6 lg:py-10 flex flex-col lg:flex-row gap-4 justify-center lg:justify-start">
-  <Button type="primary" link="#features" content="Book A Demo" />
-  <Button type="secondary" link="#about" content="Talk To Us" />
+  <button className="text-white gradient-button-primary text-nowrap w-fit p-3 px-6 rounded-xl font-semibold text-nowrap" onClick={navigateToCalendly} >Book A Demo</button>
+  <button className="bg-white text-[#FF3067] text-nowrap w-fit p-3 px-6 rounded-xl font-semibold text-nowrap" onClick={navigateToCalendly}>Talk To Us</button>
 </div>
 
 

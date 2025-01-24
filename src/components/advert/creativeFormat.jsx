@@ -143,7 +143,7 @@ export default function CreativeFormat({
       { name: "Twitter", icon: "src/assets/media/twitter.png" },
       // { name: "WhatsApp", icon: "src/assets/media/whatsapp.png" },
       // { name: "YouTube", icon: "src/assets/media/youtube.png" },
-      { name: "Google", icon: "src/assets/media/google.png" },
+      //{ name: "Google", icon: "src/assets/media/google.png" },
     ];
 
     // When a platform is selected, update the selection and store its slug.
@@ -161,9 +161,9 @@ export default function CreativeFormat({
 
     // Some AI suggestions
     const aiSuggestions = [
-      { title: "Daily Quote", icon: <FaLinkedinIn />, text: "LinkedIn Post" },
+     // { title: "Daily Quote", icon: <FaLinkedinIn />, text: "LinkedIn Post" },
       { title: "Educational Post", icon: <FaInstagram />, text: "Instagram Post" },
-      { title: "Week Calender", icon: <FaWhatsapp />, text: "WhatsApp Status" },
+      //{ title: "Week Calender", icon: <FaWhatsapp />, text: "WhatsApp Status" },
       { title: "Story", icon: <FaGlobe />, text: "Social Media Story" },
       { title: "Offers", icon: <FaInstagram />, text: "Instagram Story" },
     ];

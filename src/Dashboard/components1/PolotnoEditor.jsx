@@ -492,35 +492,35 @@ const PolotnoEditor = () => {
   const templateData = template?.templateJson
     ? JSON.parse(template.templateJson)
     : template.templateJson;
-    const { templateId } = location.state || {};
+  const { templateId } = location.state || {};
 
-    useEffect(() => {
-      if (!templateId) return;
-  
-      setLoading(true);
-      // GET /v2/user/templates/{templateId}
-      axios
-        .get(`${baseUrl}/v2/user/templates/${templateId}`, {
-          headers: { Authorization: `Bearer ${jwtToken}` }
-        })
-        .then((res) => {
-          const serverData = res.data?.data;
-          if (!serverData?.templateJson) {
-            toast.error("No template JSON found for this ID.");
-            return;
-          }
-          const json = JSON.parse(serverData.templateJson);
-          store.loadJSON(json);
-          setCurrentTemplateId(templateId);
-        })
-        .catch((err) => {
-          console.error("Error fetching template:", err);
-          toast.error("Failed to load template data.");
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }, [templateId]);
+  useEffect(() => {
+    if (!templateId) return;
+
+    setLoading(true);
+    // GET /v2/user/templates/{templateId}
+    axios
+      .get(`${baseUrl}/v2/user/templates/${templateId}`, {
+        headers: { Authorization: `Bearer ${jwtToken}` }
+      })
+      .then((res) => {
+        const serverData = res.data?.data;
+        if (!serverData?.templateJson) {
+          toast.error("No template JSON found for this ID.");
+          return;
+        }
+        const json = JSON.parse(serverData.templateJson);
+        store.loadJSON(json);
+        setCurrentTemplateId(templateId);
+      })
+      .catch((err) => {
+        console.error("Error fetching template:", err);
+        toast.error("Failed to load template data.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [templateId]);
   // We'll store the current template ID. If the route state has `templateId`,
   // use that as default. Otherwise null.
 
@@ -618,10 +618,10 @@ const PolotnoEditor = () => {
       // `templateId` is only sent if we are updating and we have a current ID
       const payload = {
         templateId:
-    isUpdate && currentTemplateId && currentTemplateId !== ''
-      ? currentTemplateId
-      : "",
-      url: thumbnailURL,
+          isUpdate && currentTemplateId && currentTemplateId !== ''
+            ? currentTemplateId
+            : "",
+        url: thumbnailURL,
         templateOrientation: template_original.templateOrientation || json.width > json.height ? "landscape" : "portrait" || "1:1",
         priority: json.priority || 0,
         templateSize: `${json.width}x${json.height}`,
@@ -632,7 +632,7 @@ const PolotnoEditor = () => {
         videoDuration: json.videoDuration || "00:00",
         voiceoverEnabled: json.voiceoverEnabled || false,
         templateJson: JSON.stringify(json),
-        isFavourite:template_original.isFavourite || false,
+        isFavourite: template_original.isFavourite || false,
       };
 
       // 3. POST the template
@@ -643,10 +643,10 @@ const PolotnoEditor = () => {
       });
 
       // if successful, set the ID if it doesn't exist
-     
+
       if (!isUpdate) {
-        if(apiResponse.data?.templateId) {
-        setCurrentTemplateId(apiResponse.data?.templateId);
+        if (apiResponse.data?.templateId) {
+          setCurrentTemplateId(apiResponse.data?.templateId);
         }
       }
 
@@ -893,11 +893,13 @@ const PolotnoEditor = () => {
     SizeSection,
   ];
   localStorage.setItem('isDarkMode', isDarkMode);
+
   return (
+
     <div
       className={isDarkMode ? "bp5-dark" : ""}
       style={{
-        height: "99vh",
+        height: "100vh",
         backgroundColor: isDarkMode ? "#000000" : "#f4f4f4",
         position: "relative",
       }}
@@ -912,59 +914,24 @@ const PolotnoEditor = () => {
         }}
       >
         {/* Left Controls: Theme and Save */}
-        <div style={{ display: "flex", gap: "10px", alignItems: "center", marginLeft: "12px" }}>
-          {/* Theme Toggle Button */}
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={toggleTheme}
-              style={{
-                backgroundColor: isDarkMode ? "#555" : "#e0e0e0",
-                color: isDarkMode ? "#fff" : "#000",
-                border: "none",
-                padding: "4px",
-                cursor: "pointer",
-                borderRadius: "50%", // Circular button
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // Subtle shadow
-                transition: "background-color 0.3s, transform 0.2s",
-              }}
-              onMouseEnter={(e) => (e.target.style.transform = "scale(1.1)")}
-              onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
-            >
-              {isDarkMode ? <MdOutlineLightMode size={20} /> : <CiDark size={20} />}
-            </button>
-            {/* Tooltip */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: "-25px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
-                color: "#fff",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "12px",
-                whiteSpace: "nowrap",
-                opacity: 0,
-                pointerEvents: "none",
-                transition: "opacity 0.2s",
-              }}
-              className="tooltip"
-            >
-              {isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            </div>
-          </div>
-
-          {/* Save Button */}
+        {/* Controls Container */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            overflow: "hidden", // Prevents any overflow
+            boxSizing: "border-box", // Ensures padding is included in width/height
+            width: "100%", // Ensures it spans the full width of the parent
+          }}
+        >
+          {/* Save Button at Start */}
           <div style={{ position: "relative" }}>
             <button
               onClick={saveAsJSON}
               style={{
-                backgroundColor: "#FFD700",
-                color: "white",
+                backgroundColor: "transparent",
+                color: isDarkMode ? "white" : "black",
                 border: "none",
                 padding: "4px 16px",
                 cursor: "pointer",
@@ -975,84 +942,80 @@ const PolotnoEditor = () => {
               }}
               onMouseEnter={(e) => (e.target.style.transform = "scale(1.05)")}
               onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
+              data-tooltip="Save Template"
             >
               <FaSave size={20} />
             </button>
-            {/* Tooltip */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: "-25px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
-                color: "#fff",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "12px",
-                whiteSpace: "nowrap",
-                opacity: 0,
-                pointerEvents: "none",
-                transition: "opacity 0.2s",
-              }}
-              className="tooltip"
-            >
-              Save Template
+          </div>
+
+          {/* Theme and Close Buttons at End */}
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              alignItems: "center",
+              overflow: "hidden", // Prevents horizontal overflow
+            }}
+          >
+            {/* Theme Toggle Button */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={toggleTheme}
+                style={{
+                  backgroundColor: isDarkMode ? "#555" : "#e0e0e0",
+                  color: isDarkMode ? "#fff" : "#000",
+                  border: "none",
+                  padding: "4px",
+                  marginLeft:"4px",
+                  cursor: "pointer",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  transition: "background-color 0.3s, transform 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.transform = "scale(1.1)")}
+                onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
+                data-tooltip={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {isDarkMode ? <MdOutlineLightMode size={20} /> : <CiDark size={20} />}
+              </button>
+            </div>
+
+            {/* Close Button */}
+            <div style={{ position: "relative" }}>
+              <button
+                className="close"
+                onClick={() => navigate("/savedProductsPage")}
+                style={{
+                  backgroundColor: "transparent",
+                  color: isDarkMode ? "white" : "black",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "20px",
+                  lineHeight: "1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "10%",
+                  transition: "background-color 0.3s, transform 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = "#d32f2f")}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
+                onMouseDown={(e) => (e.target.style.transform = "scale(0.9)")}
+                onMouseUp={(e) => (e.target.style.transform = "scale(1)")}
+                data-tooltip="Close"
+              >
+                X
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Right Controls: Close Button */}
-        <div style={{ position: "relative" }}>
-          <button
-            className="close"
-            onClick={() => navigate('/savedProductsPage')}
-            style={{
-              backgroundColor: "#f44336",
-              color: "white",
-              border: "none",
-              padding: "6px",
-              cursor: "pointer",
-              fontSize: "20px",
-              lineHeight: "1",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "30px",
-              height: "30px",
-              borderRadius: "50%", // Circular close button
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-              transition: "background-color 0.3s, transform 0.2s",
-            }}
-            onMouseEnter={(e) => (e.target.style.backgroundColor = "#d32f2f")}
-            onMouseLeave={(e) => (e.target.style.backgroundColor = "#f44336")}
-            onMouseDown={(e) => (e.target.style.transform = "scale(0.9)")}
-            onMouseUp={(e) => (e.target.style.transform = "scale(1)")}
-          >
-            X
-          </button>
-          {/* Tooltip */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: "-25px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              backgroundColor: "rgba(0, 0, 0, 0.8)",
-              color: "#fff",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              whiteSpace: "nowrap",
-              opacity: 0,
-              pointerEvents: "none",
-              transition: "opacity 0.2s",
-            }}
-            className="tooltip"
-          >
-            Close
-          </div>
-        </div>
+
       </div>
 
       {/* Polotno Container */}

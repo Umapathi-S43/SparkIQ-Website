@@ -280,7 +280,7 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
     </div>
   </div>
       <div className="flex justify-end items-center mt-4">
-              <TrialPeriodBox daysLeft={daysLeft} totalDays={totalDays} trialEndDate={trialEndDate} />
+              <TrialPeriodBox />
             </div>
       </div>)}
 

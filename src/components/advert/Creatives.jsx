@@ -25,7 +25,7 @@ const medicineData = {
   rating: "4.5",
   discount: "20%",
   product_image:
-    "https://images.unsplash.com/photo-1562376552-0d160a2f238d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTY5OTZ8MHwxfHNlYXJjaHw0MHx8d2FmZmxlfGVufDB8fHx8MTczNjg1OTk1MHww&ixlib=rb-4.0.3&q=80&w=1080",
+    "https://sparkiq-image-upload.s3.amazonaws.com/1737704000813_1jpg.avif",
   logo:
     "https://images.unsplash.com/photo-1736841131662-ab6fc065124a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTY5OTZ8MHwxfGFsbHwxMHx8fHx8fHx8MTczNjkyMjY1OXw&ixlib=rb-4.0.3&q=80&w=1080",
 };
@@ -234,6 +234,7 @@ export default function Creatives({
       "sit-8689fc63-2",
       "sit-1c42dbbc-8",
       "sit-e67a0d24-0",
+      "sit-040c1fc1-b"
     ];
 
     const newTemplates = [];

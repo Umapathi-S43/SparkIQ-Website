@@ -57,6 +57,9 @@ const Header = ({ toggleSidebar }) => {
   const handleProfileClick = () => {
     navigate('/profile');
   };
+  const navigateToCalendly = () => {
+    window.open("https://calendly.com/sparkiqdemo/30min", "_blank");
+};
 
   return (
     <div className="flex justify-between items-center p-2 pt-2 relative w-full z-10 lg:relative lg:w-auto">
@@ -128,7 +131,7 @@ const Header = ({ toggleSidebar }) => {
           </Box>
         </div>
         {/* Notification icon */}
-        <div className="relative flex items-center justify-center border border-[#FCFCFC] w-[40px] h-[40px] max-sm:w-[36px] max-sm:h-[36px] lg:w-[50px] lg:h-[50px] bg-[rgba(252, 252, 252, 0.25)] shadow-md rounded-2xl">
+        {/* <div className="relative flex items-center justify-center border border-[#FCFCFC] w-[40px] h-[40px] max-sm:w-[36px] max-sm:h-[36px] lg:w-[50px] lg:h-[50px] bg-[rgba(252, 252, 252, 0.25)] shadow-md rounded-2xl">
           <div className="w-[24px] h-[24px] lg:w-[30px] lg:h-[30px] bg-[#00A0F5] max-sm:w-[22px] max-sm:h-[22px] shadow-lg rounded-xl flex items-center justify-center">
             <FaBell className="text-white" />
             {notificationCount > 0 && (
@@ -137,6 +140,9 @@ const Header = ({ toggleSidebar }) => {
               </div>
             )}
           </div>
+        </div> */}
+        <div>
+        <button className="custom-button text-white text-nowrap w-fit rounded-xl px-4 py-2 font-semibold text-nowrap" onClick={navigateToCalendly}>Book A Demo</button>
         </div>
 
         {/* Profile icon */}
