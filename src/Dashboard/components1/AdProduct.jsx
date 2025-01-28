@@ -13,10 +13,18 @@ const currencies = ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY", "CNY", "CHF
 const discountOptions = ["Price", "Percentage"];
 
 const AdProduct = () => {
-
+    const industryOptions = [
+        "E-com",
+        "Automotive",
+        "Marketing",
+        "B2B Consultant",
+        "Other",
+    ];
     const [productDetails, setProductDetails] = useState({
         productName: "",
         productDescription: "",
+        type: "",
+        industryName: "",
         productURL: "",
         productPrice: "",
         currency: "USD",
@@ -56,19 +64,20 @@ const AdProduct = () => {
                 if (!jwtToken) {
                     throw new Error("No JWT token found. Please log in.");
                 }
-                const response = await axios.get(`${baseUrl}/brand/company/123`, {
+                const response = await axios.get(`${baseUrl}/v2/api/brands`, {
                     headers: {
                         Authorization: `Bearer ${jwtToken}`,
                     },
                 });
-                const fetchedBrands = response.data.data;
-                setBrands(fetchedBrands);
+            const fetchedBrands = response.data?.data || []; // Ensure it's an array
+            setBrands(fetchedBrands);
+        
 
                 if (fetchedBrands.length === 1) {
                     setProductDetails(prevDetails => ({
                         ...prevDetails,
                         brandID: fetchedBrands[0].id,
-                        brandName: fetchedBrands[0].name,
+                        brandName: fetchedBrands[0].brandName,
                     }));
                 }
             } catch (error) {
@@ -98,6 +107,8 @@ const AdProduct = () => {
                         productName: foundProduct.name || "",
                         productDescription: foundProduct.description || "",
                         productURL: foundProduct.productURL || "",
+                        type: foundProduct.type || "",
+                        industryName:foundProduct.industryName || "",
                         brandID: foundProduct.brandID || "",
                         logoURL: foundProduct.productImagesList[0]?.imageURL || "",
                         discount: foundProduct.discountType || "Percentage",
@@ -133,7 +144,7 @@ const AdProduct = () => {
         const { name, value } = e.target;
 
         if (name === "brandName") {
-            const selectedBrand = brands.find((brand) => brand.name === value);
+            const selectedBrand = brands.find((brand) => brand.brandName === value);
             setProductDetails(prev => ({
                 ...prev,
                 brandName: value,
@@ -158,6 +169,8 @@ const AdProduct = () => {
             const productPayload = {
                 id: isEditMode ? storedProductID : undefined,
                 brandID: productDetails.brandID,
+                type: productDetails.type,
+                industryName: productDetails.industryName,
                 name: productDetails.productName,
                 description: productDetails.productDescription,
                 price: defaultProductPrice,
@@ -170,7 +183,7 @@ const AdProduct = () => {
                     },
                 ],
             };
-
+            console.log("Product Payload:", productPayload);
             const response = await axios.post(`${baseUrl}/product`, productPayload, {
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
@@ -282,8 +295,6 @@ const AdProduct = () => {
             setImageSrc(imageUrl);
         }
     };
-
-
 
     const handleDeleteImage = (index) => {
         if (images[index]) {
@@ -408,8 +419,10 @@ const AdProduct = () => {
     };
     const handleToggleType = (type) => {
         if (type === "Product") {
+            productDetails.type="product";
             setIsProduct(true);
         } else if (type === "Service") {
+            productDetails.type="service";
             setIsProduct(false);
         }
     };
@@ -417,7 +430,8 @@ const AdProduct = () => {
     const isNextStepDisabled =
         productDetails.productName === "" ||
         productDetails.productDescription === "" ||
-        productDetails.brandName === ""
+        productDetails.brandName === ""||
+        productDetails.industryName === "" 
     // productDetails.productPrice === "" ||
     // productDetails.customDiscount === "" ||
     // (productDetails.discount === "Price" &&
@@ -464,12 +478,20 @@ const AdProduct = () => {
 
         return true; // Indicate successful validation and progression
     };
-    const handleIndustrySelect = (industry) => {
+    // const handleIndustrySelect = (industryName) => {
+    //     setProductDetails((prevDetails) => ({
+    //         ...prevDetails,
+    //         industryName,
+    //     }));
+    // };
+    const handleIndustrySelect = (event) => {
+        const selectedIndustry = event.target.value; // Get the selected value
         setProductDetails((prevDetails) => ({
             ...prevDetails,
-            industry,
+            industryName: selectedIndustry, // Update the industryName
         }));
     };
+    
 
     // General toggle function to handle both forward and backward navigation
     const toggleAccordion = (section, event) => {
@@ -721,8 +743,8 @@ const AdProduct = () => {
                                             >
                                                 <option value="">Select Brand Name</option>
                                                 {brands.map((brand) => (
-                                                    <option key={brand.id} value={brand.name}>
-                                                        {brand.name}
+                                                    <option key={brand.id} value={brand.brandName}>
+                                                        {brand.brandName}
                                                     </option>
                                                 ))}
                                             </select>
@@ -804,63 +826,85 @@ const AdProduct = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="mb-4">
+                                        {/* <div className="mb-4">
                                             <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-3">
                                                 Select Industry
                                             </label>
                                             <div className="flex gap-4 flex-wrap">
                                                 <button
-                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "E-com"
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "E-com"
                                                             ? "bg-orange-100 border-orange-500 text-orange-700"
                                                             : "bg-orange-50 border-orange-300 text-orange-500"
                                                         } font-medium`}
                                                     onClick={() => handleIndustrySelect("E-com")}
                                                 >
                                                     <span>E-com</span>
-                                                    {productDetails.industry === "E-com" && <FaCheck className="text-orange-700 ml-2" />}
+                                                    {productDetails.industryName === "E-com" && <FaCheck className="text-orange-700 ml-2" />}
                                                 </button>
                                                 <button
-                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "Automotive"
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "Automotive"
                                                             ? "bg-green-100 border-green-500 text-green-700"
                                                             : "bg-green-50 border-green-300 text-green-500"
                                                         } font-medium`}
                                                     onClick={() => handleIndustrySelect("Automotive")}
                                                 >
                                                     <span>Automotive</span>
-                                                    {productDetails.industry === "Automotive" && <FaCheck className="text-green-700 ml-2" />}
+                                                    {productDetails.industryName === "Automotive" && <FaCheck className="text-green-700 ml-2" />}
                                                 </button>
                                                 <button
-                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "Marketing"
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "Marketing"
                                                             ? "bg-blue-100 border-blue-500 text-blue-700"
                                                             : "bg-blue-50 border-blue-300 text-blue-500"
                                                         } font-medium`}
                                                     onClick={() => handleIndustrySelect("Marketing")}
                                                 >
                                                     <span>Marketing</span>
-                                                    {productDetails.industry === "Marketing" && <FaCheck className="text-blue-700 ml-2" />}
+                                                    {productDetails.industryName === "Marketing" && <FaCheck className="text-blue-700 ml-2" />}
                                                 </button>
                                                 <button
-                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "B2B Consultant"
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "B2B Consultant"
                                                             ? "bg-yellow-100 border-yellow-500 text-yellow-700"
                                                             : "bg-yellow-50 border-yellow-300 text-yellow-500"
                                                         } font-medium`}
                                                     onClick={() => handleIndustrySelect("B2B Consultant")}
                                                 >
                                                     <span>B2B Consultant</span>
-                                                    {productDetails.industry === "B2B Consultant" && <FaCheck className="text-yellow-700 ml-2" />}
+                                                    {productDetails.industryName === "B2B Consultant" && <FaCheck className="text-yellow-700 ml-2" />}
                                                 </button>
                                                 <button
-                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industry === "Other"
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "Other"
                                                             ? "bg-gray-100 border-gray-500 text-gray-700"
                                                             : "bg-gray-50 border-gray-300 text-gray-500"
                                                         } font-medium`}
                                                     onClick={() => handleIndustrySelect("Other")}
                                                 >
                                                     <span>Other</span>
-                                                    {productDetails.industry === "Other" && <FaCheck className="text-gray-700 ml-2" />}
+                                                    {productDetails.industryName === "Other" && <FaCheck className="text-gray-700 ml-2" />}
                                                 </button>
                                             </div>
-                                        </div>
+                                        </div> */}
+                                        <div className="mb-4">
+                                            <label
+                                                htmlFor="industry"
+                                                className="block text-sm font-medium text-gray-700 mb-3"
+                                            >
+                                                Select Industry
+                                            </label>
+                                            <select
+                                                id="industry"
+                                                name="industry"
+                                                value={productDetails.industryName}
+                                                onChange={handleIndustrySelect}
+                                                className="rounded-lg py-3 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                                            >
+                                                <option value="">-- Select an Industry --</option>
+                                                {industryOptions.map((industry, idx) => (
+                                                    <option key={idx} value={industry}>
+                                                        {industry}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div> 
 
 
                                         <div className="flex justify-start mt-4">

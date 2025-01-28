@@ -51,6 +51,8 @@ const ProductDetails = ({
     const [productDetails, setProductDetails] = useState({
         productName: "",
         productDescription: "",
+        type:"",
+        industryName:"",
         imageFile: null,
         logoURL: "",
         productURL: "",
@@ -62,7 +64,6 @@ const ProductDetails = ({
         brandID: "",
         prompt: "",
         isEdit: false,
-        industry: "", // add industry here
     });
 
     const [imageSrc, setImageSrc] = useState(null);
@@ -84,7 +85,7 @@ const ProductDetails = ({
                 if (!jwtToken) {
                     throw new Error("No JWT token found. Please log in.");
                 }
-                const response = await axios.get(`${baseUrl}/brand/company/123`, {
+                const response = await axios.get(`${baseUrl}/v2/api/brands`, {
                     headers: {
                         Authorization: `Bearer ${jwtToken}`,
                     },
@@ -100,7 +101,7 @@ const ProductDetails = ({
                     setProductDetails((prevDetails) => ({
                         ...prevDetails,
                         brandID: fetchedBrands[0].id,
-                        brandName: fetchedBrands[0].name,
+                        brandName: fetchedBrands[0].brandName,
                     }));
                 }
             } catch (error) {
@@ -131,6 +132,8 @@ const ProductDetails = ({
                         productName: foundProduct.name || "",
                         productDescription: foundProduct.description || "",
                         productURL: foundProduct.productURL || "",
+                        type: foundProduct.type || "",
+                        industryName: foundProduct.industryName || "",
                         brandID: foundProduct.brandID || "",
                         logoURL: foundProduct.productImagesList[0]?.imageURL || "",
                         discount: foundProduct.discountType || "Percentage",
@@ -138,7 +141,6 @@ const ProductDetails = ({
                         productPrice: foundProduct.price || "",
                         currency: foundProduct.priceType || "INR",
                         isEdit: true,
-                        industry: foundProduct.industry || "", // if your API provides an "industry" field
                     });
 
                     const existingImages = foundProduct.productImagesList.map((img) => ({
@@ -168,7 +170,7 @@ const ProductDetails = ({
         const { name, value } = e.target;
 
         if (name === "brandName") {
-            const selectedBrand = brands.find((brand) => brand.name === value);
+            const selectedBrand = brands.find((brand) => brand.brandName === value);
             setProductDetails((prev) => ({
                 ...prev,
                 brandName: value,
@@ -206,7 +208,13 @@ const ProductDetails = ({
 
     // Toggle between Product or Service
     const handleToggleType = (type) => {
-        setIsProduct(type === "Product");
+        if (type === "Product") {
+            productDetails.type="product";
+            setIsProduct(true);
+        } else if (type === "Service") {
+            productDetails.type="service";
+            setIsProduct(false);
+        }
     };
 
     // Drag and drop file handling
@@ -447,13 +455,14 @@ const ProductDetails = ({
                 id: isEditMode ? storedProductID : undefined,
                 brandID: productDetails.brandID,
                 name: productDetails.productName,
+                type: productDetails.type,
+                industryName: productDetails.industryName,
                 description: productDetails.productDescription,
                 price: defaultProductPrice,
                 priceType: defaultCurrency,
                 discount: defaultCustomDiscount,
                 discountType: defaultDiscountType,
                 // If your backend expects an "industry" field, include it here:
-                industry: productDetails.industry,
                 productImagesList: [
                     {
                         imageURL: productDetails.logoURL,
@@ -461,6 +470,7 @@ const ProductDetails = ({
                 ],
             };
 
+            console.log("Product payload:", productPayload);
             const response = await axios.post(`${baseUrl}/product`, productPayload, {
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
@@ -503,7 +513,7 @@ const ProductDetails = ({
                 productDetails.productName === "" ||
                 productDetails.productDescription === "" ||
                 productDetails.brandName === "" ||
-                productDetails.industry === ""
+                productDetails.industryName === ""
             ) {
                 toast.error("Please fill in all the required fields correctly.");
                 return;
@@ -536,6 +546,15 @@ const ProductDetails = ({
         }
     };
 
+    const handleIndustrySelect = (event) => {
+        const selectedIndustry = event.target.value; // Get the selected value
+        setProductDetails((prevDetails) => ({
+            ...prevDetails,
+            industryName: selectedIndustry, // Update the industryName
+        }));
+    };
+    
+    
     // Toggle each subsection
     const toggleAccordionSection0 = (e) => {
         // Only toggle if user didn't click on input elements
@@ -580,7 +599,7 @@ const ProductDetails = ({
         productDetails.productName === "" ||
         productDetails.productDescription === "" ||
         productDetails.brandName === "" ||
-        productDetails.industry === "" ||
+        productDetails.industryName === "" ||
         productDetails.logoURL === "";
 
     return (
@@ -830,8 +849,8 @@ const ProductDetails = ({
                                             >
                                                 <option value="">Select Brand Name</option>
                                                 {brands.map((brand) => (
-                                                    <option key={brand.id} value={brand.name}>
-                                                        {brand.name}
+                                                    <option key={brand.id} value={brand.brandName}>
+                                                        {brand.brandName}
                                                     </option>
                                                 ))}
                                             </select>
@@ -924,7 +943,7 @@ const ProductDetails = ({
                                         </div>
 
                                         {/* Industry Dropdown */}
-                                        <div className="mb-4">
+                                         <div className="mb-4">
                                             <label
                                                 htmlFor="industry"
                                                 className="block text-sm font-medium text-gray-700 mb-3"
@@ -934,8 +953,8 @@ const ProductDetails = ({
                                             <select
                                                 id="industry"
                                                 name="industry"
-                                                value={productDetails.industry}
-                                                onChange={handleOnChange}
+                                                value={productDetails.industryName}
+                                                onChange={handleIndustrySelect}
                                                 className="rounded-lg py-3 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                                             >
                                                 <option value="">-- Select an Industry --</option>
@@ -945,7 +964,65 @@ const ProductDetails = ({
                                                     </option>
                                                 ))}
                                             </select>
-                                        </div>
+                                        </div> 
+                                        {/* <div className="mb-4">
+                                            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-3">
+                                                Select Industry
+                                            </label>
+                                            <div className="flex gap-4 flex-wrap">
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "E-com"
+                                                            ? "bg-orange-100 border-orange-500 text-orange-700"
+                                                            : "bg-orange-50 border-orange-300 text-orange-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("E-com")}
+                                                >
+                                                    <span>E-com</span>
+                                                    {productDetails.industryName === "E-com" && <FaCheck className="text-orange-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "Automotive"
+                                                            ? "bg-green-100 border-green-500 text-green-700"
+                                                            : "bg-green-50 border-green-300 text-green-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("Automotive")}
+                                                >
+                                                    <span>Automotive</span>
+                                                    {productDetails.industryName === "Automotive" && <FaCheck className="text-green-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "Marketing"
+                                                            ? "bg-blue-100 border-blue-500 text-blue-700"
+                                                            : "bg-blue-50 border-blue-300 text-blue-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("Marketing")}
+                                                >
+                                                    <span>Marketing</span>
+                                                    {productDetails.industryName === "Marketing" && <FaCheck className="text-blue-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "B2B Consultant"
+                                                            ? "bg-yellow-100 border-yellow-500 text-yellow-700"
+                                                            : "bg-yellow-50 border-yellow-300 text-yellow-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("B2B Consultant")}
+                                                >
+                                                    <span>B2B Consultant</span>
+                                                    {productDetails.industryName === "B2B Consultant" && <FaCheck className="text-yellow-700 ml-2" />}
+                                                </button>
+                                                <button
+                                                    className={`w-1/4 p-3 rounded-lg shadow-xl border-2 flex items-center justify-center ${productDetails.industryName === "Other"
+                                                            ? "bg-gray-100 border-gray-500 text-gray-700"
+                                                            : "bg-gray-50 border-gray-300 text-gray-500"
+                                                        } font-medium`}
+                                                    onClick={() => handleIndustrySelect("Other")}
+                                                >
+                                                    <span>Other</span>
+                                                    {productDetails.industryName === "Other" && <FaCheck className="text-gray-700 ml-2" />}
+                                                </button>
+                                            </div>
+                                        </div> */}
+
 
                                         <div className="flex justify-start mt-4">
                                             <button

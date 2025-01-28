@@ -10,6 +10,9 @@ import {
   FaLinkedinIn,
   FaWhatsapp,
 } from "react-icons/fa";
+import axios from "axios";
+import { baseUrl } from "../utils/Constant";
+import { jwtToken } from "../utils/jwtToken";
 import { FaXTwitter } from "react-icons/fa6";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 
@@ -161,7 +164,7 @@ export default function CreativeFormat({
 
     // Some AI suggestions
     const aiSuggestions = [
-     // { title: "Daily Quote", icon: <FaLinkedinIn />, text: "LinkedIn Post" },
+      // { title: "Daily Quote", icon: <FaLinkedinIn />, text: "LinkedIn Post" },
       { title: "Educational Post", icon: <FaInstagram />, text: "Instagram Post" },
       //{ title: "Week Calender", icon: <FaWhatsapp />, text: "WhatsApp Status" },
       { title: "Story", icon: <FaGlobe />, text: "Social Media Story" },
@@ -208,9 +211,8 @@ export default function CreativeFormat({
             {aiSuggestions.map((suggestion, idx) => (
               <div
                 key={idx}
-                className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${
-                  selectedSuggestions.includes(suggestion.title) ? "" : "text-[#082A66]"
-                }`}
+                className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${selectedSuggestions.includes(suggestion.title) ? "" : "text-[#082A66]"
+                  }`}
                 onClick={() => handleSuggestionToggle(suggestion.title)}
               >
                 <p className="font-bold text-center">{suggestion.title}</p>
@@ -345,11 +347,10 @@ export default function CreativeFormat({
               {displayedSizes.map((item, idx) => (
                 <div
                   key={idx}
-                  className={`flex flex-col items-center justify-center gap-2 w-full py-4 rounded-[20px] shadow cursor-pointer ${
-                    selectedSize === item.size
-                      ? "bg-[#00A0F5] text-white"
-                      : "bg-white"
-                  }`}
+                  className={`flex flex-col items-center justify-center gap-2 w-full py-4 rounded-[20px] shadow cursor-pointer ${selectedSize === item.size
+                    ? "bg-[#00A0F5] text-white"
+                    : "bg-white"
+                    }`}
                   onClick={() => setSelectedSize(item.size)}
                 >
                   <img src="/image2.svg" alt="" />
@@ -495,6 +496,156 @@ export default function CreativeFormat({
       setSelectedSize(""); // Reset size selection
     };
 
+    useEffect(() => {
+
+      fetchCohorts();
+    }, []);
+
+    const fetchCohorts = async () => {
+      const brandId =  localStorage.getItem("brandID");
+      if (!brandId) return console.error("Brand ID not found!");
+
+      console.log("Brand ID:", brandId);
+      console.log("JWT Token:", jwtToken);
+
+      try {
+        const response = await axios.get(`${baseUrl}/v2/api/cohorts?brandId=${brandId}`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
+
+        console.log("Fetch Response:", response);
+
+        const data = response.data?.data || [];
+        if (data.length > 0) {
+          setCohorts(data);
+        } else {
+          const staticCohorts = [
+            { name: "Brand Awareness", ageGroup: "18-35", genders: ["All"], interest: "Marketing, Branding", source: "default" },
+            { name: "Sale Campaign", ageGroup: "25-45", genders: ["Male"], interest: "E-commerce, Deals", source: "default" },
+            { name: "Retargeting", ageGroup: "30-50", genders: ["Female"], interest: "Shopping, Lifestyle", source: "default" },
+          ];
+
+          for (const cohort of staticCohorts) {
+            const payload = { ...cohort, brandId };
+
+            console.log("Posting Payload:", payload);
+
+            try {
+              const postResponse = await axios.post(`${baseUrl}/v2/api/cohorts`, payload, {
+                headers: {
+                  Authorization: `Bearer ${jwtToken}`,
+                  "Content-Type": "application/json",
+                },
+              });
+
+              console.log("Post Response:", postResponse);
+            } catch (error) {
+              console.error("Error posting cohort:", payload.name, error.response || error.message);
+            }
+          }
+
+          const updatedResponse = await axios.get(`${baseUrl}/v2/api/cohorts?brandId=${brandId}`, {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          console.log("Updated Fetch Response:", updatedResponse);
+          setCohorts(updatedResponse.data?.data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching cohorts:", error.response || error.message);
+      }
+    };
+
+
+    // Save or update a cohort
+    const saveCohort = async (cohort) => {
+      //const brandId = "sib-4c8e1daa-8";
+      const brandId =  localStorage.getItem("brandID");
+      if (!brandId) return;
+
+      try {
+        const payload = {
+          id: cohort.id || undefined, // Include ID for editing
+          name: cohort.cohortName,
+          ageGroup: `${cohort.ageGroup.min}-${cohort.ageGroup.max}`, // Combine min and max
+          genders: [cohort.gender], // Convert gender to array
+          interest: cohort.interests.join(", "), // Combine interests to string
+          source: "user",
+          brandId,
+        };
+
+        const response = await axios.post(`${baseUrl}/v2/api/cohorts`, payload, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
+
+        if (response.status === 200 || response.status === 201) {
+          fetchCohorts(); // Refresh the cohorts after saving
+          setIsManualSetup(false);
+          setFormValues({
+            id: null,
+            cohortName: "",
+            ageGroup: { min: "", max: "" },
+            gender: "",
+            interests: [],
+          });
+        }
+      } catch (error) {
+        console.error("Error saving cohort:", error.response?.data || error.message);
+      }
+    };
+
+    const handleEditCohort = (cohort) => {
+      setIsManualSetup(true);
+      setFormValues({
+        id: cohort.id,
+        cohortName: cohort.name,
+        ageGroup: {
+          min: cohort.ageGroup.split("-")[0],
+          max: cohort.ageGroup.split("-")[1],
+        },
+        gender: cohort.genders[0],
+        interests: cohort.interest.split(", "),
+      });
+    };
+
+    // Delete a cohort
+    const handleDeleteCohort = async (cohortId) => {
+      try {
+        const response = await axios.delete(`${baseUrl}/v2/api/cohorts/${cohortId}`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
+        setCohorts((prev) => prev.filter((cohort) => cohort.id !== cohortId)); // Update UI
+      } catch (error) {
+        console.error("Error deleting cohort:", error.response?.data || error.message);
+      }
+    };
+
+    useEffect(() => {
+      const selectedIds = cohorts
+        .filter((cohort) => selectedSuggestions.includes(cohort.name))
+        .map((cohort) => cohort.id);
+      localStorage.setItem("selectedCohortIds", JSON.stringify(selectedIds));
+    }, [selectedSuggestions, cohorts]);
+    
+    // Cohort Selection Handler
+    const handleCohortSelection = (cohortName) => {
+      setSelectedSuggestions((prev) =>
+        prev.includes(cohortName)
+          ? prev.filter((name) => name !== cohortName) // Remove if already selected
+          : [...prev, cohortName] // Add if not selected
+      );
+    };
     // Determine the creative sizes dynamically based on the selected platform.
     const displayedSizes = selectedPlatformSlug
       ? getPlatformSizes(selectedPlatformSlug)
@@ -503,6 +654,25 @@ export default function CreativeFormat({
     return (
       <div className="p-6 pt-0">
         {/* 1) Describe Objective */}
+        {/* 1) Objective */}
+        <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
+          <h3 className="text-[#374151] text-lg mb-3">Describe Your Objective</h3>
+          <textarea
+            className="w-full p-3 rounded-lg shadow-md border border-[#E5E7EB] mb-2"
+            rows="4"
+            placeholder="Example: I want to create an educational post about my services"
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+          />
+          <div className="flex justify-end gap-4">
+            <button className="text-sm custom-button text-white px-4 py-2 rounded-md">
+              Enhance with AI
+            </button>
+            <button className="custom-button text-sm text-white px-4 py-2 rounded-md">
+              Submit
+            </button>
+          </div>
+        </div>
         {/* (You can add an objective textarea if needed) */}
 
         {/* 2) Ad Networks */}
@@ -543,11 +713,10 @@ export default function CreativeFormat({
             {campaigns.map((campaign, idx) => (
               <div
                 key={idx}
-                className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] cursor-pointer ${
-                  selectedCampaign === campaign.title
-                    ? "bg-[#00A0F5] text-white"
-                    : "bg-white text-[#082A66]"
-                }`}
+                className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] cursor-pointer ${selectedCampaign === campaign.title
+                  ? "bg-[#00A0F5] text-white"
+                  : "bg-white text-[#082A66]"
+                  }`}
                 onClick={() => setSelectedCampaign(campaign.title)}
               >
                 {campaign.icon}
@@ -574,85 +743,84 @@ export default function CreativeFormat({
               </p>
             </span>
             <span className="flex gap-4">
-                {/* Show icons for the selected platforms for easy filtering */}
-                {selectedPlatforms.map((plat) => {
-                  const slug = plat.toLowerCase();
-                  let IconEl = null;
-                  if (slug === "facebook") {
-                    IconEl = (
-                      <FaFacebookF
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "google") {
-                    IconEl = (
-                      <FaGoogle
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "linkedin") {
-                    IconEl = (
-                      <FaLinkedinIn
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "whatsapp") {
-                    IconEl = (
-                      <FaWhatsapp
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "twitter") {
-                    IconEl = (
-                      <FaXTwitter
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "instagram") {
-                    IconEl = (
-                      <FaInstagram
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "youtube") {
-                    IconEl = (
-                      <FaYoutube
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  }
-                  return IconEl;
-                })}
-              </span>
+              {/* Show icons for the selected platforms for easy filtering */}
+              {selectedPlatforms.map((plat) => {
+                const slug = plat.toLowerCase();
+                let IconEl = null;
+                if (slug === "facebook") {
+                  IconEl = (
+                    <FaFacebookF
+                      key={plat}
+                      className="bg-[#00279926] p-1 cursor-pointer"
+                      size={20}
+                      onClick={() => handleTopIconClick(plat)}
+                    />
+                  );
+                } else if (slug === "google") {
+                  IconEl = (
+                    <FaGoogle
+                      key={plat}
+                      className="bg-[#00279926] p-1 cursor-pointer"
+                      size={20}
+                      onClick={() => handleTopIconClick(plat)}
+                    />
+                  );
+                } else if (slug === "linkedin") {
+                  IconEl = (
+                    <FaLinkedinIn
+                      key={plat}
+                      className="bg-[#00279926] p-1 cursor-pointer"
+                      size={20}
+                      onClick={() => handleTopIconClick(plat)}
+                    />
+                  );
+                } else if (slug === "whatsapp") {
+                  IconEl = (
+                    <FaWhatsapp
+                      key={plat}
+                      className="bg-[#00279926] p-1 cursor-pointer"
+                      size={20}
+                      onClick={() => handleTopIconClick(plat)}
+                    />
+                  );
+                } else if (slug === "twitter") {
+                  IconEl = (
+                    <FaXTwitter
+                      key={plat}
+                      className="bg-[#00279926] p-1 cursor-pointer"
+                      size={20}
+                      onClick={() => handleTopIconClick(plat)}
+                    />
+                  );
+                } else if (slug === "instagram") {
+                  IconEl = (
+                    <FaInstagram
+                      key={plat}
+                      className="bg-[#00279926] p-1 cursor-pointer"
+                      size={20}
+                      onClick={() => handleTopIconClick(plat)}
+                    />
+                  );
+                } else if (slug === "youtube") {
+                  IconEl = (
+                    <FaYoutube
+                      key={plat}
+                      className="bg-[#00279926] p-1 cursor-pointer"
+                      size={20}
+                      onClick={() => handleTopIconClick(plat)}
+                    />
+                  );
+                }
+                return IconEl;
+              })}
+            </span>
           </div>
           <div className="pt-4 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             {displayedSizes.map((item, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col items-center justify-center gap-2 w-full py-4 rounded-[20px] shadow cursor-pointer ${
-                  selectedSize === item.size ? "bg-[#00A0F5] text-white" : "bg-white"
-                }`}
+                className={`flex flex-col items-center justify-center gap-2 w-full py-4 rounded-[20px] shadow cursor-pointer ${selectedSize === item.size ? "bg-[#00A0F5] text-white" : "bg-white"
+                  }`}
                 onClick={() => setSelectedSize(item.size)}
               >
                 <img src="/image2.svg" alt="" />
@@ -667,57 +835,80 @@ export default function CreativeFormat({
         <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-6">
           <h3 className="text-[#082A66] text-lg font-bold mb-4">AI Suggestions</h3>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                icon: <FaFacebookF />,
-                title: "Brand Awareness",
-                profile: {
-                  age: "18-35",
-                  gender: "All",
-                  interests: "Marketing, Branding",
-                },
-              },
-              {
-                icon: <FaFacebookF />,
-                title: "Sale Campaign",
-                profile: {
-                  age: "25-45",
-                  gender: "Male",
-                  interests: "E-commerce, Deals",
-                },
-              },
-              {
-                icon: <FaFacebookF />,
-                title: "Retargeting",
-                profile: {
-                  age: "30-50",
-                  gender: "Female",
-                  interests: "Shopping, Lifestyle",
-                },
-              },
-            ].map((sugg, idx) => (
+            {cohorts.map((cohort, idx) => (
               <div
                 key={idx}
-                className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer`}
-                onClick={() => toggleSuggestionSelection(sugg.title)}
+                className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${selectedSuggestions.includes(cohort.name) ? "border-[#00A0F5]" : ""
+                  }`}
+                // onClick={() => {
+                //   if (selectedSuggestions.includes(cohort.name)) {
+                //     // Deselect the cohort
+                //     setSelectedSuggestions((prev) =>
+                //       prev.filter((name) => name !== cohort.name)
+                //     );
+                //   } else {
+                //     // Select the cohort
+                //     setSelectedSuggestions((prev) => [...prev, cohort.name]);
+                //   }
+                // }}
+                onClick={() => handleCohortSelection(cohort.name)}
               >
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
-                    {sugg.icon}
+                    <FaFacebookF />
                   </span>
-                  <p className="font-bold text-center">{sugg.title}</p>
+                  <p className="font-bold text-center">{cohort.name}</p>
                 </div>
                 <div className="mt-2 text-sm text-center">
                   <p>Audience Profile:</p>
-                  <p>Age: {sugg.profile.age}</p>
-                  <p>Gender: {sugg.profile.gender}</p>
-                  <p>Interest: {sugg.profile.interests}</p>
+                  <p>Age: {cohort.ageGroup}</p>
+                  <p>Gender: {cohort.genders}</p>
+                  <p>Interest: {cohort.interest}</p>
                 </div>
-                {selectedSuggestions.includes(sugg.title) && (
-                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
-                    <FaCheck className="text-white text-sm" />
-                  </div>
-                )}
+                <div className="absolute top-2 right-2 flex gap-2">
+                  {selectedSuggestions.includes(cohort.name) ? (
+                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
+                      <FaCheck className="text-white text-sm" />
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        className="text-blue-500"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent parent click event
+                          handleEditCohort(cohort);
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          height="20px"
+                          viewBox="0 -960 960 960"
+                          width="20px"
+                          fill="#082A66"
+                        >
+                          <path d="M216-216h51l375-375-51-51-375 375v51Zm-72 72v-153l498-498q11-11 23.84-16 12.83-5 27-5 14.16 0 27.16 5t24 16l51 51q11 11 16 24t5 26.54q0 14.45-5.02 27.54T795-642L297-144H144Zm600-549-51-51 51 51Zm-127.95 76.95L591-642l51 51-25.95-25.05Z" />
+                        </svg>
+                      </button>
+                      <button
+                        className="text-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent parent click event
+                          handleDeleteCohort(cohort.id);
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          height="20px"
+                          viewBox="0 -960 960 960"
+                          width="20px"
+                          fill="#EA3323"
+                        >
+                          <path d="M312-144q-29.7 0-50.85-21.15Q240-186.3 240-216v-480h-48v-72h192v-48h192v48h192v72h-48v479.57Q720-186 698.85-165T648-144H312Zm336-552H312v480h336v-480ZM384-288h72v-336h-72v336Zm120 0h72v-336h-72v336ZM312-696v480-480Z" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -784,6 +975,7 @@ export default function CreativeFormat({
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
+                      <option value="Other">All</option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
@@ -823,32 +1015,10 @@ export default function CreativeFormat({
               </div>
               <button
                 className="custom-button mt-4 px-4 py-2 bg-green-500 text-white rounded-md"
-                onClick={handleAddCohort}
+                onClick={() => saveCohort(formValues)}
               >
-                Add Cohort
+                Save Cohort
               </button>
-              <div className="mt-4">
-                <h4 className="font-bold">Preview</h4>
-                {cohorts.map((cohort, idx) => (
-                  <div
-                    key={idx}
-                    className="border p-4 rounded mt-2 bg-gray-200 text-sm"
-                  >
-                    <p>
-                      <strong>Name:</strong> {cohort.cohortName}
-                    </p>
-                    <p>
-                      <strong>Age Group:</strong> {cohort.ageGroup.min} - {cohort.ageGroup.max}
-                    </p>
-                    <p>
-                      <strong>Gender:</strong> {cohort.gender}
-                    </p>
-                    <p>
-                      <strong>Interests:</strong> {cohort.interests.join(", ")}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -872,15 +1042,13 @@ export default function CreativeFormat({
   return (
     <div ref={sectionRef}>
       <section
-        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] pb-2 ${
-          !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
-        } flex flex-col gap-6 relative z-10`}
+        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] pb-2 ${!isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
+          } flex flex-col gap-6 relative z-10`}
       >
         {/* Accordion Header */}
         <div
-          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${
-            !isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
-          } relative cursor-pointer`}
+          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
+            } relative cursor-pointer`}
           onClick={toggleNextSectionAccordion}
         >
           {isCompleted && (

@@ -31,8 +31,8 @@ const Header = ({ toggleSidebar }) => {
         setUserName(storedUserName); // Set the retrieved userName to the state
       } else {
         console.log("No userName found in localStorage");
-      }setTotalImages(userInfo.totalImages || 150);
-      setCompletedImages(userInfo.generatedImages || 110);
+      }setTotalImages(userInfo.totalImages || 10);
+      setCompletedImages(userInfo.generatedImages || 0);
     } catch (error) {
       console.error("Failed to fetch user info:", error);
     }

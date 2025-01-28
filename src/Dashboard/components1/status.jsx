@@ -87,7 +87,7 @@ const HomePage = () => {
 
   const handleNavigateToProductSetup = () => {
     setTimeout(() => {
-      navigate("/productsetup", { state: { taskNumber: 2 } });
+      navigate("/productdetails", { state: { taskNumber: 2 } });
     }, 100);
   };
 

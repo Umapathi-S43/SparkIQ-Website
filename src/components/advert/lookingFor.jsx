@@ -63,7 +63,7 @@ export default function LookingFor({
             </span>
           )}
           <span className="flex items-center gap-4">
-            <img src="/icon4.svg" alt="Icon" />
+            <img src="/iconTt.svg" alt="Icon" />
             <span className="flex flex-col">
               <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">
                 Creative Formats

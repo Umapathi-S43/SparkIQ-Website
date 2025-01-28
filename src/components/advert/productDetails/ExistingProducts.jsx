@@ -60,6 +60,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   const handleCreateProduct = () => {
     localStorage.removeItem('productID');
     localStorage.removeItem('selectedProduct');
+    localStorage.removeItem('brandID');
     
     setIsNextSectionOpen(false); // Reset the next section state
     setIsCompleted(false);
@@ -101,6 +102,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
     setIsCompleted(true);
     localStorage.setItem('selectedProduct', JSON.stringify(product)); // Store entire product
     localStorage.setItem('productID', JSON.stringify(product.id)); // Store product ID separately
+    localStorage.setItem('brandID', JSON.stringify(product.brandID));
   };
   
   
