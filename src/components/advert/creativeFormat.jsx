@@ -502,7 +502,7 @@ export default function CreativeFormat({
     }, []);
 
     const fetchCohorts = async () => {
-      const brandId =  localStorage.getItem("brandID");
+      const brandId =  JSON.parse(localStorage.getItem("brandID"));
       if (!brandId) return console.error("Brand ID not found!");
 
       console.log("Brand ID:", brandId);
@@ -567,7 +567,7 @@ export default function CreativeFormat({
     // Save or update a cohort
     const saveCohort = async (cohort) => {
       //const brandId = "sib-4c8e1daa-8";
-      const brandId =  localStorage.getItem("brandID");
+      const brandId =  JSON.parse(localStorage.getItem("brandID"));
       if (!brandId) return;
 
       try {
