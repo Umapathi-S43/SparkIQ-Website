@@ -165,14 +165,22 @@ const Products = () => {
                 navigate(`/productdetails?id=${encodeURIComponent(product.id)}`)
               }
             >
-              {product.productImagesList?.map((item) => (
-                <img
-                  key={item.id}
-                  src={item.imageURL}
-                  alt={item.bucketName}
-                  className="object-cover w-full h-48 rounded-lg"
-                />
-              ))}
+              {product.productImagesList && product.productImagesList.length > 0 ? (
+                <div className="flex space-x-2 overflow-x-auto w-full h-48">
+                  {product.productImagesList.map((item, idx) => (
+                    <img
+                      key={idx}
+                      src={item.imageURL}
+                      alt={item.bucketName}
+                      className="object-cover w-full h-48 rounded-lg flex-shrink-0"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center w-full h-48 bg-gray-100 rounded-lg">
+                  <p className="text-gray-400">No Images Available</p>
+                </div>
+              )}
               <div className="text-center flex justify-between w-full px-2 relative">
                 <h3
                   className="text-xl font-bold text-[#082A66] group-hover:text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[15ch]"
@@ -185,10 +193,10 @@ const Products = () => {
                   </span>
                 )}
                 {product.price > 0 && (
-                <span className="font-semibold text-[#082A66] group-hover:text-white">
-                  {product.price} {product.priceType}
-                </span>
-              )}
+                  <span className="font-semibold text-[#082A66] group-hover:text-white">
+                    {product.price} {product.priceType}
+                  </span>
+                )}
 
               </div>
               <div className="text-justify w-full px-2 line-clamp-3">

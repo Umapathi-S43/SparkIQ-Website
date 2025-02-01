@@ -69,6 +69,7 @@ export default function BrandSetting() {
   // We might get brandName from location.search or from location.state
   const params = new URLSearchParams(location.search);
   const brandNameFromUrl = params.get("id") || location.state?.id || null;
+  const brandDataFromUrl = location.state?.response || null;
 
   // Step
   const initialStep = location.state?.step || 1;
@@ -95,7 +96,6 @@ export default function BrandSetting() {
     },
     colorPalettes: [
       "#082A66,#ffffff,#000000",
-      "#cccccc,#dddddd,#eeeeee",
     ],
     fonts: [
       {
@@ -111,35 +111,11 @@ export default function BrandSetting() {
         isEditing: false,
       },
       {
-        id: "subheading",
-        role: "Subheading",
-        fontFamily: "Roboto",
-        size: 24,
-        bold: false,
-        italic: false,
-        underline: false,
-        isCustom: false,
-        customFile: null,
-        isEditing: false,
-      },
-      {
         id: "body",
         role: "Body",
         fontFamily: "Arial",
         size: 16,
         bold: false,
-        italic: false,
-        underline: false,
-        isCustom: false,
-        customFile: null,
-        isEditing: false,
-      },
-      {
-        id: "cta",
-        role: "CTA",
-        fontFamily: "Montserrat",
-        size: 20,
-        bold: true,
         italic: false,
         underline: false,
         isCustom: false,
@@ -169,7 +145,7 @@ export default function BrandSetting() {
   // On mount, if brandInfo passed in location.state, set brand data
   useEffect(() => {
     if (brandInfo) {
-      const foundBrand = brandInfo.data;
+      const foundBrand = brandInfo;
       console.log("Found Brand:", foundBrand);
 
       if (foundBrand) {
@@ -177,8 +153,8 @@ export default function BrandSetting() {
           ...prev,
           brandName: foundBrand.brandName || "",
           brandVoice: foundBrand.brandVoice || "",
-          mission: foundBrand.mission || "",
-          vision: foundBrand.vision || "",
+          mission: foundBrand.mission || foundBrand.brandMission || "",
+          vision: foundBrand.vision || foundBrand.brandVision || "",
           brandStory: foundBrand.brandStory || "",
           niche: foundBrand.niche || "",
           targetAudience: foundBrand.targetAudience || "",
@@ -502,9 +478,8 @@ function StepIndicator({ step, activeStep }) {
       <div className="progress-step">
         <div className="w-7 h-7 rounded-lg bg-[#082A66] flex items-center justify-center">
           <div
-            className={`w-4 h-4 text-white font-semibold rounded-full ${
-              isDone ? "bg-white" : "bg-[#082A66]"
-            } flex items-center justify-center`}
+            className={`w-4 h-4 text-white font-semibold rounded-full ${isDone ? "bg-white" : "bg-[#082A66]"
+              } flex items-center justify-center`}
           >
             {isDone ? (
               <svg
@@ -616,8 +591,38 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
     onPrev && onPrev();
   };
 
-  // No validations for these fields, since all optional now
+  // Now we validate that Brand Voice, Mission, and Vision are required.
   const handleNextClick = () => {
+    // 1. Brand Voice required
+    if (!brandData.brandVoice.trim()) {
+      toast.error("Brand Voice is required.");
+      return;
+    }
+    // 2. Mission required
+    if (!brandData.mission.trim()) {
+      toast.error("Mission is required.");
+      return;
+    }
+    // 3. Vision required
+    if (!brandData.vision.trim()) {
+      toast.error("Vision is required.");
+      return;
+    }
+
+    // Brand Story & Niche remain optional
+    if (!brandData.niche.trim()) {
+      toast.error("brand Niche is required.");
+      return;
+    }
+    if (!brandData.brandStory.trim()) {
+      toast.error("Brand Story is required.");
+      return;
+    }
+    if (!brandData.targetAudience.trim()) {
+      toast.error("Target Audience is required.");
+      return;
+    }
+
     onNext && onNext();
   };
 
@@ -633,9 +638,9 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
       <div className="mb-6 border border-[#FCFCFC] p-4 rounded-xl bg-[rgba(252,252,252,0.25)]">
         <h3 className="text-lg font-semibold mb-3">Brand Identity</h3>
 
-        {/* Brand Voice */}
+        {/* Brand Voice (Required) */}
         <label className="block font-semibold mb-1" htmlFor="brandVoice">
-          Brand Voice (Optional)
+          Brand Voice
         </label>
         <textarea
           id="brandVoice"
@@ -647,9 +652,9 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Mission */}
+        {/* Mission (Required) */}
         <label className="block font-semibold mb-1" htmlFor="mission">
-          Mission (Optional)
+          Mission
         </label>
         <textarea
           id="mission"
@@ -661,9 +666,9 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Vision */}
+        {/* Vision (Required) */}
         <label className="block font-semibold mb-1" htmlFor="vision">
-          Vision (Optional)
+          Vision
         </label>
         <textarea
           id="vision"
@@ -677,7 +682,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
 
         {/* Brand Story (Optional) */}
         <label className="block font-semibold mb-1" htmlFor="brandStory">
-          Brand Story (Optional)
+          Brand Story 
         </label>
         <textarea
           id="brandStory"
@@ -691,7 +696,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
 
         {/* Niche (Optional) */}
         <label className="block font-semibold mb-1" htmlFor="niche">
-          Niche (Optional)
+          Niche 
         </label>
         <textarea
           id="niche"
@@ -707,9 +712,9 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
       <div className="mb-6 border border-[#FCFCFC] p-4 rounded-xl bg-[#FCFCFC40]">
         <h3 className="text-lg font-semibold mb-3">Audience Overview</h3>
 
-        {/* Target Audience */}
+        {/* Target Audience (Optional) */}
         <label className="block font-semibold mb-1" htmlFor="targetAudience">
-          Target Audience (Optional)
+          Target Audience
         </label>
         <textarea
           id="targetAudience"
@@ -721,7 +726,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Audience Objective */}
+        {/* Audience Objective (Optional) */}
         <label className="block font-semibold mb-1" htmlFor="audienceObjective">
           Audience Objective (Optional)
         </label>
@@ -753,6 +758,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
     </div>
   );
 }
+
 
 /** Step 3: BrandAssets */
 function BrandAssets({ brandData, setBrandData, onPrev, onFinish }) {
@@ -818,12 +824,12 @@ function BrandElements({ brandData, setBrandData }) {
             },
           ],
         }));
-        toast.success("Icon uploaded!");
+        
         setShowIconUpload(false);
       }
     } catch (error) {
       console.error("Failed to upload icon:", error);
-      toast.error("Failed to upload icon");
+     
     } finally {
       setUploadingIcon(false);
     }
@@ -1817,17 +1823,15 @@ function FontRowPen({
         </button>
         <button
           onClick={onToggleItalic}
-          className={`border p-1 rounded ${
-            italic ? "bg-gray-300" : "bg-white"
-          }`}
+          className={`border p-1 rounded ${italic ? "bg-gray-300" : "bg-white"
+            }`}
         >
           <FaItalic />
         </button>
         <button
           onClick={onToggleUnderline}
-          className={`border p-1 rounded ${
-            underline ? "bg-gray-300" : "bg-white"
-          }`}
+          className={`border p-1 rounded ${underline ? "bg-gray-300" : "bg-white"
+            }`}
         >
           <FaUnderline />
         </button>

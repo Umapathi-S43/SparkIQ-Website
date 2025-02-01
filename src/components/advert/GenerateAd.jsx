@@ -173,10 +173,10 @@ export default function GenerateAd() {
 
             {showProductDetails && (
               <ProductDetails
-                isCompleted={openModalProductDetails}
-                setIsCompleted={setOpenModalProductDetails}
-                setShowProductDetails={setShowProductDetails}
-                handleNext={handleNextToLookingFor}
+              setIsNextSectionOpen={setIsLookingForOpen}
+              isCompleted={openModalProductDetails}
+              setIsCompleted={setOpenModalProductDetails}
+              setShowProductDetails={setShowProductDetails}
                 handleBack={handleBackToExisting}
               />
             )}

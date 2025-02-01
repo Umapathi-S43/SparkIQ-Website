@@ -34,7 +34,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
       setError("Failed to fetch products.");
     }
   };
-  
+
   const fetchBrands = async () => {
     try {
       if (!jwtToken) {
@@ -61,11 +61,11 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
     localStorage.removeItem('productID');
     localStorage.removeItem('selectedProduct');
     localStorage.removeItem('brandID');
-    
+
     setIsNextSectionOpen(false); // Reset the next section state
     setIsCompleted(false);
     setShowProductDetails(true); // Proceed to product creation
-};
+  };
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -80,10 +80,10 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   const filteredProducts = products.filter(product => {
     return (selectedBrand === 'all' || product.brandID === selectedBrand) &&
       ((product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())));
+        (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())));
   });
 
-  
+
 
   const toggleAccordion = () => {
     setIsOpen(!isOpen);
@@ -94,7 +94,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
     setSelectedProduct(product);
     handleNextStep(product);
   };
-  
+
   const handleNextStep = (product) => {
     console.log("Handling next step with product:", product);
     setIsOpen(false);
@@ -104,16 +104,16 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
     localStorage.setItem('productID', JSON.stringify(product.id)); // Store product ID separately
     localStorage.setItem('brandID', JSON.stringify(product.brandID));
   };
-  
-  
+
+
 
   const isNextStepDisabled = selectedProduct === null;
 
   return (
     <div className={`border border-[#FCFCFC] bg-[rgba(252,252,252,0.25)] rounded-[24px] ${isOpen ? 'p-0' : 'p-3'} flex flex-col gap-6 relative z-10`}>
 
-<div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'}  relative cursor-pointer`}
-      onClick={toggleAccordion}
+      <div className={`flex justify-between items-center bg-[rgba(252,252,252,0.40)] ${isOpen ? 'rounded-t-[20px] p-4' : 'rounded-[20px] lg:p-2 p-2'}  relative cursor-pointer`}
+        onClick={toggleAccordion}
       >
         {isCompleted && (
           <span className="bg-[#A7F3D0] text-[#059669] text-xs font-medium rounded-[10px] px-3 py-1 flex items-center gap-[10px] w-fit absolute right-0 -top-3">
@@ -196,35 +196,37 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 onClick={() => handleProductClick(product)}
                 style={selectedProduct === product ? { border: '4px solid transparent', borderImage: 'linear-gradient(201.07deg, #00A7FF 0.53%, #004367 98.24%) 1', borderRadius: '16px' } : { borderRadius: '16px' }}
               >
-                {product.productImagesList?.length ? (
-                  product.productImagesList.map((item, idx) => (
-                    <img
-                      key={idx}
-                      src={item.imageURL}
-                      alt={item.bucketName}
-                      className="object-cover w-full h-48 rounded-lg"
-                    />
-                  ))
+                {product.productImagesList && product.productImagesList.length > 0 ? (
+                  <div className="flex space-x-2 overflow-x-auto w-full h-48">
+                    {product.productImagesList.map((item, idx) => (
+                      <img
+                        key={idx}
+                        src={item.imageURL}
+                        alt={item.bucketName}
+                        className="object-cover w-full h-48 rounded-lg flex-shrink-0"
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <div className="object-cover w-full h-48 rounded-lg bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500">No Image</span>
+                  <div className="flex items-center justify-center w-full h-48 bg-gray-100 rounded-lg">
+                    <p className="text-gray-400">No Images Available</p>
                   </div>
                 )}
                 <div className="text-center flex justify-between w-full px-2 relative">
-                <h3
-                  className="text-xl font-bold text-[#082A66] group-hover:text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[15ch]"
-                >
-                  {product.name.length > 15 ? `${product.name.slice(0, 15)}...` : product.name}
-                </h3>
-                {product.name.length > 15 && (
-                  <span className="tooltip absolute top-[-20px] left-0 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 whitespace-normal z-10">
-                    {product.name}
+                  <h3
+                    className="text-xl font-bold text-[#082A66] group-hover:text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[15ch]"
+                  >
+                    {product.name.length > 15 ? `${product.name.slice(0, 15)}...` : product.name}
+                  </h3>
+                  {product.name.length > 15 && (
+                    <span className="tooltip absolute top-[-20px] left-0 bg-gray-700 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 whitespace-normal z-10">
+                      {product.name}
+                    </span>
+                  )}
+                  <span className="font-semibold text-[#082A66] group-hover:text-white">
+                    {product.price} {product.priceType}
                   </span>
-                )}
-                <span className="font-semibold text-[#082A66] group-hover:text-white">
-                  {product.price} {product.priceType}
-                </span>
-              </div>
+                </div>
                 <div className="text-justify w-full px-2 line-clamp-3">
                   <p className="text-sm text-[#374151] group-hover:text-white">{product.description}</p>
                 </div>

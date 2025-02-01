@@ -11,24 +11,7 @@ import "./Creatives.css";
 
 // Polotno API key
 const POLNOTO_API_KEY = "nFA5H9elEytDyPyvKL7T";
-
-// Hard-coded brandId
 const FIXED_BRAND_ID = "sib-81b85382-b";
-
-// Example placeholder data
-const medicineData = {
-  title: "Renocare Plus",
-  description: "Eliminates toxins and supports kidney function",
-  feature_tag_1: "Supports Kidney Function",
-  cohort: "Adults",
-  price: "$29.99",
-  rating: "4.5",
-  discount: "20%",
-  product_image:
-    "https://sparkiq-image-upload.s3.amazonaws.com/1737704000813_1jpg.avif",
-  logo:
-    "https://images.unsplash.com/photo-1736841131662-ab6fc065124a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMTY5OTZ8MHwxfGFsbHwxMHx8fHx8fHx8MTczNjkyMjY1OXw&ixlib=rb-4.0.3&q=80&w=1080",
-};
 
 export default function Creatives({
   isNextSectionOpen,
@@ -36,7 +19,6 @@ export default function Creatives({
   handleNextSection,
   setIsCompleted,
   isCompleted,
-  // Optional props
   handlePreviewClick,
   handleDownload,
   product,
@@ -46,46 +28,56 @@ export default function Creatives({
   const workspaceRef = useRef(null);
 
   const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentStore, setCurrentStore] = useState(null);
-  const [currentTemplate, setCurrentTemplate] = useState(null);
 
   const navigate = useNavigate();
 
-  // 1. Replace placeholders
-  const applyTemplate = (templateJson) => {
+  // -------------------------------------------------------
+  // 1) Apply dynamic placeholders from generateImageContentResponses
+  // -------------------------------------------------------
+  const applyTemplate = (templateJson, placeholders) => {
     try {
       const parsedJson = JSON.parse(templateJson);
+
       parsedJson.pages.forEach((page) => {
         page.children.forEach((element) => {
           if (element.custom && element.custom.variable) {
+            // e.g. {title}, {description}, {cta}, {feature1}, ...
             const variableName = element.custom.variable.replace(/[{}]/g, "");
-            const newValue = medicineData[variableName];
+            const newValue = placeholders[variableName];
             if (newValue) {
-              if (element.type === "text") {
+              const elementType = (element.type || "").toLowerCase();
+              
+              if (elementType === "text") {
                 element.text = newValue;
-              } else if (element.type === "image") {
+              } else if (elementType === "image") {
                 element.src = newValue;
               }
             }
           }
         });
       });
+
       return parsedJson;
     } catch (err) {
-      console.error("Error applying template placeholders:", err);
+      console.error("Error applying placeholders:", err);
       toast.error("Failed to apply template placeholders.");
       return null;
     }
   };
 
-  // 2. Convert base64 -> Blob
+  // -------------------------------------------------------
+  // 2) Convert base64 -> Blob
+  // -------------------------------------------------------
   const dataURLToBlob = async (dataURL) => {
     const blob = await fetch(dataURL).then((res) => res.blob());
     return blob;
   };
 
-  // 3. Upload to S3
+  // -------------------------------------------------------
+  // 3) Upload image to S3
+  // -------------------------------------------------------
   const uploadImageToS3 = async (imageBlob) => {
     const formData = new FormData();
     formData.append("file", imageBlob, "uploaded-creative.png");
@@ -103,7 +95,9 @@ export default function Creatives({
     return response.data.data.url;
   };
 
-  // 4. Create template on server
+  // -------------------------------------------------------
+  // 4) Create template on server
+  // -------------------------------------------------------
   const createTemplateOnServer = async (s3Url, storeJson) => {
     const payload = {
       url: s3Url,
@@ -126,7 +120,6 @@ export default function Creatives({
       const response = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
-      console.log("Template creation response:", response.data);
       return response.data;
     } catch (error) {
       console.error("Error creating template on server:", error);
@@ -135,7 +128,9 @@ export default function Creatives({
     }
   };
 
-  // 5. Generate from Polotno + upload + create
+  // -------------------------------------------------------
+  // 5) Polotno -> S3 -> Create flow for each template
+  // -------------------------------------------------------
   const generateUploadAndCreateTemplate = async (store, storeJson) => {
     try {
       const base64Image = await store.toDataURL({
@@ -144,74 +139,262 @@ export default function Creatives({
         quality: 1,
       });
       if (!base64Image) {
-        toast.error("Failed to generate image.");
+        toast.error("Failed to generate image from Polotno.");
         return null;
       }
       const imageBlob = await dataURLToBlob(base64Image);
       const s3Url = await uploadImageToS3(imageBlob);
-      console.log("S3 URL:", s3Url);
-
       if (!s3Url) return null;
 
       const creationResponse = await createTemplateOnServer(s3Url, storeJson);
       return { s3Url, creationResponse };
     } catch (err) {
-      console.error("Error generating/uploading/creating template:", err);
+      console.error("Error in Polotno -> S3 -> Create flow:", err);
       toast.error("Error in full creation flow.");
       return null;
     }
   };
 
-  // handleEdit
-  const handleEdit = (templateObj) => {
-    console.log("Editing template:", templateObj);
-    navigate("/editor", { state: { templateData: templateObj } });
-  };
+  // -------------------------------------------------------
+  // 6) Main: For all cohorts => /v2/generate => each template
+  // -------------------------------------------------------
+  // 6) Main: For all cohorts => /v2/generate => each template
+const generateAndFetchTemplates = async () => {
+  setLoading(true);
+  try {
+    // 1) Pull the creativePayload from localStorage
+    const storedPayload = localStorage.getItem("creativePayload");
+    if (!storedPayload) {
+      toast.error("No creativePayload found in localStorage.");
+      setLoading(false);
+      return;
+    }
 
-  // handleBookmark
+    const parsedPayload = JSON.parse(storedPayload);
+    const { postType, cohortIds } = parsedPayload;
+
+    // We'll accumulate all final templates here
+    const allTemplates = [];
+
+    // -------------------------------------------------------
+    // Handle BOTH Adcreative (with cohorts) and SocialMediaPost (no cohorts)
+    // -------------------------------------------------------
+    if (postType === "SocialMediaPost") {
+      // -- CASE 1: Social media => single iteration with empty cohort
+      const requestBody = {
+        ...parsedPayload,
+        cohortId: "", // no real cohort here
+      };
+      // Remove the cohortIds array if it exists
+      delete requestBody.cohortIds;
+
+      // Call /v2/generate once
+      let generateResp;
+      try {
+        generateResp = await axios.post(`${baseUrl}/v2/generate`, requestBody, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
+      } catch (err) {
+        console.error("Error calling /v2/generate for SocialMediaPost:", err);
+        setLoading(false);
+        return;
+      }
+
+      const apiData = generateResp.data?.data;
+      if (!apiData) {
+        console.error("No data in generate response for SocialMediaPost");
+      } else {
+        // same logic from here on: extracting arrays, placeholders, templates, polotno, etc.
+        await handleGenerateResponse(apiData, allTemplates);
+      }
+
+    } else {
+      // -- CASE 2: Adcreative => multiple cohorts
+      if (!Array.isArray(cohortIds) || cohortIds.length === 0) {
+        toast.error("No cohortIds in the payload for Adcreative.");
+        setLoading(false);
+        return;
+      }
+
+      for (const singleCohortId of cohortIds) {
+        // Build request with single cohort
+        const requestBody = {
+          ...parsedPayload,
+          cohortId: singleCohortId,
+        };
+        delete requestBody.cohortIds;
+
+        let generateResp;
+        try {
+          generateResp = await axios.post(`${baseUrl}/v2/generate`, requestBody, {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          });
+        } catch (err) {
+          console.error(
+            "Error calling /v2/generate for cohort:",
+            singleCohortId,
+            err
+          );
+          continue; // skip this iteration
+        }
+
+        const apiData = generateResp.data?.data;
+        if (!apiData) {
+          console.error("No data in generate response for cohort:", singleCohortId);
+          continue;
+        }
+
+        // same logic for extracting arrays, placeholders, and polotno
+        await handleGenerateResponse(apiData, allTemplates);
+      }
+    }
+
+    // 3) done => set in state
+    setTemplates(allTemplates);
+    toast.success("Templates generated successfully!");
+  } catch (error) {
+    console.error("Error in generateAndFetchTemplates:", error);
+    toast.error("Failed to generate or fetch templates. Check console.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// -------------------------------------------------------
+//  Reusable helper to process /v2/generate "data" => templates
+// -------------------------------------------------------
+async function handleGenerateResponse(apiData, allTemplates) {
+  const {
+    productImageURL,
+    brandLogoURL,
+    imageSize,
+    brandID,
+    generateContentResponses,
+  } = apiData;
+
+  const templateResponses =
+    generateContentResponses?.templateResponses || [];
+  const imageContents =
+    generateContentResponses?.generateImageContentResponses || [];
+
+  const maxCount = Math.min(templateResponses.length, imageContents.length);
+  for (let i = 0; i < maxCount; i++) {
+    const tResp = templateResponses[i];
+    const placeholders = imageContents[i];
+
+    // Optionally add productImageURL, brandLogoURL, etc. into placeholders:
+    const combinedPlaceholders = {
+      ...placeholders,
+      productImageURL,
+      brandLogoURL,
+    };
+
+    const templateId = tResp.id;
+    let templateRes;
+    try {
+      templateRes = await axios.get(`${baseUrl}/v2/template/${templateId}`, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
+    } catch (err) {
+      console.error("Failed to fetch Polotno template for ID:", templateId, err);
+      continue;
+    }
+
+    const polotnoData = templateRes.data?.data?.templateJson;
+    if (!polotnoData) {
+      console.error("No polotnoData for ID:", templateId);
+      continue;
+    }
+
+    // apply placeholders
+    console.log("Applying placeholders:", combinedPlaceholders);
+    const updatedTemplateData = applyTemplate(polotnoData, combinedPlaceholders);
+    console.log("Updated template data:", updatedTemplateData);
+    if (!updatedTemplateData) continue;
+
+    // Polotno => S3 => create
+    const store = createStore({ key: POLNOTO_API_KEY });
+    setCurrentStore(store);
+
+    // Wait a bit to ensure store readiness
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    store.loadJSON(updatedTemplateData);
+
+    const flowResult = await generateUploadAndCreateTemplate(
+      store,
+      updatedTemplateData
+    );
+
+    // Clear store for the next iteration
+    store.clear();
+    setCurrentStore(null);
+
+    if (!flowResult || !flowResult.s3Url || !flowResult.creationResponse) {
+      continue;
+    }
+
+    const createdData = flowResult.creationResponse.data;
+    allTemplates.push({
+      renderedImage: flowResult.s3Url,
+      productImageURL,
+      brandLogoURL,
+      brandId: brandID,
+      imageSize,
+      templateObj: {
+        templateId: createdData?.templateId || "",
+        url: createdData?.url || flowResult.s3Url,
+        templateOrientation: createdData?.templateOrientation || "1:1",
+        priority: createdData?.priority || 0,
+        templateSize: createdData?.templateSize || imageSize || "1080x1080",
+        brandId: createdData?.brandId || brandID || FIXED_BRAND_ID,
+        version: createdData?.version || "",
+        tag: createdData?.tag || "",
+        postType: createdData?.postType || "standard",
+        customTemplate: createdData?.customTemplate || false,
+        mediaType: createdData?.mediaType || "image",
+        videoDuration: createdData?.videoDuration || "00:00",
+        voiceoverEnabled:
+          createdData?.voiceoverEnabled === undefined
+            ? true
+            : createdData?.voiceoverEnabled,
+        templateJson:
+          createdData?.templateJson || JSON.stringify(updatedTemplateData),
+        isFavourite: createdData?.isFavourite || false,
+      },
+    });
+  }
+}
+
+  // -------------------------------------------------------
+  // 7) Bookmark
+  // -------------------------------------------------------
   const handleBookmark = async (index) => {
     try {
       const existing = templates[index];
-      if (!existing.templateObj) {
+      if (!existing?.templateObj) {
         toast.error("No template object found to bookmark.");
         return;
       }
 
       const templateId = existing.templateObj.templateId;
       if (!templateId) {
-        toast.error("No templateId found. Cannot update as favourite.");
+        toast.error("No templateId found. Cannot bookmark.");
         return;
       }
 
-      // Build payload
       const payload = {
-        templateId,
-        url: existing.templateObj.url,
-        templateOrientation: existing.templateObj.templateOrientation,
-        priority: existing.templateObj.priority,
-        templateSize: existing.templateObj.templateSize,
-        brandId: existing.templateObj.brandId,
-        version: existing.templateObj.version,
-        tag: existing.templateObj.tag,
-        postType: existing.templateObj.postType,
-        customTemplate: existing.templateObj.customTemplate,
-        mediaType: existing.templateObj.mediaType,
-        videoDuration: existing.templateObj.videoDuration,
-        voiceoverEnabled: existing.templateObj.voiceoverEnabled,
-        templateJson: existing.templateObj.templateJson,
+        ...existing.templateObj,
         isFavourite: true,
       };
 
-      // Local update (optimistic)
-      const newTemplates = [...templates];
-      newTemplates[index].templateObj.isFavourite = true;
-      setTemplates(newTemplates);
+      // local update
+      const updated = [...templates];
+      updated[index].templateObj.isFavourite = true;
+      setTemplates(updated);
 
       // POST to server
       const response = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
-        headers: {
-          Authorization: `Bearer ${jwtToken}`,
-        },
+        headers: { Authorization: `Bearer ${jwtToken}` },
       });
 
       if (response.data?.data?.isFavourite === true) {
@@ -219,112 +402,28 @@ export default function Creatives({
       } else {
         toast.error("Failed to bookmark template on server.");
       }
-    } catch (error) {
-      console.error("Error bookmarking template:", error);
+    } catch (err) {
+      console.error("Error bookmarking template:", err);
       toast.error("Could not bookmark template.");
     }
   };
 
-  // 8. Fetch templates
-  const fetchTemplates = async () => {
-    setLoading(true);
-
-    const templateIds = [
-      "sit-4aba8a63-a",
-      "sit-8689fc63-2",
-      "sit-1c42dbbc-8",
-      "sit-e67a0d24-0",
-      "sit-040c1fc1-b"
-    ];
-
-    const newTemplates = [];
-
-    try {
-      for (const id of templateIds) {
-        const response = await axios.get(`${baseUrl}/v2/template/${id}`, {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        });
-
-        const { data } = response.data;
-        const updatedTemplateData = applyTemplate(data.templateJson);
-        if (!updatedTemplateData) continue;
-
-        const store = createStore({ key: POLNOTO_API_KEY });
-        setCurrentStore(store);
-        setCurrentTemplate(updatedTemplateData);
-
-        const result = await new Promise((resolve) => {
-          const checkStoreInterval = setInterval(async () => {
-            if (workspaceRef.current) {
-              clearInterval(checkStoreInterval);
-              store.loadJSON(updatedTemplateData);
-
-              const flowResult = await generateUploadAndCreateTemplate(
-                store,
-                updatedTemplateData
-              );
-              resolve(flowResult);
-            }
-          }, 100);
-        });
-
-        if (!result || !result.s3Url || !result.creationResponse) {
-          store.clear();
-          setCurrentStore(null);
-          continue;
-        }
-
-        const createdData = result.creationResponse.data;
-        const createdTemplateId = createdData.templateId || "";
-        const createdIsFav = createdData.isFavourite || false;
-
-        newTemplates.push({
-          renderedImage: result.s3Url,
-          templateObj: {
-            templateId: createdTemplateId,
-            url: createdData.url || result.s3Url,
-            templateOrientation: createdData.templateOrientation || "1:1",
-            priority: createdData.priority || 0,
-            templateSize: createdData.templateSize || "1080x1080",
-            brandId: createdData.brandId || FIXED_BRAND_ID,
-            version: createdData.version || "",
-            tag: createdData.tag || "",
-            postType: createdData.postType || "standard",
-            customTemplate: createdData.customTemplate || false,
-            mediaType: createdData.mediaType || "image",
-            videoDuration: createdData.videoDuration || "00:00",
-            voiceoverEnabled:
-              createdData.voiceoverEnabled === undefined
-                ? true
-                : createdData.voiceoverEnabled,
-            templateJson:
-              createdData.templateJson || JSON.stringify(updatedTemplateData),
-            isFavourite: createdIsFav,
-          },
-        });
-
-        store.clear();
-        setCurrentStore(null);
-      }
-
-      setTemplates(newTemplates);
-      toast.success("Templates generated, uploaded, and created successfully!");
-    } catch (error) {
-      console.error("Error fetching or creating templates:", error);
-      toast.error("Failed to fetch and create templates. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  // -------------------------------------------------------
+  // 8) Edit
+  // -------------------------------------------------------
+  const handleEdit = (templateObj) => {
+    navigate("/editor", { state: { templateData: templateObj } });
   };
 
-  // 9. Trigger fetch if open
+  // -------------------------------------------------------
+  // Lifecycle
+  // -------------------------------------------------------
   useEffect(() => {
     if (isNextSectionOpen) {
-      fetchTemplates();
+      generateAndFetchTemplates();
     }
   }, [isNextSectionOpen]);
 
-  // 10. Scroll into view if open
   useEffect(() => {
     if (isNextSectionOpen && sectionRef.current) {
       sectionRef.current.scrollIntoView({ behavior: "smooth" });
@@ -357,6 +456,9 @@ export default function Creatives({
     </svg>
   );
 
+  // -------------------------------------------------------
+  // Render
+  // -------------------------------------------------------
   return (
     <section
       ref={sectionRef}
@@ -364,8 +466,9 @@ export default function Creatives({
         !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
       } flex flex-col gap-6 relative z-10 mb-4`}
     >
-      {/* Global hidden SVG with gradient definition (for your .button-clear:hover rules) */}
-      <svg width="0" height="0" style={{ position: "absolute" }}>
+
+       {/* Global hidden SVG with gradient definition (for your .button-clear:hover rules) */}
+       <svg width="0" height="0" style={{ position: "absolute" }}>
         <defs>
           <linearGradient id="hoverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#004367" />
@@ -387,7 +490,7 @@ export default function Creatives({
           </span>
         )}
         <span className="flex items-center gap-4">
-        <img src="/icon5.svg" alt="Icon" />
+          <img src="/icon5.svg" alt="Icon" />
           <span className="flex flex-col">
             <h4 className="text-[#082A66] font-bold text-lg lg:text-xl">
               Generated Creatives
@@ -426,7 +529,6 @@ export default function Creatives({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {templates.map((item, idx) => {
                 const { templateObj, renderedImage } = item;
-
                 return (
                   <div
                     key={idx}
@@ -437,6 +539,8 @@ export default function Creatives({
                       alt={`Template_${idx}`}
                       className="w-full h-auto rounded-[12px] mb-2"
                     />
+
+                    {/* Buttons */}
                     <div className="button-wrapper flex justify-between w-full gap-2 px-2">
                       {/* Bookmark Button */}
                       <button
@@ -581,7 +685,7 @@ export default function Creatives({
         </div>
       )}
 
-      {/* Hidden Polotno workspace for offscreen rendering */}
+      {/* Hidden Polotno workspace for offscreen rendering if needed */}
       {currentStore && (
         <div
           ref={workspaceRef}

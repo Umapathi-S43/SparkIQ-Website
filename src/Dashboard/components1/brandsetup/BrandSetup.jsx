@@ -41,15 +41,15 @@ const BrandSetup = () => {
   };
   
   const fetchBrandData = async (url) => {
+    const payload={url:encodeURIComponent(url)}
     try {
       const response = await axios.post(
-        `${baseUrl}/v2/api/brands/extract?websiteUrl=${encodeURIComponent(url)}`, // Encode the URL to handle special characters
-        {}, // Empty body for POST
+        `${baseUrl}/v2/api/brands/extract-brand-info`,payload, // Empty body for POST
         {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`, // Include the Authorization header
-          },
-        }
+                headers: {
+                  Authorization: `Bearer ${jwtToken}`,
+                },
+              }
       );
   
       // Access the response data
@@ -75,6 +75,7 @@ const BrandSetup = () => {
   };
   
 const navigate=useNavigate();
+
   const handleManualSetup = () => {
     navigate('/brand-settings');
   };
