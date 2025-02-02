@@ -71,7 +71,7 @@ const TrialPeriodBoxSmall = () => {
       <div className="ml-4">        
       <p>Unlock the premium features!.....</p>
         <h2 className="font-bold text-xl mt-2">
-          <button onClick={() => navigate('/upgrade')}>Upgrade</button>
+          <button onClick={() => navigate('/upgrade')}>Upgrade Now</button>
         </h2>
       </div>
     </div>
@@ -144,7 +144,7 @@ const TrialPeriodBoxLarge = () => {
       <div className="ml-4">
         <p>Unlock the premium features!.....</p>
         <h2 className="font-bold text-2xl mt-2">
-          <button onClick={() => navigate('/upgrade')}>Upgrade</button>
+          <button onClick={() => navigate('/upgrade')}>Upgrade Now</button>
         </h2>
       </div>
     </div>

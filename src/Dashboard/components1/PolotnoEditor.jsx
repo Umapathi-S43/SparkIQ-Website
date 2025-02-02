@@ -46,6 +46,8 @@ const store = createStore({
 
 const CustomSection = {
   name: "custom",
+
+  // Tab in the SidePanel
   Tab: (props) => (
     <SectionTab name="Design" {...props}>
       <div
@@ -59,41 +61,46 @@ const CustomSection = {
       </div>
     </SectionTab>
   ),
+
+  // Panel content
   Panel: observer(({ store }) => {
-    const [templates, setTemplates] = useState([]);
-    const [activeTab, setActiveTab] = useState("palettes");
+    // States
     const [colorPalettes, setColorPalettes] = useState([]);
     const [loadingPalettes, setLoadingPalettes] = useState(false);
+
+    const [templates, setTemplates] = useState([]);
     const [loadingTemplates, setLoadingTemplates] = useState(false);
-    let brandId = localStorage.getItem('brandId');
-    let isDarkMode = localStorage.getItem('isDarkMode');
 
-    // 2A) Fetch color palettes dynamically
-    // For adding a new palette, we hold 3 color pickers
-    const [newPaletteColors, setNewPaletteColors] = useState(["#000000", "#ffffff", "#cccccc"]);
+    const [activeTab, setActiveTab] = useState("palettes");
 
-    // 2A) Fetch color palettes dynamically
+    // For adding a new palette, track multiple color pickers
+    const [newPaletteColors, setNewPaletteColors] = useState(["#082A66", "#ffffff", "#000000"]);
+
+    // Grab brandId from localStorage (set in PolotnoEditor)
+    const brandId = localStorage.getItem("brandId");
+    const isDarkMode = localStorage.getItem("isDarkMode") === "true";
+
+    // ----------------------------
+    // 1) Fetch color palettes
+    // ----------------------------
     const fetchColorPalettes = async () => {
       if (!brandId) {
-        console.warn("No brandId provided, skipping palette fetch.");
+        console.warn("No brandId in localStorage. Skipping palette fetch.");
         return;
       }
       try {
         setLoadingPalettes(true);
-        // Example: GET /v2/api/brands/:brandId/colorpalettes
-        const response = await axios.get(
-          `${baseUrl}/v2/api/brands/${brandId}/colorpalettes`,
-          {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
+        // GET /v2/api/brands/{brandId}/colorpalettes
+        const response = await axios.get(`${baseUrl}/v2/api/brands/${brandId}/colorpalettes`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         const raw = response.data?.data || [];
-        // Suppose each object is { id, palette: "#FF5733,#33FF57,#3357FF" }
-        // Convert them to { id, colors: ["#FF5733", "#33FF57", "#3357FF"] }
+        // Each item looks like { id: '...', palette: '#082A66,#ffffff,#000000', brandId: ... }
+        // Transform 'palette' into an array of colors
         const parsed = raw.map((item) => {
-          const colorsArray = item.palette.split(",").map((s) => s.trim());
+          const colorsArray = item.palette.split(",").map((c) => c.trim());
           return {
             id: item.id,
             colors: colorsArray,
@@ -108,13 +115,18 @@ const CustomSection = {
       }
     };
 
-
-    // 2B) Add new palette
+    // ----------------------------
+    // 2) Add new palette
+    // ----------------------------
     const addNewPalette = async () => {
-      if (!brandId) return;
+      if (!brandId) {
+        toast.error("No brandId found. Cannot add palette.");
+        return;
+      }
       try {
+        // Convert color array to comma-separated
         const paletteString = newPaletteColors.join(",");
-        // POST /v2/api/brands/:brandId/colorpalettes
+        // POST /v2/api/brands/{brandId}/colorpalettes with { palette }
         await axios.post(
           `${baseUrl}/v2/api/brands/${brandId}/colorpalettes`,
           { palette: paletteString },
@@ -133,7 +145,18 @@ const CustomSection = {
       }
     };
 
-    // 2B) Fetch user templates
+    // Helper to update local color-picker state
+    const handleNewPaletteColorChange = (index, newColor) => {
+      setNewPaletteColors((prev) => {
+        const updated = [...prev];
+        updated[index] = newColor;
+        return updated;
+      });
+    };
+
+    // ----------------------------
+    // 3) Fetch user templates
+    // ----------------------------
     const fetchTemplates = async () => {
       try {
         setLoadingTemplates(true);
@@ -143,7 +166,7 @@ const CustomSection = {
             Authorization: `Bearer ${jwtToken}`,
           },
         });
-        // Suppose response.data?.data is an array of templates
+        // Suppose response.data?.data is an array
         setTemplates(response.data?.data || []);
       } catch (error) {
         console.error("Error fetching templates:", error);
@@ -153,167 +176,98 @@ const CustomSection = {
       }
     };
 
-    useEffect(() => {
-      fetchColorPalettes();
-      fetchTemplates();
-      // eslint-disable-next-line
-    }, []);
-
-    // ========== Palette logic ==========
-    // Apply palette colors to the elements permanently on click
-    // Apply palette colors to the elements permanently on click
+    // ----------------------------
+    // 4) Apply or preview a palette
+    // ----------------------------
+    // Apply palette permanently on click
     const applyPalette = (palette) => {
       if (palette.colors.length < 3) {
-        console.warn("Palette must have at least three colors.");
+        console.warn("Palette must have at least 3 colors.");
         return;
       }
-
-      const [svgColor, backgroundColor, textColor] = palette.colors;
-
-      const activePage = store.activePage; // Get the active page
+      const [svgColor, bgColor, textColor] = palette.colors;
+      const activePage = store.activePage;
       if (!activePage) {
-        console.warn("No active page found.");
+        console.warn("No active page found to apply palette.");
         return;
       }
 
-      // Update the background of the active page
+      // Set page background
       activePage.set({
-        background: backgroundColor,
-        width: "auto", // Retain the existing structure
-        height: "auto", // Retain the existing structure
-        bleed: activePage.bleed || 0, // Preserve existing bleed
+        background: bgColor,
       });
 
-      // Update child elements
+      // Loop through elements on the page
       activePage.children.forEach((child) => {
         if (child.type === "svg" || child.type === "figure") {
-          // Apply the first color to SVG or figure elements
           child.set({
             fill: svgColor,
-          })
+          });
         } else if (child.type === "text") {
-          // Apply the third color to text elements
-          child.set({ fill: textColor });
-        }
-      });
-
-      store.history.save(); // Save the changes
-    };
-
-    const applyColorsReplace = (svgElement, colorsReplace) => {
-      if (!svgElement || !colorsReplace) return;
-
-      Object.entries(colorsReplace).forEach(([originalColor, newColor]) => {
-        if (svgElement.colorsReplace) {
-          svgElement.colorsReplace[originalColor] = newColor;
-        } else {
-          svgElement.set({
-            colorsReplace: {
-              ...svgElement.colorsReplace,
-              [originalColor]: newColor,
-            },
+          child.set({
+            fill: textColor,
           });
         }
       });
 
-      // Trigger a redraw of the element to reflect changes
-      svgElement.trigger("change");
+      store.history.save(); // commit changes
+      toast.success("Palette applied!");
     };
 
-
-
-    // Apply palette colors to the elements on hover
+    // Optionally, if you want a "hover" preview effect:
     const handlePaletteHover = (palette) => {
-      if (!palette || palette.colors.length < 3) {
-        console.warn("Palette must have at least three colors.");
-        return;
-      }
-
-      const [svgColor, backgroundColor, textColor] = palette.colors;
-
-      store.pages.forEach((page) => {
-        // Update the page's background color
-        page.set({
-          backgroundColor: backgroundColor,
-        });
-        const activePage = store.activePage; // Get the active page
-        if (!activePage) {
-          console.warn("No active page found.");
-          return;
-        }
-
-        // Update the background of the active page
-        activePage.set({
-          background: backgroundColor,
-          width: "auto", // Retain the existing structure
-          height: "auto", // Retain the existing structure
-          bleed: activePage.bleed || 0, // Preserve existing bleed
-        });
-
-        // Update child elements
-        page.children.forEach((child) => {
-          if (child.type === "svg" || child.type === "figure") {
-            // Apply the first color to SVG or figure elements
-            child.set({
-              fill: svgColor,
-            })
-          } else if (child.type === "text") {
-            child.set({ fill: textColor });
-          }
-        });
-      });
+      if (!palette?.colors?.length) return;
+      // Save current state, apply palette, revert on mouse leave
+      store.history.save();
+      applyPalette(palette);
     };
-
-
-
-    // Clear hover effect when the mouse leaves
     const clearHoverEffect = () => {
       store.history.undo();
     };
 
-
-    // ========== Template logic ==========
-    // On template click, load its JSON & set current template ID
+    // ----------------------------
+    // 5) Apply a template
+    // ----------------------------
     const applyTemplate = (template) => {
+      if (!template.templateJson) {
+        toast.error("Template JSON is not available.");
+        return;
+      }
       try {
-        if (!template.templateJson) {
-          toast.error("Template JSON is not available.");
-          return;
-        }
-        const parsedTemplateJson = JSON.parse(template.templateJson);
-        console.log("Selected Template Id:", template.templateId);
-        console.log("Full Template object:", template);
-
-        store.loadJSON(parsedTemplateJson);
-        // Important: set the ID to allow updating
+        const parsed = JSON.parse(template.templateJson);
+        store.loadJSON(parsed);
+        // Optionally store the loaded templateId
         localStorage.setItem("loadedtemplate", template);
-        setCurrentTemplateId(template.templateId);
-        console.log("Updated Template Id:", currentTemplateId);
         toast.success("Template applied successfully!");
-      } catch (error) {
-        console.error("Error applying template:", error);
+      } catch (err) {
+        console.error("Error applying template:", err);
       }
     };
 
+    // Fetch palettes & templates on mount
+    useEffect(() => {
+      fetchColorPalettes();
+      fetchTemplates();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Render Panel
     return (
       <div style={{ padding: "4px" }}>
+        {/* Tabs: Palettes vs Templates */}
         <div style={{ display: "flex", width: "100%", marginBottom: "0" }}>
           <button
             onClick={() => setActiveTab("palettes")}
             style={{
-              flex: 1, // Makes the button take up equal width
-              padding: "0px 0", // Adjust padding for a tab-like look
+              flex: 1,
+              padding: "8px 0",
               cursor: "pointer",
-              backgroundColor: isDarkMode
-                ? "#555555" // Unified inactive background for dark mode
-                : "#f4f4f4", // Unified inactive background for light mode
-              color: isDarkMode
-                ? "#fcfcfc" // Consistent text color in dark mode
-                : "#333333", // Consistent text color in light mode
+              backgroundColor: isDarkMode ? "#555555" : "#f4f4f4",
+              color: isDarkMode ? "#fcfcfc" : "#333333",
               border: "none",
-              borderBottom: activeTab === "palettes" ? "2px solid #007BFF" : "none", // Underline for active tab
+              borderBottom: activeTab === "palettes" ? "2px solid #007BFF" : "none",
               textAlign: "center",
-              transition: "background-color 0.3s, border-bottom 0.3s", // Smooth transitions
+              transition: "background-color 0.3s, border-bottom 0.3s",
             }}
           >
             Palettes
@@ -321,17 +275,13 @@ const CustomSection = {
           <button
             onClick={() => setActiveTab("templates")}
             style={{
-              flex: 1, // Makes the button take up equal width
+              flex: 1,
               padding: "8px 0",
               cursor: "pointer",
-              backgroundColor: isDarkMode
-                ? "#555555"
-                : "#f4f4f4",
-              color: isDarkMode
-                ? "#fcfcfc"
-                : "#333333",
+              backgroundColor: isDarkMode ? "#555555" : "#f4f4f4",
+              color: isDarkMode ? "#fcfcfc" : "#333333",
               border: "none",
-              borderBottom: activeTab === "templates" ? "2px solid #007BFF" : "none", // Underline for active tab
+              borderBottom: activeTab === "templates" ? "2px solid #007BFF" : "none",
               textAlign: "center",
               transition: "background-color 0.3s, border-bottom 0.3s",
             }}
@@ -340,12 +290,9 @@ const CustomSection = {
           </button>
         </div>
 
-
-
-        {/* Palettes tab */}
+        {/* -- Palettes Tab -- */}
         {activeTab === "palettes" && (
           <div style={{ width: "100%", marginTop: "14px" }}>
-            {/*  A) Add new palette row  */}
             <h3 style={{ marginBottom: "8px" }}>Add a New Palette</h3>
             <div
               style={{
@@ -353,10 +300,10 @@ const CustomSection = {
                 gap: "10px",
                 alignItems: "center",
                 marginBottom: "10px",
-                // Ensure all items remain in a row (disable wrapping):
                 flexWrap: "nowrap",
               }}
             >
+              {/* 3 color-pickers for a new palette */}
               {newPaletteColors.map((col, index) => (
                 <input
                   key={index}
@@ -368,8 +315,6 @@ const CustomSection = {
                     width: "50px",
                     height: "40px",
                     border: "none",
-                    outline: "none",
-                    padding: 0,
                   }}
                 />
               ))}
@@ -379,9 +324,8 @@ const CustomSection = {
                 style={{
                   padding: "8px 16px",
                   cursor: "pointer",
-                  backgroundColor:
-                    activeTab === "templates" ? "#007BFF" : "#e0e0e0",
-                  color: activeTab === "templates" ? "#fff" : "#000",
+                  backgroundColor: "#007BFF",
+                  color: "#fff",
                   border: "none",
                   borderRadius: "5px",
                 }}
@@ -390,39 +334,37 @@ const CustomSection = {
               </button>
             </div>
 
-
             <hr style={{ margin: "10px 0" }} />
 
-            {/*  B) List of fetched palettes  */}
             <h3>Choose a Palette</h3>
             {loadingPalettes && <p>Loading color palettes...</p>}
             {!loadingPalettes && colorPalettes.length === 0 && (
               <p>No color palettes found.</p>
             )}
+
             {colorPalettes.map((palette) => (
               <div
                 key={palette.id}
-                onMouseOver={() => handlePaletteHover(palette)} // Apply palette on hover
-                onClick={() => applyPalette(palette)} // Apply palette permanently on click
-
+                onMouseOver={() => handlePaletteHover(palette)}
+                onMouseLeave={() => clearHoverEffect()}
+                onClick={() => applyPalette(palette)}
                 style={{
                   display: "flex",
                   cursor: "pointer",
                   alignItems: "center",
                   marginBottom: "8px",
-                  width: "100%",
                   border: isDarkMode ? "1px solid #444" : "1px solid #fcfcfc",
-
                   borderRadius: "5px",
                   overflow: "hidden",
                 }}
               >
-                {palette.colors.map((color, index) => (
+                {palette.colors.map((color, idx) => (
                   <div
-                    key={index}
+                    key={idx}
                     style={{
                       flex: 1,
                       height: "30px",
+                      borderRight: idx < 2 ? "1px solid #ccc" : "none",
                       backgroundColor: color,
                     }}
                   />
@@ -432,9 +374,9 @@ const CustomSection = {
           </div>
         )}
 
-        {/* Templates tab */}
+        {/* -- Templates Tab -- */}
         {activeTab === "templates" && (
-          <div>
+          <div style={{ marginTop: "10px" }}>
             <h3>Templates Section</h3>
             {loadingTemplates && <p>Loading templates...</p>}
             {!loadingTemplates && templates.length === 0 && (
@@ -471,6 +413,7 @@ const CustomSection = {
     );
   }),
 };
+
 
 
 // 3) Combine default sections with the custom section
@@ -882,7 +825,7 @@ const PolotnoEditor = () => {
   };
 
   const sections = [
-    CustomSection,
+    //CustomSection,
     //TemplatesSection, // or remove if you don't need Polotno's default templates
     TextSection,
     PhotosSection,

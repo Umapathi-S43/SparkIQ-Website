@@ -4,6 +4,7 @@ import {
   FaChevronRight,
   FaChevronDown,
   FaCheck,
+  FaRegLightbulb,
 } from "react-icons/fa";
 import { IoImageOutline } from "react-icons/io5";
 import { PiFileArrowUpDuotone } from "react-icons/pi";
@@ -769,7 +770,7 @@ const AdProduct = () => {
                 >
                   <div className="flex items-center">
                     <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
-                      <IoImageOutline className="text-[#374151] text-xl" />
+                      <FaRegLightbulb className="text-[#374151] text-xl" />
                     </div>
                     <p className="ml-3 text-lg font-semibold mt-0 pt-0">
                       Basic Information
@@ -863,7 +864,7 @@ const AdProduct = () => {
                 >
                   <div className="flex items-center">
                     <div className="bg-[rgba(0,39,153,0.15)] rounded-full p-2">
-                      <IoImageOutline className="text-[#374151] text-xl" />
+                    <FaRegLightbulb className="text-[#374151] text-xl" />
                     </div>
                     <p className="ml-3 text-lg font-semibold mt-0 pt-0">
                       {isProduct ? "Product Details" : "Service Details"}

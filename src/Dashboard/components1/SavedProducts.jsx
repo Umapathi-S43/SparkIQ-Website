@@ -160,17 +160,43 @@ const SavedProducts = () => {
   };
 
   // Download
-  const handleDownload = (url) => {
+  const handleDownload = async (url) => {
     if (!url) {
       toast.error("No URL available for download.");
       return;
     }
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "SavedProduct.png";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  
+    // 1. Extract the file name from the URL
+    const fileName = url.split("/").pop(); // "1738396400347_compressed-thumbnail.png"
+  
+    try {
+      // 2. Fetch the file from your backend endpoint using the fileName and JWT
+      const response = await axios.get(`${baseUrl}/sparkiq/image/download/${fileName}`, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+        responseType: "blob", // crucial for binary data
+      });
+  
+      // 3. Create a local URL for the Blob
+      const blobUrl = URL.createObjectURL(response.data);
+  
+      // 4. Programmatically create an anchor to trigger download
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName; // or rename as needed
+      document.body.appendChild(link);
+      link.click();
+  
+      // 5. Clean up
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+  
+      toast.success("Downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Failed to download file.");
+    }
   };
 
   // Delete modal
