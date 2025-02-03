@@ -383,29 +383,83 @@ export default function ProductDetails({
     };
 
     // scanning product url
+   
+/**
+ * Shortens a description by taking up to maxWords words,
+ * then (if possible) ending the result at the last sentence-ending punctuation
+ * (".", "!", or "?") found near the end of that substring.
+ *
+ * @param {string} desc - The full description.
+ * @param {number} maxWords - The maximum number of words to use.
+ * @param {number} [boundary=50] - Look for sentence punctuation within the last boundary characters.
+ * @returns {string} The shortened description.
+ */
+const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
+    if (!desc) return "";
+    // Split the description into words.
+    const words = desc.split(/\s+/);
+    // If there are fewer words than maxWords, return the full description.
+    if (words.length <= maxWords) {
+      return desc;
+    }
+    // Join the first maxWords words.
+    let candidate = words.slice(0, maxWords).join(" ");
+    
+    // Check for the last occurrence of sentence-ending punctuation.
+    const lastPeriod = candidate.lastIndexOf(".");
+    const lastExclamation = candidate.lastIndexOf("!");
+    const lastQuestion = candidate.lastIndexOf("?");
+    const lastPunctuation = Math.max(lastPeriod, lastExclamation, lastQuestion);
+    
+    // If punctuation exists and is found near the end of the candidate string,
+    // trim the candidate to end at that punctuation.
+    if (lastPunctuation !== -1 && (candidate.length - lastPunctuation) <= boundary) {
+      candidate = candidate.substring(0, lastPunctuation + 1);
+    } else {
+      // Optionally, if no punctuation is found near the end, you can append ellipses.
+      candidate = candidate + "...";
+    }
+    
+    return candidate;
+  };
+  
+    // 9. Scan URL
     const handleScanUrl = async () => {
-        try {
-            if (!jwtToken) {
-                throw new Error("No JWT token found. Please log in.");
-            }
-            const resp = await axios.get(
-                `${baseUrl}/scrap/product?url=${encodeURIComponent(productDetails.productURL)}`,
-                { headers: { Authorization: `Bearer ${jwtToken}` } }
-            );
-            if (resp.status === 200) {
-                toast.success("Scan successful");
-                setProductDetails((prev) => ({
-                    ...prev,
-                    productName: resp.data.productTitle || prev.productName,
-                    productDescription: resp.data.productDesc || prev.productDescription,
-                }));
-            } else {
-                toast.error("Scan failed. Please try again.");
-            }
-        } catch (err) {
-            console.log("Error scanning URL:", err);
-            toast.error("Failed to scan the URL.");
+      try {
+        if (!jwtToken) {
+          throw new Error("No JWT token found. Please log in.");
         }
+    
+        const response = await axios.post(
+          `${baseUrl}/product/scrap-product-details`,
+          { product_url: productDetails.productURL },
+          {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          }
+        );
+    
+        if (response.status === 200) {
+          toast.success("Scan successful");
+    
+          // Extract the actual data from response.data.data
+          const { data } = response.data;
+          // data = { name, description, url } per your JSON
+    
+          setProductDetails({
+            ...productDetails,
+            productName: data.name || productDetails.productName,
+            productDescription: data.description
+        ? shortenDescriptionBySentence(data.description, 250)
+        : productDetails.productDescription,
+            productURL: data.url || productDetails.productURL,
+          });
+        } else {
+          toast.error("Scan failed. Please try again.");
+        }
+      } catch (error) {
+        console.log("Error scanning URL:", error);
+        toast.error("Failed to scan the URL.");
+      }
     };
 
     // final submit

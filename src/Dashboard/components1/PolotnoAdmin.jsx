@@ -700,7 +700,7 @@ const PolotnoAdmin = () => {
           json.width > json.height ? "landscape" : "portrait",
         priority: json.priority || 0,
         templateSize: `${json.width}x${json.height}`,
-        postType: json.postType || "default",
+        postType: json.postType || "standard",
         customTemplate: true,
         mediaType: "image",
         videoDuration: json.videoDuration || "00:00",

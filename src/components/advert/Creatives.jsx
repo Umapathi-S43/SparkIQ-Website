@@ -11,7 +11,7 @@ import "./Creatives.css";
 
 // Polotno API key
 const POLNOTO_API_KEY = "nFA5H9elEytDyPyvKL7T";
-const FIXED_BRAND_ID = "sib-81b85382-b";
+const FIXED_BRAND_ID = JSON.parse(localStorage.getItem("brandID"));
 
 export default function Creatives({
   isNextSectionOpen,
