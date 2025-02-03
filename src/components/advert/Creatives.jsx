@@ -156,7 +156,7 @@ export default function Creatives({
       return { s3Url, creationResponse };
     } catch (err) {
       console.error("Error in Polotno -> S3 -> Create flow:", err);
-      toast.error("Error in full creation flow.");
+      
       return null;
     }
   };
@@ -178,7 +178,10 @@ const generateAndFetchTemplates = async () => {
 
     const parsedPayload = JSON.parse(storedPayload);
     const { postType, cohortIds } = parsedPayload;
-
+    console.log("Parsed payload:", parsedPayload);
+    FIXED_BRAND_ID=parsedPayload.brandId;
+    console.log("FIXED_BRAND_ID set from storedPayload.brandId:", FIXED_BRAND_ID);
+    
     // We'll accumulate all final templates here
     const allTemplates = [];
 
