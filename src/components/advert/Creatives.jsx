@@ -13,7 +13,7 @@ import "./Creatives.css";
 const POLNOTO_API_KEY = "nFA5H9elEytDyPyvKL7T";
 const creativePayload11 = JSON.parse(localStorage.getItem("creativePayload"));
 let FIXED_BRAND_ID = JSON.parse(localStorage.getItem("brandID"));
-
+let brandFetched;
 if (!FIXED_BRAND_ID && creativePayload11 && creativePayload11.brandId) {
   FIXED_BRAND_ID = creativePayload11.brandId;
   console.log("FIXED_BRAND_ID set from creativePayload11.brandId:", FIXED_BRAND_ID);
@@ -42,19 +42,48 @@ export default function Creatives({
   // -------------------------------------------------------
   // 1) Apply dynamic placeholders from generateImageContentResponses
   // -------------------------------------------------------
-  const applyTemplate = (templateJson, placeholders) => {
+  // const applyTemplate = (templateJson, placeholders) => {
+  //   try {
+  //     const parsedJson = JSON.parse(templateJson);
+
+  //     parsedJson.pages.forEach((page) => {
+  //       page.children.forEach((element) => {
+  //         if (element.custom && element.custom.variable) {
+  //           // e.g. {title}, {description}, {cta}, {feature1}, ...
+  //           const variableName = element.custom.variable.replace(/[{}]/g, "");
+  //           const newValue = placeholders[variableName];
+  //           if (newValue) {
+  //             const elementType = (element.type || "").toLowerCase();
+              
+  //             if (elementType === "text") {
+  //               element.text = newValue;
+  //             } else if (elementType === "image") {
+  //               element.src = newValue;
+  //             }
+  //           }
+  //         }
+  //       });
+  //     });
+
+  //     return parsedJson;
+  //   } catch (err) {
+  //     console.error("Error applying placeholders:", err);
+  //     toast.error("Failed to apply template placeholders.");
+  //     return null;
+  //   }
+  // };
+  const applyTemplate = (templateJson, placeholders, paletteData) => {
     try {
       const parsedJson = JSON.parse(templateJson);
-
+  
+      // Apply dynamic placeholders
       parsedJson.pages.forEach((page) => {
         page.children.forEach((element) => {
           if (element.custom && element.custom.variable) {
-            // e.g. {title}, {description}, {cta}, {feature1}, ...
             const variableName = element.custom.variable.replace(/[{}]/g, "");
             const newValue = placeholders[variableName];
             if (newValue) {
               const elementType = (element.type || "").toLowerCase();
-              
               if (elementType === "text") {
                 element.text = newValue;
               } else if (elementType === "image") {
@@ -64,14 +93,40 @@ export default function Creatives({
           }
         });
       });
-
+  
+      // If a valid paletteData is provided, apply the color palette
+      if (paletteData && Array.isArray(paletteData.colors) && paletteData.colors.length >= 3) {
+        applyColorPalette(parsedJson, paletteData);
+      }
+  
       return parsedJson;
     } catch (err) {
-      console.error("Error applying placeholders:", err);
-      toast.error("Failed to apply template placeholders.");
+      console.error("Error applying placeholders and color palette:", err);
+      toast.error("Failed to apply template placeholders and color palette.");
       return null;
     }
   };
+  const applyColorPalette = (templateJson, paletteData) => {
+    const [svgColor, bgColor, textColor] = paletteData.colors;
+  
+    templateJson.pages.forEach((page) => {
+      // Set the page background color (if supported by your JSON format)
+      page.background = bgColor;
+  
+      // Loop through each element on the page and apply the corresponding color
+      page.children.forEach((element) => {
+        const elementType = (element.type || "").toLowerCase();
+  
+        if (elementType === "svg" || elementType === "figure") {
+          element.fill = svgColor;
+        } else if (elementType === "text") {
+          element.fill = textColor;
+        }
+        // Add any additional element types or properties as needed.
+      });
+    });
+  };
+    
 
   // -------------------------------------------------------
   // 2) Convert base64 -> Blob
@@ -182,6 +237,15 @@ const generateAndFetchTemplates = async () => {
     FIXED_BRAND_ID=parsedPayload.brandId;
     console.log("FIXED_BRAND_ID set from storedPayload.brandId:", FIXED_BRAND_ID);
     
+    try {
+      brandFetched = await axios.get(`${baseUrl}/v2/api/brands/${FIXED_BRAND_ID}`, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
+      console.log("brandFetched", brandFetched);
+    } catch (error) {
+      console.log("brandFetched error", error);
+    }
+    
     // We'll accumulate all final templates here
     const allTemplates = [];
 
@@ -281,17 +345,22 @@ async function handleGenerateResponse(apiData, allTemplates) {
     generateContentResponses,
   } = apiData;
 
-  const templateResponses =
-    generateContentResponses?.templateResponses || [];
-  const imageContents =
-    generateContentResponses?.generateImageContentResponses || [];
+  const templateResponses = generateContentResponses?.templateResponses || [];
+  const imageContents = generateContentResponses?.generateImageContentResponses || [];
+
+  // Extract colorPalettes from the brand details.
+  // This assumes that the fetched brand object has a "colorPalettes" property.
+  const colorPalettes =
+    (brandFetched?.data?.data?.colorPalettes && Array.isArray(brandFetched.data.data.colorPalettes))
+      ? brandFetched.data.data.colorPalettes
+      : [];
 
   const maxCount = Math.min(templateResponses.length, imageContents.length);
   for (let i = 0; i < maxCount; i++) {
     const tResp = templateResponses[i];
     const placeholders = imageContents[i];
 
-    // Optionally add productImageURL, brandLogoURL, etc. into placeholders:
+    // Merge in additional placeholders if needed.
     const combinedPlaceholders = {
       ...placeholders,
       productImageURL,
@@ -315,17 +384,30 @@ async function handleGenerateResponse(apiData, allTemplates) {
       continue;
     }
 
-    // apply placeholders
+    // Select a palette from the available colorPalettes array using modulo indexing.
+    let paletteData = null;
+    if (colorPalettes.length) {
+      const paletteItem = colorPalettes[i % colorPalettes.length];
+      if (paletteItem && paletteItem.palette) {
+        // Convert the comma-separated palette string to an array and trim spaces.
+        const colors = paletteItem.palette.split(",").map((c) => c.trim());
+        if (colors.length >= 3) {
+          paletteData = { colors };
+        }
+      }
+    }
+
+    // Apply placeholders and the selected color palette.
     console.log("Applying placeholders:", combinedPlaceholders);
-    const updatedTemplateData = applyTemplate(polotnoData, combinedPlaceholders);
+    const updatedTemplateData = applyTemplate(polotnoData, combinedPlaceholders, paletteData);
     console.log("Updated template data:", updatedTemplateData);
     if (!updatedTemplateData) continue;
 
-    // Polotno => S3 => create
+    // Generate the template image using Polotno, then upload to S3 and create the template on the server.
     const store = createStore({ key: POLNOTO_API_KEY });
     setCurrentStore(store);
 
-    // Wait a bit to ensure store readiness
+    // Wait a short moment to ensure the store is ready.
     await new Promise((resolve) => setTimeout(resolve, 100));
     store.loadJSON(updatedTemplateData);
 
@@ -334,7 +416,7 @@ async function handleGenerateResponse(apiData, allTemplates) {
       updatedTemplateData
     );
 
-    // Clear store for the next iteration
+    // Clear the store for the next iteration.
     store.clear();
     setCurrentStore(null);
 
@@ -430,6 +512,7 @@ async function handleGenerateResponse(apiData, allTemplates) {
   useEffect(() => {
     if (isNextSectionOpen) {
       generateAndFetchTemplates();
+
     }
   }, [isNextSectionOpen]);
 

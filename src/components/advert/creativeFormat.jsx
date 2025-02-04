@@ -602,10 +602,11 @@ export default function CreativeFormat({
     // Once user sets everything, final "Generate Creatives" for Ads
     // ----------------------------------------------------------------
     const onGenerateCreatives = () => {
-      if (!objective.trim()) {
+      if (cohorts.length === 0 && !objective.trim()) {
         toast.error("Please enter an Objective.");
         return;
       }
+      
       if (selectedPlatforms.length === 0) {
         toast.error("Please select a Platform.");
         return;

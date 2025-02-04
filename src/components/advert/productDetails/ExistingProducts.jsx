@@ -40,7 +40,7 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
       if (!jwtToken) {
         throw new Error("No JWT token found. Please log in.");
       }
-      const response = await axios.get(`${baseUrl}/brand/company/123`, {
+      const response = await axios.get(`${baseUrl}/v2/api/brands`, {
         headers: {
           Authorization: `Bearer ${jwtToken}`,
         },
@@ -53,8 +53,9 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   };
 
   useEffect(() => {
-    fetchProducts(); // Fetch all products initially
+    
     fetchBrands();
+    fetchProducts(); // Fetch all products initially
   }, []);
 
   const handleCreateProduct = () => {
@@ -168,8 +169,9 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
                 className="ml-4 p-2 lg:px-5 py-1 rounded-md text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 style={{ maxHeight: '10vh', overflowY: 'auto' }}
               >
+                <option value="AllBrands">All Brands</option>
                 {brands.map((brand, index) => (
-                  <option key={brand.id} value={brand.id}>{brand.name}</option>
+                  <option key={brand.id} value={brand.id}>{brand.brandName}</option>
                 ))}
               </select>
             </div>

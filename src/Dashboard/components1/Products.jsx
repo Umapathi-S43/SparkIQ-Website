@@ -39,7 +39,7 @@ const Products = () => {
       if (!jwtToken) {
         throw new Error("No JWT token found. Please log in.");
       }
-      const response = await axios.get(`${baseUrl}/brand/company/123`, {
+      const response = await axios.get(`${baseUrl}/v2/api/brands`, {
         headers: {
           Authorization: `Bearer ${jwtToken}`,
         },
@@ -128,7 +128,7 @@ const Products = () => {
               <option value="AllBrands">All Brands</option>
               {brands.map((brand) => (
                 <option key={brand.id} value={brand.id}>
-                  {brand.name}
+                  {brand.brandName}
                 </option>
               ))}
             </select>
