@@ -237,11 +237,11 @@ const AdProduct = () => {
       const productPayload = {
         id: isEditMode ? storedProductID : undefined,
         brandID: productDetails.brandID,
-        type: productDetails.type,
+        type: productDetails.type||"product", // Default to product
         industryName: productDetails.industryName,
         name: productDetails.productName,
         description: productDetails.productDescription,
-        productURL: productDetails.productURL, // Include scanned/typed URL
+        productURL: productDetails.productURL||"", // Include scanned/typed URL
         price: defaultProductPrice,
         priceType: defaultCurrency,
         discount: defaultCustomDiscount,
@@ -623,10 +623,7 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
 
   const handleSaveAndContinue = (currentSection) => {
     // Validation logic
-    if (currentSection === 0 && !productDetails.productURL) {
-      toast.error("Please enter a URL before proceeding.");
-      return false;
-    }
+    
     if (currentSection === 1 && isNextStepDisabled) {
       toast.error("Please fill in all the required fields correctly.");
       return false;

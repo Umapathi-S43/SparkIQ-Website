@@ -29,27 +29,30 @@ const SignUpPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // OTP STATES
-  const [otpValidated, setOtpValidated] = useState(false); // Step 3 is visible only if true
-  const [otpSent, setOtpSent] = useState(false);           // Step 2 is visible if true AND otpValidated is false
+  const [otpValidated, setOtpValidated] = useState(false); // Step 3 visible only if true
+  const [otpSent, setOtpSent] = useState(false);           // Step 2 visible if true and otpValidated is false
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [timer, setTimer] = useState(0);
 
+  // LOADING STATE
+  const [isLoading, setIsLoading] = useState(false);
+
   // DYNAMIC COUNTRY PHONE LENGTHS
   const countryPhoneLengths = {
-    "+91": 10,  // India
-    "+1": 10,   // USA, Canada
-    "+44": 10,  // UK
-    "+86": 13,  // China
-    "+258": 12, // Mozambique
-    "+55": 12,  // Brazil
-    "+84": 9,   // Vietnam
-    "+66": 9,   // Thailand
-    "+27": 9,   // South Africa
-    "+34": 9,   // Spain
-    "+234": 10, // Nigeria
-    "+65": 8,   // Singapore
-    "+60": 7,   // Malaysia
-    "+94": 7,   // Sri Lanka
+    "+91": 10,
+    "+1": 10,
+    "+44": 10,
+    "+86": 13,
+    "+258": 12,
+    "+55": 12,
+    "+84": 9,
+    "+66": 9,
+    "+27": 9,
+    "+34": 9,
+    "+234": 10,
+    "+65": 8,
+    "+60": 7,
+    "+94": 7,
   };
 
   // COUNTRY SELECT OPTIONS
@@ -139,11 +142,8 @@ const SignUpPage = () => {
   const handlePasswordChange = (e) => {
     const value = e.target.value;
     setPassword(value);
-
     if (!validatePassword(value)) {
-      setPasswordError(
-        "Password must be at least 8 chars with upper, lower, number & special char."
-      );
+      setPasswordError("Password must be at least 8 chars with upper, lower, number & special char.");
     } else {
       setPasswordError("");
     }
@@ -163,14 +163,12 @@ const SignUpPage = () => {
   //  Toggle Password Visibility
   // --------------------
   const toggleShowPassword = () => setShowPassword(!showPassword);
-
   const toggleShowConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
 
   // --------------------
   //  Step 1: Register & Send OTP
   // --------------------
   const handleNextStep = async () => {
-    // Validate phone and email
     if (!validateMobile()) {
       toast.error("Invalid mobile number");
       return;
@@ -184,17 +182,20 @@ const SignUpPage = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
       // 1) Register user
       const response = await axios.post(`${baseUrl}/user/register`, submitData);
       if (response.data.message === "User created successfully") {
-        toast.success("User registered. Sending OTP...");
+        //toast.success("User registered. Sending OTP...");
         // 2) Send OTP
         await handleSendOtp();
       }
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to register user");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -203,7 +204,7 @@ const SignUpPage = () => {
       await axios.post(`${baseUrl}/user/send`, submitData);
       toast.success("OTP sent successfully");
       setOtpSent(true);
-      setTimer(60); // Start 60s timer
+      setTimer(30); // Start 60s timer
     } catch (error) {
       console.error(error);
       toast.error("Failed to send OTP");
@@ -226,34 +227,49 @@ const SignUpPage = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
-      const response = await axios.post(
-        `${baseUrl}/user/validateOtp/${otpString}`,
-        submitData
-      );
+      const response = await axios.post(`${baseUrl}/user/validateOtp/${otpString}`, submitData);
       if (response.data.message === "OTP validated successfully") {
         toast.success("OTP validated successfully");
-        setOtpValidated(true);  // Move on to Step 3
+        setOtpValidated(true); // Proceed to Step 3
       } else {
         toast.error("Invalid OTP. Please try again.");
       }
     } catch (error) {
       console.error(error);
       toast.error("Invalid OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // OTP box changes
   const handleChangeOtp = (e, index) => {
     const { value } = e.target;
-    if (/^\d{0,1}$/.test(value)) {
+    if (/^\d?$/.test(value)) { // Accept only single-digit values
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
+  
+      // Move focus to the next input if not the last index
+      if (value !== "" && index < otp.length - 1) {
+        document.getElementById(`otp-${index + 1}`).focus();
+      }
     }
   };
+  
+  const handleKeyDownOtp = (e, index) => {
+    if (e.key === "Backspace" && otp[index] === "") {
+      // Move focus to the previous input on backspace if it's not the first input
+      if (index > 0) {
+        document.getElementById(`otp-${index - 1}`).focus();
+      }
+    }
+  };
+  
 
-  // Countdown effect
+  // Countdown effect for resending OTP
   useEffect(() => {
     let interval;
     if (otpSent && timer > 0) {
@@ -268,22 +284,16 @@ const SignUpPage = () => {
   //  Step 3: Set Password & Final Sign Up
   // --------------------
   const handleSignUp = async () => {
-    if (
-      !password ||
-      !confirmPassword ||
-      passwordError ||
-      confirmPasswordError
-    ) {
+    if (!password || !confirmPassword || passwordError || confirmPasswordError) {
       toast.error("Please fill password fields correctly.");
       return;
     }
-
-    // Must have validated OTP first
     if (!otpValidated) {
       toast.error("Please verify OTP before signing up.");
       return;
     }
 
+    setIsLoading(true);
     const data = {
       name: username,
       email: email,
@@ -300,6 +310,8 @@ const SignUpPage = () => {
     } catch (error) {
       console.error(error);
       toast.error("Error creating signup");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -308,212 +320,250 @@ const SignUpPage = () => {
     navigate("/login");
   };
 
-  // --------------------------------------------------------------------------
-  // RENDER / UI
-  // --------------------------------------------------------------------------
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4">
-      <div className="flex flex-col items-center w-full max-w-md p-4">
-        <img src={logo} alt="Logo" className="w-40 h-20 mb-6" />
-        <div
-          className="w-full p-8 rounded-xl shadow-2xl border border-white"
-          style={{ background: "rgba(255,255,255,0.30)" }}
-        >
-          {/* STEP 1: Collect Basic Info */}
-          {!otpSent && !otpValidated && (
-            <>
-             
-              <h2 className="text-3xl text-[#082A66] font-bold pt-0 text-center mb-1">
-                Sign Up
-              </h2>
-              <p
-                className={`text-center text-md text-[#0A3580] mb-6 ${
-                  otpValidated ? "pb-3 " : ""
-                }`}
-              >
-                Join the future of marketing.
-              </p>
+    <>
+      {/* Loader Overlay & Spinner CSS */}
+      <style>{`
+       .loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+        .loader {
+  font-size: 10px;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  position: relative;
+  text-indent: -9999em;
+  animation: mulShdSpin 1.1s infinite ease;
+  transform: translateZ(0);
+}
+@keyframes mulShdSpin {
+  0%,
+  100% {
+    box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.5), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7);
+  }
+  12.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5);
+  }
+  25% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.5), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  37.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5), 2.5em 0em 0 0em rgba(8, 42, 102, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  50% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.5), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  62.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.5), 0em 2.5em 0 0em rgba(8, 42, 102, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  75% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.5), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  87.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.5), -2.6em 0em 0 0em rgba(8, 42, 102, 0.7), -1.8em -1.8em 0 0em #ffffff;
+  }
+}
+      `}</style>
 
-              <div className="flex flex-col gap-4">
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={handleEmailChange}
-                  className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                />
-                {emailError && (
-                  <p className="text-red-500 text-sm">{emailError}</p>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none overflow-auto"
-                    style={{ maxHeight: "60px" }}
-                  >
-                    {countries.map((country) => (
-                      <option key={country.code} value={country.code}>
-                        {country.code} ({country.name})
-                      </option>
-                    ))}
-                  </select>
+      {/* Main Layout */}
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4">
+        <div className="flex flex-col items-center w-full max-w-md p-4">
+          <img src={logo} alt="Logo" className="w-40 h-20 mb-6" />
+          <div
+            className="w-full p-8 rounded-xl shadow-2xl border border-white"
+            style={{ background: "rgba(255,255,255,0.30)" }}
+          >
+            {/* STEP 1: Collect Basic Info */}
+            {!otpSent && !otpValidated && (
+              <>
+                <h2 className="text-3xl text-[#082A66] font-bold pt-0 text-center mb-1">
+                  Sign Up
+                </h2>
+                <p className={`text-center text-md text-[#0A3580] mb-6 ${otpValidated ? "pb-3" : ""}`}>
+                  Join the future of marketing.
+                </p>
+                <div className="flex flex-col gap-4">
                   <input
                     type="text"
-                    placeholder="Mobile Number"
-                    value={mobile}
-                    onChange={handleMobileChange}
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                   />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  />
+                  {emailError && <p className="text-red-500 text-sm">{emailError}</p>}
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none overflow-auto"
+                      style={{ maxHeight: "60px" }}
+                    >
+                      {countries.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.code} ({country.name})
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Mobile Number"
+                      value={mobile}
+                      onChange={handleMobileChange}
+                      className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                    />
+                  </div>
+                  {mobileError && <p className="text-red-500 text-sm">{mobileError}</p>}
+                  <div className="flex justify-start items-start w-full">
+                    <button
+                      onClick={handleNextStep}
+                      className={`custom-button mt-4 text-white py-2 w-full rounded-md shadow-lg ${(!mobile || mobileError || emailError || isLoading) && "cursor-not-allowed opacity-50"}`}
+                      disabled={!mobile || mobileError || emailError || isLoading}
+                    >
+                      Register
+                    </button>
+                  </div>
                 </div>
-                {mobileError && (
-                  <p className="text-red-500 text-sm">{mobileError}</p>
-                )}
+              </>
+            )}
 
-                <div className="flex justify-start items-start w-full">
+            {/* STEP 2: OTP Verification */}
+            {otpSent && !otpValidated && (
+              <>
+                <div className="flex items-center justify-between mb-4">
                   <button
-                    onClick={handleNextStep}
-                    className={`custom-button mt-4 text-white py-2 w-full rounded-md shadow-lg ${
-                      (!mobile || mobileError || emailError) &&
-                      "cursor-not-allowed opacity-50"
-                    }`}
-                    disabled={!mobile || mobileError || emailError}
+                    onClick={() => {
+                      // Go back to Step 1
+                      setOtpSent(false);
+                      setTimer(0);
+                      setOtp(["", "", "", ""]);
+                    }}
+                    className="text-blue-600 text-sm flex items-center"
                   >
-                    Register
+                    <FaArrowLeft className="mr-1" /> Back
+                  </button>
+                  <button
+                    onClick={handleResendOtp}
+                    className={`text-blue-600 text-sm ${timer > 0 ? "opacity-50" : ""}`}
+                    disabled={timer > 0}
+                  >
+                    Resend OTP {timer > 0 ? `in ${timer}s` : ""}
                   </button>
                 </div>
-              </div>
-            </>
-          )}
+                <h2 className="text-2xl text-[#082A66] font-bold mb-4 text-center">
+                  Verify OTP
+                </h2>
+                <div className="flex justify-center gap-3 mb-6">
+                  {[...Array(4)].map((_, index) => (
+                    <input
+                      key={index}
+                      id={`otp-${index}`}
+                      type="text"
+                      maxLength="1"
+                      value={otp[index]}
+                      onChange={(e) => handleChangeOtp(e, index)}
+                      onKeyDown={(e) => handleKeyDownOtp(e, index)}                      
+                      className="w-12 h-12 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={handleVerifyOtp}
+                  className="w-full bg-[#082A66] text-white py-2 rounded-lg hover:bg-[#0056b3] transition-colors"
+                  disabled={isLoading}
+                >
+                  Verify OTP
+                </button>
+                <span className="block text-center text-md mt-4 text-gray-600">
+                  OTP has been sent to <strong>{email}</strong>.
+                </span>
+              </>
+            )}
 
-          {/* STEP 2: OTP Verification */}
-          {otpSent && !otpValidated && (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={() => {
-                    // Go back to Step 1
-                    setOtpSent(false);
-                    setTimer(0);
-                    setOtp(["", "", "", ""]);
-                  }}
-                  className="text-blue-600 text-sm flex items-center"
-                >
-                  <FaArrowLeft className="mr-1" /> Back
-                </button>
-                <button
-                  onClick={handleResendOtp}
-                  className={`text-blue-600 text-sm ${
-                    timer > 0 ? "opacity-50" : ""
-                  }`}
-                  disabled={timer > 0}
-                >
-                  Resend OTP {timer > 0 ? `in ${timer}s` : ""}
-                </button>
-              </div>
-              <h2 className="text-2xl text-[#082A66] font-bold mb-4 text-center">
-                Verify OTP
-              </h2>
-              <div className="flex justify-center gap-3 mb-6">
-                {[...Array(4)].map((_, index) => (
+            {/* STEP 3: Create/Set Password */}
+            {otpValidated && (
+              <>
+                <h2 className="text-2xl text-[#082A66] font-bold mb-4 text-center">
+                  Set Your Password
+                </h2>
+                <div className="relative mb-4">
                   <input
-                    key={index}
-                    id={`otp-${index}`}
-                    type="text"
-                    maxLength="1"
-                    value={otp[index]}
-                    onChange={(e) => handleChangeOtp(e, index)}
-                    className="w-12 h-12 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                    className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
                   />
-                ))}
-              </div>
-              <button
-                onClick={handleVerifyOtp}
-                className="w-full bg-[#082A66] text-white py-2 rounded-lg hover:bg-[#0056b3] transition-colors"
-              >
-                Verify OTP
-              </button>
-              <span className="block text-center text-md mt-4 text-gray-600">
-                OTP has been sent to <strong>{email}</strong>.
-              </span>
-            </>
-          )}
-
-          {/* STEP 3: Create/Set Password */}
-          {otpValidated && (
-            <>
-              <h2 className="text-2xl text-[#082A66] font-bold mb-4 text-center">
-                Set Your Password
-              </h2>
-              <div className="relative mb-4">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                />
-                <span
-                  onClick={toggleShowPassword}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                  <span
+                    onClick={toggleShowPassword}
+                    className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                  >
+                    {showPassword ? <FaEyeSlash /> : <PiEyeLight />}
+                  </span>
+                </div>
+                {passwordError && <p className="text-red-500 text-sm mb-4">{passwordError}</p>}
+                <div className="relative mb-4">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={handleConfirmPasswordChange}
+                    className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                  />
+                  <span
+                    onClick={toggleShowConfirmPassword}
+                    className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                  >
+                    {showConfirmPassword ? <FaEyeSlash /> : <PiEyeLight />}
+                  </span>
+                </div>
+                {confirmPasswordError && <p className="text-red-500 text-sm mb-4">{confirmPasswordError}</p>}
+                <button
+                  onClick={handleSignUp}
+                  className="w-full bg-[#082A66] text-white py-2 rounded-lg hover:bg-[#0056b3] transition-colors"
+                  disabled={isLoading}
                 >
-                  {showPassword ? <FaEyeSlash /> : <PiEyeLight />}
-                </span>
-              </div>
-              {passwordError && (
-                <p className="text-red-500 text-sm mb-4">{passwordError}</p>
-              )}
-
-              <div className="relative mb-4">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={handleConfirmPasswordChange}
-                  className="w-full p-2 rounded-lg focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                />
-                <span
-                  onClick={toggleShowConfirmPassword}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
-                >
-                  {showConfirmPassword ? <FaEyeSlash /> : <PiEyeLight />}
-                </span>
-              </div>
-              {confirmPasswordError && (
-                <p className="text-red-500 text-sm mb-4">
-                  {confirmPasswordError}
-                </p>
-              )}
-
-              <button
-                onClick={handleSignUp}
-                className="w-full bg-[#082A66] text-white py-2 rounded-lg hover:bg-[#0056b3] transition-colors"
-              >
-                Sign Up
+                  Sign Up
+                </button>
+              </>
+            )}
+          </div>
+          <div className="flex flex-col items-center mt-6">
+            <p className="mt-4 text-black-900 text-center">
+              <span className="text-[#082A66] font-bold">
+                Already have an account?
+              </span>{" "}
+              <button onClick={handleLoginNavigation} className="text-blue-600">
+                Login
               </button>
-            </>
-          )}
-        </div>
-        <div className="flex flex-col items-center mt-6">
-         <p className="mt-4 text-black-900 text-center">
-            <span className="text-[#082A66] font-bold">
-              Already have an account?
-            </span>{" "}
-            <button onClick={handleLoginNavigation} className="text-blue-600">
-              Login
-            </button>
-          </p>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Full Screen Loader Overlay */}
+      {isLoading && (
+        <div className="loader-overlay">
+          <div className="loader"></div>
+        </div>
+      )}
+    </>
   );
 };
 

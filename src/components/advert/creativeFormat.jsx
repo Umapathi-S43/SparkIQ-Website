@@ -288,14 +288,14 @@ export default function CreativeFormat({
             value={objective}
             onChange={(e) => setObjective(e.target.value)}
           />
-          <div className="flex justify-end gap-4">
+          {/* <div className="flex justify-end gap-4">
             <button className="text-sm custom-button text-white px-4 py-2 rounded-md">
               Enhance with AI
             </button>
             <button className="custom-button text-sm text-white px-4 py-2 rounded-md">
               Submit
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* 2) AI Suggestions */}
@@ -790,6 +790,59 @@ export default function CreativeFormat({
     };
 
     return (
+      <>
+      {/* Loader Overlay & Spinner CSS */}
+      <style>{`
+       .loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+        .loader {
+  font-size: 10px;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  position: relative;
+  text-indent: -9999em;
+  animation: mulShdSpin 1.1s infinite ease;
+  transform: translateZ(0);
+}
+@keyframes mulShdSpin {
+  0%,
+  100% {
+    box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.5), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7);
+  }
+  12.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5);
+  }
+  25% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.5), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  37.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5), 2.5em 0em 0 0em rgba(8, 42, 102, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  50% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.5), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  62.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.5), 0em 2.5em 0 0em rgba(8, 42, 102, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  75% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.5), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  87.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.5), -2.6em 0em 0 0em rgba(8, 42, 102, 0.7), -1.8em -1.8em 0 0em #ffffff;
+  }
+}
+      `}</style>
       <div className="p-6 pt-0">
         {/* 1) Objective */}
         <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
@@ -801,14 +854,14 @@ export default function CreativeFormat({
             value={objective}
             onChange={(e) => setObjective(e.target.value)}
           />
-          <div className="flex justify-end gap-4">
+          {/* <div className="flex justify-end gap-4">
             <button className="text-sm custom-button text-white px-4 py-2 rounded-md">
               Enhance with AI
             </button>
             <button className="custom-button text-sm text-white px-4 py-2 rounded-md">
               Submit
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* 2) Ad Networks */}
@@ -1022,14 +1075,10 @@ export default function CreativeFormat({
           {/* Top-right refresh (regenerate) button */}
           <div className="absolute right-3 top-3 flex items-center">
             <div className="relative group">
-              <img
-                src="/icon7.svg"
-                alt="Refresh Icon"
-                className="border-2 p-2 py-1 rounded-lg cursor-pointer"
-                onClick={refreshCreatives}
-                style={{ cursor: "pointer" }}
-              />
-              <div className="absolute -bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-500 text-white text-nowrap text-sm rounded py-1 px-2">
+           <span className=""
+           onClick={refreshCreatives}
+                style={{ cursor: "pointer" }}> <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#082A66"><path d="M204-318q-22-38-33-78t-11-82q0-134 93-228t227-94h7l-64-64 56-56 160 160-160 160-56-56 64-64h-7q-100 0-170 70.5T240-478q0 26 6 51t18 49l-60 60ZM481-40 321-200l160-160 56 56-64 64h7q100 0 170-70.5T720-482q0-26-6-51t-18-49l60-60q22 38 33 78t11 82q0 134-93 228t-227 94h-7l64 64-56 56Z"/></svg>
+              </span><div className="absolute -bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-500 text-white text-nowrap text-sm rounded py-1 px-2">
                 Regenerate Creatives
               </div>
             </div>
@@ -1039,7 +1088,9 @@ export default function CreativeFormat({
 
           {isGeneratingCohorts && (
             <div className="flex items-center justify-center my-4">
-              <span className="loader"></span>
+              <div className="loader-overlay">
+          <div className="loader"></div>
+        </div>
             </div>
           )}
 
@@ -1236,6 +1287,7 @@ export default function CreativeFormat({
           </button>
         </div>
       </div>
+      </>
     );
   }
 

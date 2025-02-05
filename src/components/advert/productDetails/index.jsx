@@ -482,10 +482,10 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
             id: isEditMode ? productID : undefined,
             brandID: productDetails.brandID,
             name: productDetails.productName,
-            type: productDetails.type,
+            type: productDetails.type||"product", // Default to product
             industryName: productDetails.industryName,
             description: productDetails.productDescription,
-            productURL: productDetails.productURL,
+            productURL: productDetails.productURL||"",
             price: floatPrice,
             priceType: productDetails.currency,
             discount: floatDiscount,
@@ -522,10 +522,7 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
     // partial validation
     const handleSaveAndContinue = (section) => {
         if (section === 0) {
-            if (!productDetails.productURL) {
-                toast.error("Please enter a URL before proceeding.");
-                return;
-            }
+            
         } else if (section === 1) {
             if (
                 !productDetails.productName ||
