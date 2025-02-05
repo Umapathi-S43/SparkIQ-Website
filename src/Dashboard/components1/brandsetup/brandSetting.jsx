@@ -927,18 +927,37 @@ function MultiLogoUpload({ brandData, setBrandData }) {
   const handleMultipleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setUploadFileName(file.name);
-    setUploadProgress(0);
-
-    const url = await uploadImage(file, setIsUploading);
-    if (url) {
-      setBrandData((prev) => ({
-        ...prev,
-        logos: [...prev.logos, url],
-      }));
-      setShowUploadContainer(false);
-    }
+  
+    const MAX_WIDTH = 500; // Example max width (change as needed)
+    const MAX_HEIGHT = 500; // Example max height (change as needed)
+  
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = async () => {
+        if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
+          toast.error(`The uploaded logo exceeds the allowed size of ${MAX_WIDTH}x${MAX_HEIGHT} pixels. Please upload a logo within these dimensions.`);
+return;
+        }
+  
+        // If dimensions are valid, proceed with upload
+        setUploadFileName(file.name);
+        setUploadProgress(0);
+  
+        const url = await uploadImage(file, setIsUploading);
+        if (url) {
+          setBrandData((prev) => ({
+            ...prev,
+            logos: [...prev.logos, url],
+          }));
+          setShowUploadContainer(false);
+        }
+      };
+    };
   };
+  
 
   const handleRemoveLogo = () => {
     if (!imageToRemove) return;

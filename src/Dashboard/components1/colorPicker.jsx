@@ -54,13 +54,6 @@ const Picker = ({ color, onChangeComplete }) => {
     updateHueDiskPosition(hue);
   }, []);
 
-  const updateHueDiskPosition = (hueValue) => {
-    const canvas = hueCanvasRef.current;
-    const width = canvas.width;
-    const position = (hueValue / 360) * width;
-    hueDiskRef.current.style.left = `${position}px`;
-  };
-
   const handleCanvasClick = (e) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -77,13 +70,24 @@ const Picker = ({ color, onChangeComplete }) => {
 
   const handleHueChange = (e) => {
     const rect = hueCanvasRef.current.getBoundingClientRect();
-    const x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+    let x = e.clientX - rect.left; // Get click position relative to canvas
+
+    // Ensure x stays within bounds
+    x = Math.min(Math.max(x, 0), rect.width);
+
+    // Convert x position to hue value (0-360 degrees)
     const newHue = Math.round((x / rect.width) * 360);
     setHue(newHue);
-    updateHueDiskPosition(newHue);
+    updateHueDiskPosition(x); // Move disk smoothly
     drawPalette();
   };
 
+  // Ensure clicking anywhere on the hue bar updates the hue
+  const handleHueClick = (e) => {
+    handleHueChange(e);
+  };
+
+  // Dragging functionality remains the same
   const handleHueMouseDown = () => {
     document.addEventListener("mousemove", handleHueChange);
     document.addEventListener("mouseup", handleMouseUp);
@@ -93,6 +97,14 @@ const Picker = ({ color, onChangeComplete }) => {
     document.removeEventListener("mousemove", handleHueChange);
     document.removeEventListener("mouseup", handleMouseUp);
   };
+
+  // Update hue disk position smoothly
+  const updateHueDiskPosition = (x) => {
+    if (hueDiskRef.current) {
+      hueDiskRef.current.style.transform = `translateX(${x}px)`;
+    }
+  };
+
 
   const rgbToHex = (r, g, b) => {
     const toHex = (component) => component.toString(16).padStart(2, "0");
@@ -107,7 +119,20 @@ const Picker = ({ color, onChangeComplete }) => {
   };
 
   const handleHexInputChange = (e) => {
-    const hex = e.target.value.trim();
+    let hex = e.target.value.trim();
+
+    // Allow empty input for backspace support
+    if (hex === "" || hex === "#") {
+      setCurrentColor({ r: 0, g: 0, b: 0, hex });
+      return;
+    }
+
+    // Ensure the input starts with #
+    if (!hex.startsWith("#")) {
+      hex = "#" + hex;
+    }
+
+    // Validate only if it's a full HEX color
     if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(hex)) {
       const rgb = hexToRgb(hex);
       setCurrentColor({ ...rgb, hex });
@@ -115,8 +140,12 @@ const Picker = ({ color, onChangeComplete }) => {
       drawPalette();
       updateHueDiskPosition(getHueFromRgb(rgb));
       onChangeComplete({ hex });
+    } else {
+      // Update hex state to allow user modifications
+      setCurrentColor((prev) => ({ ...prev, hex }));
     }
   };
+
 
   const handleRgbInputChange = (e, channel) => {
     let value = parseInt(e.target.value, 10);
@@ -177,7 +206,15 @@ const Picker = ({ color, onChangeComplete }) => {
               <div className="relative">
                 <canvas ref={canvasRef} width={300} height={100} onClick={handleCanvasClick} className="border p-1 rounded-lg cursor-pointer mt-3 w-full" style={{ borderColor: "#CFCBDC" }}></canvas>
                 <div className="relative mt-3">
-                  <canvas ref={hueCanvasRef} width={300} height={12} onMouseDown={handleHueMouseDown} className="border rounded-lg cursor-pointer w-full" style={{ borderColor: "#CFCBDC" }}></canvas>
+                  <canvas
+                    ref={hueCanvasRef}
+                    width={300}
+                    height={12}
+                    onClick={handleHueClick} // Click anywhere to update hue
+                    onMouseDown={handleHueMouseDown} // Dragging functionality
+                    className="border rounded-lg cursor-pointer w-full"
+                    style={{ borderColor: "#CFCBDC" }}
+                  ></canvas>
                   <div
                     ref={hueDiskRef}
                     className="absolute h-4 w-4 bg-white rounded-full border border-gray-400"
