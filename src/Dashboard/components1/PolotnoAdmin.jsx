@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
-import { FaCloudUploadAlt } from "react-icons/fa";
+import { FaCloudUploadAlt, FaTrash } from "react-icons/fa";
 import { SiAffinitydesigner } from "react-icons/si";
 
 import {
@@ -119,7 +119,6 @@ const UploadSectionWithAPI = {
     return (
       <div style={{ padding: "10px", height: "100%" }}>
         <h3 style={{ marginBottom: "10px" }}>Uploaded Files</h3>
-
         <label
           htmlFor="fileUpload"
           style={{
@@ -146,7 +145,6 @@ const UploadSectionWithAPI = {
         {isUploading && (
           <p style={{ marginTop: "10px", textAlign: "center" }}>Uploading...</p>
         )}
-
         <div
           style={{
             display: "grid",
@@ -186,7 +184,78 @@ const UploadSectionWithAPI = {
 };
 
 // ----------------------------------------------
-// 4) LABEL MODAL
+// 4) DELETE CONFIRMATION MODAL
+// ----------------------------------------------
+const DeleteConfirmationModal = ({ isOpen, onClose, onDelete, template }) => {
+  if (!isOpen) return null;
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "white",
+          padding: "20px",
+          borderRadius: "8px",
+          maxWidth: "400px",
+          width: "90%",
+        }}
+      >
+        {template && template.url && (
+          <img
+            src={template.url}
+            alt="Template Preview"
+            style={{ width: "100%", height: "auto", marginBottom: "10px" }}
+          />
+        )}
+        <p style={{ marginBottom: "20px", fontSize: "16px" }}>
+          Do you want to delete this template?
+        </p>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 16px",
+              background: "#ccc",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onDelete}
+            style={{
+              padding: "8px 16px",
+              background: "#f44336",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              color: "white",
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ----------------------------------------------
+// 5) LABEL MODAL
 // ----------------------------------------------
 const LabelModal = ({ element, onClose }) => {
   const [variableName, setVariableName] = useState("");
@@ -217,62 +286,33 @@ const LabelModal = ({ element, onClose }) => {
     if (element && typeof element.get === "function") {
       const existingVar = element.get("dynamicVariable");
       setVariableName(existingVar || "");
-
-      // Log the first label element's information
-      console.log("First Label Element:", {
-        type: element.type,
-        text: element.text || "N/A",
-        dynamicVariable: existingVar,
-      });
+      console.log("Existing dynamic variable:", existingVar);
     }
   }, [element]);
 
   const handleSave = () => {
-  if (!element || typeof element.set !== "function") {
-    console.error("Invalid element or missing set method:", element);
-    toast.error("Element is not valid.");
-    return;
-  }
-
-  // Get the current custom object from the element
-  const currentCustom = element.get ? element.get("custom") || {} : {};
-
-  // Prepare the updated custom object
-  const updatedCustom = {
-    ...currentCustom,
-    edit: true, // Add the edit property
-    variable: variableName, // Add or update the variable
-  };
-
-  // Update only the target element's properties
-  element.set({
-    custom: updatedCustom,
-    dynamicVariable: variableName,
-  });
-
-  // Generate modified JSON
-  const json_modified = store.toJSON();
-
-  // Optional: Log the modified element only
-  const targetElement = findElementById(json_modified, element.id);
-  console.log("Modified Element:", targetElement);
-
-  toast.success("Variable set on element and edit mode enabled!");
-  onClose();
-};
-
-// Utility Function to Find an Element by ID in JSON
-const findElementById = (json, id) => {
-  for (const page of json.pages || []) {
-    for (const child of page.children || []) {
-      if (child.id === id) {
-        return child;
-      }
+    if (!element || typeof element.set !== "function") {
+      console.error("Invalid element or missing set method:", element);
+      toast.error("Element is not valid.");
+      return;
     }
-  }
-  return null; // Return null if the element is not found
-};
 
+    const currentCustom = element.get ? element.get("custom") || {} : {};
+
+    const updatedCustom = {
+      ...currentCustom,
+      edit: true,
+      variable: variableName,
+    };
+
+    element.set({
+      custom: updatedCustom,
+      dynamicVariable: variableName,
+    });
+
+    toast.success("Variable set on element and edit mode enabled!");
+    onClose();
+  };
 
   return createPortal(
     <div
@@ -350,39 +390,20 @@ const findElementById = (json, id) => {
   );
 };
 
-
 // ----------------------------------------------
-// 5) MY TEXTFILL + LABEL
+// 5) MY TEXTFILL + LABEL COMPONENTS
 // ----------------------------------------------
 const MyTextFillWithLabel = observer(({ store, element, elements }) => {
-  // This is shown in the default tooltip if a text element is selected
-  // 'element' is the first selected text shape
   if (!element) return null;
-
-  // Convert any non-hex fill color to a safe fallback (#000000)
-  let fillColor = "#000000";
-  if (
-    typeof element.fill === "string" &&
-    element.fill.startsWith("#") &&
-    element.fill.length === 7
-  ) {
-    fillColor = element.fill;
-  }
-
   const [showLabelModal, setShowLabelModal] = useState(false);
-
-  // We'll style our Label button with a gray background, darker on hover
   const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
-
-
-      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#00000",
+          color: "#000",
           border: "none",
           padding: "4px 8px",
           borderRadius: 2,
@@ -394,48 +415,25 @@ const MyTextFillWithLabel = observer(({ store, element, elements }) => {
       >
         Label
       </button>
-
       {showLabelModal && (
-        <LabelModal
-          element={element}
-          onClose={() => setShowLabelModal(false)}
-        />
+        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
     </div>
   );
 });
 
-// 5) MY TEXTFILL + LABEL
-// ----------------------------------------------
+// For brevity, the following components are similar to MyTextFillWithLabel
 const MyImageWithLabel = observer(({ store, element, elements }) => {
-  // This is shown in the default tooltip if a text element is selected
-  // 'element' is the first selected text shape
   if (!element) return null;
-
-  // Convert any non-hex fill color to a safe fallback (#000000)
-  let fillColor = "#000000";
-  if (
-    typeof element.fill === "string" &&
-    element.fill.startsWith("#") &&
-    element.fill.length === 7
-  ) {
-    fillColor = element.fill;
-  }
-
   const [showLabelModal, setShowLabelModal] = useState(false);
-
-  // We'll style our Label button with a gray background, darker on hover
   const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
-
-
-      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#00000",
+          color: "#000",
           border: "none",
           padding: "4px 8px",
           borderRadius: 2,
@@ -447,47 +445,24 @@ const MyImageWithLabel = observer(({ store, element, elements }) => {
       >
         Label
       </button>
-
       {showLabelModal && (
-        <LabelModal
-          element={element}
-          onClose={() => setShowLabelModal(false)}
-        />
+        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
     </div>
   );
 });
-// 5) MY TEXTFILL + LABEL
-// ----------------------------------------------
+
 const MySvgWithLabel = observer(({ store, element, elements }) => {
-  // This is shown in the default tooltip if a text element is selected
-  // 'element' is the first selected text shape
   if (!element) return null;
-
-  // Convert any non-hex fill color to a safe fallback (#000000)
-  let fillColor = "#000000";
-  if (
-    typeof element.fill === "string" &&
-    element.fill.startsWith("#") &&
-    element.fill.length === 7
-  ) {
-    fillColor = element.fill;
-  }
-
   const [showLabelModal, setShowLabelModal] = useState(false);
-
-  // We'll style our Label button with a gray background, darker on hover
   const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
-
-
-      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#00000",
+          color: "#000",
           border: "none",
           padding: "4px 8px",
           borderRadius: 2,
@@ -499,47 +474,24 @@ const MySvgWithLabel = observer(({ store, element, elements }) => {
       >
         Label
       </button>
-
       {showLabelModal && (
-        <LabelModal
-          element={element}
-          onClose={() => setShowLabelModal(false)}
-        />
+        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
     </div>
   );
 });
-// 5) MY TEXTFILL + LABEL
-// ----------------------------------------------
+
 const MyFigureWithLabel = observer(({ store, element, elements }) => {
-  // This is shown in the default tooltip if a text element is selected
-  // 'element' is the first selected text shape
   if (!element) return null;
-
-  // Convert any non-hex fill color to a safe fallback (#000000)
-  let fillColor = "#000000";
-  if (
-    typeof element.fill === "string" &&
-    element.fill.startsWith("#") &&
-    element.fill.length === 7
-  ) {
-    fillColor = element.fill;
-  }
-
   const [showLabelModal, setShowLabelModal] = useState(false);
-
-  // We'll style our Label button with a gray background, darker on hover
   const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
-
-
-      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#00000",
+          color: "#000",
           border: "none",
           padding: "4px 8px",
           borderRadius: 2,
@@ -551,47 +503,24 @@ const MyFigureWithLabel = observer(({ store, element, elements }) => {
       >
         Label
       </button>
-
       {showLabelModal && (
-        <LabelModal
-          element={element}
-          onClose={() => setShowLabelModal(false)}
-        />
+        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
     </div>
   );
 });
-// 5) MY TEXTFILL + LABEL
-// ----------------------------------------------
+
 const MyLineWithLabel = observer(({ store, element, elements }) => {
-  // This is shown in the default tooltip if a text element is selected
-  // 'element' is the first selected text shape
   if (!element) return null;
-
-  // Convert any non-hex fill color to a safe fallback (#000000)
-  let fillColor = "#000000";
-  if (
-    typeof element.fill === "string" &&
-    element.fill.startsWith("#") &&
-    element.fill.length === 7
-  ) {
-    fillColor = element.fill;
-  }
-
   const [showLabelModal, setShowLabelModal] = useState(false);
-
-  // We'll style our Label button with a gray background, darker on hover
   const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
-
-
-      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#00000",
+          color: "#000",
           border: "none",
           padding: "4px 8px",
           borderRadius: 2,
@@ -603,18 +532,224 @@ const MyLineWithLabel = observer(({ store, element, elements }) => {
       >
         Label
       </button>
-
       {showLabelModal && (
-        <LabelModal
-          element={element}
-          onClose={() => setShowLabelModal(false)}
-        />
+        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
     </div>
   );
 });
+
 // ----------------------------------------------
-// 6) POLOTNOADMIN MAIN COMPONENT
+// 6) CUSTOM SIDE-PANEL SECTION: CustomSection (Design)
+// ----------------------------------------------
+const CustomSection = {
+  name: "custom",
+  Tab: (props) => (
+    <SectionTab name="Design" {...props}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <SiAffinitydesigner style={{ fontSize: "14px" }} />
+      </div>
+    </SectionTab>
+  ),
+  Panel: observer(({ store }) => {
+    const [templates, setTemplates] = useState([]);
+    const [page, setPage] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    // For deletion modal
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+
+    const fetchTemplates = async (pageNum) => {
+      if (loading) return;
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `${baseUrl}/v2/template?page=${pageNum}&size=10`,
+          {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          }
+        );
+        let resTemplates = response.data.data.content || [];
+        resTemplates.reverse(); // Reverse only once before assigning
+    
+        setTemplates((prev) =>
+          pageNum === 0 ? resTemplates : [...resTemplates, ...prev] // Add new items at the top
+        );
+    
+        setHasMore(pageNum + 1 < totalPages);
+      } catch (error) {
+        console.error("Failed to fetch templates:", error);
+        //toast.error("Error loading templates. Please try again.");
+        setHasMore(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      if (templates.length === 0) {
+        fetchTemplates(0);
+      }
+    }, []);
+
+    useEffect(() => {
+      if (page > 0) {
+        fetchTemplates(page);
+      }
+    }, [page]);
+
+    useEffect(() => {
+      const container = document.querySelector(".template-container");
+      if (container) {
+        container.addEventListener("scroll", handleScroll);
+        return () => container.removeEventListener("scroll", handleScroll);
+      }
+    }, [hasMore, loading]);
+
+    const handleScroll = (e) => {
+      const container = e.target;
+      const isBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 1;
+      if (isBottom && hasMore && !loading) {
+        setPage((prev) => prev + 1);
+      }
+    };
+
+    const applyTemplate = (template) => {
+      try {
+        if (!template.templateJson) {
+          toast.error("Template JSON is not available.");
+          return;
+        }
+        const parsedJson = JSON.parse(template.templateJson);
+        store.loadJSON(parsedJson);
+        toast.success("Template applied successfully!");
+      } catch (err) {
+        console.error("Error applying template:", err);
+        toast.error("Failed to apply template. Please try again.");
+      }
+    };
+
+    // Delete modal handlers
+    const openDeleteModal = (id) => {
+      setSelectedTemplateId(id);
+      setIsModalOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+      setIsModalOpen(false);
+      setSelectedTemplateId(null);
+    };
+
+    const confirmDelete = async () => {
+      try {
+        await axios.delete(`${baseUrl}/v2/template/${selectedTemplateId}`, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
+        setTemplates((prev) =>
+          prev.filter((p) => p.templateId !== selectedTemplateId)
+        );
+        setIsModalOpen(false);
+        toast.success("Deleted successfully.");
+      } catch (error) {
+        console.error("Error deleting template:", error);
+        toast.error("Failed to delete the template. Please try again.");
+      }
+    };
+
+    const selectedTemplate = templates.find(
+      (t) => t.templateId === selectedTemplateId
+    );
+
+    return (
+      <>
+        <div
+          className="overflow-auto hide-scrollbar template-container"
+          style={{ padding: "10px", maxHeight: "90vh" }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: "10px",
+            }}
+          >
+            {templates.map((template) => (
+              <div
+                key={template.templateId}
+                style={{
+                  position: "relative",
+                  borderRadius: "5px",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                }}
+              >
+                <img
+                  src={template.url}
+                  alt={template.name}
+                  style={{ width: "100%", height: "auto" }}
+                  onClick={() => applyTemplate(template)}
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDeleteModal(template.templateId);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: "5px",
+                    right: "5px",
+                    backgroundColor: "rgba(244,67,54,0.8)",
+                    border: "none",
+                    borderRadius: "50%",
+                    padding: "5px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FaTrash style={{ color: "white" }} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
+        </div>
+        {isModalOpen && (
+          <DeleteConfirmationModal
+            isOpen={isModalOpen}
+            onClose={closeDeleteModal}
+            onDelete={confirmDelete}
+            template={selectedTemplate}
+          />
+        )}
+      </>
+    );
+  }),
+};
+
+// ----------------------------------------------
+// 6) DEFINE SIDE-PANEL SECTIONS
+// ----------------------------------------------
+const sections = [
+  CustomSection,
+  TemplatesSection,
+  TextSection,
+  PhotosSection,
+  ElementsSection,
+  UploadSectionWithAPI,
+  BackgroundSection,
+  LayersSection,
+  SizeSection,
+];
+
+// ----------------------------------------------
+// 7) POLOTNOADMIN MAIN COMPONENT
 // ----------------------------------------------
 const PolotnoAdmin = () => {
   const { state } = useLocation();
@@ -632,7 +767,12 @@ const PolotnoAdmin = () => {
   };
 
   // Helper for compressing image
-  const compressImage = async (dataURL, maxWidth = 1000, maxHeight = 1000, quality = 0.2) => {
+  const compressImage = async (
+    dataURL,
+    maxWidth = 1000,
+    maxHeight = 1000,
+    quality = 0.2
+  ) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.src = dataURL;
@@ -674,11 +814,9 @@ const PolotnoAdmin = () => {
         mimeType: "image/png",
       });
       const compressedBlob = await compressImage(dataURL);
-
       const uploadData = new FormData();
       uploadData.append("file", compressedBlob, "compressed-thumbnail.png");
 
-      // 1) UPLOAD
       const uploadResponse = await axios.post(
         `${baseUrl}/sparkiq/image/upload?customerId=123`,
         uploadData,
@@ -690,14 +828,11 @@ const PolotnoAdmin = () => {
         }
       );
       const thumbnailURL = uploadResponse.data.data.url;
-
-      // 2) BUILD JSON
       const json = store.toJSON();
       const payload = {
         templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
         url: thumbnailURL,
-        templateOrientation:
-          json.width > json.height ? "landscape" : "portrait",
+        templateOrientation: json.width > json.height ? "landscape" : "portrait",
         priority: json.priority || 0,
         templateSize: `${json.width}x${json.height}`,
         postType: json.postType || "standard",
@@ -708,7 +843,6 @@ const PolotnoAdmin = () => {
         templateJson: JSON.stringify(json),
       };
 
-      // 3) POST
       const apiResponse = await axios.post(`${baseUrl}/v2/template`, payload, {
         headers: {
           Authorization: `Bearer ${jwtToken}`,
@@ -717,7 +851,6 @@ const PolotnoAdmin = () => {
       if (!isUpdate) {
         setCurrentTemplateId(apiResponse.data?.templateId);
       }
-
       toast.success(
         isUpdate ? "Template updated successfully!" : "Template saved successfully!"
       );
@@ -755,7 +888,6 @@ const PolotnoAdmin = () => {
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark");
     }
-
     if (templateData) {
       store.loadJSON(templateData);
     } else {
@@ -765,151 +897,12 @@ const PolotnoAdmin = () => {
     }
   }, [templateData]);
 
-  // A custom "Design" side-panel section
-  const CustomSection = {
-    name: "custom",
-    Tab: (props) => (
-      <SectionTab name="Design" {...props}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <SiAffinitydesigner style={{ fontSize: "14px" }} />
-        </div>
-      </SectionTab>
-    ),
-    Panel: observer(({ store }) => {
-      const [templates, setTemplates] = useState([]);
-      const [page, setPage] = useState(0);
-      const [loading, setLoading] = useState(false);
-      const [hasMore, setHasMore] = useState(true);
-
-      const fetchTemplates = async (pageNum) => {
-        if (loading) return;
-        setLoading(true);
-        try {
-          const response = await axios.get(
-            `${baseUrl}/v2/template?page=${pageNum}&size=10`,
-            {
-              headers: { Authorization: `Bearer ${jwtToken}` },
-            }
-          );
-          const newTemplates = response.data.data.content || [];
-          const totalPages = response.data.data.totalPages;
-
-          setTemplates((prev) =>
-            pageNum === 0 ? newTemplates : [...prev, ...newTemplates]
-          );
-          setHasMore(pageNum + 1 < totalPages);
-        } catch (error) {
-          console.error("Failed to fetch templates:", error);
-          toast.error("Error loading templates. Please try again.");
-          setHasMore(false);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      const applyTemplate = (template) => {
-        try {
-          if (!template.templateJson) {
-            toast.error("Template JSON is not available.");
-            return;
-          }
-          const parsedJson = JSON.parse(template.templateJson);
-          store.loadJSON(parsedJson);
-          setCurrentTemplateId(template.templateId);
-          toast.success("Template applied successfully!");
-        } catch (err) {
-          console.error("Error applying template:", err);
-          toast.error("Failed to apply template. Please try again.");
-        }
-      };
-
-      const handleScroll = (e) => {
-        const container = e.target;
-        const isBottom =
-          container.scrollHeight - container.scrollTop - container.clientHeight < 1;
-        if (isBottom && hasMore && !loading) {
-          setPage((prev) => prev + 1);
-        }
-      };
-
-      useEffect(() => {
-        if (templates.length === 0) {
-          fetchTemplates(0);
-        }
-        // eslint-disable-next-line
-      }, []);
-
-      useEffect(() => {
-        if (page > 0) {
-          fetchTemplates(page);
-        }
-        // eslint-disable-next-line
-      }, [page]);
-
-      useEffect(() => {
-        const container = document.querySelector(".template-container");
-        if (container) {
-          container.addEventListener("scroll", handleScroll);
-          return () => container.removeEventListener("scroll", handleScroll);
-        }
-      }, [hasMore, loading]);
-
-      return (
-        <div
-          className="overflow-auto hide-scrollbar template-container"
-          style={{ padding: "10px", maxHeight: "90vh" }}
-        >
-          <div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "10px",
-              }}
-            >
-              {templates.map((template) => (
-                <div
-                  key={template.templateId}
-                  style={{
-                    borderRadius: "5px",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => applyTemplate(template)}
-                >
-                  <img
-                    src={template.url}
-                    alt={template.name}
-                    style={{ width: "100%", height: "auto" }}
-                  />
-                </div>
-              ))}
-            </div>
-            {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
-          </div>
-        </div>
-      );
-    }),
+  const handleAddNew = () => {
+    store.loadJSON({ pages: [] }); // Clear the workspace
+    store.addPage(); // Add a new empty page
+    toast.success("New template created!");
   };
-
-  // The side-panel sections
-  const sections = [
-    CustomSection,
-    TemplatesSection,
-    TextSection,
-    PhotosSection,
-    ElementsSection,
-    UploadSectionWithAPI,
-    BackgroundSection,
-    LayersSection,
-    SizeSection,
-  ];
+  
 
   return (
     <div
@@ -928,7 +921,6 @@ const PolotnoAdmin = () => {
           position: "relative",
         }}
       >
-        {/* THEME TOGGLE BUTTON */}
         <button
           onClick={toggleTheme}
           style={{
@@ -943,8 +935,6 @@ const PolotnoAdmin = () => {
         >
           Switch to {isDarkMode ? "Light" : "Dark"} Mode
         </button>
-
-        {/* SAVE AS NEW TEMPLATE BUTTON */}
         <button
           onClick={() => saveAsJSON(false)}
           style={{
@@ -959,8 +949,6 @@ const PolotnoAdmin = () => {
         >
           Save as New
         </button>
-
-        {/* UPDATE TEMPLATE BUTTON */}
         <button
           onClick={() => saveAsJSON(true)}
           style={{
@@ -975,8 +963,6 @@ const PolotnoAdmin = () => {
         >
           Update Template
         </button>
-
-        {/* LOAD FROM JSON BUTTON */}
         <button
           onClick={loadFromJSON}
           style={{
@@ -991,8 +977,20 @@ const PolotnoAdmin = () => {
         >
           Load Template from JSON
         </button>
-
-        {/* CLOSE BUTTON */}
+        <button
+          onClick={handleAddNew}
+          style={{
+            backgroundColor: "#007BFF",
+            color: "white",
+            border: "none",
+            padding: "4px 16px",
+            cursor: "pointer",
+            borderRadius: "5px",
+            marginRight: "10px",
+          }}
+        >
+          Add New
+        </button>
         <button
           className="close"
           onClick={() => window.history.back()}
@@ -1024,7 +1022,6 @@ const PolotnoAdmin = () => {
         </button>
       </div>
 
-      {/* Polotno Container */}
       <UploadedFilesProvider>
         <PolotnoContainer style={{ width: "100vw", height: "93vh" }}>
           <SidePanelWrap>
@@ -1034,7 +1031,6 @@ const PolotnoAdmin = () => {
             <Toolbar store={store} />
             <Workspace
               store={store}
-              // Key part: Override "TextFill" so it also has a "Label" button
               components={{
                 TextFill: MyTextFillWithLabel,
                 ImageFilters: MyImageWithLabel,
