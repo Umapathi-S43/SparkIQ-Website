@@ -137,7 +137,7 @@ export default function GenerateAd() {
       {showGenerateAdSteps && (
         <div
           ref={stepsRef}
-          className="max-w-7xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl mb-4"
+          className="max-w-6xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl mb-4"
         >
           {/* ========== HEADER ========== */}
           <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0 relative">
@@ -160,7 +160,7 @@ export default function GenerateAd() {
           </div>
 
           {/* ========== BODY ========== */}
-          <div className="px-4 lg:px-6 flex flex-col gap-4 mb-4">
+          <div className="px-4 lg:px-6 flex flex-col gap-4 mb-4 overflow-auto"style={{maxHeight:'80vh'}}>
             {/* STEP 1) Existing or ProductDetails */}
             {!showProductDetails && (
               <ExistingProducts

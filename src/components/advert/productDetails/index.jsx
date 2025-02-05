@@ -136,28 +136,25 @@ export default function ProductDetails({
                 });
                 const foundProduct = response.data.data;
                 if (foundProduct) {
-                    setProductDetails({
+                    setProductDetails((prev) => ({
+                        ...prev,
                         productName: foundProduct.name || "",
                         productDescription: foundProduct.description || "",
                         productURL: foundProduct.productURL || "",
-                        type: foundProduct.type || "",
+                        type: foundProduct.type || "product",
                         industryName: foundProduct.industryName || "",
                         brandID: foundProduct.brandID || "",
-                        logoURL: foundProduct.productImagesList?.[0]?.imageURL || "",
                         discount: foundProduct.discountType || "Percentage",
                         customDiscount: foundProduct.discount || "",
                         productPrice: foundProduct.price || "",
                         currency: foundProduct.priceType || "INR",
                         isEdit: true,
-                    });
-
-                    // If product type is "service"
-                    if (foundProduct.type?.toLowerCase() === "service") {
-                        setIsProduct(false);
-                    } else {
-                        setIsProduct(true);
-                    }
-
+                    }));
+    
+                    // Check and set the product type
+                    setIsProduct(foundProduct.type?.toLowerCase() !== "service");
+    
+                    // Populate the images
                     const existing = (foundProduct.productImagesList || []).map((img) => ({
                         file: null,
                         url: img.imageURL,
@@ -167,18 +164,46 @@ export default function ProductDetails({
                     if (existing[0]) {
                         setImageSrc(existing[0].url);
                     }
+    
+                    // Fetch brands and set correct brand name
+                    fetchBrands(foundProduct.brandID);
                 }
             } catch (error) {
                 console.error("Error fetching product details:", error);
                 toast.error("Failed to fetch product details");
             }
         };
-
+    
+        const fetchBrands = async (productBrandID) => {
+            try {
+                if (!jwtToken) {
+                    throw new Error("No JWT token found. Please log in.");
+                }
+                const response = await axios.get(`${baseUrl}/v2/api/brands`, {
+                    headers: { Authorization: `Bearer ${jwtToken}` },
+                });
+                const fetchedBrands = response.data?.data || [];
+                setBrands(fetchedBrands);
+    
+                // Find the matching brand for the product
+                const selectedBrand = fetchedBrands.find((brand) => brand.id === productBrandID);
+                if (selectedBrand) {
+                    setProductDetails((prev) => ({
+                        ...prev,
+                        brandName: selectedBrand.brandName,
+                    }));
+                }
+            } catch (error) {
+                console.error("Error fetching brands:", error);
+                toast.error("Failed to fetch brands");
+            }
+        };
+    
         if (storedProductID) {
             fetchProduct(storedProductID);
         }
-    }, [storedProductID]);
-
+    }, [storedProductID]); 
+    
     // Switch between product & service
     const handleToggleType = (val) => {
         if (val === "Product") {

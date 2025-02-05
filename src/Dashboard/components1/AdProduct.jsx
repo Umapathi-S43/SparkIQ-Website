@@ -136,65 +136,72 @@ const AdProduct = () => {
   // 2. If Edit Mode, fetch existing product info
   useEffect(() => {
     const fetchProducts = async (id) => {
-      try {
-        if (!jwtToken) {
-          throw new Error("No JWT token found. Please log in.");
+        try {
+            if (!jwtToken) {
+                throw new Error("No JWT token found. Please log in.");
+            }
+            const response = await axios.get(`${baseUrl}/product/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+            });
+            const foundProduct = response.data.data;
+            if (foundProduct) {
+                setProductDetails((prev) => ({
+                    ...prev,
+                    productName: foundProduct.name || "",
+                    productDescription: foundProduct.description || "",
+                    productURL: foundProduct.productURL || "",
+                    type: foundProduct.type || "product",
+                    industryName: foundProduct.industryName || "",
+                    brandID: foundProduct.brandID || "",
+                    discount: foundProduct.discountType || "Percentage",
+                    customDiscount: foundProduct.discount || "",
+                    productPrice: foundProduct.price || "",
+                    currency: foundProduct.priceType || "INR",
+                    isEdit: true,
+                }));
+
+                // Check and set the product type
+                setIsProduct(foundProduct.type?.toLowerCase() !== "service");
+
+                // Populate the images
+                const existingImages = (foundProduct.productImagesList || []).map((img) => ({
+                    file: null,
+                    url: img.imageURL,
+                    uploaded: true,
+                }));
+                setImages(existingImages);
+                if (existingImages.length > 0) {
+                    setSelectedImageUrl(existingImages[0].url);
+                    setSelectedImageType("uploaded");
+                    setImageSrc(existingImages[0].url);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching product details:", error);
+            toast.error("Failed to fetch product details");
         }
-        const response = await axios.get(`${baseUrl}/product/${id}`, {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        });
-        const foundProduct = response.data.data;
-        if (foundProduct) {
-          setProductDetails({
-            productName: foundProduct.name || "",
-            productDescription: foundProduct.description || "",
-            productURL: foundProduct.productURL || "",
-            type: foundProduct.type || "",
-            industryName: foundProduct.industryName || "",
-            brandID: foundProduct.brandID || "",
-            logoURL: foundProduct.productImagesList[0]?.imageURL || "",
-            discount: foundProduct.discountType || "Percentage",
-            customDiscount: foundProduct.discount || "",
-            productPrice: foundProduct.price || "",
-            currency: foundProduct.priceType || "INR",
-            isEdit: true,
-          });
-
-          // Map existing product images
-          const existingImages = (foundProduct.productImagesList || []).map(
-            (img) => ({
-              file: null,
-              url: img.imageURL,
-              uploaded: true,
-            })
-          );
-          setImages(existingImages);
-
-          if (existingImages[0]) {
-            setSelectedImageUrl(existingImages[0].url);
-            setSelectedImageType("uploaded");
-            setImageSrc(existingImages[0].url);
-          }
-
-          // Also set isProduct based on foundProduct.type
-          if (foundProduct.type?.toLowerCase() === "service") {
-            setIsProduct(false);
-          } else {
-            setIsProduct(true);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching product details:", error);
-        toast.error("Failed to fetch product details");
-      }
     };
 
     if (storedProductID) {
-      fetchProducts(storedProductID);
+        fetchProducts(storedProductID);
     }
-  }, [storedProductID]);
+}, [storedProductID]);
+
+// After fetching brands, update brandName based on brandID
+useEffect(() => {
+    if (brands.length > 0 && productDetails.brandID) {
+        const selectedBrand = brands.find((b) => b.id === productDetails.brandID);
+        if (selectedBrand) {
+            setProductDetails((prev) => ({
+                ...prev,
+                brandName: selectedBrand.brandName,
+            }));
+        }
+    }
+}, [brands, productDetails.brandID]);
+
 
   // 3. Handle Form Input Changes
   const handleOnChange = (e) => {
@@ -208,7 +215,17 @@ const AdProduct = () => {
         brandName: value,
         brandID: selectedBrand ? selectedBrand.id : "",
       }));
-    } else {
+    } 
+    else if (name === "industryName") {
+      // Find the brand from the list
+      //const selectedBrand = brands.find((brand) => brand.brandName === value);
+      setProductDetails((prev) => ({
+        ...prev,
+        industryName: value,
+       // brandID: selectedBrand ? selectedBrand.id : "",
+      }));
+    } 
+    else {
       setProductDetails((prev) => ({ ...prev, [name]: value }));
     }
   };
@@ -249,7 +266,7 @@ const AdProduct = () => {
         productImagesList: productImagesPayload,
       };
 
-      console.log("Product Payload:", productPayload);
+      console.log("Product Payload:", productPayload.industryName);
 
       await axios.post(`${baseUrl}/product`, productPayload, {
         headers: {
@@ -655,12 +672,14 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
 
   // 16. Industry selection
   const handleIndustrySelect = (event) => {
+    const selectedIndustry = event.target.value;
     setProductDetails((prevDetails) => ({
       ...prevDetails,
-      industryName: event.target.value,
+      industryName: selectedIndustry,  // Ensure this updates properly
     }));
+    console.log("Selected Industry:", selectedIndustry);
   };
-
+  
   // 17. Accordion toggles
   const toggleAccordion = (section, event) => {
     // Avoid toggling if user clicked inside certain elements
@@ -1048,16 +1067,16 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
                         Select Industry
                       </label>
                       <select
-                        id="industry"
-                        name="industry"
-                        value={productDetails.industryName}
-                        onChange={handleIndustrySelect}
-                        className="rounded-lg py-3 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
-                      >
+                            id="industryName"
+                            name="industryName"  // Ensure this matches the state key
+                            value={productDetails.industryName}
+                            onChange={handleOnChange}
+                            className="rounded-lg py-3 pl-6 pr-4 shadow-md w-full focus:ring-2 focus-within:ring-blue-400 focus:outline-none"
+                          >
                         <option value="">-- Select an Industry --</option>
-                        {industryOptions.map((industry, idx) => (
-                          <option key={idx} value={industry}>
-                            {industry}
+                        {industryOptions.map((industryName, idx) => (
+                          <option key={idx} value={industryName}>
+                            {industryName}
                           </option>
                         ))}
                       </select>

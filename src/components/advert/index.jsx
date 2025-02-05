@@ -52,8 +52,8 @@ export default function AdCampaign() {
           <Header toggleSidebar={toggleSidebar} />
           <div className="flex flex-grow">
             <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-            <div className={`flex-grow transition-transform duration-300 overflow-auto ${isSidebarOpen ? '-ml-6' : 'ml-0'}`} style={{maxHeight:'80vh'}} >
-              <div className='m-2 mt-0 ml-0'>
+            <div className={`flex-grow transition-transform duration-300 overflow-hidden ${isSidebarOpen ? '-ml-6' : 'ml-0'}`} style={{maxHeight:'80vh'}} >
+              <div className='m-2'>
                 {pages.generateAd && <GenerateAd setPage={setPage} pages={pages} />}
                 {pages.customizationAd && <CustomizationAd setPage={setPage} />} {/* Pass setPage to CustomizationAd */}
                 {pages.adPreview && <AdPreview setPage={setPage} />}

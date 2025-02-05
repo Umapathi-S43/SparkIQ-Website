@@ -554,7 +554,7 @@ async function handleGenerateResponse(apiData, allTemplates) {
   return (
     <section
       ref={sectionRef}
-      className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] ${
+      className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl  lg:ml-8 ml-0 ${
         !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
       } flex flex-col gap-6 relative z-10 mb-4`}
     >
