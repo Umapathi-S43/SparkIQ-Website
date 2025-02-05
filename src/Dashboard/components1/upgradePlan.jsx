@@ -46,7 +46,7 @@ const UpgradePlan = () => {
                 href="mailto:admin@sprakiq.ai"
                 className="text-[#082A66] font-medium text-lg"
               >
-                admin@sprakiq.ai
+                hello@sparkiq.ai
               </a>
             </div>
             <div className="flex items-center gap-4">
