@@ -33,7 +33,7 @@ const LoginPage = () => {
       const jwtToken = response.data.data.jwt;
 
       localStorage.setItem("jwtToken", jwtToken);
-      localStorage.setItem("username",email)
+      localStorage.setItem("username", email)
 
 
       toast.success("Login successful!");
@@ -43,9 +43,9 @@ const LoginPage = () => {
       toast.error("Login failed!");
     }
   };
-const handleForgot = () => {
+  const handleForgot = () => {
     navigate("/resetpassword");
-};
+  };
   const handleSignUpNavigation = () => {
     navigate("/signup"); // Navigate to the signup page
   };
@@ -135,9 +135,12 @@ const handleForgot = () => {
                   {showPassword ? <FaEyeSlash /> : <PiEyeLight />}
                 </span>
               </div>
-              <button onClick={handleForgot}><p className="text-blue-600 text-center cursor-pointer">
+              <span
+                className="text-blue-600 text-center cursor-pointer block mt-2"
+                onClick={handleForgot}
+              >
                 Forgot password?
-              </p></button>
+              </span>
             </div>
           </div>
           <div className="flex justify-center m-4 mt-6">
