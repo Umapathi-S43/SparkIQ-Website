@@ -51,8 +51,9 @@ const ResetPassword = () => {
       setTimer(30);
       toast.success("OTP sent successfully!");
     } catch (error) {
+      setIsLoading(false);
       console.error("Error sending OTP:", error);
-      toast.error("Failed to send OTP. Please try again.");
+      toast.error("Registered email not found. Please try again.");
     }
   };
 
@@ -89,7 +90,7 @@ const ResetPassword = () => {
   const handleVerifyOtp = async () => {
     const otpString = otp.join("");
     if (otpString.length !== 4) {
-      toast.error("Please enter the complete 4-digit OTP.");
+      toast.error("Incorrect OTP. Please enter a 4-digit OTP.");
       return;
     }
 
@@ -111,9 +112,10 @@ const ResetPassword = () => {
         // Handle non-200 responses (fallback)
         toast.error("Invalid OTP. Please try again.");
       }
-    } catch (error) {
+    } catch (error) {     
+      setIsLoading(false);
       console.error("Error validating OTP:", error);
-      toast.error("Failed to validate OTP. Please try again.");
+      //toast.error("Failed to validate OTP. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -168,7 +170,6 @@ const ResetPassword = () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;

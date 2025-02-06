@@ -27,18 +27,25 @@ const BrandSetup = () => {
     setLoadingStep(0);
   
     try {
-      // Call the API with the entered URL
+      // 1) Call the API with the entered URL
       const response = await fetchBrandData(url);
   
-      // Log and navigate with the fetched data
-      console.log("Fetched data:", response);
-      navigateToBrandSettings(response);
+      // 2) Merge the user-typed URL into the response so it's available later
+      const finalData = {
+        ...response,
+        websiteUrl: url,   // or whichever field name you want
+      };
+  
+      // 3) Log and navigate with the merged data
+      console.log("Merged data:", finalData);
+      navigateToBrandSettings(finalData);
     } catch (error) {
       console.error("Error fetching brand data:", error);
     } finally {
-      setIsLoading(false); // Stop the loading state
+      setIsLoading(false);
     }
   };
+  
   
   const fetchBrandData = async (url) => {
     const payload={url:encodeURIComponent(url)}
@@ -71,7 +78,7 @@ const BrandSetup = () => {
   
   const navigateToBrandSettings = (response) => {
     console.log("Navigating to BrandSettings with data:", response);
-    navigate('/brand-settings', { state: { response } });
+    navigate('/brand-settings', { state: { response: response } });
   };
   
 const navigate=useNavigate();

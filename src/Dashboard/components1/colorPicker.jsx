@@ -48,6 +48,22 @@ const Picker = ({ color, onChangeComplete }) => {
   useEffect(() => {
     drawPalette();
   }, [hue]);
+  
+  useEffect(() => {
+    if (!color) return;
+    // Convert the incoming color prop (a hex string) into r,g,b
+    const newRgb = hexToRgb(color);
+    const newHue = getHueFromRgb(newRgb);
+  
+    setCurrentColor({ ...newRgb, hex: color });
+    setHue(newHue);
+    // Move the hue slider disk 
+    updateHueDiskPosition(newHue);
+  
+    // Redraw the palette with the new hue
+    drawPalette();
+  }, [color]);
+  
 
   useEffect(() => {
     drawHueBar();
@@ -119,33 +135,49 @@ const Picker = ({ color, onChangeComplete }) => {
   };
 
   const handleHexInputChange = (e) => {
-    let hex = e.target.value.trim();
-
-    // Allow empty input for backspace support
-    if (hex === "" || hex === "#") {
-      setCurrentColor({ r: 0, g: 0, b: 0, hex });
+    // 1) Trim whitespace
+    let rawValue = e.target.value.trim();
+  
+    // 2) Remove all characters except `#`, digits [0-9], and letters [A-Fa-f]
+    rawValue = rawValue.replace(/[^#0-9A-Fa-f]/g, "");
+  
+    // 3) If the user typed multiple "#", keep only the first
+    //    This line ensures only one "#" at the beginning
+    if (rawValue.indexOf("#") > 0) {
+      rawValue = rawValue.replace(/#/g, "");        // remove all "#"
+      rawValue = "#" + rawValue;                   // add a single "#" at start
+    }
+  
+    // 4) Limit to 7 total chars => `#` + 6 hex digits 
+    //    If you need alpha-channel, use 9 total (# + 8)
+    rawValue = rawValue.slice(0, 7);
+  
+    // 5) If user just typed "#" or cleared input
+    if (rawValue === "" || rawValue === "#") {
+      setCurrentColor({ r: 0, g: 0, b: 0, hex: rawValue });
       return;
     }
-
-    // Ensure the input starts with #
-    if (!hex.startsWith("#")) {
-      hex = "#" + hex;
+  
+    // Now ensure it starts with "#"
+    if (!rawValue.startsWith("#")) {
+      rawValue = "#" + rawValue;
     }
-
-    // Validate only if it's a full HEX color
-    if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(hex)) {
-      const rgb = hexToRgb(hex);
-      setCurrentColor({ ...rgb, hex });
+  
+    // 6) If the final string matches a complete hex code, convert to RGB
+    //    e.g. "#abc" or "#AABBCC"
+    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(rawValue)) {
+      const rgb = hexToRgb(rawValue);
+      setCurrentColor({ ...rgb, hex: rawValue });
       setHue(getHueFromRgb(rgb));
       drawPalette();
       updateHueDiskPosition(getHueFromRgb(rgb));
-      onChangeComplete({ hex });
+      onChangeComplete({ hex: rawValue });
     } else {
-      // Update hex state to allow user modifications
-      setCurrentColor((prev) => ({ ...prev, hex }));
+      // The user is still typing, so just update the `hex` field
+      setCurrentColor((prev) => ({ ...prev, hex: rawValue }));
     }
   };
-
+  
 
   const handleRgbInputChange = (e, channel) => {
     let value = parseInt(e.target.value, 10);

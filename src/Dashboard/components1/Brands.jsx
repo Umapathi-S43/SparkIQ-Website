@@ -9,6 +9,7 @@ import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const Brands = () => {
   const [brands, setBrands] = useState([]);

@@ -286,33 +286,62 @@ const LabelModal = ({ element, onClose }) => {
     if (element && typeof element.get === "function") {
       const existingVar = element.get("dynamicVariable");
       setVariableName(existingVar || "");
-      console.log("Existing dynamic variable:", existingVar);
+
+      // Log the first label element's information
+      console.log("First Label Element:", {
+        type: element.type,
+        text: element.text || "N/A",
+        dynamicVariable: existingVar,
+      });
     }
   }, [element]);
 
   const handleSave = () => {
-    if (!element || typeof element.set !== "function") {
-      console.error("Invalid element or missing set method:", element);
-      toast.error("Element is not valid.");
-      return;
-    }
+  if (!element || typeof element.set !== "function") {
+    console.error("Invalid element or missing set method:", element);
+    toast.error("Element is not valid.");
+    return;
+  }
 
-    const currentCustom = element.get ? element.get("custom") || {} : {};
+  // Get the current custom object from the element
+  const currentCustom = element.get ? element.get("custom") || {} : {};
 
-    const updatedCustom = {
-      ...currentCustom,
-      edit: true,
-      variable: variableName,
-    };
-
-    element.set({
-      custom: updatedCustom,
-      dynamicVariable: variableName,
-    });
-
-    toast.success("Variable set on element and edit mode enabled!");
-    onClose();
+  // Prepare the updated custom object
+  const updatedCustom = {
+    ...currentCustom,
+    edit: true, // Add the edit property
+    variable: variableName, // Add or update the variable
   };
+
+  // Update only the target element's properties
+  element.set({
+    custom: updatedCustom,
+    dynamicVariable: variableName,
+  });
+
+  // Generate modified JSON
+  const json_modified = store.toJSON();
+
+  // Optional: Log the modified element only
+  const targetElement = findElementById(json_modified, element.id);
+  console.log("Modified Element:", targetElement);
+
+  toast.success("Variable set on element and edit mode enabled!");
+  onClose();
+};
+
+// Utility Function to Find an Element by ID in JSON
+const findElementById = (json, id) => {
+  for (const page of json.pages || []) {
+    for (const child of page.children || []) {
+      if (child.id === id) {
+        return child;
+      }
+    }
+  }
+  return null; // Return null if the element is not found
+};
+
 
   return createPortal(
     <div
@@ -390,20 +419,39 @@ const LabelModal = ({ element, onClose }) => {
   );
 };
 
+
 // ----------------------------------------------
-// 5) MY TEXTFILL + LABEL COMPONENTS
+// 5) MY TEXTFILL + LABEL
 // ----------------------------------------------
 const MyTextFillWithLabel = observer(({ store, element, elements }) => {
+  // This is shown in the default tooltip if a text element is selected
+  // 'element' is the first selected text shape
   if (!element) return null;
+
+  // Convert any non-hex fill color to a safe fallback (#000000)
+  let fillColor = "#000000";
+  if (
+    typeof element.fill === "string" &&
+    element.fill.startsWith("#") &&
+    element.fill.length === 7
+  ) {
+    fillColor = element.fill;
+  }
+
   const [showLabelModal, setShowLabelModal] = useState(false);
+
+  // We'll style our Label button with a gray background, darker on hover
   const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
+
+
+      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#000",
+          color: "#00000",
           border: "none",
           padding: "4px 8px",
           borderRadius: 2,
@@ -415,25 +463,46 @@ const MyTextFillWithLabel = observer(({ store, element, elements }) => {
       >
         Label
       </button>
+
       {showLabelModal && (
-        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
+        <LabelModal
+          element={element}
+          onClose={() => setShowLabelModal(false)}
+        />
       )}
     </div>
   );
 });
 
-// For brevity, the following components are similar to MyTextFillWithLabel
 const MyImageWithLabel = observer(({ store, element, elements }) => {
+  // This is shown in the default tooltip if a text element is selected
+  // 'element' is the first selected text shape
   if (!element) return null;
+
+  // Convert any non-hex fill color to a safe fallback (#000000)
+  let fillColor = "#000000";
+  if (
+    typeof element.fill === "string" &&
+    element.fill.startsWith("#") &&
+    element.fill.length === 7
+  ) {
+    fillColor = element.fill;
+  }
+
   const [showLabelModal, setShowLabelModal] = useState(false);
+
+  // We'll style our Label button with a gray background, darker on hover
   const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
+
+
+      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#000",
+          color: "#00000",
           border: "none",
           padding: "4px 8px",
           borderRadius: 2,
@@ -445,8 +514,12 @@ const MyImageWithLabel = observer(({ store, element, elements }) => {
       >
         Label
       </button>
+
       {showLabelModal && (
-        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
+        <LabelModal
+          element={element}
+          onClose={() => setShowLabelModal(false)}
+        />
       )}
     </div>
   );
