@@ -34,12 +34,12 @@ export default function LookingFor({
     {
       name: "Social Media Post",
       description: "Generate creative for social media platforms",
-      image: "public/social_media.svg",
+      image: "social_media.svg",
     },
     {
       name: "Advertisement (Ad)",
       description: "Generate creatives for advertising campaigns",
-      image: "public/ads.svg",
+      image: "ads.svg",
       
     },
   ];

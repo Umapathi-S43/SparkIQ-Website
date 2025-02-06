@@ -334,10 +334,10 @@ export default function CreativeFormat({
           </h4>
           <div className="flex flex-wrap gap-4 p-4">
             {[
-              { name: "Instagram", icon: "public/media/insta.png" },
-              { name: "Facebook", icon: "public/media/facebook.png" },
-              { name: "LinkedIn", icon: "public/media/linkedin.png" },
-              { name: "Twitter", icon: "public/media/twitter.png" },
+              { name: "Instagram", icon: "media/insta.png" },
+              { name: "Facebook", icon: "media/facebook.png" },
+              { name: "LinkedIn", icon: "media/linkedin.png" },
+              { name: "Twitter", icon: "media/twitter.png" },
             ].map((platform, idx) => (
               <div
                 key={idx}
@@ -872,11 +872,11 @@ export default function CreativeFormat({
           </h4>
           <div className="flex flex-wrap gap-4 p-4">
             {[
-              { name: "Instagram", icon: "public/media/insta.png" },
-              { name: "Facebook", icon: "public/media/facebook.png" },
-              { name: "LinkedIn", icon: "public/media/linkedin.png" },
-              { name: "Twitter", icon: "public/media/twitter.png" },
-              { name: "Google", icon: "public/media/google.png" },
+              { name: "Instagram", icon: "media/insta.png" },
+              { name: "Facebook", icon: "media/facebook.png" },
+              { name: "LinkedIn", icon: "media/linkedin.png" },
+              { name: "Twitter", icon: "media/twitter.png" },
+              { name: "Google", icon: "media/google.png" },
             ].map((platform, idx) => (
               <div
                 key={idx}
