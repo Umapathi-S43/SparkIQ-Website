@@ -541,10 +541,6 @@ export default function CreativeFormat({
     const [isGeneratingCohorts, setIsGeneratingCohorts] = useState(false);
 
     // Let user fill out all fields before auto-generating if cohorts are empty
-    useEffect(() => {
-      fetchCohorts();
-    }, []);
-
     // ----------------------------------------------------------------
     // Auto-generate once all fields are set (objective, platform, campaign, size),
     // if cohorts are still empty. This runs only if cohorts.length === 0
@@ -566,27 +562,106 @@ export default function CreativeFormat({
     // ----------------------------------------------------------------
     // FETCH existing cohorts from DB
     // ----------------------------------------------------------------
-    const fetchCohorts = async () => {
-      try {
-        const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
-        const productId = JSON.parse(localStorage.getItem("productID")) || "";
+     // PAGINATION states
+  const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize] = useState(5); // or 10, or any default
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFetchingPage, setIsFetchingPage] = useState(false);
 
-        const response = await axios.get(
-          `${baseUrl}/v2/api/cohorts?productId=${productId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  useEffect(() => {
+    fetchCohorts(0); // initially fetch page=0
+  }, []);
 
-        const data = response.data?.data || [];
-        setCohorts(data);
-      } catch (error) {
-        console.error("Error fetching cohorts:", error);
+  // Watch for changes in pageNumber to load more or fetch next
+  useEffect(() => {
+    if (pageNumber > 0) {
+      fetchCohorts(pageNumber);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageNumber]);
+
+  // ----------------------------------------------------------------
+  // Auto-generate once all fields are set (objective, platform, campaign, size),
+  // if cohorts are still empty. This runs only if cohorts.length === 0
+  // ----------------------------------------------------------------
+  useEffect(() => {
+    if (
+      !isGeneratingCohorts &&
+      cohorts.length === 0 &&
+      objective.trim() &&
+      selectedPlatforms.length > 0 &&
+      selectedCampaign &&
+      selectedSize
+    ) {
+      generateAICohorts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [objective, selectedPlatforms, selectedCampaign, selectedSize]);
+
+  // ----------------------------------------------------------------
+  // FETCH cohorts from DB (paginated)
+  // ----------------------------------------------------------------
+  const fetchCohorts = async (page) => {
+    try {
+      setIsFetchingPage(true);
+      const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
+      const productId = JSON.parse(localStorage.getItem("productID")) || "";
+
+      // GET /v2/api/cohorts?productId=xxx&page=page&size=pageSize
+      const response = await axios.get(
+        `${baseUrl}/v2/api/cohorts?productId=${productId}&page=${page}&size=${pageSize}`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = response.data?.data || {};
+      const content = data.content || [];
+      if (page === 0) {
+        // If first page => set cohorts fresh
+        setCohorts(content);
+      } else {
+        // Append to existing
+        setCohorts((prev) => [...prev, ...content]);
       }
-    };
+
+      setTotalPages(data.totalPages || 1);
+    } catch (error) {
+      console.error("Error fetching cohorts:", error);
+    } finally {
+      setIsFetchingPage(false);
+    }
+  };
+
+  // If user clicks "Load More"
+  const loadMoreCohorts = () => {
+    if (pageNumber + 1 < totalPages) {
+      setPageNumber((prev) => prev + 1);
+    }
+  };
+
+  const validateBeforeGeneration = () => {
+    if (!objective.trim()) {
+      toast.error("Please enter an Objective before regenerating cohorts.");
+      return false;
+    }
+    if (selectedPlatforms.length === 0) {
+      toast.error("Please select a Platform before regenerating cohorts.");
+      return false;
+    }
+    if (!selectedSize) {
+      toast.error("Please select a Size before regenerating cohorts.");
+      return false;
+    }
+    if (!selectedCampaign) {
+      toast.error("Please select a Campaign Type before regenerating cohorts.");
+      return false;
+    }
+    return true;
+  };
 
     // ----------------------------------------------------------------
     // Generate AI cohorts manually or automatically
@@ -624,13 +699,22 @@ export default function CreativeFormat({
         });
 
         // Once completed, re-fetch to see new cohorts
-        await fetchCohorts();
-      } catch (err) {
-        console.error("Error generating AI cohorts:", err);
-      } finally {
-        setIsGeneratingCohorts(false);
-      }
+        // Once completed, re-fetch from page=0
+      setPageNumber(0);
+      setCohorts([]); // reset
+      await fetchCohorts(0);
+    } catch (err) {
+      console.error("Error generating AI cohorts:", err);
+    } finally {
+      setIsGeneratingCohorts(false);
+    }
     };
+// Helper to format genders array => capitalized, comma separated
+const formatGenders = (genders) => {
+  if (!Array.isArray(genders)) return "";
+  // e.g. ["male", "female"] => "Male, Female"
+  return genders.map((g) => g.charAt(0).toUpperCase() + g.slice(1)).join(", ");
+};
 
     // ----------------------------------------------------------------
     // Once user sets everything, final "Generate Creatives" for Ads
@@ -818,6 +902,7 @@ export default function CreativeFormat({
 
     // Refresh icon -> manual generate
     const refreshCreatives = async () => {
+      if (!validateBeforeGeneration()) return;
       setCohorts([]);
       setSelectedSuggestions([]);
       await generateAICohorts();
@@ -1129,21 +1214,27 @@ export default function CreativeFormat({
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {cohorts.map((cohort, idx) => (
                   <div
-                    key={idx}
-                    className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${selectedSuggestions.includes(cohort.name) ? "border-[#00A0F5]" : ""
-                      }`}
+                    key={cohort.id}
+                    className={`relative flex flex-col items-start justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${
+                      selectedSuggestions.includes(cohort.name)
+                        ? "border-[#00A0F5]"
+                        : ""
+                    }`}
                     onClick={() => handleCohortSelection(cohort.name)}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ml-8">
                       <span className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
                         <FaFacebookF />
                       </span>
-                      <p className="font-bold text-center">{cohort.name}</p>
+                      <p className="font-bold text-start">{cohort.name}</p>
                     </div>
-                    <div className="mt-2 text-sm text-center">
+                    <div className="mt-2 text-sm text-start ml-8">
                       <p>Audience Profile:</p>
                       <p>Age: {cohort.ageGroup}</p>
-                      <p>Gender: {cohort.genders}</p>
+                      <p>
+                        Gender:{" "}
+                        {formatGenders(cohort.genders)}
+                      </p>
                       <p>Interest: {cohort.interest}</p>
                     </div>
                     <div className="absolute top-2 right-2 flex gap-2">
@@ -1153,6 +1244,7 @@ export default function CreativeFormat({
                         </div>
                       ) : (
                         <>
+
                           <button
                             className="text-blue-500"
                             onClick={(e) => {
@@ -1194,6 +1286,19 @@ export default function CreativeFormat({
                 ))}
               </div>
             )}
+            {/* LOAD MORE button if not last page */}
+            {pageNumber + 1 < totalPages && (
+                <div className="flex justify-center mt-2">
+                  <button
+                    className="px-4 py-2 text-sm text-[#082A66] bg-white border border-[#082A66] rounded hover:bg-gray-200"
+                    disabled={isFetchingPage}
+                    onClick={loadMoreCohorts}
+                  >
+                    {isFetchingPage ? "Loading..." : "Load More"}
+                  </button>
+                </div>
+              )}
+
 
             {/* Manual Setup Button */}
             <button
