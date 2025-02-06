@@ -18,6 +18,9 @@ const ResetPassword = () => {
   const [payload, setPayload] = useState(null); // Store user payload
   const navigate = useNavigate();
 
+  // LOADING STATE
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     let interval = null;
     if (otpSent && timer > 0) {
@@ -36,19 +39,42 @@ const ResetPassword = () => {
       toast.error("Please enter your registered email.");
       return;
     }
-
+    setIsLoading(true);
     try {
       const response = await axios.post(`${baseUrl}/user/reset/${email}`);
       const { data } = response.data;
 
       setPayload(data); // Store payload for further user
       setOtpSent(true);
+      setIsLoading(false);
       setShowOtpInput(true);
       setTimer(30);
       toast.success("OTP sent successfully!");
     } catch (error) {
       console.error("Error sending OTP:", error);
       toast.error("Failed to send OTP. Please try again.");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match!");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const updatedPayload = { ...payload, password: newPassword };
+      const response = await axios.post(`${baseUrl}/user/setpassword`, updatedPayload);
+      if (response.status === 200) {
+        setIsLoading(false);
+        toast.success("Password reset successfully!");
+
+        navigate("/login"); // Redirect to login page
+      }
+
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error("Failed to reset password. Please try again.");
     }
   };
 
@@ -61,12 +87,13 @@ const ResetPassword = () => {
 
   // Function to verify OTP
   const handleVerifyOtp = async () => {
-    const enteredOtp = otp.join("");
-    if (enteredOtp.length !== 4) {
-      toast.error("Please enter a valid 4-digit OTP.");
+    const otpString = otp.join("");
+    if (otpString.length !== 4) {
+      toast.error("Please enter the complete 4-digit OTP.");
       return;
     }
-  
+
+    setIsLoading(true);
     try {
       const response = await axios.post(`${baseUrl}/user/validateOtp/${enteredOtp}`, payload);
   
@@ -87,46 +114,104 @@ const ResetPassword = () => {
     } catch (error) {
       console.error("Error validating OTP:", error);
       toast.error("Failed to validate OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // OTP box changes
+  const handleChangeOtp = (e, index) => {
+    const { value } = e.target;
+    if (/^\d?$/.test(value)) { // Accept only single-digit values
+      const newOtp = [...otp];
+      newOtp[index] = value;
+      setOtp(newOtp);
+  
+      // Move focus to the next input if not the last index
+      if (value !== "" && index < otp.length - 1) {
+        document.getElementById(`otp-${index + 1}`).focus();
+      }
+    }
+  };
+  
+  const handleKeyDownOtp = (e, index) => {
+    if (e.key === "Backspace" && otp[index] === "") {
+      // Move focus to the previous input on backspace if it's not the first input
+      if (index > 0) {
+        document.getElementById(`otp-${index - 1}`).focus();
+      }
     }
   };
   
 
-  // Function to reset password
-  const handleResetPassword = async () => {
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match!");
-      return;
+  // Countdown effect for resending OTP
+  useEffect(() => {
+    let interval;
+    if (otpSent && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
     }
+    return () => clearInterval(interval);
+  }, [otpSent, timer]);
 
-    try {
-      const updatedPayload = { ...payload, password: newPassword };
-      const response = await axios.post(`${baseUrl}/user/setpassword`, updatedPayload);
-      if (response.status === 200) {
-        toast.success("Password reset successfully!");
-        navigate("/login"); // Redirect to login page
-      }
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      toast.error("Failed to reset password. Please try again.");
-    }
-  };
-
-  const handleChangeOtp = (e, index) => {
-    const value = e.target.value;
-    if (/^\d$/.test(value)) {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
-      if (index < 3) document.getElementById(`otp-${index + 1}`).focus();
-    } else if (value === "" && e.nativeEvent.inputType === "deleteContentBackward") {
-      const newOtp = [...otp];
-      newOtp[index] = "";
-      setOtp(newOtp);
-      if (index > 0) document.getElementById(`otp-${index - 1}`).focus();
-    }
-  };
+  // --------------------
+ 
 
   return (
+    <>
+     {/* Loader Overlay & Spinner CSS */}
+     <style>{`
+       .loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+        .loader {
+  font-size: 10px;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  position: relative;
+  text-indent: -9999em;
+  animation: mulShdSpin 1.1s infinite ease;
+  transform: translateZ(0);
+}
+@keyframes mulShdSpin {
+  0%,
+  100% {
+    box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.5), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7);
+  }
+  12.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5);
+  }
+  25% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.5), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  37.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5), 2.5em 0em 0 0em rgba(8, 42, 102, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  50% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.5), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  62.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.5), 0em 2.5em 0 0em rgba(8, 42, 102, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  75% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.5), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+  }
+  87.5% {
+    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.5), -2.6em 0em 0 0em rgba(8, 42, 102, 0.7), -1.8em -1.8em 0 0em #ffffff;
+  }
+}
+      `}</style>
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#B3D4E5] to-[#D9E9F2] px-4">
       <div className="flex flex-col items-center w-full max-w-md p-4">
         <img src={logo} alt="Logo" className="w-40 h-20 mb-6" />
@@ -188,14 +273,15 @@ const ResetPassword = () => {
                   <div className="flex justify-center gap-3 mb-6">
                     {[...Array(4)].map((_, index) => (
                       <input
-                        key={index}
-                        id={`otp-${index}`}
-                        type="text"
-                        maxLength="1"
-                        value={otp[index]}
-                        onChange={(e) => handleChangeOtp(e, index)}
-                        className="w-12 h-12 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      />
+                      key={index}
+                      id={`otp-${index}`}
+                      type="text"
+                      maxLength="1"
+                      value={otp[index]}
+                      onChange={(e) => handleChangeOtp(e, index)}
+                      onKeyDown={(e) => handleKeyDownOtp(e, index)}                      
+                      className="w-12 h-12 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
                     ))}
                   </div>
                   <button
@@ -237,6 +323,13 @@ const ResetPassword = () => {
         </div>
       </div>
     </div>
+    {/* Full Screen Loader Overlay */}
+    {isLoading && (
+        <div className="loader-overlay">
+          <div className="loader"></div>
+        </div>
+      )}
+    </>
   );
 };
 
