@@ -24,7 +24,7 @@ const LoginPage = () => {
     e.preventDefault();
 
     const data = {
-      email: email,
+    email: email.trim().toLowerCase(),
       password: password,
     };
 

@@ -41,7 +41,8 @@ const ResetPassword = () => {
     }
     setIsLoading(true);
     try {
-      const response = await axios.post(`${baseUrl}/user/reset/${email}`);
+      let varEmail= email.trim().toLowerCase();
+      const response = await axios.post(`${baseUrl}/user/reset/${varEmail}`);
       const { data } = response.data;
 
       setPayload(data); // Store payload for further user

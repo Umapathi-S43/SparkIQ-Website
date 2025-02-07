@@ -79,11 +79,10 @@ const SignUpPage = () => {
 
   // SUBMIT DATA (used for /user/register and /user/send)
   const submitData = {
-    name: username,
-    email: email,
+    name: username.trim().toLowerCase(),
+    email: email.trim().toLowerCase(),
     phoneNumber: `${countryCode}-${mobile}`,
   };
-
   // --------------------
   //  Email Validation
   // --------------------
