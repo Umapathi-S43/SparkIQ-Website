@@ -18,21 +18,19 @@ import {
 import { PiFileArrowUpDuotone } from "react-icons/pi";
 import { MdDone, MdClose } from "react-icons/md";
 
-import Picker from "../colorPicker"; // or your colorPicker path
+import Picker from "../colorPicker"; // or wherever your colorPicker is
 import brandIcon from "../../../assets/dashboard_img/brand.svg";
 import brandImage from "../../../assets/dashboard_img/brand_img.png";
-import "./brandSetting.css";
+import "./brandSetting.css"; // Make sure this includes the spinner/overlay CSS
 
 import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
 
 /** 
- * Upload image to server
- * Returns the uploaded-image URL if successful, else null.
+ * Upload image to server => returns uploaded-image URL if successful, else null
  */
 async function uploadImage(file, setIsUploading) {
   if (!file) return null;
-
   const uploadData = new FormData();
   uploadData.append("file", file);
   uploadData.append("customerId", "123");
@@ -58,23 +56,16 @@ async function uploadImage(file, setIsUploading) {
   }
 }
 
-/**
- * Extracts brand colors (primary & secondary) from a single selected logo.
- * The API returns an array with type=primary or type=secondary color(s).
+/** 
+ * Extract brand colors from a single selected logo (API returns array of {type, colorCode}).
  */
 async function fetchBrandColors(logoURL) {
   if (!logoURL) return null;
   try {
     const endpoint = `${baseUrl}/v2/api/brands/extract/colors?logoURL=${encodeURIComponent(logoURL)}`;
-    
-    const res = await axios.post(
-      endpoint, // URL
-      {}, // Empty request body since parameters are in the URL
-      {
-        headers: { Authorization: `Bearer ${jwtToken}` }, // Headers should be the third argument in `post()`
-      }
-    );
-
+    const res = await axios.post(endpoint, {}, {
+      headers: { Authorization: `Bearer ${jwtToken}` },
+    });
     return res.data?.data || [];
   } catch (err) {
     toast.error("Could not extract brand colors from logo");
@@ -83,22 +74,16 @@ async function fetchBrandColors(logoURL) {
 }
 
 /**
- * Extracts a color palette array based on an array of color codes.
- * Pass a combined list of primary + secondary to get palettes back.
+ * Extract a color palette array from combined primary/secondary color codes
  */
 async function fetchColorPalette(allColors) {
   if (!allColors?.length) return [];
-
-  const joined = allColors.join(","); // Join colors into a single string
-  const encodedColors = encodeURIComponent(joined); // Encode the colors correctly
-
+  const joined = encodeURIComponent(allColors.join(","));
   try {
-    const endpoint = `${baseUrl}/v2/api/brands/extract/colorspalette?colors=${encodedColors}`;
-
+    const endpoint = `${baseUrl}/v2/api/brands/extract/colorspalette?colors=${joined}`;
     const res = await axios.post(endpoint, null, {
       headers: { Authorization: `Bearer ${jwtToken}` },
     });
-
     const data = res.data?.data || [];
     return data.map((p) => p.palette);
   } catch (err) {
@@ -107,21 +92,15 @@ async function fetchColorPalette(allColors) {
   }
 }
 
-
-/**
- * The main BrandSetting container: manages steps 1→2→3.
- * We keep brand data in a single `brandData` so going back/forth won't lose changes.
- */
 export default function BrandSetting() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Attempt to load brand ID from route or state
+  // Attempt to load brandId from route or state
   const params = new URLSearchParams(location.search);
   const brandNameFromUrl = params.get("id") || location.state?.id || null;
   const brandInfo = location.state?.response || null;
 
-  // Step
   const initialStep = location.state?.step || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
 
@@ -137,20 +116,13 @@ export default function BrandSetting() {
     niche: "",
     targetAudience: "",
     audienceObjective: "",
-
-    // Arrays
     logos: [],
-    // The "selectedLogos" array below controls which logos are "selected" 
-    // for color extraction (similar to 'AI suggestion' style).
-    selectedLogos: [], 
-
+    selectedLogos: [],
     colors: {
       primary: ["#082A66"], // default
       secondary: ["#ffffff"], // default
     },
     colorPalettes: ["#082A66,#ffffff,#000000"],
-
-    // Basic default fonts
     fonts: [
       {
         id: "heading",
@@ -192,14 +164,14 @@ export default function BrandSetting() {
     brandElements: [],
   });
 
-  // If brandInfo passed in location.state, set brand data
+  // 1) If brandInfo is passed, map it
   useEffect(() => {
     if (brandInfo) {
       mapFoundBrandToState(brandInfo, setBrandData);
     }
   }, [brandInfo]);
 
-  // Or fetch brand by ID from the URL
+  // 2) Or fetch brand by ID from the URL
   useEffect(() => {
     async function fetchBrandById() {
       if (!jwtToken || !brandNameFromUrl) return;
@@ -215,65 +187,8 @@ export default function BrandSetting() {
         toast.error("Error fetching brand by ID.");
       }
     }
-
     if (!brandInfo) fetchBrandById();
   }, [brandNameFromUrl]);
-
-  // Whenever the user changes "selectedLogos," we can auto-extract colors 
-  // if exactly one logo is selected. (Or you can do so for each selected in a loop.)
-  useEffect(() => {
-    if (brandData.selectedLogos.length === 1) {
-      const [singleLogo] = brandData.selectedLogos;
-      handleExtractColorsAndPalette(singleLogo);
-    }
-    // If multiple are selected, you can decide how to handle. 
-    // For simplicity, we only extract from the last selected or single selection.
-  }, [brandData.selectedLogos]);
-
-  /**
-   * handleExtractColorsAndPalette: given a single logo URL,
-   * calls brandColors extract, then brandPalette extract,
-   * finally updates brandData with the result.
-   */
-  const handleExtractColorsAndPalette = async (logoURL) => {
-    const extracted = await fetchBrandColors(logoURL);
-    if (!extracted) return;
-
-    // "extracted" is an array with type=primary or type=secondary color(s).
-    // e.g. 
-    // [
-    //   { id: null, type: "primary", colorCode: "#fdfdfd", brandId: null },
-    //   { id: null, type: "secondary", colorCode: "#959595,#8b8b8b,#e3e3e3,#bbbbbb" }
-    // ]
-    const newPrimary = [];
-    const newSecondary = [];
-
-    extracted.forEach((c) => {
-      if (c.type?.toLowerCase() === "primary") {
-        // Some APIs might return multiple primary colors if colorCode includes commas, but typically one
-        const splitted = c.colorCode.split(",").map((col) => col.trim());
-        newPrimary.push(...splitted);
-      } else if (c.type?.toLowerCase() === "secondary") {
-        // secondary might also have multiple
-        const splitted = c.colorCode.split(",").map((col) => col.trim());
-        newSecondary.push(...splitted);
-      }
-    });
-
-    // Then fetch a color palette
-    const allColors = [...newPrimary, ...newSecondary];
-    const palettes = await fetchColorPalette(allColors);
-
-    // Update brandData
-    setBrandData((prev) => ({
-      ...prev,
-      colors: {
-        primary: newPrimary.length ? newPrimary : prev.colors.primary,
-        secondary: newSecondary.length ? newSecondary : prev.colors.secondary,
-      },
-      colorPalettes: palettes.length ? palettes : prev.colorPalettes,
-    }));
-  };
 
   // Step navigation
   const goNextStep = () => setCurrentStep((s) => s + 1);
@@ -304,9 +219,12 @@ export default function BrandSetting() {
 
   return (
     <div className="flex-grow">
-      <div className="max-w-6xl mx-auto border border-[#fcfcfc] rounded-3xl flex flex-col overflow-auto hide-scrollbar" style={{ maxHeight: "78vh" }}>
+      <div
+        className="max-w-6xl mx-auto border border-[#fcfcfc] rounded-3xl flex flex-col overflow-auto hide-scrollbar"
+        style={{ maxHeight: "78vh" }}
+      >
         {/* Header */}
-        <div className="w-full bg-[rgba(252,252,252,0.40)] rounded-t-3xl lg:p-1 p-4">
+        <div className="w-full bg-[rgba(252,252,252,0.40)] rounded-t-3xl p-4">
           <div className="flex items-center ml-4">
             <div className="flex items-center justify-center w-12 h-12 bg-[rgba(0,39,153,0.15)] rounded-2xl">
               <div className="relative w-8 h-8 bg-[#082A66] rounded-xl flex items-center justify-center">
@@ -368,9 +286,10 @@ export default function BrandSetting() {
 }
 
 /** 
- * Maps the API's brand response to our local brandData state shape.
+ * Maps the API brand response => local brandData shape
  */
 function mapFoundBrandToState(foundBrand, setBrandData) {
+  if (!foundBrand) return;
   setBrandData((prev) => ({
     ...prev,
     id: foundBrand.id || null,
@@ -384,7 +303,7 @@ function mapFoundBrandToState(foundBrand, setBrandData) {
     targetAudience: foundBrand.targetAudience || "",
     audienceObjective: foundBrand.audienceObjective || "",
     logos: (foundBrand.logos || []).map((lg) => lg.logoUrl),
-    selectedLogos: [], // reset or load if you have logic
+    selectedLogos: [],
     colors: parseColorsToState(foundBrand.colors || []),
     colorPalettes: (foundBrand.colorPalettes || []).map((cp) => cp.palette),
     brandElements: (foundBrand.brandElements || []).map((elem) => ({
@@ -431,7 +350,7 @@ function parseFontsToState(apiFonts) {
 }
 
 /** 
- * Builds the final JSON the server expects.
+ * Builds the final JSON the server expects
  */
 function buildFinalBrandPayload(brandData) {
   const {
@@ -452,7 +371,6 @@ function buildFinalBrandPayload(brandData) {
     audienceObjective,
   } = brandData;
 
-  // Transform logos => array
   const logoObjects = logos.map((url) => ({
     id: "",
     logoName: "Custom Logo",
@@ -460,7 +378,6 @@ function buildFinalBrandPayload(brandData) {
     brandId: id || "",
   }));
 
-  // Flatten primary & secondary
   const colorObjs = [];
   if (colors?.primary?.length) {
     colors.primary.forEach((c) => {
@@ -483,14 +400,12 @@ function buildFinalBrandPayload(brandData) {
     });
   }
 
-  // colorPalettes => array
   const paletteObjs = colorPalettes.map((p) => ({
     id: "",
     palette: p,
     brandId: id || "",
   }));
 
-  // brandElements => array
   const elementObjs = brandElements.map((elem) => ({
     id: elem.id || "",
     name: elem.name || "Untitled",
@@ -498,7 +413,6 @@ function buildFinalBrandPayload(brandData) {
     brandId: id || "",
   }));
 
-  // fonts => array
   const fontObjs = fonts.map((f) => ({
     id: f.id || "",
     name: f.role || "Title",
@@ -529,7 +443,7 @@ function buildFinalBrandPayload(brandData) {
   };
 }
 
-/** A progress bar item for steps 1,2,3. */
+/** A progress bar item for steps 1,2,3 */
 function StepIndicator({ step, activeStep }) {
   const isDone = activeStep > step;
   return (
@@ -572,11 +486,11 @@ function BrandDetails({ brandData, setBrandData, onNext }) {
       toast.error("Please upload at least one Brand Logo.");
       return;
     }
-    if (!brandData.colors.primary || brandData.colors.primary.length < 1) {
+    if (!brandData.colors.primary?.length) {
       toast.error("At least one Primary Color is required.");
       return;
     }
-    if (!brandData.colors.secondary || brandData.colors.secondary.length < 1) {
+    if (!brandData.colors.secondary?.length) {
       toast.error("At least one Secondary Color is required.");
       return;
     }
@@ -598,9 +512,7 @@ function BrandDetails({ brandData, setBrandData, onNext }) {
   );
 }
 
-/** 
- * Renders brand name, logos, brand colors, brand fonts 
- */
+/** The brand details panel: brand name, multi-logo, brand colors, brand fonts */
 function BrandDetailsInner({ brandData, setBrandData }) {
   return (
     <>
@@ -641,10 +553,9 @@ function BrandDetailsInner({ brandData, setBrandData }) {
   );
 }
 
-/** Step 2: BrandOverview (Brand Voice, Mission, Vision, etc.) */
+/** STEP 2: BrandOverview */
 function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
   const handlePrevClick = () => onPrev && onPrev();
-
   const handleNextClick = () => {
     if (!brandData.brandVoice.trim()) {
       toast.error("Brand Voice is required.");
@@ -685,7 +596,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
       <div className="mb-6 border border-[#FCFCFC] p-4 rounded-xl bg-[rgba(252,252,252,0.25)]">
         <h3 className="text-lg font-semibold mb-3">Brand Identity</h3>
 
-        {/* Brand Voice (Required) */}
+        {/* Brand Voice */}
         <label className="block font-semibold mb-1" htmlFor="brandVoice">
           Brand Voice
         </label>
@@ -699,7 +610,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Mission (Required) */}
+        {/* Mission */}
         <label className="block font-semibold mb-1" htmlFor="mission">
           Mission
         </label>
@@ -713,7 +624,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Vision (Required) */}
+        {/* Vision */}
         <label className="block font-semibold mb-1" htmlFor="vision">
           Vision
         </label>
@@ -727,9 +638,9 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Brand Story (Required) */}
+        {/* Brand Story */}
         <label className="block font-semibold mb-1" htmlFor="brandStory">
-          Brand Story 
+          Brand Story
         </label>
         <textarea
           id="brandStory"
@@ -741,9 +652,9 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Niche (Required) */}
+        {/* Niche */}
         <label className="block font-semibold mb-1" htmlFor="niche">
-          Niche 
+          Niche
         </label>
         <textarea
           id="niche"
@@ -756,10 +667,11 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
         />
       </div>
 
+      {/* Audience */}
       <div className="mb-6 border border-[#FCFCFC] p-4 rounded-xl bg-[#FCFCFC40]">
         <h3 className="text-lg font-semibold mb-3">Audience Overview</h3>
 
-        {/* Target Audience (Required) */}
+        {/* Target Audience */}
         <label className="block font-semibold mb-1" htmlFor="targetAudience">
           Target Audience
         </label>
@@ -773,7 +685,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
           rows={3}
         />
 
-        {/* Audience Objective (Optional) */}
+        {/* Audience Objective */}
         <label className="block font-semibold mb-1" htmlFor="audienceObjective">
           Audience Objective (Optional)
         </label>
@@ -806,7 +718,7 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
   );
 }
 
-/** Step 3: BrandAssets */
+/** STEP 3: BrandAssets */
 function BrandAssets({ brandData, setBrandData, onPrev, onFinish }) {
   const handlePrevClick = () => onPrev && onPrev();
   const handleFinishClick = () => onFinish && onFinish();
@@ -835,7 +747,7 @@ function BrandAssets({ brandData, setBrandData, onPrev, onFinish }) {
   );
 }
 
-/** BrandElements subcomponent for Step 3 (icons, etc.). */
+/** BrandElements (icons, images, etc.) */
 function BrandElements({ brandData, setBrandData }) {
   const [showIconUpload, setShowIconUpload] = useState(false);
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -844,7 +756,7 @@ function BrandElements({ brandData, setBrandData }) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // If you specifically do NOT want .svg:
+    // If you specifically disallow .svg:
     if (file.name.toLowerCase().endsWith(".svg")) {
       toast.error("Please upload a PNG or JPEG/JPG file.");
       return;
@@ -948,8 +860,7 @@ function BrandElements({ brandData, setBrandData }) {
 
 /**
  * MultiLogoUpload for brand logos (Step 1).
- * Allows uploading multiple logos, toggling selection(s), and 
- * auto-selecting if there's only one, etc.
+ * Allows uploading multiple logos, toggling selection(s), etc.
  */
 function MultiLogoUpload({ brandData, setBrandData }) {
   const [showUploadContainer, setShowUploadContainer] = useState(false);
@@ -958,12 +869,10 @@ function MultiLogoUpload({ brandData, setBrandData }) {
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [imageToRemove, setImageToRemove] = useState(null);
 
-  /** Upload new logo from file input */
   const handleMultipleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Example max width/height
     const MAX_WIDTH = 500;
     const MAX_HEIGHT = 500;
 
@@ -976,20 +885,17 @@ function MultiLogoUpload({ brandData, setBrandData }) {
       img.src = event.target.result;
       img.onload = async () => {
         if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
-          toast.error(
-            `The uploaded logo exceeds ${MAX_WIDTH}x${MAX_HEIGHT} pixels. Please upload a smaller logo.`
-          );
+          toast.error(`Uploaded logo exceeds ${MAX_WIDTH}x${MAX_HEIGHT} px. Please upload smaller.`);
           return;
         }
-        // If OK, upload
+        // If OK => upload
         const url = await uploadImage(file, setIsUploading);
         if (url) {
           setBrandData((prev) => ({
             ...prev,
             logos: [...prev.logos, url],
             // If first logo => auto select
-            selectedLogos:
-              prev.logos.length === 0 ? [url] : prev.selectedLogos,
+            selectedLogos: prev.logos.length === 0 ? [url] : prev.selectedLogos,
           }));
           setShowUploadContainer(false);
         }
@@ -997,7 +903,6 @@ function MultiLogoUpload({ brandData, setBrandData }) {
     };
   };
 
-  /** Toggle a logo as selected/unselected */
   const handleToggleSelectLogo = (logoUrl) => {
     setBrandData((prev) => {
       let newSelected = [];
@@ -1005,14 +910,13 @@ function MultiLogoUpload({ brandData, setBrandData }) {
         // unselect
         newSelected = prev.selectedLogos.filter((l) => l !== logoUrl);
       } else {
-        // add to selection
+        // add
         newSelected = [...prev.selectedLogos, logoUrl];
       }
       return { ...prev, selectedLogos: newSelected };
     });
   };
 
-  /** Remove a logo from brandData entirely */
   const handleRemoveLogo = () => {
     if (!imageToRemove) return;
     setBrandData((prev) => {
@@ -1020,9 +924,7 @@ function MultiLogoUpload({ brandData, setBrandData }) {
       updated.splice(imageToRemove.index, 1);
 
       // Also remove from selectedLogos if present
-      const newSelected = prev.selectedLogos.filter(
-        (url) => url !== imageToRemove.url
-      );
+      const newSelected = prev.selectedLogos.filter((url) => url !== imageToRemove.url);
 
       return { ...prev, logos: updated, selectedLogos: newSelected };
     });
@@ -1057,17 +959,12 @@ function MultiLogoUpload({ brandData, setBrandData }) {
                   }`}
                   onClick={() => handleToggleSelectLogo(logoUrl)}
                 >
-                  <img
-                    src={logoUrl}
-                    alt={`Brand Logo ${idx + 1}`}
-                    className="w-20 h-20 object-contain"
-                  />
+                  <img src={logoUrl} alt={`Brand Logo ${idx + 1}`} className="w-20 h-20 object-contain" />
                   {isSelected && (
                     <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow">
                       <FaCheck className="text-white text-xs" />
                     </div>
                   )}
-                  {/* Remove button on top-left? */}
                   <button
                     className="absolute top-1 left-1 bg-red-700 bg-opacity-40 text-white text-xs px-1 py-0.5 hover:bg-opacity-70"
                     onClick={(e) => {
@@ -1096,7 +993,7 @@ function MultiLogoUpload({ brandData, setBrandData }) {
           <p className="text-gray-500 italic mb-4">No logos uploaded yet.</p>
         )}
 
-        {/* Confirm removal modal */}
+        {/* Remove confirmation */}
         {showRemoveModal && imageToRemove && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
             <div className="bg-white rounded-xl p-4 shadow-2xl max-w-sm w-full">
@@ -1140,12 +1037,11 @@ function MultiLogoUpload({ brandData, setBrandData }) {
                     <p className="text-sm font-semibold text-gray-600">
                       Uploading: {uploadFileName}
                     </p>
-                    {/* 
-                      If you have an actual progress % from server, use that. 
-                      For now, just illustrate 0%. 
-                    */}
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-500 h-2 rounded-full transition-all duration-300" style={{ width: `0%` }} />
+                      <div
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: "0%" }}
+                      />
                     </div>
                     <span className="text-sm text-gray-600">0%</span>
                   </div>
@@ -1173,12 +1069,14 @@ function MultiLogoUpload({ brandData, setBrandData }) {
   );
 }
 
-/**
- * BrandColors subcomponent:
- * Manages brandData.colors.primary, brandData.colors.secondary, plus brandData.colorPalettes
- * The user can still manually adjust colors/palettes if desired.
+/** 
+ * BRAND COLORS subcomponent: partial overlay loader for color extraction
+ * We'll watch brandData.selectedLogos (if exactly 1, auto-extract).
  */
 function BrandColors({ brandData, setBrandData }) {
+  const [loadingColors, setLoadingColors] = useState(false);
+
+  // For color editing
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorPickerTarget, setColorPickerTarget] = useState(null);
   const [customColor, setCustomColor] = useState("#000000");
@@ -1191,18 +1089,59 @@ function BrandColors({ brandData, setBrandData }) {
   const [newTextColor, setNewTextColor] = useState("#ffffff");
   const [newEffectColor, setNewEffectColor] = useState("#cccccc");
 
-  // Called after user picks a color in the popup
+  // Auto-extract whenever exactly 1 logo is selected
+  useEffect(() => {
+    if (brandData.selectedLogos.length === 1) {
+      extractColorsAndPalette(brandData.selectedLogos[0]);
+    }
+  }, [brandData.selectedLogos]);
+
+  const extractColorsAndPalette = async (logoURL) => {
+    setLoadingColors(true);
+    try {
+      const extracted = await fetchBrandColors(logoURL);
+      if (!extracted) return;
+
+      const newPrimary = [];
+      const newSecondary = [];
+      extracted.forEach((c) => {
+        if (c.type?.toLowerCase() === "primary") {
+          const splitted = c.colorCode.split(",").map((col) => col.trim());
+          newPrimary.push(...splitted);
+        } else if (c.type?.toLowerCase() === "secondary") {
+          const splitted = c.colorCode.split(",").map((col) => col.trim());
+          newSecondary.push(...splitted);
+        }
+      });
+
+      const allColors = [...newPrimary, ...newSecondary];
+      const palettes = await fetchColorPalette(allColors);
+
+      setBrandData((prev) => ({
+        ...prev,
+        colors: {
+          primary: newPrimary.length ? newPrimary : prev.colors.primary,
+          secondary: newSecondary.length ? newSecondary : prev.colors.secondary,
+        },
+        colorPalettes: palettes.length ? palettes : prev.colorPalettes,
+      }));
+    } catch (err) {
+      console.error("Failed extracting brand colors:", err);
+    } finally {
+      setLoadingColors(false);
+    }
+  };
+
+  // ... The rest is your existing color editing logic ...
   const handleColorSelect = (colorResult) => {
     setCustomColor(colorResult.hex);
   };
 
-  // Called after "Save" is clicked in color popup
   const handleSaveAdditionalColor = () => {
     if (!colorPickerTarget) {
       setColorPickerOpen(false);
       return;
     }
-    // If it's a palette color
     if (colorPickerTarget.type === "palette") {
       const { paletteIndex, colorIndex } = colorPickerTarget;
       setBrandData((prev) => {
@@ -1244,7 +1183,6 @@ function BrandColors({ brandData, setBrandData }) {
     setColorPickerTarget(null);
   };
 
-  // For manually adding a new 3-color palette
   const handleAddNewPalette = () => {
     setNewBgColor("#082A66");
     setNewTextColor("#ffffff");
@@ -1279,6 +1217,15 @@ function BrandColors({ brandData, setBrandData }) {
           <p className="ml-3">Brand Colors</p>
         </div>
       </div>
+      
+      {/* PARTIAL LOADER OVERLAY (only inside the brand-colors container) */}
+      {loadingColors && (
+        <div className="absolute inset-0 z-10 bg-[rgba(255,255,255,0.4)] flex items-center justify-center rounded-2xl">
+          {/* If you want the snippet style, you can do it here: */}
+          <div className="loader"></div>
+        </div>
+      )}
+
       <div className="p-4 relative">
         {/* Primary */}
         <h3 className="font-semibold mb-2">Primary Colors</h3>
@@ -1427,7 +1374,7 @@ function BrandColors({ brandData, setBrandData }) {
           </div>
         )}
 
-        {/* Show color-picker for palette or primary/secondary */}
+        {/* Color picker for palette or primary/secondary */}
         {colorPickerOpen && colorPickerTarget?.type === "palette" && (
           <div className="absolute z-10 p-2 shadow-xl rounded-md bg-white mt-2">
             <Picker color={customColor} onChangeComplete={handleColorSelect} />
@@ -1454,22 +1401,17 @@ function BrandColors({ brandData, setBrandData }) {
     </div>
   );
 }
-// Replace your existing getTextColor function with this:
+
 function getTextColor(hex) {
-  const color = hex.toLowerCase().replace(/\s/g, ""); // safe sanitize
-  // If it's near-white (starts with '#f' or specifically '#ffffff', etc.), use black text
-  // >>> MODIFIED LINE BELOW <<<
-  if (color.startsWith("#f") || color === "#fff" || color === "#ffffff" || color === "#f5f5f5"||color === "#e0f7fa"||color === "#e4f7e7") {
-    return "#000000";
+  const c = hex.toLowerCase().replace(/\s/g, "");
+  if (c.startsWith("#f") || c === "#fff" || c === "#ffffff" || c === "#f5f5f5" || c === "#e0f7fa" || c === "#e4f7e7") {
+    return "#000";
   }
-  // otherwise default to white text
-  return "#ffffff";
+  return "#fff";
 }
 
-
 /**
- * ColorArray handles adding/removing or editing single colors
- * in brandData.colors.primary/secondary, plus colorPicker usage.
+ * ColorArray for adding/removing single colors in brandData.colors.primary/secondary, with a mini color picker
  */
 function ColorArray({
   arrayName,
@@ -1546,7 +1488,7 @@ function ColorArray({
         </button>
       )}
 
-      {/* Color picker popup (for primary/secondary) */}
+      {/* If user is editing primary/secondary color, show colorPicker locally */}
       {colorPickerOpen && colorPickerTarget?.array === arrayName && (
         <div className="absolute z-10 p-2 shadow-xl rounded-md bg-white">
           <Picker color={customColor} onChangeComplete={handleColorSelect} />
@@ -1574,8 +1516,7 @@ function ColorArray({
 }
 
 /** 
- * PaletteSubColor for the 3-color palette modal. 
- * Allows user to individually set each color in the new palette (bg/text/effects).
+ * One part of the 3-color palette modal 
  */
 function PaletteSubColor({
   label,
@@ -1602,15 +1543,11 @@ function PaletteSubColor({
       <label className="w-24 font-semibold">{label}</label>
       <div
         className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center cursor-pointer px-20"
-        style={{
-          backgroundColor: color,
-          color: getTextColor(color),
-        }}
+        style={{ backgroundColor: color, color: getTextColor(color) }}
         onClick={handleOpenPicker}
       >
         {color}
       </div>
-
       {pickerOpen === targetName && (
         <div className="absolute z-50 bg-white border border-gray-300 rounded shadow-xl p-2 ml-32">
           <Picker color={tempColor} onChangeComplete={handleColorChange} />
@@ -1634,7 +1571,7 @@ function PaletteSubColor({
   );
 }
 
-/** BRAND FONTS => same logic as your original code, referencing brandData.fonts. */
+/** BRAND FONTS => referencing brandData.fonts */
 function BrandFonts({ brandData, setBrandData }) {
   const handleAddNewFont = () => {
     const newFont = {
@@ -1674,20 +1611,14 @@ function BrandFonts({ brandData, setBrandData }) {
         </button>
 
         {brandData.fonts.map((fontObj) => (
-          <FontRowPen
-            key={fontObj.id}
-            fontObj={fontObj}
-            setBrandData={setBrandData}
-          />
+          <FontRowPen key={fontObj.id} fontObj={fontObj} setBrandData={setBrandData} />
         ))}
       </div>
     </div>
   );
 }
 
-/** 
- * A single row for editing a specific font (role, size, style).
- */
+/** Single row for a specific font style (role, size, style) */
 function FontRowPen({ fontObj, setBrandData }) {
   const {
     id,
@@ -1861,7 +1792,7 @@ function FontRowPen({ fontObj, setBrandData }) {
 
       {/* If “Custom Font,” show file input + preview */}
       {isCustom && (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <label className="text-sm font-medium">Upload Font:</label>
           <input
             type="file"
