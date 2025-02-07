@@ -13,7 +13,7 @@ import {
 import { FaXTwitter } from "react-icons/fa6";
 import { MdArrowDropDown, MdArrowDropUp } from "react-icons/md";
 import axios from "axios";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 
 import { baseUrl } from "../utils/Constant";
 import { jwtToken } from "../utils/jwtToken";
@@ -875,12 +875,22 @@ const formatGenders = (genders) => {
     // Selections
     // ----------------------------------------------------------------
     const handleCohortSelection = (cohortName) => {
-      setSelectedSuggestions((prev) =>
-        prev.includes(cohortName)
-          ? prev.filter((name) => name !== cohortName)
-          : [...prev, cohortName]
-      );
+      setSelectedSuggestions((prev) => {
+        // If the cohort is already selected, remove it (toggle off)
+        if (prev.includes(cohortName)) {
+          return prev.filter((name) => name !== cohortName);
+        } else {
+          // If already 3 cohorts are selected, prevent further selection
+          if (prev.length >= 3) {
+            toast.error("You can select a maximum of 3 cohorts. Please deselect one to choose another.");
+            return prev;
+          }
+          // Otherwise, add the new cohort
+          return [...prev, cohortName];
+        }
+      });
     };
+    
 
     const togglePlatformSelection = (platformName) => {
       setSelectedPlatforms([platformName]);
