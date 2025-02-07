@@ -109,6 +109,35 @@ const Brands = () => {
     brand.brandName?.toLowerCase().includes(searchQuery?.toLowerCase() || "")
   );
 
+  const handleBrandClick = async (brandId) => {
+    if (!jwtToken) throw new Error("No JWT token found. Please log in.");
+  
+    try {
+      // Fetch user info to check brand limits
+      const response = await axios.get(`${baseUrl}/user/info`, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+  
+      const brandsCompleted = response.data.data.brandsCompleted; // Access 'data' object
+      const maxBrands = response.data.data.maxBrands; 
+  
+      // Check if the user can create/update a brand
+      if (brandsCompleted >= maxBrands) {
+        toast.error("Plan limit reached! Please upgrade your plan.");
+        navigate("/upgrade"); // Redirect to upgrade page
+        return; // Stop further execution
+      }
+  
+      // Proceed to brand settings if limit is not exceeded
+      navigate(`/brand-settings?id=${encodeURIComponent(brandId)}`);
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+      toast.error("Failed to retrieve account details. Please try again.");
+    }
+  };
+  
   return (
     <div className="flex-grow mb-6">
       <div className="max-w-6xl mx-auto border border-[#fcfcfc] rounded-3xl flex flex-col items-center">
@@ -183,7 +212,7 @@ const Brands = () => {
                 key={index}
                 className="group brand-card1 flex items-center justify-center w-64 h-80"
                 onClick={() =>
-                  navigate(`/brand-settings?id=${encodeURIComponent(brand.id)}`)
+                  handleBrandClick(brand.id)
                 }
               >
                 <div className="relative flex flex-col items-center justify-center text-white w-full h-full overflow-hidden">
