@@ -235,7 +235,11 @@ const CustomSection = {
       }
       try {
         const parsed = JSON.parse(template.templateJson);
-        store.loadJSON(parsed);
+        // Overwrite the entire store with new JSON
+        // 1) Clear all pages
+        store.deletePages(store.pages.map((p) => p.id));
+        store.loadJSON(json, { override: true });
+
         // Optionally store the loaded templateId
         localStorage.setItem("loadedtemplate", template);
         toast.success("Template applied successfully!");
@@ -453,7 +457,12 @@ const PolotnoEditor = () => {
           return;
         }
         const json = JSON.parse(serverData.templateJson);
-        store.loadJSON(json);
+        // Overwrite the entire store with new JSON
+        // 1) Clear all pages
+        store.deletePages(store.pages.map((p) => p.id));
+
+        store.loadJSON(json, { override: true });
+
         setCurrentTemplateId(templateId);
       })
       .catch((err) => {
@@ -615,6 +624,8 @@ const PolotnoEditor = () => {
         if (file) {
           const content = await file.text();
           const json = JSON.parse(content);
+          // 1) Clear all pages
+          store.deletePages(store.pages.map((p) => p.id));
           store.loadJSON(json, false);
           toast.success("Template loaded from file!");
         }
@@ -636,6 +647,8 @@ const PolotnoEditor = () => {
 
     // If there's existing JSON, load it
     if (Object.keys(templateData).length > 0) {
+      // 1) Clear all pages
+      store.deletePages(store.pages.map((p) => p.id));
       store.loadJSON(templateData);
       // also confirm or set the current template ID
       if (template.templateId) {
@@ -870,6 +883,45 @@ const PolotnoEditor = () => {
         >
           {/* Save Button at Start */}
           <div style={{ position: "relative" }}>
+            
+          </div>
+
+          {/* Theme and Close Buttons at End */}
+          <div
+            style={{
+              display: "flex",
+              gap: "4px",
+              alignItems: "center",
+              overflow: "hidden", // Prevents horizontal overflow
+            }}
+          >
+            {/* Theme Toggle Button */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={toggleTheme}
+                style={{
+                  backgroundColor: isDarkMode ? "#555" : "#e0e0e0",
+                  color: isDarkMode ? "#fff" : "#000",
+                  border: "none",
+                  padding: "4px",
+                  marginLeft: "4px",
+                  cursor: "pointer",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  transition: "background-color 0.3s, transform 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.transform = "scale(1.1)")}
+                onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
+                data-tooltip={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {isDarkMode ? <MdOutlineLightMode size={20} /> : <CiDark size={20} />}
+              </button>
+            </div>
+            <div style={{ position: "relative" }}>
+
             <button
               onClick={saveAsJSON}
               style={{
@@ -889,48 +941,18 @@ const PolotnoEditor = () => {
             >
               <FaSave size={20} />
             </button>
-          </div>
-
-          {/* Theme and Close Buttons at End */}
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-              overflow: "hidden", // Prevents horizontal overflow
-            }}
-          >
-            {/* Theme Toggle Button */}
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={toggleTheme}
-                style={{
-                  backgroundColor: isDarkMode ? "#555" : "#e0e0e0",
-                  color: isDarkMode ? "#fff" : "#000",
-                  border: "none",
-                  padding: "4px",
-                  marginLeft:"4px",
-                  cursor: "pointer",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                  transition: "background-color 0.3s, transform 0.2s",
-                }}
-                onMouseEnter={(e) => (e.target.style.transform = "scale(1.1)")}
-                onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
-                data-tooltip={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              >
-                {isDarkMode ? <MdOutlineLightMode size={20} /> : <CiDark size={20} />}
-              </button>
             </div>
-
             {/* Close Button */}
             <div style={{ position: "relative" }}>
               <button
                 className="close"
-                onClick={() => navigate("/savedProductsPage")}
+                onClick={() => {
+                  // Clear the store so there are no leftover pages/shapes
+
+                  store.loadJSON({ pages: [] }); // Clear
+                  // Then navigate
+                  navigate("/savedProductsPage");
+                }}
                 style={{
                   backgroundColor: "transparent",
                   color: isDarkMode ? "white" : "black",
@@ -955,6 +977,7 @@ const PolotnoEditor = () => {
                 X
               </button>
             </div>
+
           </div>
         </div>
 

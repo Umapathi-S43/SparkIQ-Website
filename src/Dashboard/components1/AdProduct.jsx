@@ -1298,7 +1298,7 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
                       disabled={isNextStepDisabled}
                       onClick={handleProductSubmission}
                     >
-                      {!productDetails.isEdit ? "Create Product" : "Edit Product"}
+                      {!productDetails.isEdit ? "Create Product" : "Update Product"}
                     </button>
                   </div>
                 )}

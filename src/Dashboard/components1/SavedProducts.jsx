@@ -105,20 +105,22 @@ const SavedProducts = () => {
     try {
       const response = await axios.get(
         `${baseUrl}/v2/user/templates?page=${page}&size=${pageSize}`,
-        {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        }
+        { headers: { Authorization: `Bearer ${jwtToken}` } }
       );
-
-      // !! IMPORTANT !!
-      // The real data might be at `response.data.data.content`.
-      // So we do:
-      const pageData = response.data?.data;       // object with `content`, `last`, etc.
-      const newData = pageData?.content || [];    // extract the array safely
-
-      // Now newData is guaranteed an array
-      setProducts((prev) => [...prev, ...newData]);
-
+      const pageData = response.data?.data;
+      const newData = pageData?.content || [];
+  
+      setProducts((prev) => {
+        // 1) Combine old + new
+        const combined = [...prev, ...newData];
+        // 2) Deduplicate by templateId
+        const map = new Map();
+        for (const item of combined) {
+          map.set(item.templateId, item);
+        }
+        return Array.from(map.values());
+      });
+  
       setPageNumber(pageData?.number ?? 0);
       setHasMore(!pageData?.last);
     } catch (error) {
@@ -128,7 +130,7 @@ const SavedProducts = () => {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     // Initial load
     fetchTemplates(0);

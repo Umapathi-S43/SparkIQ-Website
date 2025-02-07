@@ -524,7 +524,7 @@ export default function Creatives({
       if (response.data?.data?.isFavourite === true) {
         toast.success("Template bookmarked successfully!");
       } else {
-        toast.error("Failed to bookmark template on server.");
+       // toast.error("Failed to bookmark template on server.");
       }
     } catch (err) {
       console.error("Error bookmarking template:", err);

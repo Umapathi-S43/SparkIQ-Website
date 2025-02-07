@@ -1184,7 +1184,7 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
                                         >
                                             {!productDetails.isEdit
                                                 ? "Next Step"
-                                                : `Edit ${postType || "Product"}`}
+                                                : `Update ${postType || "Product"}`}
                                         </button>
                                     </div>
                                 )}

@@ -45,3 +45,99 @@
 /* [data-tooltip]:hover::after {
   opacity: 1;
 } */
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  position: relative; /* so we can absolutely position lines inside it, if needed */
+  margin: 0 auto; /* center horizontally if you want */
+}
+
+.fade-line {
+  width: 2px;
+  height: 18px;
+  background: #333;
+  position: absolute;
+  left: 24px;
+  top: 16px;
+  animation: fade 1s infinite;
+  opacity: 0.3;
+  transform-origin: center -10px;
+}
+
+.fade-line-0 {
+  animation-delay: 0s;
+  transform: rotate(0deg);
+}
+.fade-line-1 {
+  animation-delay: 0.0625s;
+  transform: rotate(22.5deg);
+}
+.fade-line-2 {
+  animation-delay: 0.125s;
+  transform: rotate(45deg);
+}
+.fade-line-3 {
+  animation-delay: 0.1875s;
+  transform: rotate(67.5deg);
+}
+.fade-line-4 {
+  animation-delay: 0.25s;
+  transform: rotate(90deg);
+}
+.fade-line-5 {
+  animation-delay: 0.3125s;
+  transform: rotate(112.5deg);
+}
+.fade-line-6 {
+  animation-delay: 0.375s;
+  transform: rotate(135deg);
+}
+.fade-line-7 {
+  animation-delay: 0.4375s;
+  transform: rotate(157.5deg);
+}
+.fade-line-8 {
+  animation-delay: 0.5s;
+  transform: rotate(180deg);
+}
+.fade-line-9 {
+  animation-delay: 0.5625s;
+  transform: rotate(202.5deg);
+}
+.fade-line-10 {
+  animation-delay: 0.625s;
+  transform: rotate(225deg);
+}
+.fade-line-11 {
+  animation-delay: 0.6875s;
+  transform: rotate(247.5deg);
+}
+.fade-line-12 {
+  animation-delay: 0.75s;
+  transform: rotate(270deg);
+}
+.fade-line-13 {
+  animation-delay: 0.8125s;
+  transform: rotate(292.5deg);
+}
+.fade-line-14 {
+  animation-delay: 0.875s;
+  transform: rotate(315deg);
+}
+.fade-line-15 {
+  animation-delay: 0.9375s;
+  transform: rotate(337.5deg);
+}
+
+@keyframes fade {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}

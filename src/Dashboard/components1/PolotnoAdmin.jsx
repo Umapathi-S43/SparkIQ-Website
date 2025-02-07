@@ -20,6 +20,7 @@ import toast from "react-hot-toast";
 
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
+
 import { FaCloudUploadAlt, FaTrash } from "react-icons/fa";
 import { SiAffinitydesigner } from "react-icons/si";
 
@@ -34,6 +35,21 @@ import {
 } from "polotno/side-panel";
 
 import "./PolotnoEditor.css";
+
+// ----------------------------------------------
+//  SPINNER COMPONENT
+// ----------------------------------------------
+const Spinner = () => {
+  // We'll generate 16 lines
+  const lines = [...Array(16).keys()];
+  return (
+    <div className="spinner">
+      {lines.map((i) => (
+        <div key={i} className={`fade-line fade-line-${i}`}></div>
+      ))}
+    </div>
+  );
+};
 
 // ----------------------------------------------
 // 1) CREATE POLOTNO STORE
@@ -89,11 +105,12 @@ const UploadSectionWithAPI = {
 
     const handleFileUpload = async (file) => {
       if (!file) return;
+      setIsUploading(true);
+
       const uploadData = new FormData();
       uploadData.append("file", file);
       uploadData.append("customerId", "123");
 
-      setIsUploading(true);
       try {
         const response = await axios.post(
           `${baseUrl}/sparkiq/image/upload`,
@@ -119,6 +136,7 @@ const UploadSectionWithAPI = {
     return (
       <div style={{ padding: "10px", height: "100%" }}>
         <h3 style={{ marginBottom: "10px" }}>Uploaded Files</h3>
+
         <label
           htmlFor="fileUpload"
           style={{
@@ -136,15 +154,20 @@ const UploadSectionWithAPI = {
           <FaCloudUploadAlt style={{ marginRight: "8px" }} />
           Upload Image
         </label>
+
         <input
           id="fileUpload"
           type="file"
           onChange={(e) => handleFileUpload(e.target.files[0])}
           style={{ display: "none" }}
         />
+
         {isUploading && (
-          <p style={{ marginTop: "10px", textAlign: "center" }}>Uploading...</p>
+          <div style={{ textAlign: "center", marginTop: 10 }}>
+            <Spinner />
+          </div>
         )}
+
         <div
           style={{
             display: "grid",
@@ -152,6 +175,7 @@ const UploadSectionWithAPI = {
             gap: "10px",
             overflowY: "auto",
             maxHeight: "60vh",
+            marginTop: 20,
           }}
         >
           {uploadedFiles.map((file, index) => (
@@ -287,8 +311,8 @@ const LabelModal = ({ element, onClose }) => {
       const existingVar = element.get("dynamicVariable");
       setVariableName(existingVar || "");
 
-      // Log the first label element's information
-      console.log("First Label Element:", {
+      // Debug info
+      console.log("Label Element Data:", {
         type: element.type,
         text: element.text || "N/A",
         dynamicVariable: existingVar,
@@ -297,51 +321,45 @@ const LabelModal = ({ element, onClose }) => {
   }, [element]);
 
   const handleSave = () => {
-  if (!element || typeof element.set !== "function") {
-    console.error("Invalid element or missing set method:", element);
-    toast.error("Element is not valid.");
-    return;
-  }
+    if (!element || typeof element.set !== "function") {
+      console.error("Invalid element or missing set method:", element);
+      toast.error("Element is not valid.");
+      return;
+    }
 
-  // Get the current custom object from the element
-  const currentCustom = element.get ? element.get("custom") || {} : {};
+    // current custom
+    const currentCustom = element.get ? element.get("custom") || {} : {};
 
-  // Prepare the updated custom object
-  const updatedCustom = {
-    ...currentCustom,
-    edit: true, // Add the edit property
-    variable: variableName, // Add or update the variable
+    // updated custom
+    const updatedCustom = {
+      ...currentCustom,
+      edit: true,
+      variable: variableName,
+    };
+
+    // set the new props
+    element.set({
+      custom: updatedCustom,
+      dynamicVariable: variableName,
+    });
+
+    // optional debug
+    const json_modified = store.toJSON();
+    const targetElement = findElementById(json_modified, element.id);
+    console.log("Modified Element:", targetElement);
+
+    toast.success("Variable set on element and edit mode enabled!");
+    onClose();
   };
 
-  // Update only the target element's properties
-  element.set({
-    custom: updatedCustom,
-    dynamicVariable: variableName,
-  });
-
-  // Generate modified JSON
-  const json_modified = store.toJSON();
-
-  // Optional: Log the modified element only
-  const targetElement = findElementById(json_modified, element.id);
-  console.log("Modified Element:", targetElement);
-
-  toast.success("Variable set on element and edit mode enabled!");
-  onClose();
-};
-
-// Utility Function to Find an Element by ID in JSON
-const findElementById = (json, id) => {
-  for (const page of json.pages || []) {
-    for (const child of page.children || []) {
-      if (child.id === id) {
-        return child;
+  const findElementById = (json, id) => {
+    for (const page of json.pages || []) {
+      for (const child of page.children || []) {
+        if (child.id === id) return child;
       }
     }
-  }
-  return null; // Return null if the element is not found
-};
-
+    return null;
+  };
 
   return createPortal(
     <div
@@ -419,116 +437,64 @@ const findElementById = (json, id) => {
   );
 };
 
-
 // ----------------------------------------------
-// 5) MY TEXTFILL + LABEL
+// 5) TEXT/IMAGE... WITH LABEL
 // ----------------------------------------------
-const MyTextFillWithLabel = observer(({ store, element, elements }) => {
-  // This is shown in the default tooltip if a text element is selected
-  // 'element' is the first selected text shape
+const MyTextFillWithLabel = observer(({ store, element }) => {
   if (!element) return null;
-
-  // Convert any non-hex fill color to a safe fallback (#000000)
-  let fillColor = "#000000";
-  if (
-    typeof element.fill === "string" &&
-    element.fill.startsWith("#") &&
-    element.fill.length === 7
-  ) {
-    fillColor = element.fill;
-  }
-
   const [showLabelModal, setShowLabelModal] = useState(false);
-
-  // We'll style our Label button with a gray background, darker on hover
-  const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
-
-
-      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
           color: "#00000",
           border: "none",
           padding: "4px 8px",
-          borderRadius: 2,
           cursor: "pointer",
         }}
-        onMouseEnter={() => setLabelBtnBg("#d3d3d3")}
-        onMouseLeave={() => setLabelBtnBg("#fcfcfc")}
         onClick={() => setShowLabelModal(true)}
       >
         Label
       </button>
 
       {showLabelModal && (
-        <LabelModal
-          element={element}
-          onClose={() => setShowLabelModal(false)}
-        />
+        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
     </div>
   );
 });
 
-const MyImageWithLabel = observer(({ store, element, elements }) => {
-  // This is shown in the default tooltip if a text element is selected
-  // 'element' is the first selected text shape
+const MyImageWithLabel = observer(({ store, element }) => {
   if (!element) return null;
-
-  // Convert any non-hex fill color to a safe fallback (#000000)
-  let fillColor = "#000000";
-  if (
-    typeof element.fill === "string" &&
-    element.fill.startsWith("#") &&
-    element.fill.length === 7
-  ) {
-    fillColor = element.fill;
-  }
-
   const [showLabelModal, setShowLabelModal] = useState(false);
-
-  // We'll style our Label button with a gray background, darker on hover
-  const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
-
-
-      {/* 2) LABEL BUTTON => OPENS MODAL */}
       <button
         style={{
           backgroundColor: "transparent",
           color: "#00000",
           border: "none",
           padding: "4px 8px",
-          borderRadius: 2,
           cursor: "pointer",
         }}
-        onMouseEnter={() => setLabelBtnBg("#d3d3d3")}
-        onMouseLeave={() => setLabelBtnBg("#fcfcfc")}
         onClick={() => setShowLabelModal(true)}
       >
         Label
       </button>
 
       {showLabelModal && (
-        <LabelModal
-          element={element}
-          onClose={() => setShowLabelModal(false)}
-        />
+        <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
     </div>
   );
 });
 
-const MySvgWithLabel = observer(({ store, element, elements }) => {
+const MySvgWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-  const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
@@ -538,11 +504,8 @@ const MySvgWithLabel = observer(({ store, element, elements }) => {
           color: "#000",
           border: "none",
           padding: "4px 8px",
-          borderRadius: 2,
           cursor: "pointer",
         }}
-        onMouseEnter={() => setLabelBtnBg("#d3d3d3")}
-        onMouseLeave={() => setLabelBtnBg("#fcfcfc")}
         onClick={() => setShowLabelModal(true)}
       >
         Label
@@ -554,10 +517,9 @@ const MySvgWithLabel = observer(({ store, element, elements }) => {
   );
 });
 
-const MyFigureWithLabel = observer(({ store, element, elements }) => {
+const MyFigureWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-  const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
@@ -567,11 +529,8 @@ const MyFigureWithLabel = observer(({ store, element, elements }) => {
           color: "#000",
           border: "none",
           padding: "4px 8px",
-          borderRadius: 2,
           cursor: "pointer",
         }}
-        onMouseEnter={() => setLabelBtnBg("#d3d3d3")}
-        onMouseLeave={() => setLabelBtnBg("#fcfcfc")}
         onClick={() => setShowLabelModal(true)}
       >
         Label
@@ -583,10 +542,9 @@ const MyFigureWithLabel = observer(({ store, element, elements }) => {
   );
 });
 
-const MyLineWithLabel = observer(({ store, element, elements }) => {
+const MyLineWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-  const [labelBtnBg, setLabelBtnBg] = useState("#fcfcfc");
 
   return (
     <div style={{ margin: "8px 0" }}>
@@ -596,11 +554,8 @@ const MyLineWithLabel = observer(({ store, element, elements }) => {
           color: "#000",
           border: "none",
           padding: "4px 8px",
-          borderRadius: 2,
           cursor: "pointer",
         }}
-        onMouseEnter={() => setLabelBtnBg("#d3d3d3")}
-        onMouseLeave={() => setLabelBtnBg("#fcfcfc")}
         onClick={() => setShowLabelModal(true)}
       >
         Label
@@ -613,7 +568,8 @@ const MyLineWithLabel = observer(({ store, element, elements }) => {
 });
 
 // ----------------------------------------------
-// 6) CUSTOM SIDE-PANEL SECTION: CustomSection (Design)
+// 6) CUSTOM SECTION (Design)
+//    We'll "inject" setCurrentTemplateId from the parent
 // ----------------------------------------------
 const CustomSection = {
   name: "custom",
@@ -630,15 +586,20 @@ const CustomSection = {
       </div>
     </SectionTab>
   ),
-  Panel: observer(({ store }) => {
+  Panel: observer(({ store, setCurrentTemplateId, reloadTrigger }) => {
+    // This local state is for "applying template" spinner
+    const [isApplying, setIsApplying] = useState(false);
+
     const [templates, setTemplates] = useState([]);
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-    // For deletion modal
+
+    // Deletion modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
+    // 1) fetchTemplates
     const fetchTemplates = async (pageNum) => {
       if (loading) return;
       setLoading(true);
@@ -649,35 +610,75 @@ const CustomSection = {
             headers: { Authorization: `Bearer ${jwtToken}` },
           }
         );
-        let resTemplates = response.data.data.content || [];
-        resTemplates.reverse(); // Reverse only once before assigning
-    
+        const resTemplates = response.data.data.content || [];
+        const totalPages = response.data.data.totalPages;
+
         setTemplates((prev) =>
-          pageNum === 0 ? resTemplates : [...resTemplates, ...prev] // Add new items at the top
+          pageNum === 0 ? resTemplates : [...prev, ...resTemplates]
         );
-    
         setHasMore(pageNum + 1 < totalPages);
       } catch (error) {
         console.error("Failed to fetch templates:", error);
-        //toast.error("Error loading templates. Please try again.");
         setHasMore(false);
       } finally {
         setLoading(false);
       }
     };
 
+    // 2) applyTemplate
+    const applyTemplate = async (template) => {
+      // Show spinner while applying
+      setIsApplying(true);
+      try {
+        if (!template.templateJson) {
+          toast.error("Template JSON is not available.");
+          return;
+        }
+        const parsedJson = JSON.parse(template.templateJson);
+        store.loadJSON(parsedJson);
+
+        if (typeof setCurrentTemplateId === "function") {
+          setCurrentTemplateId(template.templateId);
+        }
+
+        toast.success("Template applied successfully!");
+      } catch (err) {
+        console.error("Error applying template:", err);
+        toast.error("Failed to apply template. Please try again.");
+      } finally {
+        // Hide spinner
+        setIsApplying(false);
+      }
+    };
+
+    // 3) init and pagination
     useEffect(() => {
       if (templates.length === 0) {
         fetchTemplates(0);
       }
+      // eslint-disable-next-line
     }, []);
 
     useEffect(() => {
       if (page > 0) {
         fetchTemplates(page);
       }
+      // eslint-disable-next-line
     }, [page]);
 
+    // 4) re-fetch templates if "reloadTrigger" changes
+    //    parent increments reloadTrigger after update
+    useEffect(() => {
+      if (reloadTrigger > 0) {
+        // re-fetch from scratch
+        setTemplates([]);
+        setPage(0);
+        fetchTemplates(0);
+      }
+      // eslint-disable-next-line
+    }, [reloadTrigger]);
+
+    // 5) handle infinite scroll
     useEffect(() => {
       const container = document.querySelector(".template-container");
       if (container) {
@@ -695,22 +696,7 @@ const CustomSection = {
       }
     };
 
-    const applyTemplate = (template) => {
-      try {
-        if (!template.templateJson) {
-          toast.error("Template JSON is not available.");
-          return;
-        }
-        const parsedJson = JSON.parse(template.templateJson);
-        store.loadJSON(parsedJson);
-        toast.success("Template applied successfully!");
-      } catch (err) {
-        console.error("Error applying template:", err);
-        toast.error("Failed to apply template. Please try again.");
-      }
-    };
-
-    // Delete modal handlers
+    // 6) delete flow
     const openDeleteModal = (id) => {
       setSelectedTemplateId(id);
       setIsModalOpen(true);
@@ -743,9 +729,29 @@ const CustomSection = {
 
     return (
       <>
+        {/* Show a spinner overlay if isApplying */}
+        {isApplying && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.3)",
+              zIndex: 9999,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Spinner />
+          </div>
+        )}
+
         <div
           className="overflow-auto hide-scrollbar template-container"
-          style={{ padding: "10px", maxHeight: "90vh" }}
+          style={{ padding: "10px", maxHeight: "90vh", position: "relative" }}
         >
           <div
             style={{
@@ -791,7 +797,11 @@ const CustomSection = {
               </div>
             ))}
           </div>
-          {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
+          {loading && (
+            <p style={{ textAlign: "center", marginTop: 10 }}>
+              <Spinner />
+            </p>
+          )}
         </div>
         {isModalOpen && (
           <DeleteConfirmationModal
@@ -807,21 +817,6 @@ const CustomSection = {
 };
 
 // ----------------------------------------------
-// 6) DEFINE SIDE-PANEL SECTIONS
-// ----------------------------------------------
-const sections = [
-  CustomSection,
-  TemplatesSection,
-  TextSection,
-  PhotosSection,
-  ElementsSection,
-  UploadSectionWithAPI,
-  BackgroundSection,
-  LayersSection,
-  SizeSection,
-];
-
-// ----------------------------------------------
 // 7) POLOTNOADMIN MAIN COMPONENT
 // ----------------------------------------------
 const PolotnoAdmin = () => {
@@ -831,8 +826,17 @@ const PolotnoAdmin = () => {
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
+
+  // Track which template ID we're currently editing
   const [currentTemplateId, setCurrentTemplateId] = useState(null);
 
+  // For reloading the custom design section after updates
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+
+  // For showing a spinner while saving
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Toggle theme
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
@@ -881,15 +885,17 @@ const PolotnoAdmin = () => {
 
   // SAVE AS JSON
   const saveAsJSON = async (isUpdate = false) => {
+    setIsSaving(true); // show spinner
     try {
       const dataURL = await store.toDataURL({
         pixelRatio: 1,
         mimeType: "image/png",
       });
       const compressedBlob = await compressImage(dataURL);
+
+      // 1) Upload PNG
       const uploadData = new FormData();
       uploadData.append("file", compressedBlob, "compressed-thumbnail.png");
-
       const uploadResponse = await axios.post(
         `${baseUrl}/sparkiq/image/upload?customerId=123`,
         uploadData,
@@ -901,6 +907,8 @@ const PolotnoAdmin = () => {
         }
       );
       const thumbnailURL = uploadResponse.data.data.url;
+
+      // 2) Build JSON
       const json = store.toJSON();
       const payload = {
         templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
@@ -916,20 +924,31 @@ const PolotnoAdmin = () => {
         templateJson: JSON.stringify(json),
       };
 
+      // 3) POST
       const apiResponse = await axios.post(`${baseUrl}/v2/template`, payload, {
         headers: {
           Authorization: `Bearer ${jwtToken}`,
         },
       });
+
+      // If newly created, set ID
       if (!isUpdate) {
         setCurrentTemplateId(apiResponse.data?.templateId);
       }
+
       toast.success(
         isUpdate ? "Template updated successfully!" : "Template saved successfully!"
       );
+
+      // If we just updated an existing template, let's re-fetch in custom section
+      if (isUpdate) {
+        setReloadTrigger((prev) => prev + 1);
+      }
     } catch (error) {
       console.error("Error saving template:", error);
       toast.error("An error occurred while saving the template.");
+    } finally {
+      setIsSaving(false); // hide spinner
     }
   };
 
@@ -961,8 +980,12 @@ const PolotnoAdmin = () => {
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark");
     }
+    // If we arrived here with a selected template to edit, load it
     if (templateData) {
       store.loadJSON(templateData);
+      if (templateData.templateId) {
+        setCurrentTemplateId(templateData.templateId);
+      }
     } else {
       if (store.pages.length === 0) {
         store.addPage();
@@ -970,12 +993,37 @@ const PolotnoAdmin = () => {
     }
   }, [templateData]);
 
+  // Cloning your CustomSection to inject setCurrentTemplateId and reloadTrigger
+  const customSectionWithProps = {
+    ...CustomSection,
+    Panel: (panelProps) => (
+      <CustomSection.Panel
+        {...panelProps}
+        setCurrentTemplateId={setCurrentTemplateId}
+        reloadTrigger={reloadTrigger}
+      />
+    ),
+  };
+
+  // Final side-panel sections
+  const sections = [
+    customSectionWithProps,
+    TemplatesSection,
+    TextSection,
+    PhotosSection,
+    ElementsSection,
+    UploadSectionWithAPI,
+    BackgroundSection,
+    LayersSection,
+    SizeSection,
+  ];
+
   const handleAddNew = () => {
-    store.loadJSON({ pages: [] }); // Clear the workspace
-    store.addPage(); // Add a new empty page
+    store.loadJSON({ pages: [] }); // Clear
+    store.addPage();
+    setCurrentTemplateId(null);
     toast.success("New template created!");
   };
-  
 
   return (
     <div
@@ -983,8 +1031,26 @@ const PolotnoAdmin = () => {
       style={{
         height: "100vh",
         backgroundColor: isDarkMode ? "#000000" : "#f4f4f4",
+        position: "relative",
       }}
     >
+      {/* An absolute spinner overlay for entire page while saving */}
+      {isSaving && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.3)",
+            zIndex: 9999,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Spinner />
+        </div>
+      )}
+
       {/* Header area with theme toggle + saving */}
       <div
         style={{
@@ -1008,6 +1074,7 @@ const PolotnoAdmin = () => {
         >
           Switch to {isDarkMode ? "Light" : "Dark"} Mode
         </button>
+
         <button
           onClick={() => saveAsJSON(false)}
           style={{
@@ -1022,6 +1089,7 @@ const PolotnoAdmin = () => {
         >
           Save as New
         </button>
+
         <button
           onClick={() => saveAsJSON(true)}
           style={{
@@ -1036,6 +1104,7 @@ const PolotnoAdmin = () => {
         >
           Update Template
         </button>
+
         <button
           onClick={loadFromJSON}
           style={{
@@ -1050,6 +1119,7 @@ const PolotnoAdmin = () => {
         >
           Load Template from JSON
         </button>
+
         <button
           onClick={handleAddNew}
           style={{
@@ -1064,6 +1134,7 @@ const PolotnoAdmin = () => {
         >
           Add New
         </button>
+
         <button
           className="close"
           onClick={() => window.history.back()}
