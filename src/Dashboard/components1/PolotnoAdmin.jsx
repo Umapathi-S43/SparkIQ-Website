@@ -40,12 +40,12 @@ import "./PolotnoEditor.css";
 //  SPINNER COMPONENT
 // ----------------------------------------------
 const Spinner = () => {
-  // We'll generate 16 lines
+  // Generate 16 lines
   const lines = [...Array(16).keys()];
   return (
-    <div className="spinner">
+    <div className="my-spinner">
       {lines.map((i) => (
-        <div key={i} className={`fade-line fade-line-${i}`}></div>
+        <div key={i} className={`my-fade-line my-fade-line-${i}`}></div>
       ))}
     </div>
   );

@@ -259,19 +259,25 @@ export default function Creatives({
   // -------------------------------------------------------
   async function generateUploadAndCreateTemplate(store, storeJson) {
     try {
+      // Generate image as JPEG with quality 0.7 (lower quality reduces file size)
       const base64Image = await store.toDataURL({
         pageId: store.pages[0].id,
-        mimeType: "image/png",
-        quality: 1,
+        mimeType: "image/jpeg", // Switch from PNG to JPEG
+        quality: 0.7,           // Lower quality for a smaller file size
       });
       if (!base64Image) {
-        toast.error("Error in generating the Image!, Try again or check back later.");
+        toast.error("Error in generating the image! Try again or check back later.");
         return null;
       }
+  
+      // Convert base64 image to a Blob
       const imageBlob = await dataURLToBlob(base64Image);
+  
+      // Upload the Blob to S3
       const s3Url = await uploadImageToS3(imageBlob);
       if (!s3Url) return null;
-
+  
+      // Optionally create a template on your server
       const creationResponse = await createTemplateOnServer(s3Url, storeJson);
       return { s3Url, creationResponse };
     } catch (err) {
@@ -280,6 +286,58 @@ export default function Creatives({
       return null;
     }
   }
+  
+  async function dataURLToBlob(dataURL) {
+    const response = await fetch(dataURL);
+    return response.blob();
+  }
+
+  async function compressImage(
+    imageBlob,
+    mimeType = "image/jpeg",
+    quality = 0.7,
+    maxWidth = 800,
+    maxHeight = 600
+  ) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = function () {
+        let { width, height } = img;
+  
+        // If the image exceeds the maximum dimensions, calculate new dimensions while maintaining aspect ratio.
+        if (width > maxWidth || height > maxHeight) {
+          const aspectRatio = width / height;
+          if (width > maxWidth) {
+            width = maxWidth;
+            height = Math.round(maxWidth / aspectRatio);
+          }
+          if (height > maxHeight) {
+            height = maxHeight;
+            width = Math.round(maxHeight * aspectRatio);
+          }
+        }
+  
+        // Create an offscreen canvas and draw the image
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+  
+        // Convert the canvas to a Blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Image compression failed."));
+          }
+        }, mimeType, quality);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(imageBlob);
+    });
+  }
+  
 
   // -------------------------------------------------------
   // handleGenerateResponse: process /v2/generate data => templates
@@ -580,6 +638,35 @@ export default function Creatives({
       <path d="m389-400 91-55 91 55-24-104 80-69-105-9-42-98-42 98-105 9 80 69-24 104ZM200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Zm80-122 200-86 200 86v-518H280v518Zm0-518h400-400Z" />
     </svg>
   );
+  // New download handler
+  async function handleDownload(url) {
+    if (!url) {
+      toast.error("No URL available for download.");
+      return;
+    }
+    const fileName = url.split("/").pop();
+    try {
+      const response = await axios.get(
+        `${baseUrl}/sparkiq/image/download/${fileName}`,
+        {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+          responseType: "blob",
+        }
+      );
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      toast.success("Downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Failed to download file.");
+    }
+  }
 
   // -------------------------------------------------------
   // Render
@@ -750,11 +837,9 @@ export default function Creatives({
 
                         {/* Download Button */}
                         <button
-                          className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
-                          onClick={() =>
-                            handleDownload?.(product?.url || product?.generatedImage)
-                          }
-                        >
+  className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
+  onClick={() => handleDownload(renderedImage)} // renderedImage is the URL of the image
+>
                           <div className="button-container">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -786,9 +871,9 @@ export default function Creatives({
                               />
                             </svg>
                             <span className="text-xs">
-                              <a href={renderedImage} download={`creative_${idx}.png`}>
+                              
                                 Download
-                              </a>
+                              
                             </span>
                           </div>
                         </button>
