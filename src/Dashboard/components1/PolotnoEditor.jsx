@@ -37,7 +37,7 @@ import "./PolotnoEditor.css";
 
 // 1) Create the Polotno store
 const store = createStore({
-  key: "nFA5H9elEytDyPyvKL7T", // Replace with your Polotno API key
+  key: "H5HjfuZWdlg9X4gOUB27", // Replace with your Polotno API key
   showCredit: true,
 });
 

@@ -128,14 +128,29 @@ function applyTemplate(templateJson, placeholders, paletteData) {
             const elementType = (element.type || "").toLowerCase();
             if (elementType === "text") {
               element.text = newValue;
-            } else if (elementType === "image") {
-              element.src = newValue;
+            } if (elementType === "image") {
+              console.log("Image Placeholder Found:", variableName, newValue);
+
+              if (newValue) {
+                element.src = newValue;
+              } else {
+                console.warn(`Image variable "${variableName}" has an empty value.`);
+              }
             }
           }
         }
       });
     });
 
+    async function validateImageURL(imageURL) {
+      try {
+        const response = await fetch(imageURL, { method: "HEAD" });
+        return response.ok;
+      } catch (err) {
+        console.error("Image URL validation failed:", imageURL, err);
+        return false;
+      }
+    }
     // 2) color palette
     if (paletteData && Array.isArray(paletteData.colors) && paletteData.colors.length >= 3) {
       applyColorPalette(parsedJson, paletteData);
@@ -269,14 +284,14 @@ export default function Creatives({
         toast.error("Error in generating the image! Try again or check back later.");
         return null;
       }
-  
+
       // Convert base64 image to a Blob
       const imageBlob = await dataURLToBlob(base64Image);
-  
+
       // Upload the Blob to S3
       const s3Url = await uploadImageToS3(imageBlob);
       if (!s3Url) return null;
-  
+
       // Optionally create a template on your server
       const creationResponse = await createTemplateOnServer(s3Url, storeJson);
       return { s3Url, creationResponse };
@@ -286,7 +301,7 @@ export default function Creatives({
       return null;
     }
   }
-  
+
   async function dataURLToBlob(dataURL) {
     const response = await fetch(dataURL);
     return response.blob();
@@ -303,7 +318,7 @@ export default function Creatives({
       const img = new Image();
       img.onload = function () {
         let { width, height } = img;
-  
+
         // If the image exceeds the maximum dimensions, calculate new dimensions while maintaining aspect ratio.
         if (width > maxWidth || height > maxHeight) {
           const aspectRatio = width / height;
@@ -316,14 +331,14 @@ export default function Creatives({
             width = Math.round(maxHeight * aspectRatio);
           }
         }
-  
+
         // Create an offscreen canvas and draw the image
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-  
+
         // Convert the canvas to a Blob
         canvas.toBlob((blob) => {
           if (blob) {
@@ -337,7 +352,7 @@ export default function Creatives({
       img.src = URL.createObjectURL(imageBlob);
     });
   }
-  
+
 
   // -------------------------------------------------------
   // handleGenerateResponse: process /v2/generate data => templates
@@ -357,19 +372,55 @@ export default function Creatives({
     // get brand color palettes from brandFetched
     const colorPalettes =
       brandFetched?.data?.data?.colorPalettes || [];
-      console.log("brandFetched", brandFetched);
+    console.log("brandFetched", brandFetched);
 
     const maxCount = Math.min(templateResponses.length, imageContents.length);
     for (let i = 0; i < maxCount; i++) {
       const tResp = templateResponses[i];
       const placeholders = imageContents[i];
+      const uploadedImageUrl = productImageURL || placeholders.productImageURL;
+      const brandLogoUrl = brandLogoURL || placeholders.brandLogoURL;
+
+      // If any image is missing, fetch it explicitly
+      if (!uploadedImageUrl || !brandLogoUrl) {
+        console.warn("Fetching missing images...");
+        try {
+          const uploadedImageFilename = uploadedImageUrl ? uploadedImageUrl.split("/").pop() : null;
+          const brandLogoFilename = brandLogoUrl ? brandLogoUrl.split("/").pop() : null;
+
+          if (!uploadedImageUrl && uploadedImageFilename) {
+            const uploadedImageResponse = await axios.get(
+              `${baseUrl}/sparkiq/image/download/${uploadedImageFilename}`,
+              {
+                headers: { Authorization: `Bearer ${jwtToken}` },
+                responseType: "blob", // Ensures correct image response
+              }
+            );
+            placeholders.productImageURL = URL.createObjectURL(uploadedImageResponse.data);
+          }
+
+          if (!brandLogoUrl && brandLogoFilename) {
+            const brandLogoResponse = await axios.get(
+              `${baseUrl}/sparkiq/image/download/${brandLogoFilename}`,
+              {
+                headers: { Authorization: `Bearer ${jwtToken}` },
+                responseType: "blob",
+              }
+            );
+            placeholders.brandLogoURL = URL.createObjectURL(brandLogoResponse.data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch missing images:", err);
+        }
+      }
+
 
       // placeholders
       const combinedPlaceholders = {
         ...placeholders,
         productImageURL,
         brandLogoURL,
-        website:brandFetched?.data?.data?.websiteUrl
+        website: brandFetched?.data?.data?.websiteUrl
       };
 
       // fetch polotno JSON
@@ -453,6 +504,7 @@ export default function Creatives({
       });
     }
   }
+
 
   // -------------------------------------------------------
   // 5) Main generation
@@ -582,7 +634,7 @@ export default function Creatives({
       if (response.data?.data?.isFavourite === true) {
         toast.success("Template bookmarked successfully!");
       } else {
-       // toast.error("Failed to bookmark template on server.");
+        // toast.error("Failed to bookmark template on server.");
       }
     } catch (err) {
       console.error("Error bookmarking template:", err);
@@ -675,9 +727,8 @@ export default function Creatives({
     <div className="flex flex-col gap-4 mb-4  overflow-auto hide-scrollbar" style={{ maxHeight: "80vh" }}>
       <section
         ref={sectionRef}
-        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl  lg:ml-8 ml-0 ${
-          !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
-        } flex flex-col gap-6 relative z-10 mb-4`}
+        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl  lg:ml-8 ml-0 ${!isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
+          } flex flex-col gap-6 relative z-10 mb-4`}
       >
         {/* Global hidden SVG with gradient definition (for your .button-clear:hover rules) */}
         <svg width="0" height="0" style={{ position: "absolute" }}>
@@ -691,9 +742,8 @@ export default function Creatives({
 
         {/* Accordion Header */}
         <div
-          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${
-            !isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
-          } relative cursor-pointer`}
+          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
+            } relative cursor-pointer`}
           onClick={toggleNextSectionAccordion}
         >
           {isCompleted && (
@@ -837,9 +887,9 @@ export default function Creatives({
 
                         {/* Download Button */}
                         <button
-  className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
-  onClick={() => handleDownload(renderedImage)} // renderedImage is the URL of the image
->
+                          className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
+                          onClick={() => handleDownload(renderedImage)} // renderedImage is the URL of the image
+                        >
                           <div className="button-container">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -871,9 +921,9 @@ export default function Creatives({
                               />
                             </svg>
                             <span className="text-xs">
-                              
-                                Download
-                              
+
+                              Download
+
                             </span>
                           </div>
                         </button>

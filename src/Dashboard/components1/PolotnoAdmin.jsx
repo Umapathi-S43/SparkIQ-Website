@@ -55,11 +55,11 @@ const Spinner = () => {
 // 1) CREATE POLOTNO STORE
 // ----------------------------------------------
 const store = createStore({
-  key: "nFA5H9elEytDyPyvKL7T", // Replace with your Polotno API key
+  key: "H5HjfuZWdlg9X4gOUB27", // Replace with your Polotno API key
   showCredit: true,
 });
 
-// ----------------------------------------------
+// ----------------------------------------------f
 // 2) CONTEXT FOR UPLOADED FILES
 // ----------------------------------------------
 const UploadedFilesContext = createContext();

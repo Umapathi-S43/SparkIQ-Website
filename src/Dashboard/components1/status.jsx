@@ -45,7 +45,10 @@ const HomePage = () => {
           setSelectedTask(2);
         } else if (task1 && task2 && !task3) {
           setSelectedTask(3);
-        } else {
+        } else if (task1 && task2 && task3) {
+          setSelectedTask(3);
+        }
+        else {
           setSelectedTask(1);
         }
       } catch (error) {
