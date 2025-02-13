@@ -264,37 +264,37 @@ export default function Creatives({
 
       // 2) Initiate a cloud render job
       const renderRequest = await fetch(`https://api.polotno.com/api/renders?KEY=${POLNOTO_API_KEY}`, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-              Prefer: 'wait' // Ensures synchronous waiting for completion
-          },
-          body: JSON.stringify({
-              design: designJson,
-              format: "jpeg", // Export as JPEG
-              pixelRatio: 1, // Standard quality
-              ignoreBackground: false, // Keep the background
-              skipFontError: true,
-              skipImageError: true,
-              textOverflow: "change-font-size"
-          })
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Prefer: 'wait' // Ensures synchronous waiting for completion
+        },
+        body: JSON.stringify({
+          design: designJson,
+          format: "jpeg", // Export as JPEG
+          pixelRatio: 1, // Standard quality
+          ignoreBackground: false, // Keep the background
+          skipFontError: true,
+          skipImageError: true,
+          textOverflow: "change-font-size"
+        })
       });
 
       const renderJob = await renderRequest.json();
 
       // 3) If render failed, trigger a background refresh
       if (renderJob.status !== "done" || !renderJob.output) {
-          toast.error("Error in generating the image via Polotno Cloud! Try again later.");
-          triggerBackgroundHardRefresh();
-          return null;
+        toast.error("Error in generating the image via Polotno Cloud! Try again later.");
+        triggerBackgroundHardRefresh();
+        return null;
       }
 
       // 4) Fetch the rendered image from the given URL
       const imageResponse = await fetch(renderJob.output);
       if (!imageResponse.ok) {
-          toast.error("Failed to retrieve the rendered image.");
-          triggerBackgroundHardRefresh();
-          return null;
+        toast.error("Failed to retrieve the rendered image.");
+        triggerBackgroundHardRefresh();
+        return null;
       }
 
       // 5) Convert image to a Blob
@@ -303,21 +303,21 @@ export default function Creatives({
       // 6) Upload Blob to S3
       const s3Url = await uploadImageToS3(imageBlob);
       if (!s3Url) {
-          triggerBackgroundHardRefresh();
-          return null;
+        triggerBackgroundHardRefresh();
+        return null;
       }
 
       // 7) Create a template on the server
       const creationResponse = await createTemplateOnServer(s3Url, storeJson);
       return { s3Url, creationResponse };
 
-  } catch (error) {
+    } catch (error) {
       console.error("Error in Polotno Cloud -> S3 -> Create flow:", error);
       toast.error("Oops! Something went wrong. We'll reload in background.");
       triggerBackgroundHardRefresh();
       return null;
+    }
   }
-}
   // -------------------------------------------------------
   // handleGenerateResponse: process /v2/generate data => templates
   // -------------------------------------------------------
@@ -336,7 +336,7 @@ export default function Creatives({
     // get brand color palettes from brandFetched
     const colorPalettes =
       brandFetched?.data?.data?.colorPalettes || [];
-      console.log("brandFetched", brandFetched);
+    console.log("brandFetched", brandFetched);
 
     const maxCount = Math.min(templateResponses.length, imageContents.length);
     for (let i = 0; i < maxCount; i++) {
@@ -348,7 +348,7 @@ export default function Creatives({
         ...placeholders,
         productImageURL,
         brandLogoURL,
-        website:brandFetched?.data?.data?.websiteUrl
+        website: brandFetched?.data?.data?.websiteUrl
       };
 
       // fetch polotno JSON
@@ -561,7 +561,7 @@ export default function Creatives({
       if (response.data?.data?.isFavourite === true) {
         toast.success("Template bookmarked successfully!");
       } else {
-       // toast.error("Failed to bookmark template on server.");
+        // toast.error("Failed to bookmark template on server.");
       }
     } catch (err) {
       console.error("Error bookmarking template:", err);
@@ -654,9 +654,8 @@ export default function Creatives({
     <div className="flex flex-col gap-4 mb-4  overflow-auto hide-scrollbar" style={{ maxHeight: "80vh" }}>
       <section
         ref={sectionRef}
-        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl  lg:ml-8 ml-0 ${
-          !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
-        } flex flex-col gap-6 relative z-10 mb-4`}
+        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl  lg:ml-8 ml-0 ${!isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
+          } flex flex-col gap-6 relative z-10 mb-4`}
       >
         {/* Global hidden SVG with gradient definition (for your .button-clear:hover rules) */}
         <svg width="0" height="0" style={{ position: "absolute" }}>
@@ -670,9 +669,8 @@ export default function Creatives({
 
         {/* Accordion Header */}
         <div
-          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${
-            !isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
-          } relative cursor-pointer`}
+          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
+            } relative cursor-pointer`}
           onClick={toggleNextSectionAccordion}
         >
           {isCompleted && (
@@ -810,15 +808,15 @@ export default function Creatives({
                                 d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
                               />
                             </svg>
-                            <span text-xs>Preview</span>
+                            <span className="text-xs">Preview</span>
                           </div>
                         </button>
 
                         {/* Download Button */}
                         <button
-  className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
-  onClick={() => handleDownload(renderedImage)} // renderedImage is the URL of the image
->
+                          className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
+                          onClick={() => handleDownload(renderedImage)} // renderedImage is the URL of the image
+                        >
                           <div className="button-container">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -850,9 +848,9 @@ export default function Creatives({
                               />
                             </svg>
                             <span className="text-xs">
-                              
-                                Download
-                              
+
+                              Download
+
                             </span>
                           </div>
                         </button>

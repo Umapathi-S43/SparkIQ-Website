@@ -441,38 +441,153 @@ const PolotnoEditor = () => {
     : template.templateJson;
   const { templateId } = location.state || {};
 
-  useEffect(() => {
-    if (!templateId) return;
 
-    setLoading(true);
-    // GET /v2/user/templates/{templateId}
-    axios
-      .get(`${baseUrl}/v2/user/templates/${templateId}`, {
-        headers: { Authorization: `Bearer ${jwtToken}` }
-      })
-      .then((res) => {
-        const serverData = res.data?.data;
-        if (!serverData?.templateJson) {
-          toast.error("No template JSON found for this ID.");
-          return;
+
+  const preloadImage = (url) => {
+
+    return new Promise((resolve, reject) => {
+  
+      const img = new Image();
+  
+      img.src = url;
+  
+      img.onload = () => resolve(url);
+  
+      img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+  
+    });
+  
+  };
+   
+  // Function to extract all image URLs from JSON
+  
+  const extractImageUrls = (json) => {
+  
+    const imageUrls = new Set();
+   
+    const traverse = (obj) => {
+  
+      if (typeof obj === 'object' && obj !== null) {
+  
+        if (obj.type === 'image' && obj.src) {
+  
+          imageUrls.add(obj.src);
+  
         }
+  
+        Object.values(obj).forEach((value) => traverse(value));
+  
+      }
+  
+    };
+   
+    traverse(json);
+  
+    return Array.from(imageUrls);
+  
+  };
+   
+  // GET /v2/user/templates/{templateId}
+  
+  useEffect(() => {
+  
+    const fetchTemplate = async () => {
+  
+      try {
+  
+        const response = await axios.get(`${baseUrl}/v2/user/templates/${templateId}`, {
+  
+          headers: { Authorization: `Bearer ${jwtToken}` },
+  
+        });
+   
+        const serverData = response.data?.data;
+  
+        if (!serverData?.templateJson) {
+  
+          toast.error('No template JSON found for this ID.');
+  
+          return;
+  
+        }
+   
         const json = JSON.parse(serverData.templateJson);
-        // Overwrite the entire store with new JSON
-        // 1) Clear all pages
+   
+        // Extract image URLs from JSON
+  
+        const imageUrls = extractImageUrls(json);
+   
+        // Preload all images
+  
+        await Promise.all(imageUrls.map((url) => preloadImage(url)));
+   
+        // Clear all pages in the store
+  
         store.deletePages(store.pages.map((p) => p.id));
-
+   
+        // Load JSON into the store
+  
         store.loadJSON(json, { override: true });
-
+   
         setCurrentTemplateId(templateId);
-      })
-      .catch((err) => {
-        console.error("Error fetching template:", err);
-        toast.error("Failed to load template data.");
-      })
-      .finally(() => {
+  
+      } catch (err) {
+  
+        console.error('Error fetching template:', err);
+  
+        //toast.error('Failed to load template data.');
+  
+      } finally {
+  
         setLoading(false);
-      });
+  
+      }
+  
+    };
+   
+    fetchTemplate();
+  
   }, [templateId]);
+   
+
+
+
+
+
+
+
+  // useEffect(() => {
+  //   if (!templateId) return;
+
+  //   setLoading(true);
+  //   // GET /v2/user/templates/{templateId}
+  //   axios
+  //     .get(`${baseUrl}/v2/user/templates/${templateId}`, {
+  //       headers: { Authorization: `Bearer ${jwtToken}` }
+  //     })
+  //     .then((res) => {
+  //       const serverData = res.data?.data;
+  //       if (!serverData?.templateJson) {
+  //         toast.error("No template JSON found for this ID.");
+  //         return;
+  //       }
+  //       const json = JSON.parse(serverData.templateJson);
+  //       // Overwrite the entire store with new JSON
+  //       // 1) Clear all pages
+  //       store.deletePages(store.pages.map((p) => p.id));
+
+  //       store.loadJSON(json, { override: true });
+
+  //       setCurrentTemplateId(templateId);
+  //     })
+  //     .catch((err) => {
+  //       console.error("Error fetching template:", err);
+  //       toast.error("Failed to load template data.");
+  //     })
+  //     .finally(() => {
+  //       setLoading(false);
+  //     });
+  // }, [templateId]);
   // We'll store the current template ID. If the route state has `templateId`,
   // use that as default. Otherwise null.
 
