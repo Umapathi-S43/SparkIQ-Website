@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import "./Creatives.css";
 
 // Polotno API key
-const POLNOTO_API_KEY = "nFA5H9elEytDyPyvKL7T";
+const POLNOTO_API_KEY = "H5HjfuZWdlg9X4gOUB27";
 const creativePayload11 = JSON.parse(localStorage.getItem("creativePayload")) || {};
 let FIXED_BRAND_ID = JSON.parse(localStorage.getItem("brandID"));
 if (!FIXED_BRAND_ID && creativePayload11?.brandId) {
@@ -259,86 +259,65 @@ export default function Creatives({
   // -------------------------------------------------------
   async function generateUploadAndCreateTemplate(store, storeJson) {
     try {
-      // Generate image as JPEG with quality 0.7 (lower quality reduces file size)
-      const base64Image = await store.toDataURL({
-        pageId: store.pages[0].id,
-        mimeType: "image/jpeg", // Switch from PNG to JPEG
-        quality: 0.7,           // Lower quality for a smaller file size
+      // 1) Prepare the JSON from Polotno
+      const designJson = store.toJSON();
+
+      // 2) Initiate a cloud render job
+      const renderRequest = await fetch(`https://api.polotno.com/api/renders?KEY=${POLNOTO_API_KEY}`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              Prefer: 'wait' // Ensures synchronous waiting for completion
+          },
+          body: JSON.stringify({
+              design: designJson,
+              format: "jpeg", // Export as JPEG
+              pixelRatio: 1, // Standard quality
+              ignoreBackground: false, // Keep the background
+              skipFontError: true,
+              skipImageError: true,
+              textOverflow: "change-font-size"
+          })
       });
-      if (!base64Image) {
-        toast.error("Error in generating the image! Try again or check back later.");
-        return null;
+
+      const renderJob = await renderRequest.json();
+
+      // 3) If render failed, trigger a background refresh
+      if (renderJob.status !== "done" || !renderJob.output) {
+          toast.error("Error in generating the image via Polotno Cloud! Try again later.");
+          triggerBackgroundHardRefresh();
+          return null;
       }
-  
-      // Convert base64 image to a Blob
-      const imageBlob = await dataURLToBlob(base64Image);
-  
-      // Upload the Blob to S3
+
+      // 4) Fetch the rendered image from the given URL
+      const imageResponse = await fetch(renderJob.output);
+      if (!imageResponse.ok) {
+          toast.error("Failed to retrieve the rendered image.");
+          triggerBackgroundHardRefresh();
+          return null;
+      }
+
+      // 5) Convert image to a Blob
+      const imageBlob = await imageResponse.blob();
+
+      // 6) Upload Blob to S3
       const s3Url = await uploadImageToS3(imageBlob);
-      if (!s3Url) return null;
-  
-      // Optionally create a template on your server
+      if (!s3Url) {
+          triggerBackgroundHardRefresh();
+          return null;
+      }
+
+      // 7) Create a template on the server
       const creationResponse = await createTemplateOnServer(s3Url, storeJson);
       return { s3Url, creationResponse };
-    } catch (err) {
-      console.error("Error in Polotno -> S3 -> Create flow:", err);
-      toast.error("Oops! Something went wrong. Try again or check back later.");
+
+  } catch (error) {
+      console.error("Error in Polotno Cloud -> S3 -> Create flow:", error);
+      toast.error("Oops! Something went wrong. We'll reload in background.");
+      triggerBackgroundHardRefresh();
       return null;
-    }
   }
-  
-  async function dataURLToBlob(dataURL) {
-    const response = await fetch(dataURL);
-    return response.blob();
-  }
-
-  async function compressImage(
-    imageBlob,
-    mimeType = "image/jpeg",
-    quality = 0.7,
-    maxWidth = 800,
-    maxHeight = 600
-  ) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = function () {
-        let { width, height } = img;
-  
-        // If the image exceeds the maximum dimensions, calculate new dimensions while maintaining aspect ratio.
-        if (width > maxWidth || height > maxHeight) {
-          const aspectRatio = width / height;
-          if (width > maxWidth) {
-            width = maxWidth;
-            height = Math.round(maxWidth / aspectRatio);
-          }
-          if (height > maxHeight) {
-            height = maxHeight;
-            width = Math.round(maxHeight * aspectRatio);
-          }
-        }
-  
-        // Create an offscreen canvas and draw the image
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-  
-        // Convert the canvas to a Blob
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Image compression failed."));
-          }
-        }, mimeType, quality);
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(imageBlob);
-    });
-  }
-  
-
+}
   // -------------------------------------------------------
   // handleGenerateResponse: process /v2/generate data => templates
   // -------------------------------------------------------
