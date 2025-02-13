@@ -9,22 +9,70 @@ import { jwtToken } from "../../components/utils/jwtToken";
 import { useNavigate } from "react-router-dom";
 import "./Creatives.css";
 
-// Polotno API key
-const POLNOTO_API_KEY = "nFA5H9elEytDyPyvKL7T";
+// --------------------------------------------
+// 1) Polotno API key & global variables
+// --------------------------------------------
+const POLNOTO_API_KEY = "H5HjfuZWdlg9X4gOUB27"; // Your Polotno subscribed key
 const creativePayload11 = JSON.parse(localStorage.getItem("creativePayload")) || {};
 let FIXED_BRAND_ID = JSON.parse(localStorage.getItem("brandID"));
 if (!FIXED_BRAND_ID && creativePayload11?.brandId) {
   FIXED_BRAND_ID = creativePayload11.brandId;
-  console.log("FIXED_BRAND_ID set from creativePayload11.brandId:", FIXED_BRAND_ID);
 }
 
-// ----------------------
-// 1) Correct brand-color extraction calls
-// ----------------------
+// --------------------------------------------------
+// 2) Hide Polotno warnings from the console
+// --------------------------------------------------
+function filterPolotnoWarnings() {
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  // Some Polotno warnings about zero-sized containers
+  // contain these substrings. We filter them out.
+  const IGNORED_SUBSTRINGS = [
+    "Polotno warning: <Workspace /> component can not automatically detect its size",
+    "Width or height of parent elements is equal 0",
+  ];
+
+  console.warn = (...args) => {
+    if (typeof args[0] === "string") {
+      for (const ignored of IGNORED_SUBSTRINGS) {
+        if (args[0].includes(ignored)) {
+          return; // skip this warning
+        }
+      }
+    }
+    originalWarn(...args);
+  };
+
+  console.error = (...args) => {
+    if (typeof args[0] === "string") {
+      for (const ignored of IGNORED_SUBSTRINGS) {
+        if (args[0].includes(ignored)) {
+          return; // skip this error
+        }
+      }
+    }
+    originalError(...args);
+  };
+}
+
+// --------------------------------------------------
+// 3) Background Hard Refresh on Error
+//    Show toast, then wait, then reload
+// --------------------------------------------------
+function triggerBackgroundHardRefresh() {
+  toast.error("We encountered an error. We’ll reload in the background to fix it!");
+  setTimeout(() => {
+    window.location.reload(true); // Hard refresh
+  }, 3000);
+}
+
+// --------------------------------------------------
+// 4) Brand-color extraction helpers
+// --------------------------------------------------
 async function fetchBrandColors(logoURL) {
   if (!logoURL) return null;
   try {
-    // The brand-extract endpoint typically expects a GET, not a POST
     const endpoint = `${baseUrl}/v2/api/brands/extract/colors?logoURL=${encodeURIComponent(logoURL)}`;
     const res = await axios.get(endpoint, {
       headers: { Authorization: `Bearer ${jwtToken}` },
@@ -42,7 +90,6 @@ async function fetchColorPalette(allColors) {
   const encodedColors = encodeURIComponent(joined);
 
   try {
-    // Typically a GET route as well:
     const endpoint = `${baseUrl}/v2/api/brands/extract/colorspalette?colors=${encodedColors}`;
     const res = await axios.get(endpoint, {
       headers: { Authorization: `Bearer ${jwtToken}` },
@@ -56,7 +103,7 @@ async function fetchColorPalette(allColors) {
 }
 
 // -------------------------------------------------------
-// 2) Polotno → S3 upload → template creation
+// 5) Polotno → S3 upload → template creation
 // -------------------------------------------------------
 async function dataURLToBlob(dataURL) {
   const blob = await fetch(dataURL).then((res) => res.blob());
@@ -104,17 +151,16 @@ async function createTemplateOnServer(s3Url, storeJson) {
       headers: { Authorization: `Bearer ${jwtToken}` },
     });
     return response.data;
-  } catch (error) {
-    console.error("Error creating template on server:", error);
-    toast.error("Failed to create template on the server.");
+  } catch {
+    triggerBackgroundHardRefresh();
     return null;
   }
 }
 
 // -------------------------------------------------------
-// 3) Apply placeholders + color palette
+// 6) Apply placeholders + color palette
 // -------------------------------------------------------
-async function applyTemplate(templateJson, placeholders, paletteData) {
+function applyTemplate(templateJson, placeholders, paletteData) {
   try {
     const parsedJson = JSON.parse(templateJson);
 
@@ -128,49 +174,33 @@ async function applyTemplate(templateJson, placeholders, paletteData) {
             const elementType = (element.type || "").toLowerCase();
             if (elementType === "text") {
               element.text = newValue;
-            } if (elementType === "image") {
-              console.log("Image Placeholder Found:", variableName, newValue);
-
-              if (newValue) {
-                element.src = newValue;
-              } else {
-                console.warn(`Image variable "${variableName}" has an empty value.`);
-              }
+            } else if (elementType === "image") {
+              element.src = newValue;
             }
           }
         }
       });
     });
 
-    async function validateImageURL(imageURL) {
-      try {
-        const response = await fetch(imageURL, { method: "HEAD" });
-        return response.ok;
-      } catch (err) {
-        console.error("Image URL validation failed:", imageURL, err);
-        return false;
-      }
-    }
     // 2) color palette
-    if (paletteData && Array.isArray(paletteData.colors) && paletteData.colors.length >= 3) {
+    if (
+      paletteData &&
+      Array.isArray(paletteData.colors) &&
+      paletteData.colors.length >= 3
+    ) {
       applyColorPalette(parsedJson, paletteData);
     }
-
     return parsedJson;
-  } catch (err) {
-    console.error("Error applying placeholders/palette:", err);
-    toast.error("Failed to apply placeholders/color palette.");
+  } catch {
+    triggerBackgroundHardRefresh();
     return null;
   }
 }
 
 function applyColorPalette(templateJson, paletteData) {
   const [bgColor, textColor, svgColor] = paletteData.colors;
-
   templateJson.pages.forEach((page) => {
-    // set page background
     page.background = bgColor;
-
     page.children.forEach((element) => {
       const elementType = (element.type || "").toLowerCase();
       if (elementType === "svg" || elementType === "figure") {
@@ -178,13 +208,12 @@ function applyColorPalette(templateJson, paletteData) {
       } else if (elementType === "text") {
         element.fill = textColor;
       }
-      // add more if needed
     });
   });
 }
 
 // -------------------------------------------------------
-// 4) The main Creatives component
+// 7) Main Creatives component
 // -------------------------------------------------------
 export default function Creatives({
   isNextSectionOpen,
@@ -204,12 +233,19 @@ export default function Creatives({
   const [loading, setLoading] = useState(false);
   const [currentStore, setCurrentStore] = useState(null);
 
-  // For timed toast updates
+  // Timed toast
   const [timeSpent, setTimeSpent] = useState(0);
-  const [toastStages, setToastStages] = useState([]); // to remember which stage we already showed
+  const [toastStages, setToastStages] = useState([]);
 
   const navigate = useNavigate();
   let brandFetched = null;
+
+  // -------------------------------------------------------
+  // Override Polotno warnings (once, on mount)
+  // -------------------------------------------------------
+  useEffect(() => {
+    filterPolotnoWarnings();
+  }, []);
 
   // -------------------------------------------------------
   // Timed Toast Logic
@@ -217,27 +253,17 @@ export default function Creatives({
   useEffect(() => {
     let intervalId;
     if (loading) {
-      // every 10 seconds => setTimeSpent
       intervalId = setInterval(() => {
         setTimeSpent((prev) => prev + 10);
       }, 10000);
     } else {
-      // if not loading, reset
       setTimeSpent(0);
     }
     return () => clearInterval(intervalId);
   }, [loading]);
 
-  // Show toast messages at intervals:
   useEffect(() => {
     if (!loading) return;
-
-    // We only show each message once, so let's pick the bracket:
-    //  - 0-10s => "Analyzing your campaign objectives..."
-    //  - 30-45s => "We’re generating your creatives..."
-    //  - 45-60s => "Still working on it..."
-    //  - 60-90s => "Tip: Once your creatives are ready..."
-    //  - 90s+ => "This is taking longer than usual..."
 
     if (timeSpent >= 0 && timeSpent <= 10 && !toastStages.includes("0-10")) {
       toast("Analyzing your campaign objectives...", { icon: "🤔" });
@@ -250,21 +276,25 @@ export default function Creatives({
     }
 
     if (timeSpent >= 45 && timeSpent < 60 && !toastStages.includes("45-60")) {
-      toast("Still working on it! Great creatives take time. Hang tight!", { icon: "⌛" });
+      toast("Still working on it! Great creatives take time. Hang tight!", {
+        icon: "⌛",
+      });
       setToastStages((prev) => [...prev, "45-60"]);
     }
 
     if (timeSpent >= 60 && timeSpent < 90 && !toastStages.includes("60-90")) {
-      toast("Tip: Once your creatives are ready, you can easily edit them to match your vision!", {
-        icon: "💡",
-      });
+      toast(
+        "Tip: Once your creatives are ready, you can easily edit them to match your vision!",
+        { icon: "💡" }
+      );
       setToastStages((prev) => [...prev, "60-90"]);
     }
 
     if (timeSpent >= 90 && !toastStages.includes("90+")) {
-      toast("This is taking longer than usual. Hang tight while we refine your creatives!", {
-        icon: "🏗️",
-      });
+      toast(
+        "This is taking longer than usual. Hang tight while we refine your creatives!",
+        { icon: "🏗️" }
+      );
       setToastStages((prev) => [...prev, "90+"]);
     }
   }, [timeSpent, loading, toastStages]);
@@ -274,89 +304,33 @@ export default function Creatives({
   // -------------------------------------------------------
   async function generateUploadAndCreateTemplate(store, storeJson) {
     try {
-      // Generate image as JPEG with quality 0.7 (lower quality reduces file size)
       const base64Image = await store.toDataURL({
         pageId: store.pages[0].id,
-        mimeType: "image/jpeg", // Switch from PNG to JPEG
-        quality: 0.7,           // Lower quality for a smaller file size
+        mimeType: "image/jpeg",
+        quality: 0.7,
       });
       if (!base64Image) {
-        toast.error("Error in generating the image! Try again or check back later.");
+        toast.error("Error in generating the image! Try again later.");
+        triggerBackgroundHardRefresh();
         return null;
       }
 
-      // Convert base64 image to a Blob
       const imageBlob = await dataURLToBlob(base64Image);
-
-      // Upload the Blob to S3
       const s3Url = await uploadImageToS3(imageBlob);
-      if (!s3Url) return null;
+      if (!s3Url) {
+        triggerBackgroundHardRefresh();
+        return null;
+      }
 
-      // Optionally create a template on your server
       const creationResponse = await createTemplateOnServer(s3Url, storeJson);
       return { s3Url, creationResponse };
-    } catch (err) {
-      console.error("Error in Polotno -> S3 -> Create flow:", err);
-      toast.error("Oops! Something went wrong. Try again or check back later.");
+    } catch {
+      toast.error("Oops! Something went wrong. We'll reload soon.");
+      triggerBackgroundHardRefresh();
       return null;
     }
   }
 
-  async function dataURLToBlob(dataURL) {
-    const response = await fetch(dataURL);
-    return response.blob();
-  }
-
-  async function compressImage(
-    imageBlob,
-    mimeType = "image/jpeg",
-    quality = 0.7,
-    maxWidth = 800,
-    maxHeight = 600
-  ) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = function () {
-        let { width, height } = img;
-
-        // If the image exceeds the maximum dimensions, calculate new dimensions while maintaining aspect ratio.
-        if (width > maxWidth || height > maxHeight) {
-          const aspectRatio = width / height;
-          if (width > maxWidth) {
-            width = maxWidth;
-            height = Math.round(maxWidth / aspectRatio);
-          }
-          if (height > maxHeight) {
-            height = maxHeight;
-            width = Math.round(maxHeight * aspectRatio);
-          }
-        }
-
-        // Create an offscreen canvas and draw the image
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert the canvas to a Blob
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Image compression failed."));
-          }
-        }, mimeType, quality);
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(imageBlob);
-    });
-  }
-
-
-  // -------------------------------------------------------
-  // handleGenerateResponse: process /v2/generate data => templates
-  // -------------------------------------------------------
   async function handleGenerateResponse(apiData, allTemplates) {
     const {
       productImageURL,
@@ -366,82 +340,44 @@ export default function Creatives({
       generateContentResponses,
     } = apiData;
 
-    const templateResponses = generateContentResponses?.templateResponses || [];
-    const imageContents = generateContentResponses?.generateImageContentResponses || [];
+    const templateResponses =
+      generateContentResponses?.templateResponses || [];
+    const imageContents =
+      generateContentResponses?.generateImageContentResponses || [];
 
-    // get brand color palettes from brandFetched
-    const colorPalettes =
-      brandFetched?.data?.data?.colorPalettes || [];
-    console.log("brandFetched", brandFetched);
-
+    const colorPalettes = brandFetched?.data?.data?.colorPalettes || [];
     const maxCount = Math.min(templateResponses.length, imageContents.length);
+
     for (let i = 0; i < maxCount; i++) {
       const tResp = templateResponses[i];
       const placeholders = imageContents[i];
-      const uploadedImageUrl = productImageURL || placeholders.productImageURL;
-      const brandLogoUrl = brandLogoURL || placeholders.brandLogoURL;
 
-      // If any image is missing, fetch it explicitly
-      if (!uploadedImageUrl || !brandLogoUrl) {
-        console.warn("Fetching missing images...");
-        try {
-          const uploadedImageFilename = uploadedImageUrl ? uploadedImageUrl.split("/").pop() : null;
-          const brandLogoFilename = brandLogoUrl ? brandLogoUrl.split("/").pop() : null;
-
-          if (!uploadedImageUrl && uploadedImageFilename) {
-            const uploadedImageResponse = await axios.get(
-              `${baseUrl}/sparkiq/image/download/${uploadedImageFilename}`,
-              {
-                headers: { Authorization: `Bearer ${jwtToken}` },
-                responseType: "blob", // Ensures correct image response
-              }
-            );
-            placeholders.productImageURL = URL.createObjectURL(uploadedImageResponse.data);
-          }
-
-          if (!brandLogoUrl && brandLogoFilename) {
-            const brandLogoResponse = await axios.get(
-              `${baseUrl}/sparkiq/image/download/${brandLogoFilename}`,
-              {
-                headers: { Authorization: `Bearer ${jwtToken}` },
-                responseType: "blob",
-              }
-            );
-            placeholders.brandLogoURL = URL.createObjectURL(brandLogoResponse.data);
-          }
-        } catch (err) {
-          console.error("Failed to fetch missing images:", err);
-        }
-      }
-
-
-      // placeholders
       const combinedPlaceholders = {
         ...placeholders,
         productImageURL,
         brandLogoURL,
-        website: brandFetched?.data?.data?.websiteUrl
+        website: brandFetched?.data?.data?.websiteUrl,
       };
 
-      // fetch polotno JSON
       const templateId = tResp.id;
       let templateRes;
       try {
         templateRes = await axios.get(`${baseUrl}/v2/template/${templateId}`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
-      } catch (err) {
-        console.error("Failed to fetch Polotno template for ID:", templateId, err);
+      } catch {
+        toast.error("Error fetching template. We'll reload soon.");
+        triggerBackgroundHardRefresh();
         continue;
       }
 
       const polotnoData = templateRes.data?.data?.templateJson;
       if (!polotnoData) {
-        console.error("No polotnoData for ID:", templateId);
+        toast.error("No template JSON found. Reloading soon.");
+        triggerBackgroundHardRefresh();
         continue;
       }
 
-      // pick a palette by index
       let paletteData = null;
       if (Array.isArray(colorPalettes) && colorPalettes.length > i) {
         const paletteItem = colorPalettes[i];
@@ -453,20 +389,36 @@ export default function Creatives({
         }
       }
 
-      const updatedTemplateData = await applyTemplate(polotnoData, combinedPlaceholders, paletteData);
-      if (!updatedTemplateData) continue;
+      const updatedTemplateData = applyTemplate(
+        polotnoData,
+        combinedPlaceholders,
+        paletteData
+      );
+      if (!updatedTemplateData) {
+        continue;
+      }
 
-      // Polotno store
-      const store = createStore({ key: POLNOTO_API_KEY });
+      const store = createStore({
+        key: POLNOTO_API_KEY,
+        useSideApi: true,
+      });
       setCurrentStore(store);
 
-      // short wait
+      store.clear();
       await new Promise((r) => setTimeout(r, 100));
-      store.loadJSON(updatedTemplateData);
 
-      // generate -> s3 -> create
-      const flowResult = await generateUploadAndCreateTemplate(store, updatedTemplateData);
+      try {
+        store.loadJSON(updatedTemplateData);
+      } catch {
+        toast.error("Error loading JSON. Reloading soon.");
+        triggerBackgroundHardRefresh();
+        continue;
+      }
 
+      const flowResult = await generateUploadAndCreateTemplate(
+        store,
+        updatedTemplateData
+      );
       store.clear();
       setCurrentStore(null);
 
@@ -505,9 +457,8 @@ export default function Creatives({
     }
   }
 
-
   // -------------------------------------------------------
-  // 5) Main generation
+  // 8) Main generation
   // -------------------------------------------------------
   const generateAndFetchTemplates = async () => {
     setLoading(true);
@@ -518,26 +469,24 @@ export default function Creatives({
         setLoading(false);
         return;
       }
-
       const parsedPayload = JSON.parse(storedPayload);
-      console.log("Parsed payload:", parsedPayload);
 
-      FIXED_BRAND_ID = parsedPayload.brandId; // re-assign
+      FIXED_BRAND_ID = parsedPayload.brandId;
       if (FIXED_BRAND_ID) {
         try {
           brandFetched = await axios.get(`${baseUrl}/v2/api/brands/${FIXED_BRAND_ID}`, {
             headers: { Authorization: `Bearer ${jwtToken}` },
           });
-        } catch (error) {
-          console.log("brandFetched error", error);
+        } catch {
+          toast.error("Error fetching brand data. Reloading soon.");
+          triggerBackgroundHardRefresh();
+          return;
         }
       }
 
-      // We'll accumulate final templates
       const allTemplates = [];
-
       const { postType, cohortIds } = parsedPayload;
-      // A) SocialMediaPost => single iteration
+
       if (postType === "SocialMediaPost") {
         const requestBody = { ...parsedPayload, cohortId: "" };
         delete requestBody.cohortIds;
@@ -547,9 +496,9 @@ export default function Creatives({
           generateResp = await axios.post(`${baseUrl}/v2/generate`, requestBody, {
             headers: { Authorization: `Bearer ${jwtToken}` },
           });
-        } catch (err) {
-          console.error("Error calling /v2/generate for SocialMediaPost:", err);
-          toast.error("Oops! Something went wrong. Try again or check back later.");
+        } catch {
+          toast.error("Error generating SocialMediaPost. Reloading soon.");
+          triggerBackgroundHardRefresh();
           setLoading(false);
           return;
         }
@@ -559,9 +508,9 @@ export default function Creatives({
           await handleGenerateResponse(apiData, allTemplates);
         }
       } else {
-        // B) AdCreative => multiple cohorts
         if (!Array.isArray(cohortIds) || cohortIds.length === 0) {
-          toast.error("No cohortIds in the payload for AdCreative.");
+          toast.error("No cohortIds for AdCreative. Reloading soon.");
+          triggerBackgroundHardRefresh();
           setLoading(false);
           return;
         }
@@ -575,10 +524,9 @@ export default function Creatives({
             generateResp = await axios.post(`${baseUrl}/v2/generate`, requestBody, {
               headers: { Authorization: `Bearer ${jwtToken}` },
             });
-          } catch (err) {
-            console.error("Error calling /v2/generate for cohort:", singleCohortId, err);
-            // show toast for failure but continue
-            toast.error("Oops! Something went wrong. Try again or check back later.");
+          } catch {
+            toast.error("Error generating AdCreative. Reloading soon.");
+            triggerBackgroundHardRefresh();
             continue;
           }
 
@@ -588,19 +536,18 @@ export default function Creatives({
           }
         }
       }
-
       setTemplates(allTemplates);
       toast.success("Templates generated successfully!");
-    } catch (error) {
-      console.error("Error in generateAndFetchTemplates:", error);
-      toast.error("Failed to generate or fetch templates. Check console.");
+    } catch {
+      toast.error("Failed to generate or fetch templates. Reloading soon.");
+      triggerBackgroundHardRefresh();
     } finally {
       setLoading(false);
     }
   };
 
   // -------------------------------------------------------
-  // 6) Bookmarks + Edit
+  // 9) Bookmarks + Edit
   // -------------------------------------------------------
   const handleBookmark = async (index) => {
     try {
@@ -621,24 +568,19 @@ export default function Creatives({
         isFavourite: true,
       };
 
-      // local update
       const updated = [...templates];
       updated[index].templateObj.isFavourite = true;
       setTemplates(updated);
 
-      // POST to server
       const response = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
-
       if (response.data?.data?.isFavourite === true) {
         toast.success("Template bookmarked successfully!");
-      } else {
-        // toast.error("Failed to bookmark template on server.");
       }
-    } catch (err) {
-      console.error("Error bookmarking template:", err);
-      toast.error("Could not bookmark template.");
+    } catch {
+      toast.error("Could not bookmark template. Reloading soon.");
+      triggerBackgroundHardRefresh();
     }
   };
 
@@ -647,14 +589,11 @@ export default function Creatives({
   };
 
   // -------------------------------------------------------
-  // Lifecycle
+  // 10) Lifecycle
   // -------------------------------------------------------
   useEffect(() => {
     if (isNextSectionOpen) {
-      generateAndFetchTemplates().catch((err) => {
-        console.error("Unhandled error in generateAndFetchTemplates:", err);
-        toast.error("Oops! Something went wrong. Try again or check back later.");
-      });
+      generateAndFetchTemplates();
     }
   }, [isNextSectionOpen]);
 
@@ -665,7 +604,7 @@ export default function Creatives({
   }, [isNextSectionOpen]);
 
   // -------------------------------------------------------
-  // Helpers
+  // 11) Helpers
   // -------------------------------------------------------
   const BookmarkBeforeIcon = () => (
     <svg
@@ -690,7 +629,7 @@ export default function Creatives({
       <path d="m389-400 91-55 91 55-24-104 80-69-105-9-42-98-42 98-105 9 80 69-24 104ZM200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Zm80-122 200-86 200 86v-518H280v518Zm0-518h400-400Z" />
     </svg>
   );
-  // New download handler
+
   async function handleDownload(url) {
     if (!url) {
       toast.error("No URL available for download.");
@@ -714,23 +653,27 @@ export default function Creatives({
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
       toast.success("Downloaded successfully!");
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      toast.error("Failed to download file.");
+    } catch {
+      toast.error("Failed to download. Reloading soon.");
+      triggerBackgroundHardRefresh();
     }
   }
 
   // -------------------------------------------------------
-  // Render
+  // 12) Render
   // -------------------------------------------------------
   return (
-    <div className="flex flex-col gap-4 mb-4  overflow-auto hide-scrollbar" style={{ maxHeight: "80vh" }}>
+    <div
+      className="flex flex-col gap-4 mb-4 overflow-auto hide-scrollbar"
+      style={{ maxHeight: "80vh" }}
+    >
       <section
         ref={sectionRef}
-        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl  lg:ml-8 ml-0 ${!isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
-          } flex flex-col gap-6 relative z-10 mb-4`}
+        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl lg:ml-8 ml-0 ${
+          !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
+        } flex flex-col gap-6 relative z-10 mb-4`}
       >
-        {/* Global hidden SVG with gradient definition (for your .button-clear:hover rules) */}
+        {/* Invisible gradient definition */}
         <svg width="0" height="0" style={{ position: "absolute" }}>
           <defs>
             <linearGradient id="hoverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -742,8 +685,9 @@ export default function Creatives({
 
         {/* Accordion Header */}
         <div
-          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
-            } relative cursor-pointer`}
+          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${
+            !isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
+          } relative cursor-pointer`}
           onClick={toggleNextSectionAccordion}
         >
           {isCompleted && (
@@ -768,7 +712,6 @@ export default function Creatives({
         {isNextSectionOpen && (
           <div className="p-4">
             {loading ? (
-              // Loading placeholders
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[1, 2, 3, 4].map((num) => (
                   <div
@@ -787,16 +730,15 @@ export default function Creatives({
                   return (
                     <div
                       key={idx}
-                      className="flex flex-col items-center justify-center p-6 bg-white rounded-[20px] shadow-md "
+                      className="flex flex-col items-center justify-center p-6 bg-white rounded-[20px] shadow-md"
                     >
                       <img
                         src={renderedImage}
                         alt={`Template_${idx}`}
                         className="w-full h-auto rounded-[12px] mb-2"
                       />
-                      {/* Buttons */}
                       <div className="button-wrapper flex justify-between w-full gap-2 px-2 -ml-8">
-                        {/* Bookmark Button */}
+                        {/* Bookmark */}
                         <button
                           className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
                           onClick={
@@ -823,7 +765,7 @@ export default function Creatives({
                           </div>
                         </button>
 
-                        {/* Edit Button */}
+                        {/* Edit */}
                         <button
                           className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
                           onClick={() => handleEdit(templateObj)}
@@ -854,7 +796,7 @@ export default function Creatives({
                           </div>
                         </button>
 
-                        {/* Preview Button */}
+                        {/* Preview */}
                         <button
                           className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
                           onClick={() =>
@@ -885,10 +827,10 @@ export default function Creatives({
                           </div>
                         </button>
 
-                        {/* Download Button */}
+                        {/* Download */}
                         <button
                           className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
-                          onClick={() => handleDownload(renderedImage)} // renderedImage is the URL of the image
+                          onClick={() => handleDownload(renderedImage)}
                         >
                           <div className="button-container">
                             <svg
@@ -920,11 +862,7 @@ export default function Creatives({
                                 stroke="#A8A8A8"
                               />
                             </svg>
-                            <span className="text-xs">
-
-                              Download
-
-                            </span>
+                            <span className="text-xs">Download</span>
                           </div>
                         </button>
                       </div>
@@ -936,7 +874,6 @@ export default function Creatives({
           </div>
         )}
 
-        {/* Hidden Polotno workspace for offscreen rendering */}
         {currentStore && (
           <div
             ref={workspaceRef}
