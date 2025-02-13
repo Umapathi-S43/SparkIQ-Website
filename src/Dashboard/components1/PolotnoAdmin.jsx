@@ -55,8 +55,7 @@ const Spinner = () => {
 // 1) CREATE POLOTNO STORE
 // ----------------------------------------------
 const store = createStore({
-  key: "H5HjfuZWdlg9X4gOUB27", // Replace with your Polotno API key
-  showCredit: true,
+  key: "H5HjfuZWdlg9X4gOUB27"
 });
 
 // ----------------------------------------------f
