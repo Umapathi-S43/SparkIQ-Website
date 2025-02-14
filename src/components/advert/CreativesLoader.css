@@ -1,0 +1,72 @@
+
+.spinner {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .fade-line {
+    animation: fade 1s infinite;
+    opacity: 0.3;
+  }
+  
+  .fade-line-0 {
+    animation-delay: 0s;
+  }
+  .fade-line-1 {
+    animation-delay: 0.0625s;
+  }
+  .fade-line-2 {
+    animation-delay: 0.125s;
+  }
+  .fade-line-3 {
+    animation-delay: 0.1875s;
+  }
+  .fade-line-4 {
+    animation-delay: 0.25s;
+  }
+  .fade-line-5 {
+    animation-delay: 0.3125s;
+  }
+  .fade-line-6 {
+    animation-delay: 0.375s;
+  }
+  .fade-line-7 {
+    animation-delay: 0.4375s;
+  }
+  .fade-line-8 {
+    animation-delay: 0.5s;
+  }
+  .fade-line-9 {
+    animation-delay: 0.5625s;
+  }
+  .fade-line-10 {
+    animation-delay: 0.625s;
+  }
+  .fade-line-11 {
+    animation-delay: 0.6875s;
+  }
+  .fade-line-12 {
+    animation-delay: 0.75s;
+  }
+  .fade-line-13 {
+    animation-delay: 0.8125s;
+  }
+  .fade-line-14 {
+    animation-delay: 0.875s;
+  }
+  .fade-line-15 {
+    animation-delay: 0.9375s;
+  }
+  
+  @keyframes fade {
+    0% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.3;
+    }
+  }
+  
