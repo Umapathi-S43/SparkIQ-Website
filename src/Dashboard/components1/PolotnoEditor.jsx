@@ -164,7 +164,9 @@ const CustomSection = {
                 const response = await axios.get(`${baseUrl}/v2/user/templates`, {
                     headers: {
                         Authorization: `Bearer ${jwtToken}`,
+                        AccessControlAllowOrigin: '*'
                     },
+                    WithCredentials: true,
                 });
                 // Suppose response.data?.data is an array
                 setTemplates(response.data?.data || []);
@@ -457,6 +459,7 @@ const PolotnoEditor = () => {
                     return;
                 }
                 const json = JSON.parse(serverData.templateJson);
+                console.log("Fetched template JSON:", json);
                 // Overwrite the entire store with new JSON
                 // 1) Clear all pages
                 store.deletePages(store.pages.map((p) => p.id));
@@ -661,18 +664,14 @@ const PolotnoEditor = () => {
         const loadTemplate = async () => {
             if (Object.keys(templateData).length > 0) {
                 // If the session hasn't reloaded yet, perform a store reset and reload once
-                if (!sessionStorage.getItem("hasReloaded")) {
-                    console.log("Refreshing store before loading template...");
-                    refreshStore();
-                } else {
-                    // If already reloaded, just load the template normally
-                    console.log("Loading template data into store...");
-                    store.loadJSON(templateData);
+                
+                console.log("Fetched template JSON:", templateData);
+                 store.loadJSON(templateData);
 
                     if (template.templateId) {
                         setCurrentTemplateId(template.templateId);
                     }
-                }
+                
             } else {
                 // If no pages exist, add a default page
                 if (store.pages.length === 0) {
