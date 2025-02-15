@@ -365,7 +365,8 @@ export default function Creatives({
               if (elementType === "text") {
                 element.text = newValue;
               } else if (elementType === "image") {
-                element.src = newValue;
+
+                element.src = decodeURIComponent(newValue);
               }
             }
           }

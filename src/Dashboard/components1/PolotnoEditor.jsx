@@ -637,31 +637,53 @@ const PolotnoEditor = () => {
     }
   };
 
-  // 6) On mount, load the template data into Polotno if it exists
+  const refreshStore = () => {
+    console.log("Performing full store refresh...");
+  
+    // Reset Polotno store
+    store.clear();
+    store.addPage(); // Ensure at least one page exists
+  
+    // Prevent multiple reloads by setting a session flag
+    if (!sessionStorage.getItem("hasReloaded")) {
+      sessionStorage.setItem("hasReloaded", "true");
+      console.log("Forcing one-time reload to clear cache...");
+      window.location.reload();
+    }
+  };
+  
   useEffect(() => {
-    // Sync localStorage theme
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark");
     }
-
-    // If there's existing JSON, load it
-    if (Object.keys(templateData).length > 0) {
-      // 1) Clear all pages
-      store.deletePages(store.pages.map((p) => p.id));
-      store.loadJSON(templateData);
-      // also confirm or set the current template ID
-      if (template.templateId) {
-        setCurrentTemplateId(template.templateId);
+  
+    const loadTemplate = async () => {
+      if (Object.keys(templateData).length > 0) {
+        // If the session hasn't reloaded yet, perform a store reset and reload once
+        if (!sessionStorage.getItem("hasReloaded")) {
+          console.log("Refreshing store before loading template...");
+          refreshStore();
+        } else {
+          // If already reloaded, just load the template normally
+          console.log("Loading template data into store...");
+          store.loadJSON(templateData);
+  
+          if (template.templateId) {
+            setCurrentTemplateId(template.templateId);
+          }
+        }
+      } else {
+        // If no pages exist, add a default page
+        if (store.pages.length === 0) {
+          store.addPage();
+        }
       }
-    } else {
-      // If no pages, add a default page
-      if (store.pages.length === 0) {
-        store.addPage();
-      }
-    }
+    };
+  
+    loadTemplate();
   }, [template.templateId, templateData]);
-
+    
   const UploadSectionWithAPI = {
     name: "upload-api",
     Tab: (props) => (
