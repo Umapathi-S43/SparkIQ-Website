@@ -40,27 +40,3 @@
   width: 100%;
 }
 
-/* Optional shimmer effect for placeholders */
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.card-shimmer {
-  background: linear-gradient(
-    to right,
-    #f2f4f8 0%,
-    #e6e6e6 20%,
-    #f2f4f8 40%,
-    #f2f4f8 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite linear;
-  opacity: 0.8;
-  border-radius: 12px;
-}
-
