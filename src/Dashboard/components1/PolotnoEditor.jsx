@@ -395,26 +395,269 @@ const CustomSection = {
   }),
 };
 
-/*---------------------------------------------------------------------
-  CUSTOM "Upload" SECTION FOR BRAND ELEMENTS
----------------------------------------------------------------------*/
-const UploadSectionWithAPI = {
-  name: "upload-api",
 
-  Tab: (props) => (
-    <SectionTab name="Upload" {...props}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "20px",
-        }}
-      >
-        <FaCloudUploadAlt />
-      </div>
-    </SectionTab>
-  ),
+
+// 3) Combine default sections with the custom section
+//    We'll create the custom section inside the component so we can pass local state
+//    (like currentTemplateId) into it.
+const PolotnoEditor = () => {
+  // Retrieve route state
+  const { state } = useLocation();
+
+  const navigate = useNavigate();
+  const template = state?.templateData || {};
+  console.log("Incoming template data:", template);
+  const brandId = template.brandId;
+  localStorage.setItem("brandId", brandId);
+  localStorage.setItem("loadedtemplate", template);
+  console.log(brandId);
+
+  // If a template is passed, parse the JSON
+  const templateData = template?.templateJson
+    ? JSON.parse(template.templateJson)
+    : template.templateJson;
+  const { templateId } = location.state || {};
+
+  useEffect(() => {
+    if (!templateId) return;
+
+    setLoading(true);
+    // GET /v2/user/templates/{templateId}
+    axios
+      .get(`${baseUrl}/v2/user/templates/${templateId}`, {
+        headers: { Authorization: `Bearer ${jwtToken}` }
+      })
+      .then((res) => {
+        const serverData = res.data?.data;
+        if (!serverData?.templateJson) {
+          toast.error("No template JSON found for this ID.");
+          return;
+        }
+        const json = JSON.parse(serverData.templateJson);
+        // Overwrite the entire store with new JSON
+        // 1) Clear all pages
+        store.deletePages(store.pages.map((p) => p.id));
+
+        store.loadJSON(json, { override: true });
+
+        setCurrentTemplateId(templateId);
+      })
+      .catch((err) => {
+        console.error("Error fetching template:", err);
+        toast.error("Failed to load template data.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [templateId]);
+  // We'll store the current template ID. If the route state has `templateId`,
+  // use that as default. Otherwise null.
+
+  const [currentTemplateId, setCurrentTemplateId] = useState(null);
+  // We also note if the user wants dark mode
+  const [isDarkMode, setIsDarkMode] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
+
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    localStorage.setItem("theme", newTheme ? "dark" : "light");
+  };
+
+  // 4) Save the template (only update, not "save as new")
+  //    We'll do an HTTP PUT or POST to /v2/user/templates/{id}, whichever your backend expects
+  // Compress image before upload
+  const compressImage = async (
+    dataURL,
+    maxWidth = 1000,
+    maxHeight = 1000,
+    quality = 0.2
+  ) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = dataURL;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // Maintain aspect ratio while resizing
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = (maxHeight / width) * height;
+            width = maxWidth;
+          } else {
+            width = (maxWidth / height) * width;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress and convert to Blob
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Image compression failed."));
+            }
+          },
+          "image/png",
+          quality // 0.1 ~ 1.0
+        );
+      };
+      img.onerror = (err) => reject(err);
+    });
+  };
+
+  const saveAsJSON = async (isUpdate = false) => {
+    try {
+      const dataURL = await store.toDataURL({
+        pixelRatio: 1,
+        mimeType: "image/png",
+      });
+
+      const compressedBlob = await compressImage(dataURL);
+
+      const uploadData = new FormData();
+      uploadData.append("file", compressedBlob, "compressed-thumbnail.png");
+
+      // 1. First upload the image to get a URL
+      const uploadResponse = await axios.post(
+        `${baseUrl}/sparkiq/image/upload?customerId=123`,
+        uploadData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
+      );
+
+      const thumbnailURL = uploadResponse.data.data.url;
+
+      // 2. Prepare the JSON data
+      const json = store.toJSON();
+      const template_original = localStorage.getItem("loadedtemplate");
+      // `templateId` is only sent if we are updating and we have a current ID
+      const payload = {
+        templateId:
+          isUpdate && currentTemplateId && currentTemplateId !== ''
+            ? currentTemplateId
+            : "",
+        url: thumbnailURL,
+        templateOrientation: template_original.templateOrientation || json.width > json.height ? "landscape" : "portrait" || "1:1",
+        priority: json.priority || 0,
+        templateSize: `${json.width}x${json.height}`,
+        brandId: template_original.brandId || brandId || "", // Include brandId
+        postType: template_original.postType || json.postType || "standard", //
+        customTemplate: template_original.customTemplate || false, //
+        mediaType: "image",
+        videoDuration: json.videoDuration || "00:00",
+        voiceoverEnabled: json.voiceoverEnabled || false,
+        templateJson: JSON.stringify(json),
+        isFavourite: template_original.isFavourite || false,
+      };
+
+      // 3. POST the template
+      const apiResponse = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+
+      // if successful, set the ID if it doesn't exist
+
+      if (!isUpdate) {
+        if (apiResponse.data?.templateId) {
+          setCurrentTemplateId(apiResponse.data?.templateId);
+        }
+      }
+
+      toast.success(
+        isUpdate
+          ? "Template updated successfully!"
+          : "Template saved successfully!"
+      );
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast.error("An error occurred while saving the template.");
+    }
+  };
+
+  // 5) Optionally load from local JSON
+  const loadFromJSON = async () => {
+    try {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const content = await file.text();
+          const json = JSON.parse(content);
+          // 1) Clear all pages
+          store.deletePages(store.pages.map((p) => p.id));
+          store.loadJSON(json, false);
+          toast.success("Template loaded from file!");
+        }
+      };
+      input.click();
+    } catch (error) {
+      console.error("Error loading from JSON:", error);
+      toast.error("Error loading template.");
+    }
+  };
+
+  // 6) On mount, load the template data into Polotno if it exists
+  useEffect(() => {
+    // Sync localStorage theme
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === "dark");
+    }
+
+    // If there's existing JSON, load it
+    if (Object.keys(templateData).length > 0) {
+      // 1) Clear all pages
+      store.deletePages(store.pages.map((p) => p.id));
+      store.loadJSON(templateData);
+      // also confirm or set the current template ID
+      if (template.templateId) {
+        setCurrentTemplateId(template.templateId);
+      }
+    } else {
+      // If no pages, add a default page
+      if (store.pages.length === 0) {
+        store.addPage();
+      }
+    }
+  }, [template.templateId, templateData]);
+
+  const UploadSectionWithAPI = {
+    name: "upload-api",
+    Tab: (props) => (
+      <SectionTab name="Upload" {...props}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "20px",
+          }}
+        >
+          <FaCloudUploadAlt />
+        </div>
+      </SectionTab>
+    ),
+    Panel: observer(({ store }) => {
+      // 2) brandId from local storage
+      const brandId = localStorage.getItem("brandId");
 
   Panel: observer(({ store }) => {
     // Keep brandId in state so UI re-renders if brand changes

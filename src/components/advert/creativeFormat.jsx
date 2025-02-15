@@ -104,6 +104,7 @@ export default function CreativeFormat({
   isCompleted,
   setIsCompleted,
   setIsLoading,
+  setCreativePayload, // Receive function from parent
 }) {
   const sectionRef = useRef(null);
 
@@ -117,86 +118,7 @@ export default function CreativeFormat({
     setSelectedOption(localStorage.getItem("lookingFor") || "Advertisement (Ad)");
   }, [isNextSectionOpen]);
 
-  // ----------------------------------------------------------------
-  // Shared "Generate Creatives" - (not heavily used now)
-  // ----------------------------------------------------------------
-
-  const handleGenerateCreatives = () => {
-    // Retrieve brandId and productId from localStorage
-    const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
-    const productId = JSON.parse(localStorage.getItem("productID")) || "";
-
-    // Retrieve the user inputs from localStorage
-    const objective = localStorage.getItem("objective") || "";
-    const platform = localStorage.getItem("platform") || "";
-    let imageSize = localStorage.getItem("imageSize") || "";
-    // Remove parentheses if any remain
-    imageSize = imageSize.replace(/[()]/g, "").replace(/\*/g, "x");
-
-    if (!platform) {
-      toast.error("Please select a platform before generating creatives!");
-      return;
-    }
-    if (!imageSize) {
-      toast.error("Please select an image size before generating creatives!");
-      return;
-    }
-
-    // Branch for Ad vs Social
-    if (selectedOption === "Advertisement (Ad)") {
-      // We'll also retrieve campaignType and the multiple cohortIds
-      const campaignType = localStorage.getItem("campaignType") || "";
-      const storedCohortIds = localStorage.getItem("selectedCohortIds");
-      let cohortIds = [];
-
-      if (storedCohortIds) {
-        cohortIds = JSON.parse(storedCohortIds); // array of IDs
-      }
-
-      if (!cohortIds || cohortIds.length === 0) {
-        toast.error("Please select at least one audience cohort before generating creatives!");
-        return;
-      }
-
-      // Final ad payload
-      const payload = {
-        brandId,
-        productId,
-        postType: "AdCreative",
-        objective,      // e.g. "Solar power for newly constructed home..."
-        platform,       // e.g. "facebook"
-        campaignType,   // e.g. "sales", "brandAwareness", etc.
-        imageSize,      // e.g. "1080*1080"
-        cohortIds,      // array of cohort IDs
-        imageSource: "",
-      };
-
-      localStorage.setItem("creativePayload", JSON.stringify(payload));
-      console.log("Final Ad Payload => ", payload);
-    } else {
-      // Social Media Post
-      // Build social-post payload
-      const payload = {
-        brandId,
-        productId,
-        postType: "SocialMediaPost", // your naming
-        objective,
-        platform,
-        imageSize, // e.g. "1080*1080"
-        imageSource: "",
-        campaignType:campaignType,
-      };
-
-      localStorage.setItem("creativePayload", JSON.stringify(payload));
-      console.log("Final Social Payload => ", payload);
-    }
-
-    // Then proceed with your original logic
-    if (setIsCompleted) setIsCompleted(true);
-    if (setIsLoading) setIsLoading(true);
-    if (handleNextSection) handleNextSection();
-  };
-
+  
   // =================================================================
   // SOCIAL MEDIA POST UI
   // =================================================================
@@ -243,7 +165,8 @@ export default function CreativeFormat({
       console.log("Social Post Payload => ", payload);
 
       // Store in localStorage so we don't remove it
-      localStorage.setItem("creativePayload", JSON.stringify(payload));
+      //localStorage.setItem("creativePayload", JSON.stringify(payload));
+      setCreativePayload(payload);
 
       // Mark completion or start loader
       if (setIsLoading) setIsLoading(true);
@@ -501,7 +424,6 @@ export default function CreativeFormat({
         <div className="flex items-center justify-center w-full py-12">
           <button
             className="custom-button rounded-[20px] text-white py-4 px-10 font-medium"
-            // onClick={handleGenerateCreatives}
             onClick={onGenerate}
           >
             Generate Creatives
@@ -761,7 +683,8 @@ const formatGenders = (genders) => {
       console.log("Final Ad Payload =>", payload);
 
       // Store the final payload in localStorage
-      localStorage.setItem("creativePayload", JSON.stringify(payload));
+      //localStorage.setItem("creativePayload", JSON.stringify(payload));
+      setCreativePayload(payload);
 
       if (setIsLoading) setIsLoading(true);
       if (setIsCompleted) setIsCompleted(true);

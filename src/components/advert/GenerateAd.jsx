@@ -19,6 +19,7 @@ export default function GenerateAd() {
   const [openModalLookingFor, setOpenModalLookingFor] = useState(false);
   const [openModalCreativeFormat, setOpenModalCreativeFormat] = useState(false);
   const [openModalCreatives, setOpenModalCreatives] = useState(false);
+  const [creativePayload, setCreativePayload] = useState(null);
 
   // Toggle between showing steps (1–3) vs. hiding them (step 4 open)
   const [showGenerateAdSteps, setShowGenerateAdSteps] = useState(true);
@@ -210,6 +211,7 @@ export default function GenerateAd() {
               isCompleted={openModalCreativeFormat}
               setIsCompleted={setOpenModalCreativeFormat}
               handleNextSection={handleOpenCreatives}
+              setCreativePayload={setCreativePayload} // Pass setter function to child
             />
           </div>
         </div>
@@ -222,6 +224,7 @@ export default function GenerateAd() {
         isCompleted={openModalCreatives}
         setIsCompleted={setOpenModalCreatives}
         showGenerateAdSteps={openGenerateAdSteps} // Allow user to re-show steps if needed
+        creativePayload={creativePayload} // Pass payload as prop
       />
     </div>
   );
