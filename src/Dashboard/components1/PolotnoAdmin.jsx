@@ -37,10 +37,9 @@ import {
 import "./PolotnoEditor.css";
 
 // ----------------------------------------------
-//  SPINNER COMPONENT
+// SPINNER COMPONENT
 // ----------------------------------------------
 const Spinner = () => {
-  // Generate 16 lines
   const lines = [...Array(16).keys()];
   return (
     <div className="my-spinner">
@@ -55,10 +54,10 @@ const Spinner = () => {
 // 1) CREATE POLOTNO STORE
 // ----------------------------------------------
 const store = createStore({
-  key: "H5HjfuZWdlg9X4gOUB27"
+  key: "H5HjfuZWdlg9X4gOUB27",
 });
 
-// ----------------------------------------------f
+// ----------------------------------------------
 // 2) CONTEXT FOR UPLOADED FILES
 // ----------------------------------------------
 const UploadedFilesContext = createContext();
@@ -86,14 +85,7 @@ const UploadSectionWithAPI = {
   name: "upload-api",
   Tab: (props) => (
     <SectionTab name="Upload" {...props}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "20px",
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
         <FaCloudUploadAlt />
       </div>
     </SectionTab>
@@ -105,7 +97,6 @@ const UploadSectionWithAPI = {
     const handleFileUpload = async (file) => {
       if (!file) return;
       setIsUploading(true);
-
       const uploadData = new FormData();
       uploadData.append("file", file);
       uploadData.append("customerId", "123");
@@ -135,7 +126,6 @@ const UploadSectionWithAPI = {
     return (
       <div style={{ padding: "10px", height: "100%" }}>
         <h3 style={{ marginBottom: "10px" }}>Uploaded Files</h3>
-
         <label
           htmlFor="fileUpload"
           style={{
@@ -153,20 +143,17 @@ const UploadSectionWithAPI = {
           <FaCloudUploadAlt style={{ marginRight: "8px" }} />
           Upload Image
         </label>
-
         <input
           id="fileUpload"
           type="file"
           onChange={(e) => handleFileUpload(e.target.files[0])}
           style={{ display: "none" }}
         />
-
         {isUploading && (
           <div style={{ textAlign: "center", marginTop: 10 }}>
             <Spinner />
           </div>
         )}
-
         <div
           style={{
             display: "grid",
@@ -187,17 +174,10 @@ const UploadSectionWithAPI = {
                 cursor: "pointer",
               }}
               onClick={() => {
-                store.activePage?.addElement({
-                  type: "image",
-                  src: file,
-                });
+                store.activePage?.addElement({ type: "image", src: file });
               }}
             >
-              <img
-                src={file}
-                alt={`Uploaded ${index}`}
-                style={{ width: "100%", height: "auto" }}
-              />
+              <img src={file} alt={`Uploaded ${index}`} style={{ width: "100%", height: "auto" }} />
             </div>
           ))}
         </div>
@@ -241,19 +221,11 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onDelete, template }) => {
             style={{ width: "100%", height: "auto", marginBottom: "10px" }}
           />
         )}
-        <p style={{ marginBottom: "20px", fontSize: "16px" }}>
-          Do you want to delete this template?
-        </p>
+        <p style={{ marginBottom: "20px", fontSize: "16px" }}>Do you want to delete this template?</p>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
           <button
             onClick={onClose}
-            style={{
-              padding: "8px 16px",
-              background: "#ccc",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            style={{ padding: "8px 16px", background: "#ccc", border: "none", borderRadius: "4px", cursor: "pointer" }}
           >
             Cancel
           </button>
@@ -288,16 +260,17 @@ const LabelModal = ({ element, onClose }) => {
     const fetchOptions = async () => {
       try {
         const response = await axios.get(`${baseUrl}/v2/design/labels`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${jwtToken}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwtToken}` },
         });
-        if (response.data && response.data.data) {
-          setOptions(response.data.data);
-        } else {
-          toast.error("Failed to load options!");
+        let opts = response.data?.data || [];
+        // If element has an existing value that is not in opts, add it
+        if (element && typeof element.get === "function") {
+          const existingVar = element.get("dynamicVariable");
+          if (existingVar && !opts.some((opt) => opt.value === existingVar)) {
+            opts = [{ id: "custom", name: existingVar, value: existingVar }, ...opts];
+          }
         }
+        setOptions(opts);
       } catch (error) {
         console.error("Error fetching options:", error);
         toast.error("Error fetching options!");
@@ -309,8 +282,6 @@ const LabelModal = ({ element, onClose }) => {
     if (element && typeof element.get === "function") {
       const existingVar = element.get("dynamicVariable");
       setVariableName(existingVar || "");
-
-      // Debug info
       console.log("Label Element Data:", {
         type: element.type,
         text: element.text || "N/A",
@@ -325,28 +296,12 @@ const LabelModal = ({ element, onClose }) => {
       toast.error("Element is not valid.");
       return;
     }
-
-    // current custom
     const currentCustom = element.get ? element.get("custom") || {} : {};
-
-    // updated custom
-    const updatedCustom = {
-      ...currentCustom,
-      edit: true,
-      variable: variableName,
-    };
-
-    // set the new props
-    element.set({
-      custom: updatedCustom,
-      dynamicVariable: variableName,
-    });
-
-    // optional debug
+    const updatedCustom = { ...currentCustom, edit: true, variable: variableName };
+    element.set({ custom: updatedCustom, dynamicVariable: variableName });
     const json_modified = store.toJSON();
     const targetElement = findElementById(json_modified, element.id);
     console.log("Modified Element:", targetElement);
-
     toast.success("Variable set on element and edit mode enabled!");
     onClose();
   };
@@ -403,7 +358,6 @@ const LabelModal = ({ element, onClose }) => {
         </select>
         <div style={{ textAlign: "right", display: "flex", gap: "8px" }}>
           <button
-            className="custom-button"
             style={{
               background: "#1976d2",
               border: "none",
@@ -437,7 +391,7 @@ const LabelModal = ({ element, onClose }) => {
 };
 
 // ----------------------------------------------
-// 5) TEXT/IMAGE... WITH LABEL
+// 5) TEXT/IMAGE... WITH LABEL (each now uses a unique key)
 // ----------------------------------------------
 const MyTextFillWithLabel = observer(({ store, element }) => {
   if (!element) return null;
@@ -568,53 +522,35 @@ const MyLineWithLabel = observer(({ store, element }) => {
 
 // ----------------------------------------------
 // 6) CUSTOM SECTION (Design)
-//    We'll "inject" setCurrentTemplateId from the parent
 // ----------------------------------------------
 const CustomSection = {
   name: "custom",
   Tab: (props) => (
     <SectionTab name="Design" {...props}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
         <SiAffinitydesigner style={{ fontSize: "14px" }} />
       </div>
     </SectionTab>
   ),
   Panel: observer(({ store, setCurrentTemplateId, reloadTrigger }) => {
-    // This local state is for "applying template" spinner
     const [isApplying, setIsApplying] = useState(false);
-
     const [templates, setTemplates] = useState([]);
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-
-    // Deletion modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
-    // 1) fetchTemplates
     const fetchTemplates = async (pageNum) => {
       if (loading) return;
       setLoading(true);
       try {
-        const response = await axios.get(
-          `${baseUrl}/v2/template?page=${pageNum}&size=10`,
-          {
-            headers: { Authorization: `Bearer ${jwtToken}` },
-          }
-        );
+        const response = await axios.get(`${baseUrl}/v2/template?page=${pageNum}&size=10`, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
         const resTemplates = response.data.data.content || [];
         const totalPages = response.data.data.totalPages;
-
-        setTemplates((prev) =>
-          pageNum === 0 ? resTemplates : [...prev, ...resTemplates]
-        );
+        setTemplates((prev) => (pageNum === 0 ? resTemplates : [...prev, ...resTemplates]));
         setHasMore(pageNum + 1 < totalPages);
       } catch (error) {
         console.error("Failed to fetch templates:", error);
@@ -624,9 +560,7 @@ const CustomSection = {
       }
     };
 
-    // 2) applyTemplate
     const applyTemplate = async (template) => {
-      // Show spinner while applying
       setIsApplying(true);
       try {
         if (!template.templateJson) {
@@ -635,49 +569,38 @@ const CustomSection = {
         }
         const parsedJson = JSON.parse(template.templateJson);
         store.loadJSON(parsedJson);
-
         if (typeof setCurrentTemplateId === "function") {
           setCurrentTemplateId(template.templateId);
         }
-
         toast.success("Template applied successfully!");
       } catch (err) {
         console.error("Error applying template:", err);
         toast.error("Failed to apply template. Please try again.");
       } finally {
-        // Hide spinner
         setIsApplying(false);
       }
     };
 
-    // 3) init and pagination
     useEffect(() => {
       if (templates.length === 0) {
         fetchTemplates(0);
       }
-      // eslint-disable-next-line
     }, []);
 
     useEffect(() => {
       if (page > 0) {
         fetchTemplates(page);
       }
-      // eslint-disable-next-line
     }, [page]);
 
-    // 4) re-fetch templates if "reloadTrigger" changes
-    //    parent increments reloadTrigger after update
     useEffect(() => {
       if (reloadTrigger > 0) {
-        // re-fetch from scratch
         setTemplates([]);
         setPage(0);
         fetchTemplates(0);
       }
-      // eslint-disable-next-line
     }, [reloadTrigger]);
 
-    // 5) handle infinite scroll
     useEffect(() => {
       const container = document.querySelector(".template-container");
       if (container) {
@@ -688,14 +611,12 @@ const CustomSection = {
 
     const handleScroll = (e) => {
       const container = e.target;
-      const isBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight < 1;
+      const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 1;
       if (isBottom && hasMore && !loading) {
         setPage((prev) => prev + 1);
       }
     };
 
-    // 6) delete flow
     const openDeleteModal = (id) => {
       setSelectedTemplateId(id);
       setIsModalOpen(true);
@@ -711,9 +632,7 @@ const CustomSection = {
         await axios.delete(`${baseUrl}/v2/template/${selectedTemplateId}`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
-        setTemplates((prev) =>
-          prev.filter((p) => p.templateId !== selectedTemplateId)
-        );
+        setTemplates((prev) => prev.filter((p) => p.templateId !== selectedTemplateId));
         setIsModalOpen(false);
         toast.success("Deleted successfully.");
       } catch (error) {
@@ -722,13 +641,10 @@ const CustomSection = {
       }
     };
 
-    const selectedTemplate = templates.find(
-      (t) => t.templateId === selectedTemplateId
-    );
+    const selectedTemplate = templates.find((t) => t.templateId === selectedTemplateId);
 
     return (
       <>
-        {/* Show a spinner overlay if isApplying */}
         {isApplying && (
           <div
             style={{
@@ -747,18 +663,8 @@ const CustomSection = {
             <Spinner />
           </div>
         )}
-
-        <div
-          className="overflow-auto hide-scrollbar template-container"
-          style={{ padding: "10px", maxHeight: "90vh", position: "relative" }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "10px",
-            }}
-          >
+        <div className="overflow-auto hide-scrollbar template-container" style={{ padding: "10px", maxHeight: "90vh", position: "relative" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
             {templates.map((template) => (
               <div
                 key={template.templateId}
@@ -816,81 +722,148 @@ const CustomSection = {
 };
 
 // ----------------------------------------------
+// TEMPLATE TYPE MODAL (for Save/Update)
+// ----------------------------------------------
+const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
+  // For update, existingTag is assumed to be a string; here we show only one dropdown
+  const [selectedType, setSelectedType] = useState(existingTag || "");
+
+  useEffect(() => {
+    setSelectedType(existingTag || "");
+  }, [existingTag]);
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.8)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "white",
+          padding: "20px",
+          borderRadius: "8px",
+          maxWidth: "400px",
+          width: "90%",
+          textAlign: "center",
+        }}
+      >
+        <h3>Select Template Type</h3>
+        <p style={{ fontSize: "14px", color: "#555" }}>Choose the type for this template.</p>
+        <select
+          value={selectedType}
+          onChange={(e) => setSelectedType(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "8px",
+            marginBottom: "10px",
+            border: "1px solid #ccc",
+          }}
+        >
+          <option value="">Select Type</option>
+          <option value="Ecom">Ecom</option>
+          <option value="B2C">B2C</option>
+          <option value="B2B">B2B</option>
+        </select>
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
+          <button
+            onClick={onClose}
+            style={{ background: "#ccc", border: "none", padding: "8px 16px", borderRadius: "4px", cursor: "pointer" }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(selectedType)}
+            style={{ background: "#4CAF50", color: "white", border: "none", padding: "8px 16px", borderRadius: "4px", cursor: "pointer" }}
+            disabled={!selectedType}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ----------------------------------------------
 // 7) POLOTNOADMIN MAIN COMPONENT
 // ----------------------------------------------
 const PolotnoAdmin = () => {
   const { state } = useLocation();
   const templateData = state?.templateData;
 
-  const [isDarkMode, setIsDarkMode] = useState(
-    localStorage.getItem("theme") === "dark"
-  );
-
-  // Track which template ID we're currently editing
+  const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem("theme") === "dark");
   const [currentTemplateId, setCurrentTemplateId] = useState(null);
-
-  // For reloading the custom design section after updates
   const [reloadTrigger, setReloadTrigger] = useState(0);
-
-  // For showing a spinner while saving
   const [isSaving, setIsSaving] = useState(false);
+  // Modal for Save/Update
+  const [modalOpen, setModalOpen] = useState(false);
+  // actionType: "save" or "update"
+  const [actionType, setActionType] = useState(null);
+  // existingTag (a string) from loaded template (if any)
+  const [existingTag, setExistingTag] = useState(null);
 
-  // Toggle theme
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
     localStorage.setItem("theme", newTheme ? "dark" : "light");
   };
 
-  // Helper for compressing image
-  const compressImage = async (
-    dataURL,
-    maxWidth = 1000,
-    maxHeight = 1000,
-    quality = 0.2
-  ) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = dataURL;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let { width, height } = img;
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            height = (maxHeight / width) * height;
-            width = maxWidth;
-          } else {
-            width = (maxWidth / height) * width;
-            height = maxHeight;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error("Image compression failed."));
-          },
-          "image/png",
-          quality
-        );
-      };
-      img.onerror = (err) => reject(err);
-    });
+  // Open modal for the action ("save" or "update")
+  const handleOpenModal = (action) => {
+    setActionType(action);
+    setModalOpen(true);
   };
 
-  // SAVE AS JSON
-  const saveAsJSON = async (isUpdate = false) => {
-    setIsSaving(true); // show spinner
+  // SAVE AS JSON using the selected type as tag
+  const saveAsJSON = async (isUpdate = false, selectedType) => {
+    setIsSaving(true);
     try {
-      const dataURL = await store.toDataURL({
-        pixelRatio: 1,
-        mimeType: "image/png",
-      });
-      const compressedBlob = await compressImage(dataURL);
+      const dataURL = await store.toDataURL({ pixelRatio: 1, mimeType: "image/png" });
+      const compressedBlob = await (async () => {
+        const img = new Image();
+        img.src = dataURL;
+        return new Promise((resolve, reject) => {
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            let { width, height } = img;
+            const maxWidth = 1000, maxHeight = 1000, quality = 0.2;
+            if (width > maxWidth || height > maxHeight) {
+              if (width > height) {
+                height = (maxHeight / width) * height;
+                width = maxWidth;
+              } else {
+                width = (maxWidth / height) * width;
+                height = maxHeight;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob(
+              (blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error("Image compression failed."));
+              },
+              "image/png",
+              quality
+            );
+          };
+          img.onerror = (err) => reject(err);
+        });
+      })();
 
       // 1) Upload PNG
       const uploadData = new FormData();
@@ -907,7 +880,7 @@ const PolotnoAdmin = () => {
       );
       const thumbnailURL = uploadResponse.data.data.url;
 
-      // 2) Build JSON
+      // 2) Build JSON and payload
       const json = store.toJSON();
       const payload = {
         templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
@@ -921,25 +894,17 @@ const PolotnoAdmin = () => {
         videoDuration: json.videoDuration || "00:00",
         voiceoverEnabled: json.voiceoverEnabled || false,
         templateJson: JSON.stringify(json),
+        tag: selectedType, // Tag is a string (e.g., "B2C")
       };
 
-      // 3) POST
+      // 3) POST to API
       const apiResponse = await axios.post(`${baseUrl}/v2/template`, payload, {
-        headers: {
-          Authorization: `Bearer ${jwtToken}`,
-        },
+        headers: { Authorization: `Bearer ${jwtToken}` },
       });
-
-      // If newly created, set ID
       if (!isUpdate) {
-        setCurrentTemplateId(apiResponse.data?.templateId);
+        setCurrentTemplateId(apiResponse.data?.data.templateId);
       }
-
-      toast.success(
-        isUpdate ? "Template updated successfully!" : "Template saved successfully!"
-      );
-
-      // If we just updated an existing template, let's re-fetch in custom section
+      toast.success(isUpdate ? "Template updated successfully!" : "Template saved successfully!");
       if (isUpdate) {
         setReloadTrigger((prev) => prev + 1);
       }
@@ -947,8 +912,15 @@ const PolotnoAdmin = () => {
       console.error("Error saving template:", error);
       toast.error("An error occurred while saving the template.");
     } finally {
-      setIsSaving(false); // hide spinner
+      setIsSaving(false);
     }
+  };
+
+  // When modal confirms, call saveAsJSON with proper flag
+  const handleConfirmModal = (selectedType) => {
+    setModalOpen(false);
+    const isUpdate = actionType === "update";
+    saveAsJSON(isUpdate, selectedType);
   };
 
   // LOAD FROM JSON
@@ -973,38 +945,25 @@ const PolotnoAdmin = () => {
     }
   };
 
-  // ON INIT: load theme + template
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === "dark");
-    }
-    // If we arrived here with a selected template to edit, load it
+    if (savedTheme) setIsDarkMode(savedTheme === "dark");
     if (templateData) {
       store.loadJSON(templateData);
-      if (templateData.templateId) {
-        setCurrentTemplateId(templateData.templateId);
-      }
+      if (templateData.templateId) setCurrentTemplateId(templateData.templateId);
+      if (templateData.tag) setExistingTag(templateData.tag);
     } else {
-      if (store.pages.length === 0) {
-        store.addPage();
-      }
+      if (store.pages.length === 0) store.addPage();
     }
   }, [templateData]);
 
-  // Cloning your CustomSection to inject setCurrentTemplateId and reloadTrigger
   const customSectionWithProps = {
     ...CustomSection,
     Panel: (panelProps) => (
-      <CustomSection.Panel
-        {...panelProps}
-        setCurrentTemplateId={setCurrentTemplateId}
-        reloadTrigger={reloadTrigger}
-      />
+      <CustomSection.Panel {...panelProps} setCurrentTemplateId={setCurrentTemplateId} reloadTrigger={reloadTrigger} />
     ),
   };
 
-  // Final side-panel sections
   const sections = [
     customSectionWithProps,
     TemplatesSection,
@@ -1018,7 +977,7 @@ const PolotnoAdmin = () => {
   ];
 
   const handleAddNew = () => {
-    store.loadJSON({ pages: [] }); // Clear
+    store.loadJSON({ pages: [] });
     store.addPage();
     setCurrentTemplateId(null);
     toast.success("New template created!");
@@ -1027,13 +986,8 @@ const PolotnoAdmin = () => {
   return (
     <div
       className={isDarkMode ? "bp5-dark" : ""}
-      style={{
-        height: "100vh",
-        backgroundColor: isDarkMode ? "#000000" : "#f4f4f4",
-        position: "relative",
-      }}
+      style={{ height: "100vh", backgroundColor: isDarkMode ? "#000000" : "#f4f4f4", position: "relative" }}
     >
-      {/* An absolute spinner overlay for entire page while saving */}
       {isSaving && (
         <div
           style={{
@@ -1049,8 +1003,13 @@ const PolotnoAdmin = () => {
           <Spinner />
         </div>
       )}
-
-      {/* Header area with theme toggle + saving */}
+      {/* Modal for Save/Update */}
+      <TemplateTypeModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={handleConfirmModal}
+        existingTag={existingTag}
+      />
       <div
         style={{
           padding: "6px",
@@ -1073,9 +1032,8 @@ const PolotnoAdmin = () => {
         >
           Switch to {isDarkMode ? "Light" : "Dark"} Mode
         </button>
-
         <button
-          onClick={() => saveAsJSON(false)}
+          onClick={() => handleOpenModal("save")}
           style={{
             backgroundColor: "#FFD700",
             color: "white",
@@ -1088,9 +1046,8 @@ const PolotnoAdmin = () => {
         >
           Save as New
         </button>
-
         <button
-          onClick={() => saveAsJSON(true)}
+          onClick={() => handleOpenModal("update")}
           style={{
             backgroundColor: "#4CAF50",
             color: "white",
@@ -1103,7 +1060,6 @@ const PolotnoAdmin = () => {
         >
           Update Template
         </button>
-
         <button
           onClick={loadFromJSON}
           style={{
@@ -1118,7 +1074,6 @@ const PolotnoAdmin = () => {
         >
           Load Template from JSON
         </button>
-
         <button
           onClick={handleAddNew}
           style={{
@@ -1133,7 +1088,6 @@ const PolotnoAdmin = () => {
         >
           Add New
         </button>
-
         <button
           className="close"
           onClick={() => window.history.back()}
@@ -1164,7 +1118,6 @@ const PolotnoAdmin = () => {
           X
         </button>
       </div>
-
       <UploadedFilesProvider>
         <PolotnoContainer style={{ width: "100vw", height: "93vh" }}>
           <SidePanelWrap>
