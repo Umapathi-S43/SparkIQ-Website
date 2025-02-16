@@ -772,8 +772,10 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
         >
           <option value="">Select Type</option>
           <option value="Ecom">Ecom</option>
-          <option value="B2C">B2C</option>
-          <option value="B2B">B2B</option>
+          <option value="B2C">Automotive</option>
+          <option value="B2B">Marketing</option>
+          <option value="B2B Consultant">B2B Consultant</option>
+          <option value="Other">Other</option>
         </select>
         <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
           <button

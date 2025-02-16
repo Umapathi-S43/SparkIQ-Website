@@ -217,6 +217,7 @@ export default function Creatives({
       const response = await axios.get(`${baseUrl}/v2/template/${templateId}`, {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
+      localStorage.setItem("tag", JSON.stringify(response.data?.data?.tag));
       return response.data?.data?.templateJson || null;
     } catch (err) {
       console.error("Failed to fetch Polotno template:", templateId, err);
@@ -331,7 +332,7 @@ export default function Creatives({
       templateSize: "1080x1080",
       brandId: brandIdFromJson,
       version: "",
-      tag: "",
+      tag: JSON.parse(localStorage.getItem("tag"))||"Other",
       postType: "standard",
       customTemplate: false,
       mediaType: "image",

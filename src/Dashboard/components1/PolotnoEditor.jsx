@@ -450,6 +450,7 @@ const PolotnoEditor = () => {
       const payload = {
         templateId, 
         url: thumbnailURL,
+        tag: JSON.parse(template_original.tag) || "",
         templateOrientation:
           template_original.templateOrientation ||
           (json.width > json.height ? "landscape" : "portrait") ||
