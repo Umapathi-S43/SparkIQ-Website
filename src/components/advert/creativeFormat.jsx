@@ -680,7 +680,6 @@ const formatGenders = (genders) => {
         imageSource: "",
       };
 
-      console.log("Final Ad Payload =>", payload);
 
       // Store the final payload in localStorage
       //localStorage.setItem("creativePayload", JSON.stringify(payload));

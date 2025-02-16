@@ -16,7 +16,7 @@ export default function Loader() {
       setCurrentStep((prevStep) =>
         prevStep < steps.length ? prevStep + 1 : prevStep
       );
-    }, 10000);
+    }, 11000);
 
     return () => clearInterval(interval);
   }, []);
@@ -73,22 +73,25 @@ export default function Loader() {
 
         {/* Step Details */}
         <div className="flex flex-col">
-          {steps.map((step, index) => (
-            <div
-              key={index}
-              className={`flex items-center justify-between gap-8 p-4 m-4 rounded-[32px] shadow-lg transition-all duration-1000
-              ${index <= currentStep ? "bg-white" : "bg-white opacity-50"}`}
-            >
-              <span className="text-xl text-[#082A66] font-bold">{step}</span>
-              
-              {/* Custom Spinner */}
-              <div
-                className={`custom-spinner h-6 w-6 border-4 border-t-4 border-gray-200 rounded-full ${
-                  index === currentStep ? "animate-spin" : ""
-                }`}
-              ></div>
-            </div>
-          ))}
+        {steps.map((step, index) => (
+    <div
+      key={index}
+      className={`flex items-center justify-between gap-8 p-4 m-4 rounded-[32px] shadow-lg transition-all duration-1000
+      ${index <= currentStep ? "bg-white" : "bg-white opacity-50"}`}
+    >
+      <span className="text-xl text-[#082A66] font-bold">{step}</span>
+
+      {/* Tick mark for completed steps */}
+      {index < currentStep ? (
+        <span className="flex items-center justify-center p-1 text-white font-medium text-xl bg-[#082A66] rounded-full w-[24px] h-[24px]">
+        ✔
+      </span>
+      ) : index === currentStep ? (
+        /* Custom Spinner */
+        <div className="custom-spinner h-6 w-6 border-4 border-t-4 border-gray-200 rounded-full animate-spin"></div>
+      ) : null}
+    </div>
+  ))}
         </div>
       </div>
 

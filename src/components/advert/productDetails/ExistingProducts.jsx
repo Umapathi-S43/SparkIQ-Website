@@ -91,13 +91,11 @@ const ExistingProducts = ({ setIsNextSectionOpen, isCompleted, setIsCompleted, s
   };
 
   const handleProductClick = (product) => {
-    console.log("Setting product:", product);
     setSelectedProduct(product);
     handleNextStep(product);
   };
 
   const handleNextStep = (product) => {
-    console.log("Handling next step with product:", product);
     setIsOpen(false);
     setIsNextSectionOpen(true);
     setIsCompleted(true);

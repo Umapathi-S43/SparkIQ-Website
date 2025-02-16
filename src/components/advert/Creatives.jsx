@@ -566,7 +566,7 @@ export default function Creatives({
               <p className="text-[#374151] text-xs lg:text-sm">AI Generated Creatives</p>
             </span>
           </span>
-          {isNextSectionOpen ? <MdArrowDropUp size={24} /> : <MdArrowDropDown size={24} />}
+{/* {isNextSectionOpen ? <MdArrowDropUp size={24} /> : <MdArrowDropDown size={24} />} */}
         </div>
 
         {/* Loader */}

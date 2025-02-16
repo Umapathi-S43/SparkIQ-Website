@@ -519,7 +519,6 @@ const shortenDescriptionBySentence = (desc, maxWords, boundary = 50) => {
             // Optionally: postType: postType,
           };
      
-          console.log("Submitting productPayload:", productPayload);
      
           const response = await axios.post(`${baseUrl}/product`, productPayload, {
             headers: {
