@@ -445,8 +445,7 @@ const PolotnoEditor = () => {
       json = sanitizeJSON(json); // always sanitize before saving
       const template_original = template || {};
       const brandId = localStorage.getItem("brandId") || "";
-      const templateId =
-      template_original.templateId || currentTemplateId || "";  
+      let templateId = template_original.templateId || currentTemplateId || "";  
       
       const payload = {
         templateId, 
@@ -473,9 +472,10 @@ const PolotnoEditor = () => {
       });
 
       // If a new template was created
-      if (!isUpdate && apiResponse.data?.templateId) {
+      if (apiResponse.data?.templateId) {
         setCurrentTemplateId(apiResponse.data.templateId);
-      }
+        console.log("Updated Current Template ID:", apiResponse.data.templateId);
+    }
 
       toast.success(isUpdate ? "Template updated successfully!" : "Template saved successfully!");
     } catch (error) {
