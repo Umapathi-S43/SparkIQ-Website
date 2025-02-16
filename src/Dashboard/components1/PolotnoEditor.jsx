@@ -223,14 +223,16 @@ const CustomToolbarActions = ({
     a.click();
     document.body.removeChild(a);
   };
-
+const [isSaving, setIsSaving] = useState(false);
   // 2) Close Editor
   const handleClose = () => {
     store.clear();
     navigate("/savedProductsPage");
   };
+  
 
   return (
+    
     <div style={{ display: "flex", gap: "1px", alignItems: "center" }}>
       {/* <DownloadButton store={store} />
       <Button minimal intent="primary" onClick={exportJSON}>
@@ -291,7 +293,7 @@ const PolotnoEditor = () => {
   const { state } = useLocation();
   const [reloadKey, setReloadKey] = useState(0);
   const [editorLoaded, setEditorLoaded] = useState(false);
-
+const[isSaving, setIsSaving] = useState(false);
   // THEME
   const [isDarkMode, setIsDarkMode] = useState(false);
   const toggleTheme = () => {
@@ -417,6 +419,7 @@ const PolotnoEditor = () => {
 
   // Final save logic
   const saveAsJSON = async (isUpdate = false) => { 
+    setIsSaving(true);
     try {
       // 1) Take an editor screenshot
       const dataURL = await store.toDataURL({
@@ -482,6 +485,8 @@ const PolotnoEditor = () => {
     } catch (error) {
       console.error("Error saving template:", error);
       toast.error("An error occurred while saving the template.");
+    }finally{
+      setIsSaving(false);
     }
   };
 
@@ -495,7 +500,25 @@ const PolotnoEditor = () => {
           <SidePanelWrap>
             <SidePanel store={store} sections={sections} />
           </SidePanelWrap>
-          <WorkspaceWrap>
+          <WorkspaceWrap style={{ position: "relative" }}>
+          {isSaving && (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgba(255, 255, 255, 0.2)", // Semi-transparent white overlay
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 10, // Ensures loader is above workspace
+      }}
+    >
+      <span className="save-loader"></span> {/* 🔹 Loader appears over workspace */}
+    </div>
+  )}
             <Toolbar
               store={store}
               components={{
@@ -506,6 +529,7 @@ const PolotnoEditor = () => {
                     isDarkMode={isDarkMode}
                     toggleTheme={toggleTheme}
                     saveAsJSON={saveAsJSON}
+                    isSaving={isSaving} // Pass this to disable Save button
                   />
                 ),
               }}
