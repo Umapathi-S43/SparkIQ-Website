@@ -16,7 +16,7 @@ export default function Loader() {
       setCurrentStep((prevStep) =>
         prevStep < steps.length ? prevStep + 1 : prevStep
       );
-    }, 11000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, []);
