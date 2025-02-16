@@ -63,7 +63,7 @@ export default function Creatives({
     try {
       setLoading(true);
       setRenderingComplete(false); // Reset rendering state
-  
+
       // STEP 1: Fetch brand details
       setLoadingSteps((prev) => ({ ...prev, brandDetails: true }));
       const brandData = await fetchBrandDetails();
@@ -118,7 +118,7 @@ export default function Creatives({
       toast.error("Something went wrong while generating creatives.");
     } finally {
       setLoading(false);
-      setRenderingComplete(true); 
+      setRenderingComplete(true);
     }
   };
 
@@ -268,7 +268,7 @@ export default function Creatives({
       );
       const renderJob = await renderRequest.json();
       if (renderJob.status !== "done" || !renderJob.output) {
-        toast.error("Error generating image via Polotno Cloud!");
+        toast.error("Error generating image!");
         return null;
       }
 
@@ -298,7 +298,6 @@ export default function Creatives({
         ...creationResponse.data, // e.g. templateId, brandId, isFavourite, etc.
       };
     } catch (error) {
-      console.error("Polotno Cloud -> S3 -> Create flow error:", error);
       toast.error("Oops! Something went wrong. Try again later.");
       return null;
     }
@@ -533,8 +532,8 @@ export default function Creatives({
     }
   }
 
- 
-  
+
+
   // --------------------------------------------
   // Rendering
   // --------------------------------------------
@@ -688,56 +687,56 @@ export default function Creatives({
 
                         {/* Download Button */}
                         <div>
-      {/* Hidden Polotno workspace for offscreen rendering (NOT inside the button) */}
-      {currentStore && (
-        <div
-          ref={workspaceRef}
-          style={{
-            position: "absolute",
-            top: "-9999px",
-            left: "-9999px",
-            width: 0,
-            height: 0,
-            overflow: "hidden",
-          }}
-        >
-           <Workspace store={currentStore} pageId={currentStore.pages[0]?.id} />
-        </div>
-      )}
+                          {/* Hidden Polotno workspace for offscreen rendering (NOT inside the button) */}
+                          {currentStore && (
+                            <div
+                              ref={workspaceRef}
+                              style={{
+                                position: "absolute",
+                                top: "-9999px",
+                                left: "-9999px",
+                                width: 0,
+                                height: 0,
+                                overflow: "hidden",
+                              }}
+                            >
+                              <Workspace store={currentStore} pageId={currentStore.pages[0]?.id} />
+                            </div>
+                          )}
 
-      {/* Download Button */}
-      <button
-        className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
-        onClick={() => handleDownload(creative)}
-      >
-        <div className="button-container">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="1.5"
-            stroke="#A8A8A8"
-            width="20"
-            height="20"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5"
-            />
-            <rect x="11.25" y="3" width="1.5" height="11.5" fill="#A8A8A8" />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M16.5 12 12 16.5 7.5 12"
-              fill="none"
-              stroke="#A8A8A8"
-            />
-          </svg>
-          <span className="text-xs">Download</span>
-        </div>
-      </button>
-    </div>                      </div>
+                          {/* Download Button */}
+                          <button
+                            className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
+                            onClick={() => handleDownload(creative)}
+                          >
+                            <div className="button-container">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="1.5"
+                                stroke="#A8A8A8"
+                                width="20"
+                                height="20"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5"
+                                />
+                                <rect x="11.25" y="3" width="1.5" height="11.5" fill="#A8A8A8" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M16.5 12 12 16.5 7.5 12"
+                                  fill="none"
+                                  stroke="#A8A8A8"
+                                />
+                              </svg>
+                              <span className="text-xs">Download</span>
+                            </div>
+                          </button>
+                        </div>                      </div>
                     </div>
                   ))}
                 </div>
@@ -746,7 +745,7 @@ export default function Creatives({
           </div>
         )}
         {/* Hidden Polotno workspace for offscreen rendering */}
-       
+
       </section>
     </div>
   );
