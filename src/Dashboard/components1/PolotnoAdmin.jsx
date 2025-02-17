@@ -212,14 +212,20 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onDelete, template }) => {
           borderRadius: "8px",
           maxWidth: "400px",
           width: "90%",
+
         }}
       >
         {template && template.url && (
-          <img
-            src={template.url}
-            alt="Template Preview"
-            style={{ width: "100%", height: "auto", marginBottom: "10px" }}
-          />
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: "10px" }}>
+            <img
+              src={template.url}
+              alt="Template Preview"
+              style={{
+                width: "40%",
+                height: "40%",
+              }}
+            />
+          </div>
         )}
         <p style={{ marginBottom: "20px", fontSize: "16px" }}>Do you want to delete this template?</p>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -725,12 +731,15 @@ const CustomSection = {
 // TEMPLATE TYPE MODAL (for Save/Update)
 // ----------------------------------------------
 const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
-  // For update, existingTag is assumed to be a string; here we show only one dropdown
   const [selectedType, setSelectedType] = useState(existingTag || "");
+  const [customType, setCustomType] = useState("");
+  const [activeStatus, setActiveStatus] = useState(true); // Default to true
 
   useEffect(() => {
     setSelectedType(existingTag || "");
-  }, [existingTag]);
+    setCustomType(""); // Reset custom input when modal reopens
+    setActiveStatus(true); // Reset active status when modal opens
+  }, [existingTag, isOpen]);
 
   if (!isOpen) return null;
 
@@ -758,11 +767,18 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
           textAlign: "center",
         }}
       >
-        <h3>Select Template Type</h3>
-        <p style={{ fontSize: "14px", color: "#555" }}>Choose the type for this template.</p>
+        <h3 className="text-bold"style={{fontWeight:"bold"}}>Select Template Type</h3>
+        <p style={{ fontSize: "14px", color: "#555",marginBottom:"6px" }}>Choose the type for this template.</p>
+
+        {/* Dropdown Selection */}
         <select
           value={selectedType}
-          onChange={(e) => setSelectedType(e.target.value)}
+          onChange={(e) => {
+            setSelectedType(e.target.value);
+            if (e.target.value !== "Other") {
+              setCustomType(""); // Reset custom input when another option is selected
+            }
+          }}
           style={{
             width: "100%",
             padding: "8px",
@@ -777,6 +793,74 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
           <option value="B2B Consultant">B2B Consultant</option>
           <option value="Other">Other</option>
         </select>
+
+        {/* Show input field if "Other" is selected */}
+        {selectedType === "Other" && (
+          <input
+            type="text"
+            placeholder="Enter custom type"
+            value={customType}
+            onChange={(e) => setCustomType(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginBottom: "10px",
+              border: "1px solid #ccc",
+            }}
+          />
+        )}
+
+        {/* Active Template Toggle */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: "15px",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            background: "#f8f8f8",
+          }}
+        >
+          <span style={{ fontSize: "14px", color: "#555", flex: 1, display:"flex", alignItems:"start" }}>Active Template</span>
+
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={activeStatus}
+              onChange={() => setActiveStatus(!activeStatus)}
+              style={{ display: "none" }}
+            />
+            <span
+              style={{
+                display: "inline-block",
+                width: "40px",
+                height: "20px",
+                backgroundColor: activeStatus ? "#4CAF50" : "#ccc",
+                borderRadius: "20px",
+                position: "relative",
+                cursor: "pointer",
+                transition: "0.3s",
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  left: activeStatus ? "20px" : "2px",
+                  top: "2px",
+                  width: "16px",
+                  height: "16px",
+                  background: "white",
+                  borderRadius: "50%",
+                  transition: "0.3s",
+                }}
+              ></span>
+            </span>
+          </label>
+        </div>
+
+
+        {/* Buttons */}
         <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
           <button
             onClick={onClose}
@@ -785,9 +869,16 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(selectedType)}
-            style={{ background: "#4CAF50", color: "white", border: "none", padding: "8px 16px", borderRadius: "4px", cursor: "pointer" }}
-            disabled={!selectedType}
+            onClick={() => onConfirm({ templateType: selectedType === "Other" ? customType : selectedType, activeStatus })}
+            style={{
+              background: "#4CAF50",
+              color: "white",
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+            disabled={!selectedType || (selectedType === "Other" && !customType)}
           >
             OK
           </button>
@@ -797,6 +888,7 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
     document.body
   );
 };
+
 
 // ----------------------------------------------
 // 7) POLOTNOADMIN MAIN COMPONENT
@@ -829,7 +921,7 @@ const PolotnoAdmin = () => {
   };
 
   // SAVE AS JSON using the selected type as tag
-  const saveAsJSON = async (isUpdate = false, selectedType) => {
+  const saveAsJSON = async (isUpdate = false, selectedType, activeStatus) => {
     setIsSaving(true);
     try {
       const dataURL = await store.toDataURL({ pixelRatio: 1, mimeType: "image/png" });
@@ -896,8 +988,10 @@ const PolotnoAdmin = () => {
         videoDuration: json.videoDuration || "00:00",
         voiceoverEnabled: json.voiceoverEnabled || false,
         templateJson: JSON.stringify(json),
-        tag: selectedType, // Tag is a string (e.g., "B2C")
+        tag: selectedType.templateType, // Tag is a string (e.g., "B2C")
+        activeStatus: selectedType.activeStatus,
       };
+      console.log("Payload:", payload);
 
       // 3) POST to API
       const apiResponse = await axios.post(`${baseUrl}/v2/template`, payload, {
@@ -919,10 +1013,10 @@ const PolotnoAdmin = () => {
   };
 
   // When modal confirms, call saveAsJSON with proper flag
-  const handleConfirmModal = (selectedType) => {
+  const handleConfirmModal = (selectedType, activeStatus) => {
     setModalOpen(false);
     const isUpdate = actionType === "update";
-    saveAsJSON(isUpdate, selectedType);
+    saveAsJSON(isUpdate, selectedType, activeStatus);
   };
 
   // LOAD FROM JSON
