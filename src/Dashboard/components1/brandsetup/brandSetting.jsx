@@ -1,9 +1,10 @@
-// brandSetting.jsx
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
+
+// For cropping
+import Cropper from "react-easy-crop";
 
 import {
   FaTrash,
@@ -14,6 +15,7 @@ import {
   FaItalic,
   FaUnderline,
   FaPen,
+  FaSyncAlt, // rotation icon
 } from "react-icons/fa";
 import { PiFileArrowUpDuotone } from "react-icons/pi";
 import { MdDone, MdClose } from "react-icons/md";
@@ -26,9 +28,9 @@ import "./brandSetting.css"; // Make sure this includes the spinner/overlay CSS
 import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
 
-/** 
- * Upload image to server => returns uploaded-image URL if successful, else null
- */
+/* ----------------------------------------------------
+   1) Utility to upload images (returns a final URL)
+---------------------------------------------------- */
 async function uploadImage(file, setIsUploading) {
   if (!file) return null;
   const uploadData = new FormData();
@@ -56,16 +58,96 @@ async function uploadImage(file, setIsUploading) {
   }
 }
 
-/** 
- * Extract brand colors from a single selected logo (API returns array of {type, colorCode}).
- */
+/* ----------------------------------------------------
+   2) Utility to create a cropped image blob
+      (React Easy Crop approach)
+---------------------------------------------------- */
+async function getCroppedImg(imageSrc, croppedAreaPixels, rotation = 0) {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // Calculate bounding box of the rotated image
+  const { width, height } = getRadianBoundBox(
+    image.width,
+    image.height,
+    rotation
+  );
+
+  canvas.width = width;
+  canvas.height = height;
+
+  // Move the origin to the center of the canvas
+  ctx.translate(width / 2, height / 2);
+  // Rotate around that point
+  ctx.rotate((rotation * Math.PI) / 180);
+  // Move the image so it’s centered on that point
+  ctx.drawImage(image, -image.width / 2, -image.height / 2);
+
+  // Now we crop from the rotated image
+  const data = ctx.getImageData(0, 0, width, height);
+  // Offscreen canvas for the actual final crop
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = croppedAreaPixels.width;
+  finalCanvas.height = croppedAreaPixels.height;
+  const finalCtx = finalCanvas.getContext("2d");
+
+  // Put the rotated image onto the final canvas
+  finalCtx.putImageData(
+    data,
+    -croppedAreaPixels.x,
+    -croppedAreaPixels.y
+  );
+
+  return new Promise((resolve, reject) => {
+    finalCanvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Canvas is empty"));
+        return;
+      }
+      resolve(blob);
+    }, "image/png");
+  });
+}
+
+// Create an HTMLImageElement
+function createImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.setAttribute("crossOrigin", "anonymous");
+    img.onload = () => resolve(img);
+    img.onerror = (err) => reject(err);
+    img.src = url;
+  });
+}
+
+// Utility for bounding box of rotated rectangle
+function getRadianBoundBox(width, height, rotation) {
+  const rad = (Math.abs(rotation) * Math.PI) / 180;
+  return {
+    width:
+      Math.abs(Math.cos(rad) * width) + Math.abs(Math.sin(rad) * height),
+    height:
+      Math.abs(Math.sin(rad) * width) + Math.abs(Math.cos(rad) * height),
+  };
+}
+
+/* ----------------------------------------------------
+   3) Extract brand colors from a single selected logo
+---------------------------------------------------- */
 async function fetchBrandColors(logoURL) {
   if (!logoURL) return null;
   try {
-    const endpoint = `${baseUrl}/v2/api/brands/extract/colors?logoURL=${encodeURIComponent(logoURL)}`;
-    const res = await axios.post(endpoint, {}, {
-      headers: { Authorization: `Bearer ${jwtToken}` },
-    });
+    const endpoint = `${baseUrl}/v2/api/brands/extract/colors?logoURL=${encodeURIComponent(
+      logoURL
+    )}`;
+    const res = await axios.post(
+      endpoint,
+      {},
+      {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      }
+    );
     return res.data?.data || [];
   } catch (err) {
     toast.error("Could not extract brand colors from logo");
@@ -73,9 +155,9 @@ async function fetchBrandColors(logoURL) {
   }
 }
 
-/**
- * Extract a color palette array from combined primary/secondary color codes
- */
+/* ----------------------------------------------------
+   4) Extract color palettes from combined colors
+---------------------------------------------------- */
 async function fetchColorPalette(allColors) {
   if (!allColors?.length) return [];
   const joined = encodeURIComponent(allColors.join(","));
@@ -92,6 +174,9 @@ async function fetchColorPalette(allColors) {
   }
 }
 
+/* ----------------------------------------------------
+   MAIN COMPONENT: BrandSetting
+---------------------------------------------------- */
 export default function BrandSetting() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -116,6 +201,8 @@ export default function BrandSetting() {
     niche: "",
     targetAudience: "",
     audienceObjective: "",
+    // We'll store an array of "logo objects"
+    // each has { id, logoName, logoOriginalUrl, logoUrl, brandId, cropX, cropY, cropWidth, cropHeight, rotation }
     logos: [],
     selectedLogos: [],
     colors: {
@@ -201,11 +288,14 @@ export default function BrandSetting() {
       if (!jwtToken) throw new Error("No JWT token found. Please log in.");
 
       if (brandData.id) {
+        
+        console.log("Creating brand...", finalJson);
         await axios.post(`${baseUrl}/v2/api/brands?update=true`, finalJson, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
         toast.success("Brand updated successfully");
       } else {
+        console.log("Creating brand...", finalJson);
         await axios.post(`${baseUrl}/v2/api/brands`, finalJson, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
@@ -285,9 +375,9 @@ export default function BrandSetting() {
   );
 }
 
-/** 
- * Maps the API brand response => local brandData shape
- */
+/* ----------------------------------------------------
+   Helper: Map brand response => local brandData
+---------------------------------------------------- */
 function mapFoundBrandToState(foundBrand, setBrandData) {
   if (!foundBrand) return;
   setBrandData((prev) => ({
@@ -302,7 +392,18 @@ function mapFoundBrandToState(foundBrand, setBrandData) {
     niche: foundBrand.niche || "",
     targetAudience: foundBrand.targetAudience || "",
     audienceObjective: foundBrand.audienceObjective || "",
-    logos: (foundBrand.logos || []).map((lg) => lg.logoUrl),
+    logos: (foundBrand.logos || []).map((lg) => ({
+      id: lg.id || "",
+      logoName: lg.logoName || "Custom Logo",
+      logoUrl: lg.logoUrl ||lg.logos.logoUrl|| "",
+      logoOriginalUrl: lg.logoOriginalUrl || "",
+      brandId: foundBrand.id || "",
+      cropX: lg.cropX || 0,
+      cropY: lg.cropY || 0,
+      cropWidth: lg.cropWidth || 0,
+      cropHeight: lg.cropHeight || 0,
+     // rotation: lg.rotation || 0,
+    })),
     selectedLogos: [],
     colors: parseColorsToState(foundBrand.colors || []),
     colorPalettes: (foundBrand.colorPalettes || []).map((cp) => cp.palette),
@@ -349,9 +450,9 @@ function parseFontsToState(apiFonts) {
   });
 }
 
-/** 
- * Builds the final JSON the server expects
- */
+/* ----------------------------------------------------
+   Build final JSON payload
+---------------------------------------------------- */
 function buildFinalBrandPayload(brandData) {
   const {
     id,
@@ -371,12 +472,19 @@ function buildFinalBrandPayload(brandData) {
     audienceObjective,
   } = brandData;
 
-  const logoObjects = logos.map((url) => ({
-    id: "",
-    logoName: "Custom Logo",
-    logoUrl: url,
+  const logoObjects = logos.map((lg) => ({
+    id: lg.id || "",
+    logoName: lg.logoName || "Custom Logo",
+    logoUrl: lg.logoUrl || "",
+    logoOriginalUrl: lg.logoOriginalUrl || "",
     brandId: id || "",
+    cropX: lg.cropX || 0,
+    cropY: lg.cropY || 0,
+    cropWidth: lg.cropWidth || 0,
+    cropHeight: lg.cropHeight || 0,
+    // rotation: lg.rotation || 0,
   }));
+  
 
   const colorObjs = [];
   if (colors?.primary?.length) {
@@ -415,8 +523,8 @@ function buildFinalBrandPayload(brandData) {
 
   const fontObjs = fonts.map((f) => ({
     id: f.id || "",
-    name: f.role || "Title",
-    type: f.isCustom ? "CUSTOM" : "SYSTEM",
+    name: f.fontFamily || "Arial",
+    type:f.role || "Title",
     fontStyle: f.italic ? "italic" : "normal",
     fontStyleURL: f.customFile ? "https://myserver.com/" + f.customFile.name : "",
     fontWeight: f.bold ? "bold" : "normal",
@@ -443,7 +551,9 @@ function buildFinalBrandPayload(brandData) {
   };
 }
 
-/** A progress bar item for steps 1,2,3 */
+/* ----------------------------------------------------
+   A progress bar item for steps 1,2,3
+---------------------------------------------------- */
 function StepIndicator({ step, activeStep }) {
   const isDone = activeStep > step;
   return (
@@ -475,7 +585,9 @@ function StepIndicator({ step, activeStep }) {
   );
 }
 
-/** STEP 1: BrandDetails */
+/* ----------------------------------------------------
+   STEP 1: BrandDetails
+---------------------------------------------------- */
 function BrandDetails({ brandData, setBrandData, onNext }) {
   const handleNextClick = () => {
     if (!brandData.brandName.trim()) {
@@ -512,7 +624,10 @@ function BrandDetails({ brandData, setBrandData, onNext }) {
   );
 }
 
-/** The brand details panel: brand name, multi-logo, brand colors, brand fonts */
+/* ----------------------------------------------------
+   The brand details panel:
+   brand name, multi-logo, brand colors, brand fonts
+---------------------------------------------------- */
 function BrandDetailsInner({ brandData, setBrandData }) {
   return (
     <>
@@ -553,7 +668,9 @@ function BrandDetailsInner({ brandData, setBrandData }) {
   );
 }
 
-/** STEP 2: BrandOverview */
+/* ----------------------------------------------------
+   STEP 2: BrandOverview
+---------------------------------------------------- */
 function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
   const handlePrevClick = () => onPrev && onPrev();
   const handleNextClick = () => {
@@ -718,7 +835,9 @@ function BrandOverview({ brandData, setBrandData, onPrev, onNext }) {
   );
 }
 
-/** STEP 3: BrandAssets */
+/* ----------------------------------------------------
+   STEP 3: BrandAssets
+---------------------------------------------------- */
 function BrandAssets({ brandData, setBrandData, onPrev, onFinish }) {
   const handlePrevClick = () => onPrev && onPrev();
   const handleFinishClick = () => onFinish && onFinish();
@@ -747,7 +866,9 @@ function BrandAssets({ brandData, setBrandData, onPrev, onFinish }) {
   );
 }
 
-/** BrandElements (icons, images, etc.) */
+/* ----------------------------------------------------
+   BrandElements (icons, images, etc.)
+---------------------------------------------------- */
 function BrandElements({ brandData, setBrandData }) {
   const [showIconUpload, setShowIconUpload] = useState(false);
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -756,7 +877,6 @@ function BrandElements({ brandData, setBrandData }) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // If you specifically disallow .svg:
     if (file.name.toLowerCase().endsWith(".svg")) {
       toast.error("Please upload a PNG or JPEG/JPG file.");
       return;
@@ -858,10 +978,12 @@ function BrandElements({ brandData, setBrandData }) {
   );
 }
 
-/**
- * MultiLogoUpload for brand logos (Step 1).
- * Allows uploading multiple logos, toggling selection(s), etc.
- */
+/* ----------------------------------------------------
+   MultiLogoUpload (Step 1)
+   - New: Re-crop on double-click
+   - Rotation from 0..360
+   - Zoom from 0.1..3
+---------------------------------------------------- */
 function MultiLogoUpload({ brandData, setBrandData }) {
   const [showUploadContainer, setShowUploadContainer] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -869,54 +991,74 @@ function MultiLogoUpload({ brandData, setBrandData }) {
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [imageToRemove, setImageToRemove] = useState(null);
 
+  // For cropping (new or re-crop)
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropIndex, setCropIndex] = useState(null); // which logo index we are editing
+  const [tempOriginalUrl, setTempOriginalUrl] = useState("");
+  const [tempFile, setTempFile] = useState(null);
+  const [isRecrop, setIsRecrop] = useState(false); // re-crop or new?
+
+  // ---------------------------
+  // 1) Upload => get originalUrl => open Crop Modal
+  // ---------------------------
   const handleMultipleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const MAX_WIDTH = 500;
-    const MAX_HEIGHT = 500;
-
     setUploadFileName(file.name);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = async () => {
-        if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
-          toast.error(`Uploaded logo exceeds ${MAX_WIDTH}x${MAX_HEIGHT} px. Please upload smaller.`);
-          return;
-        }
-        // If OK => upload
-        const url = await uploadImage(file, setIsUploading);
-        if (url) {
-          setBrandData((prev) => ({
-            ...prev,
-            logos: [...prev.logos, url],
-            // If first logo => auto select
-            selectedLogos: prev.logos.length === 0 ? [url] : prev.selectedLogos,
-          }));
-          setShowUploadContainer(false);
-        }
-      };
-    };
+    // Immediately upload the original file to get logoOriginalUrl
+    const originalUrl = await uploadImage(file, setIsUploading);
+    if (!originalUrl) {
+      return; // Upload failed
+    }
+
+    // Open Crop Modal for a "new" logo
+    setTempFile(file);
+    setTempOriginalUrl(originalUrl);
+    setIsRecrop(false);
+    setCropIndex(null);
+    setShowCropModal(true);
+    setShowUploadContainer(false);
   };
 
-  const handleToggleSelectLogo = (logoUrl) => {
+  // ---------------------------
+  // 2) Toggle select
+  // ---------------------------
+  const handleToggleSelectLogo = (logoObj) => {
     setBrandData((prev) => {
       let newSelected = [];
-      if (prev.selectedLogos.includes(logoUrl)) {
+      const found = prev.selectedLogos.find((l) => l.logoUrl === logoObj.logoUrl);
+      if (found) {
         // unselect
-        newSelected = prev.selectedLogos.filter((l) => l !== logoUrl);
+        newSelected = prev.selectedLogos.filter((l) => l.logoUrl !== logoObj.logoUrl);
       } else {
         // add
-        newSelected = [...prev.selectedLogos, logoUrl];
+        newSelected = [...prev.selectedLogos, logoObj];
       }
       return { ...prev, selectedLogos: newSelected };
     });
   };
 
+  // ---------------------------
+  // 3) Double-click => Re-crop
+  //    (use original URL)
+  // ---------------------------
+  const handleDoubleClickLogo = (logoObj, idx) => {
+    if (!logoObj.logoOriginalUrl) {
+      toast.error("No original URL available for re-cropping.");
+      return;
+    }
+    setTempFile(null); // We'll re-crop from the existing original
+    setTempOriginalUrl(logoObj.logoOriginalUrl);
+    setIsRecrop(true);
+    setCropIndex(idx);
+    setShowCropModal(true);
+  };
+
+  // ---------------------------
+  // 4) Remove
+  // ---------------------------
   const handleRemoveLogo = () => {
     if (!imageToRemove) return;
     setBrandData((prev) => {
@@ -924,7 +1066,9 @@ function MultiLogoUpload({ brandData, setBrandData }) {
       updated.splice(imageToRemove.index, 1);
 
       // Also remove from selectedLogos if present
-      const newSelected = prev.selectedLogos.filter((url) => url !== imageToRemove.url);
+      const newSelected = prev.selectedLogos.filter(
+        (obj) => obj.logoUrl !== imageToRemove.logoObj.logoUrl
+      );
 
       return { ...prev, logos: updated, selectedLogos: newSelected };
     });
@@ -949,17 +1093,24 @@ function MultiLogoUpload({ brandData, setBrandData }) {
 
         {brandData.logos.length > 0 ? (
           <div className="flex flex-wrap gap-4 items-center mb-4">
-            {brandData.logos.map((logoUrl, idx) => {
-              const isSelected = brandData.selectedLogos.includes(logoUrl);
+            {brandData.logos.map((logoObj, idx) => {
+              const isSelected = brandData.selectedLogos.some(
+                (l) => l.logoUrl === logoObj.logoUrl
+              );
               return (
                 <div
                   key={idx}
                   className={`relative w-28 h-28 rounded-md bg-gray-50 border hover:shadow-md p-2 flex flex-col items-center justify-center cursor-pointer ${
                     isSelected ? "border-blue-500" : "border-gray-200"
                   }`}
-                  onClick={() => handleToggleSelectLogo(logoUrl)}
+                  onClick={() => handleToggleSelectLogo(logoObj)}
+                  onDoubleClick={() => handleDoubleClickLogo(logoObj, idx)}
                 >
-                  <img src={logoUrl} alt={`Brand Logo ${idx + 1}`} className="w-20 h-20 object-contain" />
+                  <img
+                    src={logoObj.logoUrl || logoObj.logoOriginalUrl}
+                    alt={`Brand Logo ${idx + 1}`}
+                    className="w-20 h-20 object-contain"
+                  />
                   {isSelected && (
                     <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow">
                       <FaCheck className="text-white text-xs" />
@@ -969,7 +1120,7 @@ function MultiLogoUpload({ brandData, setBrandData }) {
                     className="absolute top-1 left-1 bg-red-700 bg-opacity-40 text-white text-xs px-1 py-0.5 hover:bg-opacity-70"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setImageToRemove({ url: logoUrl, index: idx });
+                      setImageToRemove({ logoObj, index: idx });
                       setShowRemoveModal(true);
                     }}
                   >
@@ -1001,7 +1152,10 @@ function MultiLogoUpload({ brandData, setBrandData }) {
               <p className="mb-2 text-sm">Do you want to remove this logo?</p>
               <div className="flex items-center justify-center mb-4">
                 <img
-                  src={imageToRemove.url}
+                  src={
+                    imageToRemove.logoObj.logoUrl ||
+                    imageToRemove.logoObj.logoOriginalUrl
+                  }
                   alt="Logo to delete"
                   className="w-24 h-16 object-cover rounded-md border border-gray-200"
                 />
@@ -1064,15 +1218,254 @@ function MultiLogoUpload({ brandData, setBrandData }) {
               </div>
             </div>
           )}
+
+        {/* Crop Modal (opens after original upload or re-crop) */}
+        {showCropModal && (
+          <LogoCropperModal
+            file={tempFile}
+            originalUrl={tempOriginalUrl}
+            isRecrop={isRecrop}
+            onClose={() => {
+              setShowCropModal(false);
+              setTempFile(null);
+              setTempOriginalUrl("");
+              setCropIndex(null);
+            }}
+            onSave={(croppedUrl, cropData) => {
+              if (isRecrop && cropIndex !== null) {
+                // Update existing item
+                setBrandData((prev) => {
+                  const newLogos = [...prev.logos];
+                  newLogos[cropIndex] = {
+                    ...newLogos[cropIndex],
+                    logoUrl: croppedUrl,
+                    cropX: cropData.x,
+                    cropY: cropData.y,
+                    cropWidth: cropData.width,
+                    cropHeight: cropData.height,
+                    rotation: cropData.rotation,
+                  };
+                  return { ...prev, logos: newLogos };
+                });
+              } else {
+                // Insert new item
+                setBrandData((prev) => ({
+                  ...prev,
+                  logos: [
+                    ...prev.logos,
+                    {
+                      id: "",
+                      logoName: "Custom Logo",
+                      logoUrl: croppedUrl, // final cropped
+                      logoOriginalUrl: tempOriginalUrl,
+                      brandId: prev.id || "",
+                      cropX: cropData.x,
+                      cropY: cropData.y,
+                      cropWidth: cropData.width,
+                      cropHeight: cropData.height,
+                      rotation: cropData.rotation,
+                    },
+                  ],
+                  // Auto-select if it's the first logo
+                  selectedLogos:
+                    prev.logos.length === 0
+                      ? [
+                          {
+                            logoUrl: croppedUrl,
+                          },
+                        ]
+                      : prev.selectedLogos,
+                }));
+              }
+              setShowCropModal(false);
+              setTempFile(null);
+              setTempOriginalUrl("");
+              setCropIndex(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-/** 
- * BRAND COLORS subcomponent: partial overlay loader for color extraction
- * We'll watch brandData.selectedLogos (if exactly 1, auto-extract).
- */
+/* ----------------------------------------------------
+   LOGO CROPPER MODAL
+   - Uses react-easy-crop for 1:1 ratio
+   - Rotation: 0..360
+   - Zoom: 0.1..3
+   - Padding & margin inside the cropper
+---------------------------------------------------- */
+function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const aspect = 1; // 1:1
+
+  const onCropComplete = useCallback((_, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleSaveCrop = async () => {
+    if (!croppedAreaPixels || !originalUrl) {
+      toast.error("No cropping data available!");
+      return;
+    }
+    try {
+      // 1) Get a blob from the cropped area
+      const croppedBlob = await getCroppedImg(originalUrl, croppedAreaPixels, rotation);
+      if (!croppedBlob) {
+        toast.error("Failed to crop image. Try again.");
+        return;
+      }
+      // 2) Upload cropped blob => final "logoUrl"
+      const croppedFile = new File(
+        [croppedBlob],
+        `cropped_${file?.name || "logo"}.png`,
+        {
+          type: "image/png",
+        }
+      );
+      const finalUrl = await uploadImage(croppedFile, () => {}); // no spinner here
+      if (!finalUrl) {
+        toast.error("Failed to upload cropped image.");
+        return;
+      }
+      // 3) Pass finalUrl + coordinates
+      onSave(finalUrl, {
+        x: Math.round(croppedAreaPixels.x),
+        y: Math.round(croppedAreaPixels.y),
+        width: Math.round(croppedAreaPixels.width),
+        height: Math.round(croppedAreaPixels.height),
+        rotation,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Cropping or upload failed.");
+    }
+  };
+
+  // Rotate 90 deg increments
+  const handleRotate90 = () => {
+    setRotation((prev) => (prev + 90) % 360);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-md p-4 max-w-lg w-full relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-bold mb-2">
+          {isRecrop ? "Re-Crop Logo" : "Crop Logo"} (1:1)
+        </h3>
+        <p className="text-sm text-gray-500 mb-3">
+          Adjust the image, rotate if needed, and zoom in/out.
+        </p>
+
+        {/* Crop container with some margin/padding */}
+        <div
+          className="relative bg-black"
+          style={{
+            width: "100%",
+            height: "350px",
+            padding: "10px",
+            marginBottom: "10px",
+          }}
+        >
+          <Cropper
+            image={originalUrl}
+            crop={crop}
+            zoom={zoom}
+            rotation={rotation}
+            aspect={aspect}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onRotationChange={setRotation}
+            onCropComplete={onCropComplete}
+            minZoom={0.1}
+            maxZoom={3}
+            restrictPosition={false}
+            style={{
+              containerStyle: {
+                width: "100%",
+                height: "100%",
+                position: "relative",
+              },
+              mediaStyle: {
+                // Optional custom styling for the image
+              },
+            }}
+          />
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-col gap-3">
+          {/* Zoom Slider */}
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Zoom:</label>
+            <input
+              type="range"
+              min={0.1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              style={{ width: "70%" }}
+            />
+            <span className="text-sm w-12 text-right">{zoom.toFixed(1)}x</span>
+          </div>
+
+          {/* Rotation Slider */}
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Rotation:</label>
+            <input
+              type="range"
+              min={0}
+              max={360}
+              step={1}
+              value={rotation}
+              onChange={(e) => setRotation(Number(e.target.value))}
+              style={{ width: "70%" }}
+            />
+            <span className="text-sm w-12 text-right">{rotation}°</span>
+          </div>
+
+          {/* Rotate 90 button */}
+          <button
+            className="flex items-center gap-2 self-end px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+            onClick={handleRotate90}
+          >
+            <FaSyncAlt />
+            Rotate 90°
+          </button>
+        </div>
+
+        {/* Footer buttons */}
+        <div className="flex justify-end items-center gap-4 mt-4">
+          <button
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 py-1 px-3 rounded"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded"
+            onClick={handleSaveCrop}
+          >
+            Save Logo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BrandColors({ brandData, setBrandData }) {
   const [loadingColors, setLoadingColors] = useState(false);
 
@@ -1571,7 +1964,9 @@ function PaletteSubColor({
   );
 }
 
-/** BRAND FONTS => referencing brandData.fonts */
+/* ----------------------------------------------------
+   BRAND FONTS => referencing brandData.fonts
+---------------------------------------------------- */
 function BrandFonts({ brandData, setBrandData }) {
   const handleAddNewFont = () => {
     const newFont = {
@@ -1618,7 +2013,9 @@ function BrandFonts({ brandData, setBrandData }) {
   );
 }
 
-/** Single row for a specific font style (role, size, style) */
+/* ----------------------------------------------------
+   Single row for a specific font style
+---------------------------------------------------- */
 function FontRowPen({ fontObj, setBrandData }) {
   const {
     id,
