@@ -1423,7 +1423,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
 
           {/* Rotation Slider */}
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Rotation:</label>
+            <label className="text-sm font-medium">Straighten:</label>
             <input
               type="range"
               min={0}
