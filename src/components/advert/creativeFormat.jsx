@@ -1136,9 +1136,9 @@ const formatGenders = (genders) => {
 
             {isGeneratingCohorts && (
               <div className="flex items-center justify-center my-4">
-                <div className="loader-overlay">
-                  <div className="loader"></div>
-                </div>
+                <div className="flex justify-center items-center mt-4">
+            <span className="load-loader"></span>
+          </div>
               </div>
             )}
 

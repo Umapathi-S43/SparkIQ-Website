@@ -1615,7 +1615,9 @@ function BrandColors({ brandData, setBrandData }) {
       {loadingColors && (
         <div className="absolute inset-0 z-10 bg-[rgba(255,255,255,0.4)] flex items-center justify-center rounded-2xl">
           {/* If you want the snippet style, you can do it here: */}
-          <div className="loader"></div>
+          <div className="flex justify-center items-center mt-4">
+            <span className="load-loader"></span>
+          </div>
         </div>
       )}
 

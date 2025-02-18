@@ -6,7 +6,7 @@ import { Toolbar } from "polotno/toolbar/toolbar";
 import { Workspace } from "polotno/canvas/workspace";
 import { ZoomButtons } from "polotno/toolbar/zoom-buttons";
 import { DownloadButton } from "polotno/toolbar/download-button";
-import { Button,Tooltip, Position } from "@blueprintjs/core";
+import { Button, Tooltip, Position } from "@blueprintjs/core";
 import { observer } from "mobx-react-lite";
 import { FaCloudUploadAlt, FaSave } from "react-icons/fa";
 import { MdOutlineLightMode } from "react-icons/md";
@@ -14,6 +14,7 @@ import { CiDark } from "react-icons/ci";
 import { SidePanel, SectionTab } from "polotno/side-panel";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { unstable_setTextOverflow } from 'polotno/config';
 // Constants
 
 import { baseUrl } from "../../components/utils/Constant";
@@ -223,16 +224,16 @@ const CustomToolbarActions = ({
     a.click();
     document.body.removeChild(a);
   };
-const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   // 2) Close Editor
   const handleClose = () => {
     store.clear();
     navigate("/savedProductsPage");
   };
-  
+
 
   return (
-    
+
     <div style={{ display: "flex", gap: "1px", alignItems: "center" }}>
       {/* <DownloadButton store={store} />
       <Button minimal intent="primary" onClick={exportJSON}>
@@ -293,7 +294,7 @@ const PolotnoEditor = () => {
   const { state } = useLocation();
   const [reloadKey, setReloadKey] = useState(0);
   const [editorLoaded, setEditorLoaded] = useState(false);
-const[isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   // THEME
   const [isDarkMode, setIsDarkMode] = useState(false);
   const toggleTheme = () => {
@@ -349,6 +350,8 @@ const[isSaving, setIsSaving] = useState(false);
     clearPolotnoCache();
   }, []);
 
+
+
   // On editorLoaded, load template
   useEffect(() => {
     if (editorLoaded) {
@@ -368,6 +371,11 @@ const[isSaving, setIsSaving] = useState(false);
           });
 
           store.clear();
+          // reduce font size to fit text in the defined width/height
+          // note, it will not increase font size back when there is more space
+          // default, change height of the text object when it overflow defined with/height
+          unstable_setTextOverflow('resize');
+          unstable_setTextOverflow('change-font-size');
           store.loadJSON(json);
         } catch (error) {
           console.error("Error parsing template JSON:", error);
@@ -418,7 +426,7 @@ const[isSaving, setIsSaving] = useState(false);
   };
 
   // Final save logic
-  const saveAsJSON = async (isUpdate = false) => { 
+  const saveAsJSON = async (isUpdate = false) => {
     setIsSaving(true);
     try {
       // 1) Take an editor screenshot
@@ -448,12 +456,14 @@ const[isSaving, setIsSaving] = useState(false);
       json = sanitizeJSON(json); // always sanitize before saving
       const template_original = template || {};
       const brandId = localStorage.getItem("brandId") || "";
-      let templateId = template_original.templateId || currentTemplateId || "";  
-      
+      let templateId = template_original.templateId || currentTemplateId || "";
+
       const payload = {
-        templateId, 
+        templateId,
         url: thumbnailURL,
         tag: template_original.tag || "",
+        productId: template_original.productId || "",
+        cohortId: template_original.cohortId || "",
         templateOrientation:
           template_original.templateOrientation ||
           (json.width > json.height ? "landscape" : "portrait") ||
@@ -479,13 +489,13 @@ const[isSaving, setIsSaving] = useState(false);
       if (apiResponse.data?.templateId) {
         setCurrentTemplateId(apiResponse.data.templateId);
         console.log("Updated Current Template ID:", apiResponse.data.templateId);
-    }
+      }
 
       toast.success(isUpdate ? "Template updated successfully!" : "Template saved successfully!");
     } catch (error) {
       console.error("Error saving template:", error);
       toast.error("An error occurred while saving the template.");
-    }finally{
+    } finally {
       setIsSaving(false);
     }
   };
@@ -496,29 +506,29 @@ const[isSaving, setIsSaving] = useState(false);
       className={isDarkMode ? "bp5-dark" : ""}
     >
       {editorLoaded ? (
-        <PolotnoContainer style={{ width: "100%", height: "100%" }}>
+        <PolotnoContainer autoResize style={{ width: "100%", height: "100%" }}>
           <SidePanelWrap>
             <SidePanel store={store} sections={sections} />
           </SidePanelWrap>
           <WorkspaceWrap style={{ position: "relative" }}>
-          {isSaving && (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(255, 255, 255, 0.2)", // Semi-transparent white overlay
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 10, // Ensures loader is above workspace
-      }}
-    >
-      <span className="save-loader"></span> {/* 🔹 Loader appears over workspace */}
-    </div>
-  )}
+            {isSaving && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "rgba(255, 255, 255, 0.2)", // Semi-transparent white overlay
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  zIndex: 10, // Ensures loader is above workspace
+                }}
+              >
+                <span className="save-loader"></span> {/* 🔹 Loader appears over workspace */}
+              </div>
+            )}
             <Toolbar
               store={store}
               components={{

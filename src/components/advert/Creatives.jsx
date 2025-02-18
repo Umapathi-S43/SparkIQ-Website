@@ -137,23 +137,23 @@ export default function Creatives({
       // Grab brand details
       const brandLogoURL = generatedData?.brandLogoURL || "";
       const productImageURL = generatedData?.productImageURL || "";
-      const websiteUrl =
-        brandFetched?.data?.data?.websiteUrl || "";
+      const websiteUrl = brandFetched?.data?.data?.websiteUrl || "";
 
       // Grab placeholders + templates
       const placeholderList =
-        generatedData.generateContentResponses.generateImageContentResponses ||
-        [];
+        generatedData.generateContentResponses.generateImageContentResponses || [];
       const templateList =
         generatedData.generateContentResponses.templateResponses || [];
 
       // Grab colorPalettes from brand data
-      const colorPalettes =
-        brandFetched?.data?.data?.colorPalettes || [];
+      const colorPalettes = brandFetched?.data?.data?.colorPalettes || [];
 
-      // This group's label
-      const cohortName =
-        generatedData.generateContentResponses?.cohortName || "General";
+      // This group's label and cohortId (from generate content response)
+      const cohortName = generatedData.generateContentResponses?.cohortName || "General";
+      const cohortIdFromResponse = generatedData.generateContentResponses?.cohortId || null;
+
+      // Get productId from payload (creativePayload)
+      const productId = payload.productId || null;
 
       // We'll accumulate an array of final rendered images for this single pass
       const creativeImages = [];
@@ -184,8 +184,12 @@ export default function Creatives({
         const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
         if (!updatedTemplateJson) continue;
 
-        // load into Polotno, generate & upload
-        const renderedCreative = await polotnoCloudRender(updatedTemplateJson);
+        // load into Polotno, generate & upload, passing cohortId and productId
+        const renderedCreative = await polotnoCloudRender(
+          updatedTemplateJson,
+          cohortIdFromResponse,
+          productId
+        );
         if (!renderedCreative) continue;
 
         // e.g.  { imageUrl: s3Url, templateId: ..., isFavourite, brandId... }
@@ -228,15 +232,15 @@ export default function Creatives({
   // --------------------------------------------
   // 3) Polotno -> Cloud Render -> S3 -> Create Template
   // --------------------------------------------
-  const polotnoCloudRender = async (templateJson) => {
+  const polotnoCloudRender = async (templateJson, cohortId, productId) => {
     // create Polotno store
     const { createStore } = await import("polotno/model/store");
     const store = createStore({ key: POLNOTO_API_KEY });
     await new Promise((r) => setTimeout(r, 100)); // short wait
     store.loadJSON(templateJson);
 
-    // do the cloud flow
-    const flowResult = await generateUploadAndCreateTemplate(store, templateJson);
+    // do the cloud flow, passing cohortId and productId
+    const flowResult = await generateUploadAndCreateTemplate(store, templateJson, cohortId, productId);
 
     // clear store
     store.clear();
@@ -244,7 +248,7 @@ export default function Creatives({
   };
 
   // => generate + upload + create
-  async function generateUploadAndCreateTemplate(store, storeJson) {
+  async function generateUploadAndCreateTemplate(store, storeJson, cohortId, productId) {
     try {
       const designJson = store.toJSON();
       // Polotno Cloud
@@ -289,8 +293,8 @@ export default function Creatives({
         return null;
       }
 
-      // create template on server
-      const creationResponse = await createTemplateOnServer(s3Url, storeJson);
+      // create template on server, passing cohortId and productId
+      const creationResponse = await createTemplateOnServer(s3Url, storeJson, cohortId, productId);
       if (!creationResponse) return null;
 
       // final object includes entire server response plus the image
@@ -323,7 +327,7 @@ export default function Creatives({
   }
 
   // create template on server
-  async function createTemplateOnServer(s3Url, storeJson) {
+  async function createTemplateOnServer(s3Url, storeJson, cohortId, productId) {
     const brandIdFromJson = FIXED_BRAND_ID || "";
     const payload = {
       url: s3Url,
@@ -332,7 +336,7 @@ export default function Creatives({
       templateSize: "1080x1080",
       brandId: brandIdFromJson,
       version: "",
-      tag: JSON.parse(localStorage.getItem("tag"))||"Other",
+      tag: JSON.parse(localStorage.getItem("tag")) || "Other",
       postType: "standard",
       customTemplate: false,
       mediaType: "image",
@@ -340,6 +344,8 @@ export default function Creatives({
       voiceoverEnabled: true,
       templateJson: JSON.stringify(storeJson),
       isFavourite: false,
+      productId: productId, // Added productId
+      cohortId: cohortId||"",   // Added cohortId
     };
 
     try {
@@ -361,7 +367,7 @@ export default function Creatives({
     try {
       const parsedJson = JSON.parse(templateJson);
 
-      // placeholders
+      // Apply placeholders
       parsedJson.pages.forEach((page) => {
         page.children.forEach((element) => {
           if (element.custom?.variable) {
@@ -379,7 +385,7 @@ export default function Creatives({
         });
       });
 
-      // color palette
+      // Apply color palette if available
       if (paletteData && Array.isArray(paletteData.colors) && paletteData.colors.length >= 3) {
         applyColorPalette(parsedJson, paletteData);
       }
@@ -420,7 +426,6 @@ export default function Creatives({
   // --------------------------------------------
   // 5) Button actions: Bookmark, Edit, Download
   // --------------------------------------------
-  // We'll store isFavourite in the creative object itself
   const handleBookmark = async (cohortIndex, creativeIndex) => {
     try {
       const updated = [...finalResults];
@@ -430,13 +435,15 @@ export default function Creatives({
         return;
       }
 
-      // local update
+      // Local update
       selected.isFavourite = true;
 
-      // server update
-      const response = await axios.post(`${baseUrl}/v2/user/templates`, { ...selected, isFavourite: true }, {
-        headers: { Authorization: `Bearer ${jwtToken}` },
-      });
+      // Server update
+      const response = await axios.post(
+        `${baseUrl}/v2/user/templates`,
+        { ...selected, isFavourite: true },
+        { headers: { Authorization: `Bearer ${jwtToken}` } }
+      );
 
       if (response.data?.data?.isFavourite === true) {
         toast.success("Template bookmarked successfully!");
@@ -448,9 +455,7 @@ export default function Creatives({
       toast.error("Could not bookmark template.");
     }
   };
-  // -------------------------------------------------------
-  // Helpers
-  // -------------------------------------------------------
+
   const BookmarkBeforeIcon = () => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -476,7 +481,6 @@ export default function Creatives({
   );
 
   const handleEdit = (creative) => {
-    // Navigate to PolotnoEditor with full creative object
     navigate("/editor", { state: { templateData: creative } });
   };
 
@@ -502,13 +506,13 @@ export default function Creatives({
         throw new Error("Workspace is not mounted for export.");
       }
 
-      // 5️⃣ Generate image from the store (Ensure `await`)
+      // 5️⃣ Generate image from the store
       const dataURL = await tempStore.toDataURL({
         mimeType: "image/png",
-        pixelRatio: 2, // High quality
+        pixelRatio: 2,
       });
 
-      // 6️⃣ Convert dataURL to Blob (Corrected)
+      // 6️⃣ Convert dataURL to Blob
       const blob = await (await fetch(dataURL)).blob();
 
       // 7️⃣ Create a link and trigger download
@@ -525,7 +529,6 @@ export default function Creatives({
       // 8️⃣ Clear the temporary store after use
       tempStore.clear();
 
-      // ✅ Success message
       toast.success("Image downloaded successfully!");
     } catch (error) {
       console.error("Error generating and downloading image:", error);
@@ -533,18 +536,16 @@ export default function Creatives({
     }
   }
 
-
-
   // --------------------------------------------
   // Rendering
   // --------------------------------------------
-
   return (
     <div className="flex flex-col gap-4 mb-4 overflow-auto hide-scrollbar" style={{ maxHeight: "80vh" }}>
       <section
         ref={sectionRef}
-        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl lg:ml-8 ml-0 ${!isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
-          } flex flex-col gap-6 relative z-10 mb-4`}
+        className={`border border-white bg-[rgba(252,252,252,0.25)] rounded-[24px] max-w-6xl lg:ml-8 ml-0 ${
+          !isNextSectionOpen ? "p-2 lg:p-3" : "p-0"
+        } flex flex-col gap-6 relative z-10 mb-4`}
       >
         <svg width="0" height="0" style={{ position: "absolute" }}>
           <defs>
@@ -556,8 +557,9 @@ export default function Creatives({
         </svg>
         {/* Accordion Header */}
         <div
-          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${!isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
-            } relative cursor-pointer`}
+          className={`flex flex-wrap justify-between items-center bg-[rgba(252,252,252,0.40)] ${
+            !isNextSectionOpen ? "rounded-[20px] p-2" : "rounded-t-[20px] p-4"
+          } relative cursor-pointer`}
           onClick={toggleNextSectionAccordion}
         >
           <span className="flex items-center gap-4">
@@ -567,25 +569,22 @@ export default function Creatives({
               <p className="text-[#374151] text-xs lg:text-sm">AI Generated Creatives</p>
             </span>
           </span>
-{/* {isNextSectionOpen ? <MdArrowDropUp size={24} /> : <MdArrowDropDown size={24} />} */}
+          {/* {isNextSectionOpen ? <MdArrowDropUp size={24} /> : <MdArrowDropDown size={24} />} */}
         </div>
 
         {/* Loader */}
         {isNextSectionOpen && !renderingComplete && <Loader />}
 
-
         {/* Display final results if not loading */}
         {isNextSectionOpen && !loading && (
           <div className="p-4">
             <h4 className="text-[#082A66] font-bold text-lg lg:text-xl mb-3">Generated Creative Results</h4>
-            {/* If nothing yet */}
             {finalResults.length === 0 && (
               <div className="shadow-md p-2 rounded-lg border border-gray-200 text-gray-600">
                 No data yet.
               </div>
             )}
 
-            {/* Show grid of results */}
             {finalResults.map((group, groupIndex) => (
               <div key={groupIndex} className="mb-6">
                 <h5 className="text-md font-semibold text-blue-900 mb-2">Cohort: {group.cohortName}</h5>
@@ -650,22 +649,14 @@ export default function Creatives({
                                 strokeWidth="1.5"
                                 fill="none"
                               />
-                              <rect
-                                x="3"
-                                y="16"
-                                width="10"
-                                height="1.5"
-                                fill="#A8A8A8"
-                              />
+                              <rect x="3" y="16" width="10" height="1.5" fill="#A8A8A8" />
                             </svg>
                             <span className="-ml-1 text-xs">Edit</span>
                           </div>
                         </button>
 
                         {/* Preview Button */}
-                        <button
-                          className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear"
-                        >
+                        <button className="text-sm text-[#A8A8A8] rounded-lg py-1 px-2 button-clear">
                           <div className="button-container">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -688,7 +679,6 @@ export default function Creatives({
 
                         {/* Download Button */}
                         <div>
-                          {/* Hidden Polotno workspace for offscreen rendering (NOT inside the button) */}
                           {currentStore && (
                             <div
                               ref={workspaceRef}
@@ -705,7 +695,6 @@ export default function Creatives({
                             </div>
                           )}
 
-                          {/* Download Button */}
                           <button
                             className="text-sm text-[#A8A8A8] rounded-md py-1 px-2 button-clear flex items-center gap-1"
                             onClick={() => handleDownload(creative)}
@@ -737,7 +726,8 @@ export default function Creatives({
                               <span className="text-xs">Download</span>
                             </div>
                           </button>
-                        </div>                      </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -745,8 +735,6 @@ export default function Creatives({
             ))}
           </div>
         )}
-        {/* Hidden Polotno workspace for offscreen rendering */}
-
       </section>
     </div>
   );
