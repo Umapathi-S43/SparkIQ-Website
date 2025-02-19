@@ -1499,7 +1499,11 @@ function BrandColors({ brandData, setBrandData }) {
       const newSecondary = [];
       extracted.forEach((c) => {
         if (c.type?.toLowerCase() === "primary") {
-          const splitted = c.colorCode.split(",").map((col) => col.trim());
+          const defaultPrimaryColor = "#082A66";
+    
+          const colorString = c.colorCode && c.colorCode.trim() ? c.colorCode : defaultPrimaryColor;
+          const splitted = colorString.split(",").map((col) => col.trim());
+          
           newPrimary.push(...splitted);
         } else if (c.type?.toLowerCase() === "secondary") {
           const splitted = c.colorCode.split(",").map((col) => col.trim());
