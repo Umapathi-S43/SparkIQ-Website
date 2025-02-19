@@ -146,7 +146,7 @@ export default function Creatives({
         generatedData.generateContentResponses.templateResponses || [];
 
       // Grab colorPalettes from brand data
-      const colorPalettes = brandFetched?.data?.data?.colorPalettes || [];
+      const colorPalettes = brandFetched.data.colorPalettes || [];
 
       // This group's label and cohortId (from generate content response)
       const cohortName = generatedData.generateContentResponses?.cohortName || "General";
