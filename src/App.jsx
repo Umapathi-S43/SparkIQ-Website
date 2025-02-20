@@ -44,6 +44,7 @@ import PolotnoRenderExample from './components/advert/polotnoImage';
 import upgradePlansPage from './Dashboard/pages1/upgradePlanPage';
 import UpgradePlansPage from './Dashboard/pages1/upgradePlanPage';
 import ResetPassword from './components/Dashboard/ResetPassword';
+import Landing from './pages/Landing';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
       <div>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/land" element={<Landing />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/login" element={<LoginPage />} />
