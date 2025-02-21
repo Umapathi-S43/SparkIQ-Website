@@ -27,9 +27,9 @@ const HeroSection = () => {
             <div className="relative z-10 w-full flex flex-col items-center">
                 
                 {/* Headline */}
-                <h1 className="text-4xl md:text-6xl font-bold leading-tight text-[#082A66] py-8">
+                <h1 className="text-4xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-[#0086CD] via-[#00A7FF] to-[#006499] py-8 ">
                     <span>Get Started with AI-Driven <br /></span>
-                    <span className="text-white mt-2">Marketing in Just 10 secs</span>
+                    <span className="mt-2">Marketing in Just 10 secs</span>
                 </h1>
 
                 {/* Subheading */}

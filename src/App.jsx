@@ -45,6 +45,7 @@ import upgradePlansPage from './Dashboard/pages1/upgradePlanPage';
 import UpgradePlansPage from './Dashboard/pages1/upgradePlanPage';
 import ResetPassword from './components/Dashboard/ResetPassword';
 import Landing from './pages/Landing';
+import UserInfo from './Dashboard/Admin-Dashboard/UserInfo';
 
 function App() {
   return (
@@ -108,7 +109,7 @@ function App() {
             element={<ProtectedRoute element={<ProductDetailsPage />} />}
           />
           <Route
-            path="/admineditor"
+            path="/admin/editor"
             element={<ProtectedRoute element={<PolotnoAdmin />} />}
           />
           <Route
@@ -179,10 +180,9 @@ function App() {
             path="/dynamic_template"
             element={<ProtectedRoute element={< DynamicCanvaTemplate/>} />}
           />
+          <Route path="/admin/subscriptions" element={<UserInfo />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/editor" element={<PolotnoEditor />} />
-          <Route path='templates' element={<Templates/>} />
-          <Route path="/edit/:id" element={<PolotnoEditor />} />
 
         </Routes>
       </div>
