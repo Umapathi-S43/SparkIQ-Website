@@ -138,9 +138,10 @@ function getRadianBoundBox(width, height, rotation) {
 async function fetchBrandColors(logoURL) {
   if (!logoURL) return null;
   try {
-    const endpoint = `${baseUrl}/v2/api/brands/extract/colors?logoURL=${encodeURIComponent(
+    const url=encodeURIComponent(
       logoURL
-    )}`;
+    );
+    const endpoint = `${baseUrl}/v2/api/brands/extract/colors?logoURL=${url}`;
     const res = await axios.post(
       endpoint,
       {},
@@ -1485,7 +1486,7 @@ function BrandColors({ brandData, setBrandData }) {
   // Auto-extract whenever exactly 1 logo is selected
   useEffect(() => {
     if (brandData.selectedLogos.length === 1) {
-      extractColorsAndPalette(brandData.selectedLogos[0]);
+      extractColorsAndPalette(brandData.selectedLogos[0].logoUrl);
     }
   }, [brandData.selectedLogos]);
 

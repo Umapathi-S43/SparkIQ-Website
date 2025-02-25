@@ -5,6 +5,7 @@ import { PolotnoContainer, SidePanelWrap, WorkspaceWrap } from "polotno";
 import { Toolbar } from "polotno/toolbar/toolbar";
 import { Workspace } from "polotno/canvas/workspace";
 import { ZoomButtons } from "polotno/toolbar/zoom-buttons";
+import { DownloadButton } from "polotno/toolbar/download-button";
 import { Button, Tooltip, Position } from "@blueprintjs/core";
 import { observer } from "mobx-react-lite";
 import { FaCloudUploadAlt, FaSave } from "react-icons/fa";
@@ -13,9 +14,9 @@ import { CiDark } from "react-icons/ci";
 import { SidePanel, SectionTab } from "polotno/side-panel";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { unstable_setTextOverflow } from "polotno/config";
-
+import { unstable_setTextOverflow } from 'polotno/config';
 // Constants
+
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
 import {
@@ -27,17 +28,13 @@ import {
   LayersSection,
 } from "polotno/side-panel";
 
-// --------------------------
-// Create Polotno store
-// --------------------------
+// ✅ Create Polotno store
 const store = createStore({
   key: "H5HjfuZWdlg9X4gOUB27",
   showCredit: false, // Hide Polotno Studio credit
 });
 
-// --------------------------
-// Sanitize JSON function
-// --------------------------
+// ✅ Sanitize JSON function
 const sanitizeJSON = (json) => {
   if (!json || !json.pages) return { pages: [] };
   return {
@@ -51,64 +48,7 @@ const sanitizeJSON = (json) => {
   };
 };
 
-// --------------------------
-// Custom Image Filter Component
-// --------------------------
-const MyImageWithRemoveBg = observer(({ store, element }) => {
-  if (!element) return null;
-  const [isRemoving, setIsRemoving] = useState(false);
-
-  const handleRemoveBackground = async () => {
-    setIsRemoving(true);
-    try {
-      const req = await fetch(
-        "https://api.polotno.com/api/remove-image-background?KEY=H5HjfuZWdlg9X4gOUB27",
-        {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ url: element.src }),
-        }
-      );
-      if (req.status !== 200) {
-        throw new Error("Error while removing background");
-      }
-      const resData = await req.json();
-      const newImageUrl = resData.url; // expected to be a base64 data URL
-      // Update the element's source
-      element.src = newImageUrl;
-    } catch (error) {
-      console.error("Remove background failed:", error);
-      toast.error("Error while removing background");
-    } finally {
-      setIsRemoving(false);
-    }
-  };
-
-  return (
-    <div style={{ margin: "8px 0" }}>
-      <button
-        style={{
-          backgroundColor: "transparent",
-          color: "#000",
-          border: "none",
-          padding: "4px 8px",
-          cursor: "pointer",
-        }}
-        onClick={handleRemoveBackground}
-        disabled={isRemoving}
-      >
-        {isRemoving ? "Removing..." : "Remove Background"}
-      </button>
-    </div>
-  );
-});
-
-// --------------------------
-// Custom 'Upload' Section
-// --------------------------
+// ✅ Custom 'Upload' Section
 const UploadSectionWithAPI = {
   name: "upload-api",
 
@@ -138,14 +78,11 @@ const UploadSectionWithAPI = {
         return;
       }
       try {
-        const response = await axios.get(
-          `${baseUrl}/v2/api/brands/${brandId}/brandelements`,
-          {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
+        const response = await axios.get(`${baseUrl}/v2/api/brands/${brandId}/brandelements`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         setBrandElements(response.data?.data || []);
       } catch (error) {
         console.error("Error fetching brand elements:", error);
@@ -165,16 +102,12 @@ const UploadSectionWithAPI = {
         const uploadForm = new FormData();
         uploadForm.append("file", file);
         uploadForm.append("customerId", "123");
-        const uploadResponse = await axios.post(
-          `${baseUrl}/sparkiq/image/upload`,
-          uploadForm,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
+        const uploadResponse = await axios.post(`${baseUrl}/sparkiq/image/upload`, uploadForm, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
         const imageUrl = uploadResponse.data.data.url;
 
         // 2) Create brand element
@@ -229,11 +162,7 @@ const UploadSectionWithAPI = {
           style={{ display: "none" }}
           onChange={(e) => handleFileUpload(e.target.files[0])}
         />
-        {isUploading && (
-          <p style={{ marginTop: "10px", textAlign: "center" }}>
-            Uploading...
-          </p>
-        )}
+        {isUploading && <p style={{ marginTop: "10px", textAlign: "center" }}>Uploading...</p>}
         <div
           style={{
             display: "grid",
@@ -273,7 +202,7 @@ const UploadSectionWithAPI = {
 };
 
 // -----------------------------------------------------
-// THEME + SAVE LOGIC
+// THEME + SAVE LOGIC ADDED BELOW
 // -----------------------------------------------------
 const CustomToolbarActions = ({
   store,
@@ -302,8 +231,15 @@ const CustomToolbarActions = ({
     navigate("/savedProductsPage");
   };
 
+
   return (
+
     <div style={{ display: "flex", gap: "1px", alignItems: "center" }}>
+      {/* <DownloadButton store={store} />
+      <Button minimal intent="primary" onClick={exportJSON}>
+        Export JSON
+      </Button> */}
+
       {/* Dark/Light Mode Toggle */}
       <Tooltip
         content={isDarkMode ? "Light Mode" : "Dark Mode"}
@@ -378,9 +314,11 @@ const PolotnoEditor = () => {
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith("polotno-")) localStorage.removeItem(key);
     });
+
     Object.keys(sessionStorage).forEach((key) => {
       if (key.startsWith("polotno-")) sessionStorage.removeItem(key);
     });
+
     store.clear();
     setReloadKey((prev) => prev + 1);
     setTimeout(() => setEditorLoaded(true), 100);
@@ -389,19 +327,17 @@ const PolotnoEditor = () => {
   // Hard Refresh detection
   useEffect(() => {
     const isMac = navigator.platform.toUpperCase().includes("MAC");
+
     const handleKeyDown = (event) => {
       const isHardRefresh = isMac
-        ? event.metaKey &&
-          event.shiftKey &&
-          event.key.toLowerCase() === "r"
-        : event.ctrlKey &&
-          event.shiftKey &&
-          event.key.toLowerCase() === "r";
+        ? event.metaKey && event.shiftKey && event.key.toLowerCase() === "r"
+        : event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "r";
       if (isHardRefresh) {
         event.preventDefault();
         clearPolotnoCache();
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
@@ -414,6 +350,8 @@ const PolotnoEditor = () => {
     clearPolotnoCache();
   }, []);
 
+
+
   // On editorLoaded, load template
   useEffect(() => {
     if (editorLoaded) {
@@ -421,6 +359,7 @@ const PolotnoEditor = () => {
         try {
           let json = JSON.parse(templateJson);
           json = sanitizeJSON(json);
+
           // Force image reload
           json.pages.forEach((page) => {
             page.children.forEach((child) => {
@@ -430,10 +369,13 @@ const PolotnoEditor = () => {
               }
             });
           });
+
           store.clear();
-          // Reduce font size to fit text in defined width/height
-          unstable_setTextOverflow("resize");
-          unstable_setTextOverflow("change-font-size");
+          // reduce font size to fit text in the defined width/height
+          // note, it will not increase font size back when there is more space
+          // default, change height of the text object when it overflow defined with/height
+          unstable_setTextOverflow('resize');
+          unstable_setTextOverflow('change-font-size');
           store.loadJSON(json);
         } catch (error) {
           console.error("Error parsing template JSON:", error);
@@ -493,6 +435,7 @@ const PolotnoEditor = () => {
         mimeType: "image/png",
       });
       const compressedBlob = await compressImage(dataURL);
+
       // 2) Upload thumbnail
       const uploadData = new FormData();
       uploadData.append("file", compressedBlob, "compressed-thumbnail.png");
@@ -507,13 +450,13 @@ const PolotnoEditor = () => {
         }
       );
       const thumbnailURL = uploadResponse.data.data.url;
+
       // 3) Prepare JSON payload
       let json = store.toJSON();
       json = sanitizeJSON(json); // always sanitize before saving
       const template_original = template || {};
       const brandId = localStorage.getItem("brandId") || "";
-      let templateId =
-        template_original.templateId || currentTemplateId || "";
+      let templateId = template_original.templateId || currentTemplateId || "";
 
       const payload = {
         templateId,
@@ -538,13 +481,9 @@ const PolotnoEditor = () => {
       };
 
       // 4) POST template
-      const apiResponse = await axios.post(
-        `${baseUrl}/v2/user/templates`,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${jwtToken}` },
-        }
-      );
+      const apiResponse = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
 
       // If a new template was created
       if (apiResponse.data?.templateId) {
@@ -552,11 +491,7 @@ const PolotnoEditor = () => {
         console.log("Updated Current Template ID:", apiResponse.data.templateId);
       }
 
-      toast.success(
-        isUpdate
-          ? "Template updated successfully!"
-          : "Template saved successfully!"
-      );
+      toast.success(isUpdate ? "Template updated successfully!" : "Template saved successfully!");
     } catch (error) {
       console.error("Error saving template:", error);
       toast.error("An error occurred while saving the template.");
@@ -584,14 +519,14 @@ const PolotnoEditor = () => {
                   left: 0,
                   width: "100%",
                   height: "100%",
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  backgroundColor: "rgba(255, 255, 255, 0.2)", // Semi-transparent white overlay
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                  zIndex: 10,
+                  zIndex: 10, // Ensures loader is above workspace
                 }}
               >
-                <span className="save-loader"></span>
+                <span className="save-loader"></span> {/* 🔹 Loader appears over workspace */}
               </div>
             )}
             <Toolbar
@@ -604,16 +539,12 @@ const PolotnoEditor = () => {
                     isDarkMode={isDarkMode}
                     toggleTheme={toggleTheme}
                     saveAsJSON={saveAsJSON}
-                    isSaving={isSaving}
+                    isSaving={isSaving} // Pass this to disable Save button
                   />
                 ),
               }}
             />
-            {/* Here we pass our custom image filter component */}
-            <Workspace
-              store={store}
-              components={{ ImageFilters: MyImageWithRemoveBg }}
-            />
+            <Workspace store={store} />
             <ZoomButtons store={store} />
           </WorkspaceWrap>
         </PolotnoContainer>
