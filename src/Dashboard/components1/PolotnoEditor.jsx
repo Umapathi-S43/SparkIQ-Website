@@ -28,6 +28,8 @@ import {
   LayersSection,
 } from "polotno/side-panel";
 
+import { QrSection, getQR } from "./QrSection";
+
 // ✅ Create Polotno store
 const store = createStore({
   key: "H5HjfuZWdlg9X4gOUB27",
@@ -287,6 +289,7 @@ const sections = [
   BackgroundSection,
   SizeSection,
   LayersSection,
+  QrSection ,
 ];
 
 const PolotnoEditor = () => {

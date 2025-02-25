@@ -161,19 +161,31 @@ async function fetchBrandColors(logoURL) {
 ---------------------------------------------------- */
 async function fetchColorPalette(allColors) {
   if (!allColors?.length) return [];
-  const joined = encodeURIComponent(allColors.join(","));
-  try {
-    const endpoint = `${baseUrl}/v2/api/brands/extract/colorspalette?colors=${joined}`;
-    const res = await axios.post(endpoint, null, {
-      headers: { Authorization: `Bearer ${jwtToken}` },
-    });
-    const data = res.data?.data || [];
-    return data.map((p) => p.palette);
-  } catch (err) {
-    toast.error("Could not generate color palettes");
-    return [];
-  }
+
+  const triadicPalettes = allColors.map((inputColor) => {
+    const baseColor = inputColor.replace('#', '');
+    if (baseColor.length !== 6) {
+      // If it's an invalid hex, just return the original color alone
+      return inputColor; 
+    }
+
+    // 1) Parse the color
+    const r = parseInt(baseColor.substring(0, 2), 16);
+    const g = parseInt(baseColor.substring(2, 4), 16);
+    const b = parseInt(baseColor.substring(4, 6), 16);
+
+    // 2) Define triadic1 and triadic2
+    const triadic1 = '#' + ((b << 16) | (r << 8) | g).toString(16).padStart(6, '0');
+    const triadic2 = '#' + ((g << 16) | (b << 8) | r).toString(16).padStart(6, '0');
+
+    // 3) Return them as an array or a comma-separated string
+    return `${inputColor},${triadic1},${triadic2}`;
+  });
+
+  // triadicPalettes is now an array of strings: ["#112233,#332211,#221133", ...]
+  return triadicPalettes;
 }
+
 
 /* ----------------------------------------------------
    MAIN COMPONENT: BrandSetting
