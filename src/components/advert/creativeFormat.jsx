@@ -104,11 +104,11 @@ export default function CreativeFormat({
   isCompleted,
   setIsCompleted,
   setIsLoading,
-  setCreativePayload, // Receive function from parent
+  setCreativePayload,
 }) {
   const sectionRef = useRef(null);
 
-  // By default, assume "Advertisement (Ad)"  
+  // By default, assume "Advertisement (Ad)"
   const [selectedOption, setSelectedOption] = useState("Advertisement (Ad)");
 
   useEffect(() => {
@@ -118,25 +118,36 @@ export default function CreativeFormat({
     setSelectedOption(localStorage.getItem("lookingFor") || "Advertisement (Ad)");
   }, [isNextSectionOpen]);
 
-  
   // =================================================================
   // SOCIAL MEDIA POST UI
   // =================================================================
   function SocialMediaPostUI() {
-    // States for user inputs
+    // 1) Original states
     const [objective, setObjective] = useState("");
     const [selectedPlatforms, setSelectedPlatforms] = useState([]);
     const [selectedPlatformSlug, setSelectedPlatformSlug] = useState(null);
     const [selectedSize, setSelectedSize] = useState("");
     const [selectedSuggestions, setSelectedSuggestions] = useState([]);
     const [campaignType, setCampaignType] = useState("");
+    const [brandOptions, setBrandOptions] = useState([]);
+    const [selectedBrandId, setSelectedBrandId] = useState("");
+
+
+    // 2) Template Source
+    const [templateSource, setTemplateSource] = useState("sparkIQ"); // "sparkIQ" or "brandTemplates"
+
+    // 3) Brand Templates
+    const [brandTemplates, setBrandTemplates] = useState([]);
+    const [selectedTemplateIds, setSelectedTemplateIds] = useState([]);
+    const [isLoadingBrandTemplates, setIsLoadingBrandTemplates] = useState(false);
+
     // On "Generate Creatives" specifically for Social
-    const onGenerate = () => {
+    const onGenerate = async () => {
       // Validate
-      if (!objective.trim()) {
-        toast.error("Please enter an Objective.");
-        return;
-      }
+      // if (!objective.trim()) {
+      //   toast.error("Please enter an Objective.");
+      //   return;
+      // }
       if (selectedPlatforms.length === 0) {
         toast.error("Please select a Platform.");
         return;
@@ -149,24 +160,40 @@ export default function CreativeFormat({
       const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
       const productId = JSON.parse(localStorage.getItem("productID")) || "";
 
-      // Build final payload
-      const payload = {
-        brandId,
-        productId,
-        postType: "SocialMediaPost",
-        objective,
-        platform: selectedPlatforms[0]?.toLowerCase() || "",
-        imageSize: selectedSize.replace(/\(|\)/g, "").replace("*", "x"),
-        imageSource: "",
-        campaignType:campaignType
-
-        // If you want to do something with selectedSuggestions, do it here
-      };
-      console.log("Social Post Payload => ", payload);
-
-      // Store in localStorage so we don't remove it
-      //localStorage.setItem("creativePayload", JSON.stringify(payload));
-      setCreativePayload(payload);
+      // If user selects SparkIQ => Original flow
+      if (templateSource === "sparkIQ") {
+        const payload = {
+          brandId,
+          productId,
+          postType: "SocialMediaPost",
+          objective,
+          templateSource:templateSource === "sparkIQ" ? "sparkiq" : "brandTemplate",
+          platform: selectedPlatforms[0]?.toLowerCase() || "",
+          imageSize: selectedSize.replace(/\(|\)/g, "").replace("*", "x"),
+          imageSource: "",
+          campaignType: campaignType,
+        };
+        setCreativePayload(payload);
+      } else {
+        // brandTemplates
+        if (selectedTemplateIds.length === 0) {
+          toast.error("Please select at least 1 brand template.");
+          return;
+        }
+        const payload = {
+          brandId,
+          productId,
+          postType: "SocialMediaPost",
+          objective,
+          templateSource:templateSource === "sparkIQ" ? "sparkiq" : "brandTemplate",
+          platform: selectedPlatforms[0]?.toLowerCase() || "",
+          imageSize: selectedSize.replace(/\(|\)/g, "").replace("*", "x"),
+          imageSource: "brandTemplate",
+          campaignType: campaignType,
+          templateIds: selectedTemplateIds,
+        };
+        setCreativePayload(payload);
+      }
 
       // Mark completion or start loader
       if (setIsLoading) setIsLoading(true);
@@ -190,8 +217,9 @@ export default function CreativeFormat({
 
     const handleSuggestionToggle = (title) => {
       setSelectedSuggestions((prev) =>
-        prev.includes(title) ? prev.filter((s) => s !== title) : [...prev, title]
+        prev === title ? "" : title
       );
+      setCampaignType(title);
     };
 
     const aiSuggestions = [
@@ -203,6 +231,65 @@ export default function CreativeFormat({
     const displayedSizes = selectedPlatformSlug
       ? getPlatformSizes(selectedPlatformSlug)
       : mediaSizes;
+
+    // Brand templates fetching (example)
+    const fetchBrandTemplates = async () => {
+      try {
+        setIsLoadingBrandTemplates(true);
+        // For demonstration, we call an endpoint, e.g.:
+        const response = await axios.get(`${baseUrl}/v2/brand/templates`, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
+        // Just assume we get an array in .data.data
+        setBrandTemplates(response.data?.data?.content || []);
+      } catch (err) {
+        console.error("Error fetching brand templates", err);
+      } finally {
+        setIsLoadingBrandTemplates(false);
+      }
+    };
+
+    // If user switches to brandTemplates, fetch them once
+    useEffect(() => {
+      if (templateSource === "brandTemplates" && brandTemplates.length === 0) {
+        fetchBrandTemplates();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [templateSource]);
+
+    // Select brand template
+    const handleSelectTemplate = (tplId) => {
+      setSelectedTemplateIds((prev) => {
+        if (prev.includes(tplId)) {
+          return prev.filter((id) => id !== tplId);
+        }
+        if (prev.length >= 5) {
+          toast.error("You can select a maximum of 5 templates.");
+          return prev;
+        }
+        return [...prev, tplId];
+      });
+    };
+    const handleBrandChange = (e) => {
+      const newBrandId = e.target.value;
+      setSelectedBrandId(newBrandId);
+      // Re-fetch brand templates for this brand
+      fetchBrandTemplates(newBrandId);
+    };
+    useEffect(() => {
+      const fetchBrands = async () => {
+        try {
+          const resp = await axios.get(`${baseUrl}/v2/api/brands`, {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          });
+          setBrandOptions(resp.data?.data || []);
+        } catch (err) {
+          console.error("Failed to load brands", err);
+        }
+      };
+      fetchBrands();
+    }, []);
+
 
     return (
       <>
@@ -216,44 +303,9 @@ export default function CreativeFormat({
             value={objective}
             onChange={(e) => setObjective(e.target.value)}
           />
-          {/* <div className="flex justify-end gap-4">
-            <button className="text-sm custom-button text-white px-4 py-2 rounded-md">
-              Enhance with AI
-            </button>
-            <button className="custom-button text-sm text-white px-4 py-2 rounded-md">
-              Submit
-            </button>
-          </div> */}
         </div>
 
         {/* 2) AI Suggestions */}
-        {/* <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
-          <h3 className="text-[#082A66] text-lg font-bold mb-4">AI Suggestions</h3>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-            {aiSuggestions.map((suggestion, idx) => (
-              <div
-                key={idx}
-                className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${
-                  selectedSuggestions.includes(suggestion.title)
-                    ? ""
-                    : "text-[#082A66]"
-                }`}
-                onClick={() => handleSuggestionToggle(suggestion.title)}
-              >
-                <p className="font-bold text-center">{suggestion.title}</p>
-                <p className="text-sm flex items-center gap-2">
-                  {suggestion.icon}
-                  {suggestion.text}
-                </p>
-                {selectedSuggestions.includes(suggestion.title) && (
-                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
-                    <FaCheck className="text-white text-sm" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div> */}
         <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
           <h3 className="text-[#082A66] text-lg font-bold mb-4">AI Suggestions</h3>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
@@ -262,10 +314,7 @@ export default function CreativeFormat({
                 key={idx}
                 className={`relative flex flex-col items-center justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${selectedSuggestions === suggestion.title ? "border-[#00A0F5]" : "text-[#082A66]"
                   }`}
-                onClick={() => {
-                  setSelectedSuggestions(suggestion.title); // Ensure only one selection
-                  setCampaignType(suggestion.title); // Assign selected value to campaignType
-                }}
+                onClick={() => handleSuggestionToggle(suggestion.title)}
               >
                 <p className="font-bold text-center">{suggestion.title}</p>
                 <p className="text-sm flex items-center gap-2">
@@ -282,9 +331,7 @@ export default function CreativeFormat({
           </div>
         </div>
 
-
-
-        {/* 3) Select Social Media Platforms */}
+        {/* 5) Select Social Media Platforms */}
         <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
           <h4 className="text-[#082A66] font-bold lg:text-lg text-base">
             Select Social Media Platform
@@ -317,7 +364,7 @@ export default function CreativeFormat({
           </div>
         </div>
 
-        {/* 4) Select Size */}
+        {/* 6) Select Size */}
         <div className="mt-6">
           <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px]">
             <div className="flex flex-wrap justify-between items-center">
@@ -332,71 +379,73 @@ export default function CreativeFormat({
               <span className="flex gap-4">
                 {selectedPlatforms.map((plat) => {
                   const slug = plat.toLowerCase();
-                  if (slug === "facebook") {
-                    return (
-                      <FaFacebookF
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "google") {
-                    return (
-                      <FaGoogle
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "linkedin") {
-                    return (
-                      <FaLinkedinIn
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "whatsapp") {
-                    return (
-                      <FaWhatsapp
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "twitter") {
-                    return (
-                      <FaXTwitter
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "instagram") {
-                    return (
-                      <FaInstagram
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
-                  } else if (slug === "youtube") {
-                    return (
-                      <FaYoutube
-                        key={plat}
-                        className="bg-[#00279926] p-1 cursor-pointer"
-                        size={20}
-                        onClick={() => handleTopIconClick(plat)}
-                      />
-                    );
+                  switch (slug) {
+                    case "facebook":
+                      return (
+                        <FaFacebookF
+                          key={plat}
+                          className="bg-[#00279926] p-1 cursor-pointer"
+                          size={20}
+                          onClick={() => handleTopIconClick(plat)}
+                        />
+                      );
+                    case "google":
+                      return (
+                        <FaGoogle
+                          key={plat}
+                          className="bg-[#00279926] p-1 cursor-pointer"
+                          size={20}
+                          onClick={() => handleTopIconClick(plat)}
+                        />
+                      );
+                    case "linkedin":
+                      return (
+                        <FaLinkedinIn
+                          key={plat}
+                          className="bg-[#00279926] p-1 cursor-pointer"
+                          size={20}
+                          onClick={() => handleTopIconClick(plat)}
+                        />
+                      );
+                    case "whatsapp":
+                      return (
+                        <FaWhatsapp
+                          key={plat}
+                          className="bg-[#00279926] p-1 cursor-pointer"
+                          size={20}
+                          onClick={() => handleTopIconClick(plat)}
+                        />
+                      );
+                    case "twitter":
+                      return (
+                        <FaXTwitter
+                          key={plat}
+                          className="bg-[#00279926] p-1 cursor-pointer"
+                          size={20}
+                          onClick={() => handleTopIconClick(plat)}
+                        />
+                      );
+                    case "instagram":
+                      return (
+                        <FaInstagram
+                          key={plat}
+                          className="bg-[#00279926] p-1 cursor-pointer"
+                          size={20}
+                          onClick={() => handleTopIconClick(plat)}
+                        />
+                      );
+                    case "youtube":
+                      return (
+                        <FaYoutube
+                          key={plat}
+                          className="bg-[#00279926] p-1 cursor-pointer"
+                          size={20}
+                          onClick={() => handleTopIconClick(plat)}
+                        />
+                      );
+                    default:
+                      return null;
                   }
-                  return null;
                 })}
               </span>
             </div>
@@ -419,9 +468,93 @@ export default function CreativeFormat({
             </div>
           </div>
         </div>
+        {/* 3) Template Source */}
+        <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-6 relative">
+          <h4 className="text-[#082A66] font-bold lg:text-lg text-base mb-2">Template Source</h4>
+          <div className="flex gap-4">
+            {/* SparkIQ Templates Card */}
+            <div
+              className={`relative flex flex-col items-center justify-center gap-2 w-60 py-4 rounded-[16px] shadow border cursor-pointer ${templateSource === "sparkIQ" ? "border-[#00A0F5] bg-[#E0F2FF]" : "border-[#E5E7EB] bg-white"
+                }`}
+              onClick={() => setTemplateSource("sparkIQ")}
+            >
+              <img src="media/sparkIQ_source.png" alt="SparkIQ Templates" className="w-16 h-16" />
+              <p className="font-bold text-sm text-center">SparkIQ Templates</p>
+              {templateSource === "sparkIQ" && (
+                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow">
+                  <FaCheck className="text-white text-xs" />
+                </div>
+              )}
+            </div>
 
-        {/* 5) Generate Button */}
-        <div className="flex items-center justify-center w-full py-12">
+            {/* Brand Templates Card */}
+            <div
+              className={`relative flex flex-col items-center justify-center gap-2 w-60 py-4 rounded-[16px] shadow border cursor-pointer ${templateSource === "brandTemplates" ? "border-[#00A0F5] bg-[#E0F2FF]" : "border-[#E5E7EB] bg-white"
+                }`}
+              onClick={() => setTemplateSource("brandTemplates")}
+            >
+              <img src="media/brand_source.png" alt="Brand Templates" className="w-16 h-16" />
+              <p className="font-bold text-sm text-center">Brand Templates</p>
+              {templateSource === "brandTemplates" && (
+                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow">
+                  <FaCheck className="text-white text-xs" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* 4) Show brand templates ONLY if brandTemplates is selected */}
+        {templateSource === "brandTemplates" && (
+          <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-6 relative">
+            <h4 className="text-[#082A66] font-bold lg:text-lg text-base">Select a Template</h4>
+
+            {/* Brand Filter (top-right) */}
+            <div className="flex justify-end mb-4">
+              <select
+                className="border border-slate-300 rounded px-3 py-2 text-sm"
+                value={selectedBrandId}
+                onChange={handleBrandChange}
+              >
+                <option value="">All Brands</option>
+                {brandOptions.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.brandName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Loading State */}
+            {isLoadingBrandTemplates ? (
+              <p className="text-gray-500 text-sm">Loading templates...</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                {brandTemplates.map((tpl) => (
+                  <div
+                    key={tpl.templateId}
+                    className="relative bg-white p-4 border border-[#E5E7EB] rounded-xl cursor-pointer flex flex-col items-center h-60 w-60 sm:h-30 sm:w-30 md:h-40 md:w-40 lg:h-48 lg:w-48 xl:h-60 xl:w-60"
+                    onClick={() => handleSelectTemplate(tpl.templateId)}
+                  >
+                    <img
+                      src={tpl.url || "/no-image.png"}
+                      alt="Template"
+                      className="object-contain rounded"
+                      style={{ padding: 0 }} // remove extra padding
+                    />
+                    {selectedTemplateIds.includes(tpl.templateId) && (
+                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
+                        <FaCheck className="text-white text-sm" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 7) Generate Button */}
+        <div className="flex items-center justify-center w-full">
           <button
             className="custom-button rounded-[20px] text-white py-4 px-10 font-medium"
             onClick={onGenerate}
@@ -437,18 +570,21 @@ export default function CreativeFormat({
   // ADVERTISEMENT (AD) UI
   // =================================================================
   function AdvertisementAdUI() {
-    // States for user inputs in Ad scenario:
+    // 1) States for user inputs in Ad scenario:
     const [objective, setObjective] = useState("");
     const [selectedPlatforms, setSelectedPlatforms] = useState([]);
     const [selectedPlatformSlug, setSelectedPlatformSlug] = useState(null);
     const [selectedSize, setSelectedSize] = useState("");
     const [selectedCampaign, setSelectedCampaign] = useState("");
+    const [brandOptions, setBrandOptions] = useState([]);
+    const [selectedBrandId, setSelectedBrandId] = useState("");
 
-    // Cohort data from server
+    // 2) Cohort data
     const [cohorts, setCohorts] = useState([]);
     const [selectedSuggestions, setSelectedSuggestions] = useState([]);
+    const [isGeneratingCohorts, setIsGeneratingCohorts] = useState(false);
 
-    // Manual Setup
+    // 3) Manual Setup
     const [isManualSetup, setIsManualSetup] = useState(false);
     const [formValues, setFormValues] = useState({
       id: null,
@@ -459,14 +595,35 @@ export default function CreativeFormat({
     });
     const [interestInput, setInterestInput] = useState("");
 
-    // Loader state (for generating AI cohorts)
-    const [isGeneratingCohorts, setIsGeneratingCohorts] = useState(false);
+    // 4) Pagination states for cohorts
+    const [pageNumber, setPageNumber] = useState(0);
+    const [pageSize] = useState(5);
+    const [totalPages, setTotalPages] = useState(1);
+    const [isFetchingPage, setIsFetchingPage] = useState(false);
 
-    // Let user fill out all fields before auto-generating if cohorts are empty
+    // 5) Template Source
+    const [templateSource, setTemplateSource] = useState("sparkIQ");
+
+    // 6) Brand Templates
+    const [brandTemplates, setBrandTemplates] = useState([]);
+    const [selectedTemplateIds, setSelectedTemplateIds] = useState([]);
+    const [isLoadingBrandTemplates, setIsLoadingBrandTemplates] = useState(false);
+
     // ----------------------------------------------------------------
-    // Auto-generate once all fields are set (objective, platform, campaign, size),
-    // if cohorts are still empty. This runs only if cohorts.length === 0
+    // AD existing code
     // ----------------------------------------------------------------
+    useEffect(() => {
+      fetchCohorts(0);
+    }, []);
+
+    useEffect(() => {
+      if (pageNumber > 0) {
+        fetchCohorts(pageNumber);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pageNumber]);
+
+    // Auto-generate cohorts if none exist and user has provided all fields
     useEffect(() => {
       if (
         !isGeneratingCohorts &&
@@ -481,115 +638,45 @@ export default function CreativeFormat({
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [objective, selectedPlatforms, selectedCampaign, selectedSize]);
 
-    // ----------------------------------------------------------------
-    // FETCH existing cohorts from DB
-    // ----------------------------------------------------------------
-     // PAGINATION states
-  const [pageNumber, setPageNumber] = useState(0);
-  const [pageSize] = useState(5); // or 10, or any default
-  const [totalPages, setTotalPages] = useState(1);
-  const [isFetchingPage, setIsFetchingPage] = useState(false);
+    // fetchCohorts
+    const fetchCohorts = async (page) => {
+      try {
+        setIsFetchingPage(true);
+        const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
+        const productId = JSON.parse(localStorage.getItem("productID")) || "";
 
-  useEffect(() => {
-    fetchCohorts(0); // initially fetch page=0
-  }, []);
+        const response = await axios.get(
+          `${baseUrl}/v2/api/cohorts?productId=${productId}&page=${page}&size=${pageSize}`,
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-  // Watch for changes in pageNumber to load more or fetch next
-  useEffect(() => {
-    if (pageNumber > 0) {
-      fetchCohorts(pageNumber);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageNumber]);
-
-  // ----------------------------------------------------------------
-  // Auto-generate once all fields are set (objective, platform, campaign, size),
-  // if cohorts are still empty. This runs only if cohorts.length === 0
-  // ----------------------------------------------------------------
-  useEffect(() => {
-    if (
-      !isGeneratingCohorts &&
-      cohorts.length === 0 &&
-      objective.trim() &&
-      selectedPlatforms.length > 0 &&
-      selectedCampaign &&
-      selectedSize
-    ) {
-      generateAICohorts();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [objective, selectedPlatforms, selectedCampaign, selectedSize]);
-
-  // ----------------------------------------------------------------
-  // FETCH cohorts from DB (paginated)
-  // ----------------------------------------------------------------
-  const fetchCohorts = async (page) => {
-    try {
-      setIsFetchingPage(true);
-      const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
-      const productId = JSON.parse(localStorage.getItem("productID")) || "";
-
-      // GET /v2/api/cohorts?productId=xxx&page=page&size=pageSize
-      const response = await axios.get(
-        `${baseUrl}/v2/api/cohorts?productId=${productId}&page=${page}&size=${pageSize}`,
-        {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-            "Content-Type": "application/json",
-          },
+        const data = response.data?.data || {};
+        const content = data.content || [];
+        if (page === 0) {
+          setCohorts(content);
+        } else {
+          setCohorts((prev) => [...prev, ...content]);
         }
-      );
-
-      const data = response.data?.data || {};
-      const content = data.content || [];
-      if (page === 0) {
-        // If first page => set cohorts fresh
-        setCohorts(content);
-      } else {
-        // Append to existing
-        setCohorts((prev) => [...prev, ...content]);
+        setTotalPages(data.totalPages || 1);
+      } catch (error) {
+        console.error("Error fetching cohorts:", error);
+      } finally {
+        setIsFetchingPage(false);
       }
+    };
 
-      setTotalPages(data.totalPages || 1);
-    } catch (error) {
-      console.error("Error fetching cohorts:", error);
-    } finally {
-      setIsFetchingPage(false);
-    }
-  };
+    const loadMoreCohorts = () => {
+      if (pageNumber + 1 < totalPages) {
+        setPageNumber((prev) => prev + 1);
+      }
+    };
 
-  // If user clicks "Load More"
-  const loadMoreCohorts = () => {
-    if (pageNumber + 1 < totalPages) {
-      setPageNumber((prev) => prev + 1);
-    }
-  };
-
-  const validateBeforeGeneration = () => {
-    if (!objective.trim()) {
-      toast.error("Please enter an Objective before regenerating cohorts.");
-      return false;
-    }
-    if (selectedPlatforms.length === 0) {
-      toast.error("Please select a Platform before regenerating cohorts.");
-      return false;
-    }
-    if (!selectedSize) {
-      toast.error("Please select a Size before regenerating cohorts.");
-      return false;
-    }
-    if (!selectedCampaign) {
-      toast.error("Please select a Campaign Type before regenerating cohorts.");
-      return false;
-    }
-    return true;
-  };
-
-    // ----------------------------------------------------------------
-    // Generate AI cohorts manually or automatically
-    // ----------------------------------------------------------------
     const generateAICohorts = async () => {
-      // Double-check fields:
       if (!objective.trim()) return;
       if (selectedPlatforms.length === 0) return;
       if (!selectedCampaign) return;
@@ -599,20 +686,15 @@ export default function CreativeFormat({
       try {
         const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
         const productId = JSON.parse(localStorage.getItem("productID")) || "";
-
-        // Prepare the payload from the user states
         const payload = {
           brandId,
           productId,
           postType: "AdCreative",
           objective,
           platform: selectedPlatforms[0].toLowerCase(),
-          campaignType: mapCampaign(selectedCampaign), // see mapCampaign below
+          campaignType: mapCampaign(selectedCampaign),
           imageSize: selectedSize.replace(/\(|\)/g, "").replace("*", "x"),
         };
-
-        console.log("Generating AI cohorts => ", payload);
-
         await axios.post(`${baseUrl}/v2/api/cohorts/generate`, payload, {
           headers: {
             Authorization: `Bearer ${jwtToken}`,
@@ -620,75 +702,14 @@ export default function CreativeFormat({
           },
         });
 
-        // Once completed, re-fetch to see new cohorts
-        // Once completed, re-fetch from page=0
-      setPageNumber(0);
-      setCohorts([]); // reset
-      await fetchCohorts(0);
-    } catch (err) {
-      console.error("Error generating AI cohorts:", err);
-    } finally {
-      setIsGeneratingCohorts(false);
-    }
-    };
-// Helper to format genders array => capitalized, comma separated
-const formatGenders = (genders) => {
-  if (!Array.isArray(genders)) return "";
-  // e.g. ["male", "female"] => "Male, Female"
-  return genders.map((g) => g.charAt(0).toUpperCase() + g.slice(1)).join(", ");
-};
-
-    // ----------------------------------------------------------------
-    // Once user sets everything, final "Generate Creatives" for Ads
-    // ----------------------------------------------------------------
-    const onGenerateCreatives = () => {
-      if (cohorts.length === 0 && !objective.trim()) {
-        toast.error("Please enter an Objective.");
-        return;
+        setPageNumber(0);
+        setCohorts([]);
+        await fetchCohorts(0);
+      } catch (err) {
+        console.error("Error generating AI cohorts:", err);
+      } finally {
+        setIsGeneratingCohorts(false);
       }
-
-      if (selectedPlatforms.length === 0) {
-        toast.error("Please select a Platform.");
-        return;
-      }
-      if (!selectedCampaign) {
-        toast.error("Please select a Campaign type.");
-        return;
-      }
-      if (!selectedSize) {
-        toast.error("Please select an Image Size.");
-        return;
-      }
-      if (selectedSuggestions.length === 0) {
-        toast.error("Please select at least one Audience Cohort.");
-        return;
-      }
-
-      const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
-      const productId = JSON.parse(localStorage.getItem("productID")) || "";
-
-      const campaignType = mapCampaign(selectedCampaign);
-      const payload = {
-        brandId,
-        productId,
-        postType: "AdCreative",
-        objective,
-        platform: selectedPlatforms[0].toLowerCase(),
-        campaignType,
-        imageSize: selectedSize.replace(/\(|\)/g, "").replace("*", "x"),
-        cohortIds: getSelectedCohortIds(),
-        imageSource: "",
-      };
-
-
-      // Store the final payload in localStorage
-      //localStorage.setItem("creativePayload", JSON.stringify(payload));
-      setCreativePayload(payload);
-
-      if (setIsLoading) setIsLoading(true);
-      if (setIsCompleted) setIsCompleted(true);
-
-      if (handleNextSection) handleNextSection();
     };
 
     const mapCampaign = (campaignString) => {
@@ -703,14 +724,27 @@ const formatGenders = (genders) => {
       }
     };
 
-    const getSelectedCohortIds = () => {
-      const matched = cohorts.filter((c) => selectedSuggestions.includes(c.name));
-      return matched.map((m) => m.id);
+    // handleCohortSelection
+    const handleCohortSelection = (cohortName) => {
+      setSelectedSuggestions((prev) => {
+        if (prev.includes(cohortName)) {
+          return prev.filter((n) => n !== cohortName);
+        } else {
+          if (prev.length >= 3) {
+            toast.error("You can select a maximum of 3 cohorts. Please deselect one first.");
+            return prev;
+          }
+          return [...prev, cohortName];
+        }
+      });
     };
 
-    // ----------------------------------------------------------------
-    // Manual Setup (create or edit a cohort)
-    // ----------------------------------------------------------------
+    const formatGenders = (genders) => {
+      if (!Array.isArray(genders)) return "";
+      return genders.map((g) => g.charAt(0).toUpperCase() + g.slice(1)).join(", ");
+    };
+
+    // Manual setup
     const handleFormChange = (e) => {
       const { name, value } = e.target;
       setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -749,7 +783,7 @@ const formatGenders = (genders) => {
         });
 
         if (response.status === 200 || response.status === 201) {
-          await fetchCohorts();
+          await fetchCohorts(0);
           setIsManualSetup(false);
           setFormValues({
             id: null,
@@ -794,26 +828,123 @@ const formatGenders = (genders) => {
     };
 
     // ----------------------------------------------------------------
-    // Selections
+    // Template Source & Brand Templates
     // ----------------------------------------------------------------
-    const handleCohortSelection = (cohortName) => {
-      setSelectedSuggestions((prev) => {
-        // If the cohort is already selected, remove it (toggle off)
-        if (prev.includes(cohortName)) {
-          return prev.filter((name) => name !== cohortName);
-        } else {
-          // If already 3 cohorts are selected, prevent further selection
-          if (prev.length >= 3) {
-            toast.error("You can select a maximum of 3 cohorts. Please deselect one to choose another.");
-            return prev;
-          }
-          // Otherwise, add the new cohort
-          return [...prev, cohortName];
+    const fetchBrandTemplates = async () => {
+      try {
+        setIsLoadingBrandTemplates(true);
+        // Example: call a brand templates API
+        const response = await axios.get(`${baseUrl}/v2/brand/templates`, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
+        setBrandTemplates(response.data?.data?.content || []);
+      } catch (err) {
+        console.error("Error fetching brand templates:", err);
+      } finally {
+        setIsLoadingBrandTemplates(false);
+      }
+    };
+
+    useEffect(() => {
+      if (templateSource === "brandTemplates" && brandTemplates.length === 0) {
+        fetchBrandTemplates();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [templateSource]);
+
+    const handleSelectBrandTemplate = (tplId) => {
+      setSelectedTemplateIds((prev) => {
+        if (prev.includes(tplId)) {
+          return prev.filter((id) => id !== tplId);
         }
+        if (prev.length >= 5) {
+          toast.error("You can select a maximum of 5 templates.");
+          return prev;
+        }
+        return [...prev, tplId];
       });
     };
-    
 
+    // ----------------------------------------------------------------
+    // Generate Creatives
+    // ----------------------------------------------------------------
+    const onGenerateCreatives = () => {
+      // if (!objective.trim()) {
+      //   toast.error("Please enter an Objective.");
+      //   return;
+      // }
+      if (selectedPlatforms.length === 0) {
+        toast.error("Please select a Platform.");
+        return;
+      }
+      if (!selectedCampaign) {
+        toast.error("Please select a Campaign type.");
+        return;
+      }
+      if (!selectedSize) {
+        toast.error("Please select an Image Size.");
+        return;
+      }
+
+      const brandId = JSON.parse(localStorage.getItem("brandID")) || "";
+      const productId = JSON.parse(localStorage.getItem("productID")) || "";
+      const campaignType = mapCampaign(selectedCampaign);
+      const finalSize = selectedSize.replace(/\(|\)/g, "").replace("*", "x");
+
+      if (templateSource === "sparkIQ") {
+        // Need at least 1 cohort
+        if (selectedSuggestions.length === 0) {
+          toast.error("Please select at least one Audience Cohort.");
+          return;
+        }
+        const matched = cohorts.filter((c) => selectedSuggestions.includes(c.name));
+        const cohortIds = matched.map((m) => m.id);
+        const payload = {
+          brandId,
+          productId,
+          postType: "AdCreative",
+          templateSource:templateSource === "sparkIQ" ? "sparkiq" : "brandTemplate",
+          objective,
+          platform: selectedPlatforms[0].toLowerCase(),
+          campaignType,
+          imageSize: finalSize,
+          cohortIds,
+          imageSource: "", // original logic
+        };
+        setCreativePayload(payload);
+      } else {
+        // brandTemplates
+        if (selectedTemplateIds.length === 0) {
+          toast.error("Please select at least 1 brand template.");
+          return;
+        }
+        
+        const matched = cohorts.filter((c) => selectedSuggestions.includes(c.name));
+        const cohortIds = matched.map((m) => m.id);
+        const payload = {
+          brandId,
+          productId,
+          postType: "AdCreative",
+          objective,
+          templateSource:templateSource === "sparkIQ" ? "sparkiq" : "brandTemplate",
+          platform: selectedPlatforms[0].toLowerCase(),
+          campaignType,
+          cohortIds,
+          imageSize: finalSize,
+          imageSource: "brandTemplate",
+          templateIds: selectedTemplateIds,
+        };
+        setCreativePayload(payload);
+      }
+
+      if (setIsLoading) setIsLoading(true);
+      if (setIsCompleted) setIsCompleted(true);
+      if (handleNextSection) handleNextSection();
+    };
+
+    // ----------------------------------------------------------------
+    // UI
+    // ----------------------------------------------------------------
     const togglePlatformSelection = (platformName) => {
       setSelectedPlatforms([platformName]);
       setSelectedPlatformSlug(platformName.toLowerCase());
@@ -825,73 +956,110 @@ const formatGenders = (genders) => {
       setSelectedSize("");
     };
 
-    // ----------------------------------------------------------------
-    // Display
-    // ----------------------------------------------------------------
     const displayedSizes = selectedPlatformSlug
       ? getPlatformSizes(selectedPlatformSlug)
       : mediaSizes;
 
-    // Refresh icon -> manual generate
     const refreshCreatives = async () => {
-      if (!validateBeforeGeneration()) return;
+      if (!objective.trim()) {
+        toast.error("Please enter an Objective before regenerating cohorts.");
+        return;
+      }
+      if (selectedPlatforms.length === 0) {
+        toast.error("Please select a Platform before regenerating cohorts.");
+        return;
+      }
+      if (!selectedSize) {
+        toast.error("Please select a Size before regenerating cohorts.");
+        return;
+      }
+      if (!selectedCampaign) {
+        toast.error("Please select a Campaign Type before regenerating cohorts.");
+        return;
+      }
       setCohorts([]);
       setSelectedSuggestions([]);
       await generateAICohorts();
     };
 
+
+    const handleBrandChange = (e) => {
+      const newBrandId = e.target.value;
+      setSelectedBrandId(newBrandId);
+      // Re-fetch brand templates for this brand
+      fetchBrandTemplates(newBrandId);
+    };
+    useEffect(() => {
+      const fetchBrands = async () => {
+        try {
+          const resp = await axios.get(`${baseUrl}/v2/api/brands`, {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          });
+          setBrandOptions(resp.data?.data || []);
+        } catch (err) {
+          console.error("Failed to load brands", err);
+        }
+      };
+      fetchBrands();
+    }, []);
+
     return (
       <>
-        {/* Loader Overlay & Spinner CSS */}
+        {/* CSS for loader overlay etc. */}
         <style>{`
        .loader-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-        .loader {
-  font-size: 10px;
-  width: 1em;
-  height: 1em;
-  border-radius: 50%;
-  position: relative;
-  text-indent: -9999em;
-  animation: mulShdSpin 1.1s infinite ease;
-  transform: translateZ(0);
-}
-@keyframes mulShdSpin {
-  0%,
-  100% {
-    box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.5), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7);
-  }
-  12.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5);
-  }
-  25% {
-    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.5), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
-  }
-  37.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5), 2.5em 0em 0 0em rgba(8, 42, 102, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
-  }
-  50% {
-    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.5), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2), -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
-  }
-  62.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.5), 0em 2.5em 0 0em rgba(8, 42, 102, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(8, 42, 102, 0.2), -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
-  }
-  75% {
-    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.5), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
-  }
-  87.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.2), 1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2), 2.5em 0em 0 0em rgba(8, 42, 102, 0.2), 1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2), 0em 2.5em 0 0em rgba(8, 42, 102, 0.2), -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.5), -2.6em 0em 0 0em rgba(8, 42, 102, 0.7), -1.8em -1.8em 0 0em #ffffff;
-  }
-}
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+       }
+       .loader {
+          font-size: 10px;
+          width: 1em;
+          height: 1em;
+          border-radius: 50%;
+          position: relative;
+          text-indent: -9999em;
+          animation: mulShdSpin 1.1s infinite ease;
+          transform: translateZ(0);
+       }
+       @keyframes mulShdSpin {
+          0%, 100% {
+            box-shadow: 0em -2.6em 0em 0em #ffffff,
+                        1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2),
+                        2.5em 0em 0 0em rgba(8, 42, 102, 0.2),
+                        1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2),
+                        0em 2.5em 0 0em rgba(8, 42, 102, 0.2),
+                        -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2),
+                        -2.6em 0em 0 0em rgba(8, 42, 102, 0.5),
+                        -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7);
+          }
+          12.5% {
+            box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.7),
+                        1.8em -1.8em 0 0em #ffffff,
+                        2.5em 0em 0 0em rgba(8, 42, 102, 0.2),
+                        1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2),
+                        0em 2.5em 0 0em rgba(8, 42, 102, 0.2),
+                        -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2),
+                        -2.6em 0em 0 0em rgba(8, 42, 102, 0.2),
+                        -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.5);
+          }
+          25% {
+            box-shadow: 0em -2.6em 0em 0em rgba(8, 42, 102, 0.5),
+                        1.8em -1.8em 0 0em rgba(8, 42, 102, 0.7),
+                        2.5em 0em 0 0em #ffffff,
+                        1.75em 1.75em 0 0em rgba(8, 42, 102, 0.2),
+                        0em 2.5em 0 0em rgba(8, 42, 102, 0.2),
+                        -1.8em 1.8em 0 0em rgba(8, 42, 102, 0.2),
+                        -2.6em 0em 0 0em rgba(8, 42, 102, 0.2),
+                        -1.8em -1.8em 0 0em rgba(8, 42, 102, 0.2);
+          }
+       }
       `}</style>
         <div className="p-6 pt-0">
           {/* 1) Objective */}
@@ -904,14 +1072,6 @@ const formatGenders = (genders) => {
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
             />
-            {/* <div className="flex justify-end gap-4">
-            <button className="text-sm custom-button text-white px-4 py-2 rounded-md">
-              Enhance with AI
-            </button>
-            <button className="custom-button text-sm text-white px-4 py-2 rounded-md">
-              Submit
-            </button>
-          </div> */}
           </div>
 
           {/* 2) Ad Networks */}
@@ -1123,10 +1283,24 @@ const formatGenders = (genders) => {
             {/* Top-right refresh (regenerate) button */}
             <div className="absolute right-3 top-3 flex items-center">
               <div className="relative group">
-                <span className=""
+                <span
                   onClick={refreshCreatives}
-                  style={{ cursor: "pointer" }}> <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#082A66"><path d="M204-318q-22-38-33-78t-11-82q0-134 93-228t227-94h7l-64-64 56-56 160 160-160 160-56-56 64-64h-7q-100 0-170 70.5T240-478q0 26 6 51t18 49l-60 60ZM481-40 321-200l160-160 56 56-64 64h7q100 0 170-70.5T720-482q0-26-6-51t-18-49l60-60q22 38 33 78t11 82q0 134-93 228t-227 94h-7l64 64-56 56Z" /></svg>
-                </span><div className="absolute -bottom-full left-1/2 transform -translate-x-1/2 -mb-4 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-500 text-white text-nowrap text-sm rounded py-1 px-2">
+                  style={{ cursor: "pointer" }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="24px"
+                    viewBox="0 -960 960 960"
+                    width="24px"
+                    fill="#082A66"
+                  >
+                    <path d="M204-318q-22-38-33-78t-11-82q0-134 93-228t227-94h7l-64-64 56-56 160 160-160 160-56-56 64-64h-7q-100 0-170 70.5T240-478q0 26 6 51t18 49l-60 60ZM481-40 321-200l160-160 56 56-64 64h7q100 0 170-70.5T720-482q0-26-6-51t-18-49l60-60q22 38 33 78t11 82q0 134-93 228t-227 94h-7l64 64-56 56Z" />
+                  </svg>
+                </span>
+                <div
+                  className="absolute -bottom-full left-1/2 transform -translate-x-1/2 -mb-4 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-500 text-white text-nowrap text-sm rounded py-1 px-2"
+                  style={{ whiteSpace: "nowrap" }}
+                >
                   Regenerate
                 </div>
               </div>
@@ -1137,21 +1311,18 @@ const formatGenders = (genders) => {
             {isGeneratingCohorts && (
               <div className="flex items-center justify-center my-4">
                 <div className="flex justify-center items-center mt-4">
-            <span className="load-loader"></span>
-          </div>
+                  <span className="load-loader"></span>
+                </div>
               </div>
             )}
 
             {!isGeneratingCohorts && (
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {cohorts.map((cohort, idx) => (
+                {cohorts.map((cohort) => (
                   <div
                     key={cohort.id}
-                    className={`relative flex flex-col items-start justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${
-                      selectedSuggestions.includes(cohort.name)
-                        ? "border-[#00A0F5]"
-                        : ""
-                    }`}
+                    className={`relative flex flex-col items-start justify-center gap-2 w-full py-6 rounded-[20px] shadow border border-[#E5E7EB] bg-white cursor-pointer ${selectedSuggestions.includes(cohort.name) ? "border-[#00A0F5]" : ""
+                      }`}
                     onClick={() => handleCohortSelection(cohort.name)}
                   >
                     <div className="flex items-center gap-2 ml-8">
@@ -1163,84 +1334,75 @@ const formatGenders = (genders) => {
                     <div className="mt-2 text-sm text-start ml-8">
                       <p>Audience Profile:</p>
                       <p>Age: {cohort.ageGroup}</p>
-                      <p>
-                        Gender:{" "}
-                        {formatGenders(cohort.genders)}
-                      </p>
+                      <p>Gender: {formatGenders(cohort.genders)}</p>
                       <p>Interest: {cohort.interest}</p>
                     </div>
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      {selectedSuggestions.includes(cohort.name) ? (
-                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
-                          <FaCheck className="text-white text-sm" />
-                        </div>
-                      ) : (
-                        <>
-
-                          <button
-                            className="text-blue-500"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditCohort(cohort);
-                            }}
+                    {selectedSuggestions.includes(cohort.name) && (
+                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
+                        <FaCheck className="text-white text-sm" />
+                      </div>
+                    )}
+                    {/* Edit/Delete below is kept as original */}
+                    {!selectedSuggestions.includes(cohort.name) && (
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <button
+                          className="text-blue-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditCohort(cohort);
+                          }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="20px"
+                            viewBox="0 -960 960 960"
+                            width="20px"
+                            fill="#082A66"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              height="20px"
-                              viewBox="0 -960 960 960"
-                              width="20px"
-                              fill="#082A66"
-                            >
-                              <path d="M216-216h51l375-375-51-51-375 375v51Zm-72 72v-153l498-498q11-11 23.84-16 12.83-5 27-5 14.16 0 27.16 5t24 16l51 51q11 11 16 24t5 26.54q0 14.45-5.02 27.54T795-642L297-144H144Zm600-549-51-51 51 51Zm-127.95 76.95L591-642l51 51-25.95-25.05Z" />
-                            </svg>
-                          </button>
-                          <button
-                            className="text-red-500"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCohort(cohort.id);
-                            }}
+                            <path d="M216-216h51l375-375-51-51-375 375v51Zm-72 72v-153l498-498q11-11 23.84-16 12.83-5 27-5 14.16 0 27.16 5t24 16l51 51q11 11 16 24t5 26.54q0 14.45-5.02 27.54T795-642L297-144H144Zm600-549-51-51 51 51Zm-127.95 76.95L591-642l51 51-25.95-25.05Z" />
+                          </svg>
+                        </button>
+                        <button
+                          className="text-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCohort(cohort.id);
+                          }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="20px"
+                            viewBox="0 -960 960 960"
+                            width="20px"
+                            fill="#EA3323"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              height="20px"
-                              viewBox="0 -960 960 960"
-                              width="20px"
-                              fill="#EA3323"
-                            >
-                              <path d="M312-144q-29.7 0-50.85-21.15Q240-186.3 240-216v-480h-48v-72h192v-48h192v48h192v72h-48v479.57Q720-186 698.85-165T648-144H312Zm336-552H312v480h336v-480ZM384-288h72v-336h-72v336Zm120 0h72v-336h-72v336ZM312-696v480-480Z" />
-                            </svg>
-                          </button>
-                        </>
-                      )}
-                    </div>
+                            <path d="M312-144q-29.7 0-50.85-21.15Q240-186.3 240-216v-480h-48v-72h192v-48h192v48h192v72h-48v479.57Q720-186 698.85-165T648-144H312Zm336-552H312v480h336v-480ZM384-288h72v-336h-72v336Zm120 0h72v-336h-72v336ZM312-696v480-480Z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
-            {/* LOAD MORE button if not last page */}
             {pageNumber + 1 < totalPages && (
-                <div className="flex justify-center mt-2">
-                  <button
-                    className="px-4 py-2 text-sm text-[#082A66] bg-white border border-[#082A66] rounded hover:bg-gray-200"
-                    disabled={isFetchingPage}
-                    onClick={loadMoreCohorts}
-                  >
-                    {isFetchingPage ? "Loading..." : "Load More"}
-                  </button>
-                </div>
-              )}
-
-
-            {/* Manual Setup Button */}
+              <div className="flex justify-center mt-2">
+                <button
+                  className="px-4 py-2 text-sm text-[#082A66] bg-white border border-[#082A66] rounded hover:bg-gray-200"
+                  disabled={isFetchingPage}
+                  onClick={loadMoreCohorts}
+                >
+                  {isFetchingPage ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
+            {/* Manual Setup */}
             <button
               className="custom-button mt-6 px-4 py-2 bg-blue-500 text-white rounded-md"
               onClick={() => setIsManualSetup(!isManualSetup)}
             >
               I will setup Manually
             </button>
-
-            {/* Manual Setup Form */}
             {isManualSetup && (
               <div className="bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-4">
                 <h4 className="text-lg font-bold mb-4">Targeting Cohort</h4>
@@ -1344,8 +1506,95 @@ const formatGenders = (genders) => {
             )}
           </div>
 
-          {/* 6) Generate Creatives */}
-          <div className="flex items-center justify-center w-full py-8">
+          {/* 6) Template Source */}
+          <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-6 relative">
+            <h4 className="text-[#082A66] font-bold lg:text-lg text-base mb-2">Template Source</h4>
+            <div className="flex gap-4">
+              {/* SparkIQ Templates Card */}
+              <div
+                className={`relative flex flex-col items-center justify-center gap-2 w-60 py-4 rounded-[16px] shadow border cursor-pointer ${templateSource === "sparkIQ" ? "border-[#00A0F5] bg-[#E0F2FF]" : "border-[#E5E7EB] bg-white"
+                  }`}
+                onClick={() => setTemplateSource("sparkIQ")}
+              >
+                <img src="media/sparkIQ_source.png" alt="SparkIQ Templates" className="w-16 h-16" />
+                <p className="font-bold text-sm text-center">SparkIQ Templates</p>
+                {templateSource === "sparkIQ" && (
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow">
+                    <FaCheck className="text-white text-xs" />
+                  </div>
+                )}
+              </div>
+
+              {/* Brand Templates Card */}
+              <div
+                className={`relative flex flex-col items-center justify-center gap-2 w-60 py-4 rounded-[16px] shadow border cursor-pointer ${templateSource === "brandTemplates" ? "border-[#00A0F5] bg-[#E0F2FF]" : "border-[#E5E7EB] bg-white"
+                  }`}
+                onClick={() => setTemplateSource("brandTemplates")}
+              >
+                <img src="media/brand_source.png" alt="Brand Templates" className="w-16 h-16" />
+                <p className="font-bold text-sm text-center">Brand Templates</p>
+                {templateSource === "brandTemplates" && (
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow">
+                    <FaCheck className="text-white text-xs" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 7) Brand Templates if brandTemplates is selected */}
+          {templateSource === "brandTemplates" && (
+            <div className="mb-6 bg-[#FCFCFC40] p-6 shadow-md rounded-[20px] mt-6 relative">
+              <h4 className="text-[#082A66] font-bold lg:text-lg text-base mb-4">Select a Template</h4>
+
+              {/* Brand Filter (top-right) */}
+              <div className="flex justify-end mb-4">
+                <select
+                  className="border border-slate-300 rounded px-3 py-2 text-sm"
+                  value={selectedBrandId}
+                  onChange={handleBrandChange}
+                >
+                  <option value="">All Brands</option>
+                  {brandOptions.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.brandName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Loading State */}
+              {isLoadingBrandTemplates ? (
+                <p className="text-gray-500 text-sm">Loading templates...</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  {brandTemplates.map((tpl) => (
+                    <div
+                      key={tpl.templateId}
+                      className="relative bg-white p-4 border border-[#E5E7EB] rounded-xl cursor-pointer flex flex-col items-center h-60 w-60"
+                      onClick={() => handleSelectBrandTemplate(tpl.templateId)}
+                    >
+                      <img
+                        src={tpl.url || "/no-image.png"}
+                        alt="Template"
+                        className="object-contain rounded"
+                        style={{ padding: 0 }} // remove extra padding
+                      />
+                      {selectedTemplateIds.includes(tpl.templateId) && (
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow">
+                          <FaCheck className="text-white text-sm" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+
+          {/* 8) Generate Creatives */}
+          <div className="flex items-center justify-center w-full">
             <button
               className="custom-button rounded-[20px] text-white py-4 px-10 font-medium"
               onClick={onGenerateCreatives}
@@ -1412,41 +1661,3 @@ const formatGenders = (genders) => {
     </div>
   );
 }
-
-/* 
-Place this in your creativeFormat.css or global CSS:
-
-.loader {
-  position: relative;
-  display: flex;
-}
-.loader:before,
-.loader:after {
-  content: '';
-  width: 15px;
-  height: 15px;
-  display: inline-block;
-  position: relative;
-  margin: 0 5px;
-  border-radius: 50%;
-  color: #FFF;
-  background: currentColor;
-  box-shadow: 50px 0, -50px 0;
-  animation: left 1s infinite ease-in-out;
-}
-.loader:after {
-  color: #FF3D00;
-  animation: right 1.1s infinite ease-in-out;
-}
-
-@keyframes right {
-  0%, 100% { transform: translateY(-10px); }
-  50% { transform: translateY(10px); }
-}
-
-@keyframes left {
-  0%, 100% { transform: translateY(10px); }
-  50% { transform: translateY(-10px); }
-}
-*/
-

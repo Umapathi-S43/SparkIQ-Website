@@ -10,7 +10,6 @@ import { createStore } from "polotno/model/store";
 import { Workspace } from "polotno/canvas/workspace";
 import Loader from "./CreativesLoader";
 
-// Polotno / Cloud Render constants
 const POLNOTO_API_KEY = "H5HjfuZWdlg9X4gOUB27";
 let FIXED_BRAND_ID = null;
 let brandFetched = null;
@@ -39,17 +38,16 @@ export default function Creatives({
   // => Each element is { cohortName, creatives: [ { ...serverData, imageUrl }, ... ] }
   const [finalResults, setFinalResults] = useState([]);
 
-  const navigate = useNavigate();
 
-  // Scroll into view if open
   useEffect(() => {
     if (isNextSectionOpen && sectionRef.current) {
       sectionRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [isNextSectionOpen]);
 
-  // Start generation if we have new payload
+  // Kick off generation if we have a new payload
   useEffect(() => {
+    console.log("New creative payload:", creativePayload);
     if (creativePayload) {
       startCreativeGeneration();
     }
@@ -62,15 +60,14 @@ export default function Creatives({
   const startCreativeGeneration = async () => {
     try {
       setLoading(true);
-      setRenderingComplete(false); // Reset rendering state
+      setRenderingComplete(false);
 
       // STEP 1: Fetch brand details
       setLoadingSteps((prev) => ({ ...prev, brandDetails: true }));
       const brandData = await fetchBrandDetails();
-      brandFetched = brandData; // store globally if needed
+      brandFetched = brandData;
       setLoadingSteps((prev) => ({ ...prev, brandDetails: false }));
 
-      // Store brand ID globally if needed
       FIXED_BRAND_ID = creativePayload.brandId;
 
       // If postType is not AdCreative => single pass
@@ -79,7 +76,7 @@ export default function Creatives({
         const singleResult = await handleGenerateSingle(creativePayload);
         setLoadingSteps((prev) => ({ ...prev, generateContent: false }));
 
-        setFinalResults([singleResult]); // one group => "General"
+        setFinalResults([singleResult].filter(Boolean));
         setLoading(false);
         setRenderingComplete(true);
         return;
@@ -99,7 +96,6 @@ export default function Creatives({
       const allCohortResults = [];
 
       for (const cohortId of creativePayload.cohortIds) {
-        // Modify payload
         const modifiedPayload = { ...creativePayload, cohortId };
         delete modifiedPayload.cohortIds;
 
@@ -127,95 +123,184 @@ export default function Creatives({
   // --------------------------------------------
   const handleGenerateSingle = async (payload) => {
     try {
-      // 1) Generate content
+      // 1) generate placeholders from server
       const generatedData = await generateContent(payload);
-      if (!generatedData?.generateContentResponses?.templateResponses) {
-        toast.error("No templates found in generated content.");
+      if (!generatedData) {
+        toast.error("No data returned from generateContent. Check console.");
         return null;
       }
 
-      // Grab brand details
+      // brand details
       const brandLogoURL = generatedData?.brandLogoURL || "";
       const productImageURL = generatedData?.productImageURL || "";
       const websiteUrl = brandFetched?.data?.data?.websiteUrl || "";
+      const colorPalettes = brandFetched?.data?.colorPalettes || [];
 
-      // Grab placeholders + templates
+      // placeholders from generate content
       const placeholderList =
-        generatedData.generateContentResponses.generateImageContentResponses || [];
-      const templateList =
-        generatedData.generateContentResponses.templateResponses || [];
+        generatedData.generateContentResponses?.generateImageContentResponses || [];
 
-      // Grab colorPalettes from brand data
-      const colorPalettes = brandFetched.data.colorPalettes || [];
-
-      // This group's label and cohortId (from generate content response)
+      // This group's label
       const cohortName = generatedData.generateContentResponses?.cohortName || "General";
       const cohortIdFromResponse = generatedData.generateContentResponses?.cohortId || null;
-
-      // Get productId from payload (creativePayload)
       const productId = payload.productId || null;
 
-      // We'll accumulate an array of final rendered images for this single pass
-      const creativeImages = [];
-
-      const maxCount = Math.min(placeholderList.length, templateList.length);
-      for (let i = 0; i < maxCount; i++) {
-        const placeholders = {
-          ...placeholderList[i],
-          productImageURL,
-          brandLogoURL,
-          website: websiteUrl,
-        };
-
-        let paletteData = null;
-        if (colorPalettes[i]?.palette) {
-          const colors = colorPalettes[i].palette.split(",").map((c) => c.trim());
-          if (colors.length >= 3) {
-            paletteData = { colors };
-          }
+      // -----------------------------------------
+      // (A) If templateSource === "sparkiq"
+      // We read the server's templateResponses
+      // -----------------------------------------
+      if (payload.templateSource === "sparkiq") {
+        const templateList =
+          generatedData.generateContentResponses?.templateResponses || [];
+        if (!templateList.length) {
+          toast.error("No template responses from server for SparkIQ. Stopping.");
+          return null;
         }
 
-        // fetch polotno template
-        const templateId = templateList[i].id;
-        const polotnoData = await fetchPolotnoTemplate(templateId);
-        if (!polotnoData) continue;
+        // Because we want to produce at most as many as placeholders
+        const maxCount = Math.min(placeholderList.length, templateList.length);
+        const creativeImages = [];
 
-        // apply placeholders + palette
-        const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
-        if (!updatedTemplateJson) continue;
+        for (let i = 0; i < maxCount; i++) {
+          const placeholders = {
+            ...placeholderList[i],
+            productImageURL,
+            brandLogoURL,
+            website: websiteUrl,
+          };
+          let paletteData = null;
+          if (colorPalettes[i]?.palette) {
+            const colors = colorPalettes[i].palette.split(",").map((c) => c.trim());
+            if (colors.length >= 3) {
+              paletteData = { colors };
+            }
+          }
+          const templateId = templateList[i].id;
 
-        // load into Polotno, generate & upload, passing cohortId and productId
-        const renderedCreative = await polotnoCloudRender(
-          updatedTemplateJson,
-          cohortIdFromResponse,
-          productId
-        );
-        if (!renderedCreative) continue;
+          const polotnoData = await fetchPolotnoTemplate(templateId);
+          if (!polotnoData) continue;
 
-        // e.g.  { imageUrl: s3Url, templateId: ..., isFavourite, brandId... }
-        creativeImages.push(renderedCreative);
+          const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
+          if (!updatedTemplateJson) continue;
+
+          const renderedCreative = await polotnoCloudRender(
+            updatedTemplateJson,
+            cohortIdFromResponse,
+            productId
+          );
+          if (!renderedCreative) continue;
+          creativeImages.push(renderedCreative);
+        }
+
+        return { cohortName, creatives: creativeImages };
       }
+      // -----------------------------------------
+      // (B) else => brandTemplates
+      // In creativePayload => templateIds array
+      // We'll fetch them from brand/templates, then replicate them to produce 5 creatives
+      // -----------------------------------------
+      else {
+        const brandTemplateIds = payload.templateIds || [];
+        if (!brandTemplateIds.length) {
+          toast.error("No templateIds found in payload for brand templates. Stopping.");
+          return null;
+        }
 
-      return {
-        cohortName,
-        creatives: creativeImages, // array of { imageUrl, templateId, ...server data }
-      };
+        // fetch these brand templates from server
+        const brandTemplateJsons = await fetchBrandTemplatesByIds(brandTemplateIds);
+
+        // We produce 5 creatives => or up to placeholderList.length if we want to match them
+        // But you said "Irrespective of length we have to generate 5 Creatives"
+        // => let's do exactly 5
+        const finalCount = 5;
+        const creativeImages = [];
+
+        for (let i = 0; i < finalCount; i++) {
+          // pick placeholders => if placeholders are fewer, wrap with mod
+          const plIndex = i % placeholderList.length;
+          const placeholders = {
+            ...placeholderList[plIndex],
+            productImageURL,
+            brandLogoURL,
+            website: websiteUrl,
+          };
+
+          // color palette
+          let paletteData = null;
+          if (colorPalettes[plIndex]?.palette) {
+            const colors = colorPalettes[plIndex].palette.split(",").map((c) => c.trim());
+            if (colors.length >= 3) {
+              paletteData = { colors };
+            }
+          }
+
+          // pick brand template => wrap with mod
+          const brandTplIndex = i % brandTemplateJsons.length;
+          const polotnoData = brandTemplateJsons[brandTplIndex];
+          if (!polotnoData) continue; // skip if missing
+
+          // apply placeholders + palette
+          const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
+          if (!updatedTemplateJson) continue;
+
+          // final cloud render
+          const renderedCreative = await polotnoCloudRender(
+            updatedTemplateJson,
+            cohortIdFromResponse,
+            productId
+          );
+          if (!renderedCreative) continue;
+
+          creativeImages.push(renderedCreative);
+        }
+
+        return { cohortName, creatives: creativeImages };
+      }
     } catch (error) {
       console.error("Error in handleGenerateSingle:", error);
       return null;
     }
   };
 
-  // Step => /v2/generate
+  // (NEW PART) fetch brand templates by the templateIds array
+  async function fetchBrandTemplatesByIds(templateIds) {
+    // We'll fetch them in parallel
+    // or we can do a single query: brand/templates?templateId=....
+    // For demonstration, we'll do them in parallel individually
+    const results = [];
+    for (const tid of templateIds) {
+      try {
+        const resp = await axios.get(`${baseUrl}/v2/brand/templates/${tid}`, {
+          headers: { Authorization: `Bearer ${jwtToken}` },
+        });
+        const polotnoJson = resp.data?.data?.templateJson;
+        if (polotnoJson) {
+          results.push(JSON.parse(polotnoJson));
+        }
+      } catch (err) {
+        console.error("Failed to fetch brand template by ID:", tid, err);
+      }
+    }
+    return results;
+  }
+
+  // => /v2/generate => placeholders
   const generateContent = async (payload) => {
-    delete payload.cohortIds; // remove leftover
-    const response = await axios.post(`${baseUrl}/v2/generate`, payload, {
-      headers: { Authorization: `Bearer ${jwtToken}` },
-    });
-    return response.data?.data;
+    setLoadingSteps((prev) => ({ ...prev, generateContent: true }));
+    try {
+      const newPayload = { ...payload };
+      // remove leftover
+      delete newPayload.cohortIds;
+      const response = await axios.post(`${baseUrl}/v2/generate`, newPayload, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
+      return response.data?.data;
+    } finally {
+      setLoadingSteps((prev) => ({ ...prev, generateContent: false }));
+    }
   };
 
-  // Polotno fetch
+  // fetch polotno template from /v2/template
   const fetchPolotnoTemplate = async (templateId) => {
     try {
       const response = await axios.get(`${baseUrl}/v2/template/${templateId}`, {
@@ -229,29 +314,21 @@ export default function Creatives({
     }
   };
 
-  // --------------------------------------------
   // 3) Polotno -> Cloud Render -> S3 -> Create Template
-  // --------------------------------------------
   const polotnoCloudRender = async (templateJson, cohortId, productId) => {
-    // create Polotno store
-    const { createStore } = await import("polotno/model/store");
     const store = createStore({ key: POLNOTO_API_KEY });
-    await new Promise((r) => setTimeout(r, 100)); // short wait
+    await new Promise((r) => setTimeout(r, 100));
     store.loadJSON(templateJson);
 
-    // do the cloud flow, passing cohortId and productId
     const flowResult = await generateUploadAndCreateTemplate(store, templateJson, cohortId, productId);
-
-    // clear store
     store.clear();
     return flowResult;
   };
 
-  // => generate + upload + create
   async function generateUploadAndCreateTemplate(store, storeJson, cohortId, productId) {
     try {
       const designJson = store.toJSON();
-      // Polotno Cloud
+      // polotno cloud
       const renderRequest = await fetch(
         `https://api.polotno.com/api/renders?KEY=${POLNOTO_API_KEY}`,
         {
@@ -277,30 +354,23 @@ export default function Creatives({
         return null;
       }
 
-      // fetch final image from cloud
       const imageResponse = await fetch(renderJob.output);
       if (!imageResponse.ok) {
         toast.error("Failed to retrieve the rendered image.");
         return null;
       }
-
-      // convert to blob
       const imageBlob = await imageResponse.blob();
 
-      // upload to S3
+      // upload
       const s3Url = await uploadImageToS3(imageBlob);
-      if (!s3Url) {
-        return null;
-      }
+      if (!s3Url) return null;
 
-      // create template on server, passing cohortId and productId
       const creationResponse = await createTemplateOnServer(s3Url, storeJson, cohortId, productId);
       if (!creationResponse) return null;
 
-      // final object includes entire server response plus the image
       return {
         imageUrl: s3Url,
-        ...creationResponse.data, // e.g. templateId, brandId, isFavourite, etc.
+        ...creationResponse.data,
       };
     } catch (error) {
       toast.error("Oops! Something went wrong. Try again later.");
@@ -308,11 +378,9 @@ export default function Creatives({
     }
   }
 
-  // S3 upload
   async function uploadImageToS3(imageBlob) {
     const formData = new FormData();
     formData.append("file", imageBlob, "uploaded-creative.png");
-
     const response = await axios.post(
       `${baseUrl}/sparkiq/image/upload?customerId=123`,
       formData,
@@ -326,7 +394,6 @@ export default function Creatives({
     return response.data?.data?.url;
   }
 
-  // create template on server
   async function createTemplateOnServer(s3Url, storeJson, cohortId, productId) {
     const brandIdFromJson = FIXED_BRAND_ID || "";
     const payload = {
@@ -344,10 +411,9 @@ export default function Creatives({
       voiceoverEnabled: true,
       templateJson: JSON.stringify(storeJson),
       isFavourite: false,
-      productId: productId, // Added productId
-      cohortId: cohortId||"",   // Added cohortId
+      productId: productId || "",
+      cohortId: cohortId || "",
     };
-
     try {
       const response = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
         headers: { Authorization: `Bearer ${jwtToken}` },
@@ -360,14 +426,12 @@ export default function Creatives({
     }
   }
 
-  // --------------------------------------------
-  // 4) Placeholder & Color Palettes
-  // --------------------------------------------
+  // 4) placeholders & color palettes
   function applyTemplate(templateJson, placeholders, paletteData) {
     try {
-      const parsedJson = JSON.parse(templateJson);
+      const parsedJson = typeof templateJson === "string" ? JSON.parse(templateJson) : templateJson;
 
-      // Apply placeholders
+      // apply placeholders
       parsedJson.pages.forEach((page) => {
         page.children.forEach((element) => {
           if (element.custom?.variable) {
@@ -385,10 +449,22 @@ export default function Creatives({
         });
       });
 
-      // Apply color palette if available
+      // apply color palette
       if (paletteData && Array.isArray(paletteData.colors) && paletteData.colors.length >= 3) {
-        applyColorPalette(parsedJson, paletteData);
+        const [bgColor, textColor, svgColor] = paletteData.colors;
+        parsedJson.pages.forEach((page) => {
+          page.background = bgColor;
+          page.children.forEach((element) => {
+            const elType = (element.type || "").toLowerCase();
+            if (elType === "svg" || elType === "figure") {
+              element.fill = svgColor;
+            } else if (elType === "text") {
+              element.fill = textColor;
+            }
+          });
+        });
       }
+
       return parsedJson;
     } catch (err) {
       console.error("applyTemplate error:", err);
@@ -397,22 +473,7 @@ export default function Creatives({
     }
   }
 
-  function applyColorPalette(parsedJson, paletteData) {
-    const [bgColor, textColor, svgColor] = paletteData.colors;
-    parsedJson.pages.forEach((page) => {
-      page.background = bgColor;
-      page.children.forEach((element) => {
-        const elType = (element.type || "").toLowerCase();
-        if (elType === "svg" || elType === "figure") {
-          element.fill = svgColor;
-        } else if (elType === "text") {
-          element.fill = textColor;
-        }
-      });
-    });
-  }
-
-  // step => fetch brand details
+  // => fetch brand details
   const fetchBrandDetails = async () => {
     setLoadingSteps((prev) => ({ ...prev, brandDetails: true }));
     if (!creativePayload?.brandId) throw new Error("Brand ID is missing");
@@ -423,9 +484,6 @@ export default function Creatives({
     return response.data;
   };
 
-  // --------------------------------------------
-  // 5) Button actions: Bookmark, Edit, Download
-  // --------------------------------------------
   const handleBookmark = async (cohortIndex, creativeIndex) => {
     try {
       const updated = [...finalResults];
@@ -434,11 +492,8 @@ export default function Creatives({
         toast.error("No templateId found. Cannot bookmark.");
         return;
       }
+      selected.isFavourite = true; // local
 
-      // Local update
-      selected.isFavourite = true;
-
-      // Server update
       const response = await axios.post(
         `${baseUrl}/v2/user/templates`,
         { ...selected, isFavourite: true },
@@ -448,7 +503,6 @@ export default function Creatives({
       if (response.data?.data?.isFavourite === true) {
         toast.success("Template bookmarked successfully!");
       }
-
       setFinalResults(updated);
     } catch (err) {
       console.error("Error bookmarking template:", err);
@@ -480,6 +534,7 @@ export default function Creatives({
     </svg>
   );
 
+  const navigate = useNavigate();
   const handleEdit = (creative) => {
     navigate("/editor", { state: { templateData: creative } });
   };
@@ -491,31 +546,22 @@ export default function Creatives({
     }
 
     try {
-      // 1️⃣ Create a temporary Polotno store for image generation
       const tempStore = createStore({ key: "H5HjfuZWdlg9X4gOUB27" });
-
-      // 2️⃣ Load the template JSON into the store
       tempStore.loadJSON(JSON.parse(creative.templateJson));
 
-      // 3️⃣ Set the store and wait for Workspace to mount
       setCurrentStore(tempStore);
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // 4️⃣ Ensure the workspace is mounted before exporting
       if (!workspaceRef.current) {
         throw new Error("Workspace is not mounted for export.");
       }
 
-      // 5️⃣ Generate image from the store
       const dataURL = await tempStore.toDataURL({
         mimeType: "image/png",
         pixelRatio: 2,
       });
 
-      // 6️⃣ Convert dataURL to Blob
       const blob = await (await fetch(dataURL)).blob();
-
-      // 7️⃣ Create a link and trigger download
       const fileName = `creative_${Date.now()}.png`;
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -526,9 +572,7 @@ export default function Creatives({
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
 
-      // 8️⃣ Clear the temporary store after use
       tempStore.clear();
-
       toast.success("Image downloaded successfully!");
     } catch (error) {
       console.error("Error generating and downloading image:", error);
@@ -536,9 +580,6 @@ export default function Creatives({
     }
   }
 
-  // --------------------------------------------
-  // Rendering
-  // --------------------------------------------
   return (
     <div className="flex flex-col gap-4 mb-4 overflow-auto hide-scrollbar" style={{ maxHeight: "80vh" }}>
       <section
@@ -569,13 +610,10 @@ export default function Creatives({
               <p className="text-[#374151] text-xs lg:text-sm">AI Generated Creatives</p>
             </span>
           </span>
-          {/* {isNextSectionOpen ? <MdArrowDropUp size={24} /> : <MdArrowDropDown size={24} />} */}
         </div>
 
-        {/* Loader */}
         {isNextSectionOpen && !renderingComplete && <Loader />}
 
-        {/* Display final results if not loading */}
         {isNextSectionOpen && !loading && (
           <div className="p-4">
             <h4 className="text-[#082A66] font-bold text-lg lg:text-xl mb-3">Generated Creative Results</h4>
@@ -601,7 +639,6 @@ export default function Creatives({
                         crossOrigin="anonymous"
                       />
 
-                      {/* Buttons row */}
                       <div className="button-wrapper flex justify-between w-full gap-2 px-2 -ml-8">
                         {/* Bookmark Button */}
                         <button
@@ -644,7 +681,7 @@ export default function Creatives({
                               xmlns="http://www.w3.org/2000/svg"
                             >
                               <path
-                                d="M11.6564 3.65685C11.8469 3.46632 12.1531 3.46632 12.3436 3.65685L14.3436 5.65685C14.5342 5.84737 14.5342 6.15353 14.3436 6.34406L6.37492 14.3127C6.28097 14.4067 6.15792 14.4645 6.02724 14.4746L3.02724 14.7246C2.88342 14.7365 2.74001 14.6882 2.63433 14.584C2.52865 14.4797 2.47272 14.3361 2.48451 14.1923L2.73451 11.1923C2.74455 11.0616 2.80233 10.9385 2.89635 10.8446L10.865 2.87592L11.6564 3.65685Z"
+                                d="M11.6564 3.65685C11.8469 3.46632 12.1531 3.46632 12.3436 3.65685L14.3436 5.65685C14.5342 5.84737 14.5342 6.15353 14.3436 6.34406L6.37492 14.3127C6.28097 14.4067 6.15792 14.4645 6.02724 14.4746L3.02724 14.7246C2.88342 14.7365 2.74 14.6882 2.63433 14.584C2.52865 14.4797 2.47272 14.3361 2.48451 14.1923L2.73451 11.1923C2.74455 11.0616 2.80233 10.9385 2.89635 10.8446L10.865 2.87592L11.6564 3.65685Z"
                                 stroke="#A8A8A8"
                                 strokeWidth="1.5"
                                 fill="none"
