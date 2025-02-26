@@ -7,6 +7,7 @@ import brandIcon from "../../assets/dashboard_img/brand.svg"; // Adjust the path
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
+import productsIcon from "../../assets/dashboard_img/bag.svg";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -90,7 +91,7 @@ const Products = () => {
             <div className="relative flex items-center justify-center ml-1">
               <div className="absolute w-12 h-12 bg-[rgba(0,39,153,0.15)] rounded-2xl"></div>
               <div className="relative w-8 h-8 bg-[#082A66] rounded-xl flex items-center justify-center">
-                <img src={brandIcon} className="w-4 h-4" />
+                <img src={productsIcon} className="w-4 h-4" />
               </div>
             </div>
             <span className="flex flex-col ml-2">

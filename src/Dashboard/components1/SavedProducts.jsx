@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
-
+import savedproducts from "../../assets/dashboard_img/savedProducts.svg";
 import brandImage from "../../assets/dashboard_img/brand_img.png";
 import brandIcon from "../../assets/dashboard_img/brand.svg";
 import defaultAdImage from "../../assets/dashboard_img/saved_products.svg";
@@ -381,12 +381,20 @@ const SavedProducts = () => {
       {/* Container */}
       <div className="max-w-6xl w-full mx-auto flex flex-col gap-3 border border-[#FCFCFC] rounded-3xl pb-4">
         {/* Header */}
+        <svg width="0" height="0" style={{ position: "absolute" }}>
+          <defs>
+            <linearGradient id="hoverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#004367" />
+              <stop offset="100%" stopColor="#00A7FF" />
+            </linearGradient>
+          </defs>
+        </svg>
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-6 relative">
           <span className="flex items-center gap-4">
             <div className="relative flex items-center justify-center ml-1">
               <div className="absolute w-12 h-12 bg-[rgba(0,39,153,0.15)] rounded-2xl"></div>
               <div className="relative w-8 h-8 bg-[#082A66] rounded-xl flex items-center justify-center">
-                <img src={brandIcon} className="w-4 h-4" alt="Brand Icon" />
+                <img src={savedproducts} className="w-4 h-4" alt="Brand Icon" />
               </div>
             </div>
             <span className="flex flex-col ml-2">
@@ -464,7 +472,7 @@ const SavedProducts = () => {
             <div className="relative w-full">
               <input
                 type="text"
-                placeholder="Search (local)"
+                placeholder="Search"
                 value={searchQuery}
                 onChange={handleSearchChange}
                 className="w-full text-sm leading-6 text-slate-900 placeholder-slate-400

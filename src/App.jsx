@@ -46,6 +46,9 @@ import UpgradePlansPage from './Dashboard/pages1/upgradePlanPage';
 import ResetPassword from './components/Dashboard/ResetPassword';
 import Landing from './pages/Landing';
 import UserInfo from './Dashboard/Admin-Dashboard/UserInfo';
+import PolotnoUser from './Dashboard/components1/PolotnoUser';
+import BrandTemplates from './Dashboard/components1/brandTemplates';
+import BrandTemplatesPage from './Dashboard/pages1/brandTemplatesPage';
 
 function App() {
   return (
@@ -183,7 +186,8 @@ function App() {
           <Route path="/admin/subscriptions" element={<UserInfo />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/editor" element={<PolotnoEditor />} />
-
+          <Route path="/user/template-creation" element={<PolotnoUser />} />
+          <Route path="/user/brand-templates" element={<BrandTemplatesPage />} />
         </Routes>
       </div>
     </Router>

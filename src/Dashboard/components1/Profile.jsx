@@ -6,6 +6,7 @@ import mlogo from '../../assets/dashboard_img/metasvg.svg';
 import glogo from '../../assets/dashboard_img/glogosvg.svg';
 import linkimg from '../../assets/dashboard_img/link2.png';
 import TrialPeriodBox from './TrailPeriod';
+import profileIcon from '../../assets/dashboard_img/user.svg';
 import axios from "axios";
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
@@ -119,15 +120,24 @@ const [brandLogo, setBrandLogo] = useState(''); // Selected brand logo
   return (
     <div className="flex-grow overflow-auto hide-scrollbar" style={{ maxHeight: '80vh' }}>
       <div className="lg:max-w-6xl w-full mx-auto flex flex-col gap-4 border border-[#FCFCFC] rounded-3xl pb-4">
-        <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] lg:p-6 p-4 relative">
-          <span className="flex items-center lg:gap-4 gap-2">
-            <img src="/icon1.svg" alt="Icon" className="lg:w-14 w-12" />
-            <span className="flex flex-col">
-              <h4 className="text-[#082A66] font-bold lg:text-xl text-lg">Profile</h4>
-              <p className="text-[#374151] text-xs lg:text-base">Modify or create your personal profile</p>
+      <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-6 relative">
+          <span className="flex items-center gap-4">
+            <div className="relative flex items-center justify-center ml-1">
+              <div className="absolute w-12 h-12 bg-[rgba(0,39,153,0.15)] rounded-2xl"></div>
+              <div className="relative w-8 h-8 bg-[#082A66] rounded-xl flex items-center justify-center">
+                <img src={profileIcon} className="w-4 h-4" alt="Brand Icon" />
+              </div>
+            </div>
+            <span className="flex flex-col ml-2">
+              <h4 className="text-[#082A66] font-bold text-xl">Profile</h4>
+              <p className="text-[#374151]">Modify or create your personal profile</p>
             </span>
           </span>
-          <img src={pimage} alt="Decoration" className="absolute bottom-0 right-4 lg:right-24 w-24 lg:w-44 hidden md:block" />
+          <img
+            src={pimage}
+            alt="Brand Banner"
+            className="absolute bottom-0 right-24 w-44 hidden lg:block"
+          />
         </div>
         {/* <div className="flex flex-col gap-2 p-2 lg:p-4 lg:pt-8 lg:m-4 m-2 lg:mx-12 border border-[#FCFCFC] rounded-3xl overflow-auto hide-scrollbar lg:max-h-[52vh]"> */}
           {/* <div className="flex items-center justify-center lg:m-0">

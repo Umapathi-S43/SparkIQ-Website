@@ -10,6 +10,7 @@ import viewPlanIcon from "../../assets/dashboard_img/plan.svg";
 import profileIcon from "../../assets/dashboard_img/user.svg";
 import signoutIcon from "../../assets/dashboard_img/signout.svg";
 import savedproducts from "../../assets/dashboard_img/savedProducts.svg";
+import template from "../../assets/dashboard_img/template.svg";
 import upgradeIcon from "../../assets/dashboard_img/upgradeIcon.svg";
 
 
@@ -22,7 +23,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: "Home", icon: homeIcon, path: "/homepage" },
     { name: "Brands", icon: brandsIcon, path: "/brandspage" },
     { name: "Products", icon: productsIcon, path: "/productspage" },
-    { name: "Generate Creatives", icon: campaignsIcon, path: "/Campaigns" },    
+    { name: "Generate Creatives", icon: campaignsIcon, path: "/Campaigns" },
+    { name: "Brand Templates", icon: template, path: "/user/brand-templates" },    
    // {name:"Generate DAP Creatives", icon:campaignsIcon,path:"/DAPCreatives"},
     { name: "Saved Creatives", icon: savedproducts, path: "/savedproductspage" },
     //{ name: "Campaigns", icon: campaignsIcon, path: "/Ecampaigns" },
