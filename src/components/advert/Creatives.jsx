@@ -38,7 +38,6 @@ export default function Creatives({
   // => Each element is { cohortName, creatives: [ { ...serverData, imageUrl }, ... ] }
   const [finalResults, setFinalResults] = useState([]);
 
-
   useEffect(() => {
     if (isNextSectionOpen && sectionRef.current) {
       sectionRef.current.scrollIntoView({ behavior: "smooth" });
@@ -97,6 +96,7 @@ export default function Creatives({
 
       for (const cohortId of creativePayload.cohortIds) {
         const modifiedPayload = { ...creativePayload, cohortId };
+        // Avoid leftover property
         delete modifiedPayload.cohortIds;
 
         setLoadingSteps((prev) => ({ ...prev, generateContent: true }));
@@ -168,6 +168,8 @@ export default function Creatives({
             brandLogoURL,
             website: websiteUrl,
           };
+
+          // optional palette
           let paletteData = null;
           if (colorPalettes[i]?.palette) {
             const colors = colorPalettes[i].palette.split(",").map((c) => c.trim());
@@ -175,11 +177,12 @@ export default function Creatives({
               paletteData = { colors };
             }
           }
-          const templateId = templateList[i].id;
 
+          const templateId = templateList[i].id;
           const polotnoData = await fetchPolotnoTemplate(templateId);
           if (!polotnoData) continue;
 
+          // Deep clone + apply placeholders/colors
           const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
           if (!updatedTemplateJson) continue;
 
@@ -209,14 +212,13 @@ export default function Creatives({
         // fetch these brand templates from server
         const brandTemplateJsons = await fetchBrandTemplatesByIds(brandTemplateIds);
 
-        // We produce 5 creatives => or up to placeholderList.length if we want to match them
-        // But you said "Irrespective of length we have to generate 5 Creatives"
-        // => let's do exactly 5
+        // We produce 5 creatives => (or up to placeholderList.length if we want to match them)
+        // But your requirement: "Irrespective of length we have to generate 5 Creatives"
         const finalCount = 5;
         const creativeImages = [];
 
         for (let i = 0; i < finalCount; i++) {
-          // pick placeholders => if placeholders are fewer, wrap with mod
+          // pick placeholder => if placeholders are fewer, wrap index with mod
           const plIndex = i % placeholderList.length;
           const placeholders = {
             ...placeholderList[plIndex],
@@ -225,7 +227,7 @@ export default function Creatives({
             website: websiteUrl,
           };
 
-          // color palette
+          // pick color palette => if colorPalettes are fewer, wrap with mod
           let paletteData = null;
           if (colorPalettes[plIndex]?.palette) {
             const colors = colorPalettes[plIndex].palette.split(",").map((c) => c.trim());
@@ -239,7 +241,7 @@ export default function Creatives({
           const polotnoData = brandTemplateJsons[brandTplIndex];
           if (!polotnoData) continue; // skip if missing
 
-          // apply placeholders + palette
+          // Deep clone + apply placeholders + palette
           const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
           if (!updatedTemplateJson) continue;
 
@@ -262,25 +264,29 @@ export default function Creatives({
     }
   };
 
-  // (NEW PART) fetch brand templates by the templateIds array
+  // --------------------------------------------
+  // 2a) Fetch Brand Templates By ID
+  // - We fetch each unique ID only once
+  // --------------------------------------------
   async function fetchBrandTemplatesByIds(templateIds) {
-    // We'll fetch them in parallel
-    // or we can do a single query: brand/templates?templateId=....
-    // For demonstration, we'll do them in parallel individually
+    const uniqueIds = [...new Set(templateIds)]; // Only fetch each ID once
     const results = [];
-    for (const tid of templateIds) {
+
+    for (const tid of uniqueIds) {
       try {
         const resp = await axios.get(`${baseUrl}/v2/brand/templates/${tid}`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
         const polotnoJson = resp.data?.data?.templateJson;
         if (polotnoJson) {
+          // store the parsed JSON once
           results.push(JSON.parse(polotnoJson));
         }
       } catch (err) {
         console.error("Failed to fetch brand template by ID:", tid, err);
       }
     }
+
     return results;
   }
 
@@ -317,6 +323,7 @@ export default function Creatives({
   // 3) Polotno -> Cloud Render -> S3 -> Create Template
   const polotnoCloudRender = async (templateJson, cohortId, productId) => {
     const store = createStore({ key: POLNOTO_API_KEY });
+    // small delay to ensure store is ready
     await new Promise((r) => setTimeout(r, 100));
     store.loadJSON(templateJson);
 
@@ -429,9 +436,13 @@ export default function Creatives({
   // 4) placeholders & color palettes
   function applyTemplate(templateJson, placeholders, paletteData) {
     try {
-      const parsedJson = typeof templateJson === "string" ? JSON.parse(templateJson) : templateJson;
+      // Important: deep clone the polotno JSON so we don't mutate a read-only object
+      let parsedJson =
+        typeof templateJson === "string"
+          ? JSON.parse(templateJson)
+          : JSON.parse(JSON.stringify(templateJson));
 
-      // apply placeholders
+      // 4a) apply placeholders
       parsedJson.pages.forEach((page) => {
         page.children.forEach((element) => {
           if (element.custom?.variable) {
@@ -442,6 +453,7 @@ export default function Creatives({
               if (elType === "text") {
                 element.text = newValue;
               } else if (elType === "image") {
+                // decodeURIComponent if needed
                 element.src = decodeURIComponent(newValue);
               }
             }
@@ -449,9 +461,10 @@ export default function Creatives({
         });
       });
 
-      // apply color palette
+      // 4b) apply color palette
       if (paletteData && Array.isArray(paletteData.colors) && paletteData.colors.length >= 3) {
         const [bgColor, textColor, svgColor] = paletteData.colors;
+
         parsedJson.pages.forEach((page) => {
           page.background = bgColor;
           page.children.forEach((element) => {
@@ -468,7 +481,7 @@ export default function Creatives({
       return parsedJson;
     } catch (err) {
       console.error("applyTemplate error:", err);
-      toast.error("Failed to apply placeholders/color palette.");
+      toast.error("Failed to apply placeholders or color palette.");
       return null;
     }
   }
@@ -484,6 +497,9 @@ export default function Creatives({
     return response.data;
   };
 
+  // --------------------------------------------
+  // Bookmark, Edit, Download, etc.
+  // --------------------------------------------
   const handleBookmark = async (cohortIndex, creativeIndex) => {
     try {
       const updated = [...finalResults];
@@ -546,10 +562,11 @@ export default function Creatives({
     }
 
     try {
-      const tempStore = createStore({ key: "H5HjfuZWdlg9X4gOUB27" });
+      const tempStore = createStore({ key: POLNOTO_API_KEY });
       tempStore.loadJSON(JSON.parse(creative.templateJson));
 
       setCurrentStore(tempStore);
+      // small delay for the store to render
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       if (!workspaceRef.current) {
@@ -580,6 +597,9 @@ export default function Creatives({
     }
   }
 
+  // --------------------------------------------
+  // Render
+  // --------------------------------------------
   return (
     <div className="flex flex-col gap-4 mb-4 overflow-auto hide-scrollbar" style={{ maxHeight: "80vh" }}>
       <section
@@ -616,7 +636,9 @@ export default function Creatives({
 
         {isNextSectionOpen && !loading && (
           <div className="p-4">
-            <h4 className="text-[#082A66] font-bold text-lg lg:text-xl mb-3">Generated Creative Results</h4>
+            <h4 className="text-[#082A66] font-bold text-lg lg:text-xl mb-3">
+              Generated Creative Results
+            </h4>
             {finalResults.length === 0 && (
               <div className="shadow-md p-2 rounded-lg border border-gray-200 text-gray-600">
                 No data yet.
@@ -625,7 +647,9 @@ export default function Creatives({
 
             {finalResults.map((group, groupIndex) => (
               <div key={groupIndex} className="mb-6">
-                <h5 className="text-md font-semibold text-blue-900 mb-2">Cohort: {group.cohortName}</h5>
+                <h5 className="text-md font-semibold text-blue-900 mb-2">
+                  Cohort: {group.cohortName}
+                </h5>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
                   {group.creatives.map((creative, itemIndex) => (
                     <div
