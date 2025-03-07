@@ -1,194 +1,328 @@
-// PolotnoAdmin.jsx
-
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { createStore } from "polotno/model/store";
+import { VideosPanel } from "polotno/side-panel/videos-panel"; // Official VideosPanel
+import { PhotosPanel } from "polotno/side-panel/photos-panel"; // Official PhotosPanel
 import {
   PolotnoContainer,
   SidePanelWrap,
   WorkspaceWrap,
 } from "polotno";
+import { IoSearchSharp } from "react-icons/io5";
 import { Toolbar } from "polotno/toolbar/toolbar";
 import { ZoomButtons } from "polotno/toolbar/zoom-buttons";
 import { SidePanel, SectionTab } from "polotno/side-panel";
 import { Workspace } from "polotno/canvas/workspace";
+import { PagesTimeline } from "polotno/pages-timeline";
 import { observer } from "mobx-react-lite";
-
 import axios from "axios";
 import toast from "react-hot-toast";
-
+import UploadSectionWithApi from "./UploadSectionWithApi";
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
-
-import { FaCloudUploadAlt, FaTrash } from "react-icons/fa";
+import { FaTrash } from "react-icons/fa";
 import { SiAffinitydesigner } from "react-icons/si";
-
 import {
   TextSection,
-  PhotosSection,
   ElementsSection,
+  PagesSection,
   BackgroundSection,
   SizeSection,
   LayersSection,
   TemplatesSection,
 } from "polotno/side-panel";
-
+import { unstable_setAnimationsEnabled } from "polotno/config";
 import "./PolotnoEditor.css";
 
-// ----------------------------------------------
-// SPINNER COMPONENT
-// ----------------------------------------------
+// Polotno Cloud key
+const POLNOTO_API_KEY = "H5HjfuZWdlg9X4gOUB27";
+
+// Helper to get the next unique media name
+function getNextMediaName(type) {
+  let count = 0;
+  if (type === "video") {
+    store.pages.forEach((page) => {
+      page.children.forEach((child) => {
+        if (
+          child.type === "video" &&
+          child.custom &&
+          typeof child.custom.variable === "string" &&
+          child.custom.variable.startsWith("video")
+        ) {
+          const num = parseInt(child.custom.variable.replace("video", ""), 10);
+          if (!isNaN(num) && num > count) {
+            count = num;
+          }
+        }
+      });
+    });
+    return "video" + (count + 1);
+  } else if (type === "audio") {
+    store.audios.forEach((audio) => {
+      if (
+        audio.custom &&
+        typeof audio.custom.variable === "string" &&
+        audio.custom.variable.startsWith("audio")
+      ) {
+        const num = parseInt(audio.custom.variable.replace("audio", ""), 10);
+        if (!isNaN(num) && num > count) {
+          count = num;
+        }
+      }
+    });
+    return "audio" + (count + 1);
+  }
+  return type;
+}
+
+
+// Main store for editing
+const store = createStore({ key: POLNOTO_API_KEY });
+
+// Add a change listener to update video elements when they are added
+store.on("change", (e) => {
+  // For video elements added via addElement
+  if (e.action === "addElement") {
+    const el = store.findOne({ id: e.data.id });
+    if (el?.type === "video" && (!el.custom || !el.custom.variable)) {
+      const name = getNextMediaName("video");
+      el.set({ custom: { edit: true, variable: name } });
+    }
+  }
+  // For audio tracks added via store.addAudio
+  if (e.action === "addAudio") {
+    // e.data.id should refer to the audio id
+    const audio = store.audios.find((a) => a.id === e.data.id);
+    if (audio && (!audio.custom || !audio.custom.variable)) {
+      const name = getNextMediaName("audio");
+      audio.set({ custom: { edit: true, variable: name } });
+    }
+  }
+});
+
+unstable_setAnimationsEnabled(true);
+
+// A second store for local previews
+const previewStore = createStore({ key: POLNOTO_API_KEY });
+unstable_setAnimationsEnabled(true);
+
+//------------------------------------------------------------
+// Simple ms -> mm:ss
+//------------------------------------------------------------
+function msToTimeString(ms = 0) {
+  const totalSec = Math.floor(ms / 1000);
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+  const ss = String(totalSec % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
+//------------------------------------------------------------
+// Spinner
+//------------------------------------------------------------
 const Spinner = () => {
   const lines = [...Array(16).keys()];
   return (
     <div className="my-spinner">
       {lines.map((i) => (
-        <div key={i} className={`my-fade-line my-fade-line-${i}`}></div>
+        <div key={i} className={`my-fade-line my-fade-line-${i}`} />
       ))}
     </div>
   );
 };
 
-// ----------------------------------------------
-// 1) CREATE POLOTNO STORE
-// ----------------------------------------------
-const store = createStore({
-  key: "H5HjfuZWdlg9X4gOUB27",
-});
+//------------------------------------------------------------
+// LocalPreviewModal
+//------------------------------------------------------------
+const LocalPreviewModal = observer(({ open, onClose, onlyCurrentPage }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-// ----------------------------------------------
-// 2) CONTEXT FOR UPLOADED FILES
-// ----------------------------------------------
-const UploadedFilesContext = createContext();
+  useEffect(() => {
+    if (!open) return;
 
-const UploadedFilesProvider = ({ children }) => {
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+    // Clear old content
+    previewStore.loadJSON({ pages: [] });
 
-  const addUploadedFile = (fileUrl) => {
-    setUploadedFiles((prev) => [...prev, fileUrl]);
+    const mainJson = JSON.parse(JSON.stringify(store.toJSON()));
+    let pagesToLoad = mainJson.pages || [];
+    if (onlyCurrentPage && store.activePage) {
+      pagesToLoad = pagesToLoad.filter((p) => p.id === store.activePage.id);
+    }
+
+    // Partial JSON
+    const partialJson = { ...mainJson, pages: pagesToLoad };
+    previewStore.loadJSON(partialJson);
+
+    // Auto-play
+    previewStore.play({ repeat: true });
+
+    // Also load the full JSON
+    previewStore.loadJSON(mainJson);
+    previewStore.play({ repeat: true });
+    setIsPlaying(true);
+
+    return () => {
+      previewStore.stop();
+      setIsPlaying(false);
+      setProgress(0);
+    };
+  }, [open, onlyCurrentPage]);
+
+  useEffect(() => {
+    let interval;
+    const DURATION = 5000; // 5 seconds
+    let startTime = 0;
+
+    if (isPlaying) {
+      startTime = Date.now();
+      interval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const fraction = elapsed / DURATION;
+        if (fraction >= 1) {
+          previewStore.stop();
+          setIsPlaying(false);
+          setProgress(0);
+          clearInterval(interval);
+        } else {
+          setProgress(fraction * 100);
+        }
+      }, 100);
+    } else {
+      setProgress(0);
+    }
+
+    return () => interval && clearInterval(interval);
+  }, [isPlaying]);
+
+  if (!open) return null;
+
+  const handleBackgroundClick = () => {
+    previewStore.clear();
+    previewStore.stop();
+    setIsPlaying(false);
+    onClose();
   };
 
-  return (
-    <UploadedFilesContext.Provider value={{ uploadedFiles, addUploadedFile }}>
-      {children}
-    </UploadedFilesContext.Provider>
-  );
-};
+  const handleTogglePlay = () => {
+    if (isPlaying) {
+      previewStore.stop();
+    } else {
+      previewStore.play({ repeat: true });
+    }
+    setIsPlaying(!isPlaying);
+  };
 
-const useUploadedFiles = () => useContext(UploadedFilesContext);
-
-// ----------------------------------------------
-// 3) UPLOAD SECTION
-// ----------------------------------------------
-const UploadSectionWithAPI = {
-  name: "upload-api",
-  Tab: (props) => (
-    <SectionTab name="Upload" {...props}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
-        <FaCloudUploadAlt />
-      </div>
-    </SectionTab>
-  ),
-  Panel: observer(({ store }) => {
-    const { uploadedFiles, addUploadedFile } = useUploadedFiles();
-    const [isUploading, setIsUploading] = useState(false);
-
-    const handleFileUpload = async (file) => {
-      if (!file) return;
-      setIsUploading(true);
-      const uploadData = new FormData();
-      uploadData.append("file", file);
-      uploadData.append("customerId", "123");
-
-      try {
-        const response = await axios.post(
-          `${baseUrl}/sparkiq/image/upload`,
-          uploadData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
-        const imageUrl = response.data.data.url;
-        addUploadedFile(imageUrl);
-        toast.success("File upload successful");
-      } catch (error) {
-        console.error(error);
-        toast.error("File upload failed. Please try again.");
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-    return (
-      <div style={{ padding: "10px", height: "100%" }}>
-        <h3 style={{ marginBottom: "10px" }}>Uploaded Files</h3>
-        <label
-          htmlFor="fileUpload"
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 9999,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+      onClick={handleBackgroundClick}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          width: "800px",
+          height: "500px",
+          borderRadius: "8px",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 10,
+        }}
+      >
+        <button
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "8px",
-            backgroundColor: "#333",
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            zIndex: 999999,
+            background: "#000",
             color: "#fff",
             border: "none",
-            borderRadius: "5px",
+            borderRadius: "4px",
+            fontSize: "14px",
+            padding: "6px 10px",
             cursor: "pointer",
           }}
-        >
-          <FaCloudUploadAlt style={{ marginRight: "8px" }} />
-          Upload Image
-        </label>
-        <input
-          id="fileUpload"
-          type="file"
-          onChange={(e) => handleFileUpload(e.target.files[0])}
-          style={{ display: "none" }}
-        />
-        {isUploading && (
-          <div style={{ textAlign: "center", marginTop: 10 }}>
-            <Spinner />
-          </div>
-        )}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "10px",
-            overflowY: "auto",
-            maxHeight: "60vh",
-            marginTop: 20,
+          onClick={() => {
+            previewStore.clear();
+            setIsPlaying(false);
+            previewStore.stop();
+            setIsPlaying(false);
+            onClose();
           }}
         >
-          {uploadedFiles.map((file, index) => (
+          Close
+        </button>
+        <div style={{ flex: 1, position: "relative" }}>
+          <PolotnoContainer style={{ width: "100%", height: "100%" }}>
+            <SidePanelWrap style={{ display: "none" }} />
+            <WorkspaceWrap>
+              <Workspace
+                store={previewStore}
+                components={{ PageControls: () => null }}
+              />
+            </WorkspaceWrap>
+          </PolotnoContainer>
+        </div>
+        <div
+          style={{
+            height: "40px",
+            background: "#f1f1f1",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 10px",
+          }}
+        >
+          <button
+            style={{
+              background: "transparent",
+              border: "none",
+              fontSize: "20px",
+              cursor: "pointer",
+              marginRight: "10px",
+            }}
+            onClick={handleTogglePlay}
+          >
+            {isPlaying ? "⏸" : "▶"}
+          </button>
+          <div
+            style={{
+              flex: 1,
+              height: "5px",
+              background: "#ddd",
+              borderRadius: "3px",
+              overflow: "hidden",
+            }}
+          >
             <div
-              key={index}
               style={{
-                border: "1px solid #ccc",
-                borderRadius: "5px",
-                overflow: "hidden",
-                cursor: "pointer",
+                width: `${progress}%`,
+                height: "100%",
+                background: "#4CAF50",
+                transition: "width 0.1s ease-in-out",
               }}
-              onClick={() => {
-                store.activePage?.addElement({ type: "image", src: file });
-              }}
-            >
-              <img src={file} alt={`Uploaded ${index}`} style={{ width: "100%", height: "auto" }} />
-            </div>
-          ))}
+            />
+          </div>
         </div>
       </div>
-    );
-  }),
-};
+    </div>,
+    document.body
+  );
+});
 
-// ----------------------------------------------
-// 4) DELETE CONFIRMATION MODAL
-// ----------------------------------------------
+//------------------------------------------------------------
+// DeleteConfirmationModal
+//------------------------------------------------------------
 const DeleteConfirmationModal = ({ isOpen, onClose, onDelete, template }) => {
   if (!isOpen) return null;
   return createPortal(
@@ -212,26 +346,30 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onDelete, template }) => {
           borderRadius: "8px",
           maxWidth: "400px",
           width: "90%",
-
         }}
       >
-        {template && template.url && (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: "10px" }}>
+        {template?.url && (
+          <div style={{ textAlign: "center", marginBottom: "10px" }}>
             <img
               src={template.url}
               alt="Template Preview"
-              style={{
-                width: "40%",
-                height: "40%",
-              }}
+              style={{ width: "60%", objectFit: "cover" }}
             />
           </div>
         )}
-        <p style={{ marginBottom: "20px", fontSize: "16px" }}>Do you want to delete this template?</p>
+        <p style={{ marginBottom: "20px", fontSize: "16px" }}>
+          Do you want to delete this template?
+        </p>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
           <button
             onClick={onClose}
-            style={{ padding: "8px 16px", background: "#ccc", border: "none", borderRadius: "4px", cursor: "pointer" }}
+            style={{
+              padding: "8px 16px",
+              background: "#ccc",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
           >
             Cancel
           </button>
@@ -255,9 +393,9 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onDelete, template }) => {
   );
 };
 
-// ----------------------------------------------
-// 5) LABEL MODAL
-// ----------------------------------------------
+//------------------------------------------------------------
+// LabelModal (Dynamic Variables)
+//------------------------------------------------------------
 const LabelModal = ({ element, onClose }) => {
   const [variableName, setVariableName] = useState("");
   const [options, setOptions] = useState([]);
@@ -266,13 +404,18 @@ const LabelModal = ({ element, onClose }) => {
     const fetchOptions = async () => {
       try {
         const response = await axios.get(`${baseUrl}/v2/design/labels`, {
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwtToken}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwtToken}`,
+          },
         });
         let opts = response.data?.data || [];
-        // If element has an existing value that is not in opts, add it
         if (element && typeof element.get === "function") {
           const existingVar = element.get("dynamicVariable");
-          if (existingVar && !opts.some((opt) => opt.value === existingVar)) {
+          if (
+            existingVar &&
+            !opts.some((opt) => opt.value === existingVar)
+          ) {
             opts = [{ id: "custom", name: existingVar, value: existingVar }, ...opts];
           }
         }
@@ -396,19 +539,18 @@ const LabelModal = ({ element, onClose }) => {
   );
 };
 
-// ----------------------------------------------
-// 5) TEXT/IMAGE... WITH LABEL (each now uses a unique key)
-// ----------------------------------------------
+//------------------------------------------------------------
+// TEXT/IMAGE ... WITH LABEL COMPONENTS
+//------------------------------------------------------------
 const MyTextFillWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-
   return (
     <div style={{ margin: "8px 0" }}>
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#00000",
+          color: "#000",
           border: "none",
           padding: "4px 8px",
           cursor: "pointer",
@@ -417,7 +559,6 @@ const MyTextFillWithLabel = observer(({ store, element }) => {
       >
         Label
       </button>
-
       {showLabelModal && (
         <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
@@ -428,13 +569,12 @@ const MyTextFillWithLabel = observer(({ store, element }) => {
 const MyImageWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-
   return (
     <div style={{ margin: "8px 0" }}>
       <button
         style={{
           backgroundColor: "transparent",
-          color: "#00000",
+          color: "#000",
           border: "none",
           padding: "4px 8px",
           cursor: "pointer",
@@ -443,7 +583,6 @@ const MyImageWithLabel = observer(({ store, element }) => {
       >
         Label
       </button>
-
       {showLabelModal && (
         <LabelModal element={element} onClose={() => setShowLabelModal(false)} />
       )}
@@ -454,7 +593,6 @@ const MyImageWithLabel = observer(({ store, element }) => {
 const MySvgWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-
   return (
     <div style={{ margin: "8px 0" }}>
       <button
@@ -479,7 +617,6 @@ const MySvgWithLabel = observer(({ store, element }) => {
 const MyFigureWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-
   return (
     <div style={{ margin: "8px 0" }}>
       <button
@@ -504,7 +641,6 @@ const MyFigureWithLabel = observer(({ store, element }) => {
 const MyLineWithLabel = observer(({ store, element }) => {
   if (!element) return null;
   const [showLabelModal, setShowLabelModal] = useState(false);
-
   return (
     <div style={{ margin: "8px 0" }}>
       <button
@@ -526,9 +662,311 @@ const MyLineWithLabel = observer(({ store, element }) => {
   );
 });
 
-// ----------------------------------------------
-// 6) CUSTOM SECTION (Design)
-// ----------------------------------------------
+//------------------------------------------------------------
+// MEDIA SECTION
+//------------------------------------------------------------
+const audioItems = [
+  {
+    name: "Audio 1",
+    url: "https://sparkiq-image-upload.s3.amazonaws.com/f9b772ba-f7c6-42d3-b316-948a556da643.mp3",
+    type: "audio",
+  },
+  {
+    name: "Audio 2",
+    url: "https://sparkiq-image-upload.s3.amazonaws.com/c64f4f80-880b-43f6-b3f5-ab31efe651dd.mp3",
+    type: "audio",
+  },
+];
+
+const aiVideoItems = [
+  {
+    name: "AI Video 1",
+    url: "https://sparkiq-image-upload.s3.amazonaws.com/bd5121c6-638c-463a-919a-2e6e6715cfe5.mp4",
+    type: "video",
+  },
+];
+
+const handleMediaClick = (item) => {
+  if (item.type === "video") {
+    // Directly add a video element with a custom property.
+    const newVideo = store.activePage?.addElement({
+      type: "video",
+      src: item.url,
+      width: 800,
+      height: 450,
+      custom: { edit: true, variable: getNextMediaName("video") },
+    });
+    if (newVideo) {
+      newVideo.set({ custom: { edit: true, variable: getNextMediaName("video") } });
+    }
+    toast.success(`Video added: ${item.name}`);
+  }
+  // (For audio, you could implement similar logic if needed)
+  console.log("Updated JSON:", JSON.stringify(store.toJSON(), null, 2));
+};
+
+const aiVideoGridStyles = {
+  container: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+    justifyItems: "center",
+    alignItems: "center",
+    maxHeight: "600px",
+    overflowY: "auto",
+  },
+  mediaItem: {
+    width: "100%",
+    height: "250px",
+    cursor: "pointer",
+  },
+  video: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    borderRadius: "0px",
+  },
+};
+
+//------------------------------------------------------------
+// MEDIA SECTION COMPONENT
+//------------------------------------------------------------
+const theme = localStorage.getItem("theme");
+const isDarkMode = theme === "dark";
+const MediaSection = {
+  name: "media",
+  Tab: (props) => (
+    <SectionTab name="Media" {...props}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img
+          className="w-5"
+          src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gU3ZnIFZlY3RvciBJY29ucyA6IGh0dHA6Ly93d3cub25saW5ld2ViZm9udHMuY29tL2ljb24gLS0+DQo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPg0KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMjU2IDI1NiIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjU2IDI1NiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8bWV0YWRhdGE+IFN2ZyBWZWN0b3IgSWNvbnMgOiBodHRwOi8vd3d3Lm9ubGluZXdlYmZvbnRzLmNvbS9pY29uIDwvbWV0YWRhdGE+DQo8Zz48Zz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMTA0LDkxLjFsNTksMzYuOWwtNTksMzYuOVY5MS4xeiIvPjxwYXRoIGZpbGw9IiMwMDAwMDAiIGQ9Ik0yMDEuOCwzOS41SDU0LjNIMTB2MTc3aDQ0LjNoMTQ3LjVIMjQ2di0xNzdIMjAxLjh6IE0yNC44LDU0LjNoMTQuOHYyOS41SDI0LjhWNTQuM3ogTTI0LjgsMTEzLjNoMTQuOHYyOS41SDI0LjhWMTEzLjN6IE0yNC44LDIwMS44di0yOS41aDE0Ljh2MjkuNUgyNC44eiBNNTQuMywyMDEuOFY1NC4zaDE0Ny41djE0Ny41SDU0LjN6IE0yMzEuMywyMDEuOGgtMTQuOHYtMjkuNWgxNC44VjIwMS44eiBNMjMxLjMsMTQyLjhoLTE0Ljh2LTI5LjVoMTQuOFYxNDIuOHogTTIzMS4zLDgzLjhoLTE0LjhWNTQuM2gxNC44VjgzLjh6Ii8+PC9nPjwvZz4NCjwvc3ZnPg==" 
+          width="32" 
+          height="32" 
+        />
+      </div>
+    </SectionTab>
+  ),
+  Panel: observer(({ store }) => {
+    const [activeTab, setActiveTab] = useState("photos");
+    const [aiVideoItems, setAiVideoItems] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+      fetchVideos(1, "technology");
+    }, []);
+
+    const fetchVideos = async (pageNum, query) => {
+      if (loading) return;
+      setLoading(true);
+      try {
+        const API_KEY = "49135722-3c7eead3cf8935610431f2bc2";
+        const encodedQuery = encodeURIComponent(query);
+        const response = await fetch(
+          `https://pixabay.com/api/videos/?key=${API_KEY}&q=${encodedQuery}&video_type=film&order=popular&per_page=20&page=${pageNum}`
+        );
+        const data = await response.json();
+        if (data?.hits?.length > 0) {
+          const videos = data.hits
+            .filter((video) => video.videos?.large?.url)
+            .map((video) => ({
+              name: `Video ${video.id}`,
+              url: video.videos.large.url,
+              thumbnail: video.videos.large.thumbnail,
+              type: "video",
+            }));
+          setAiVideoItems((prevVideos) =>
+            pageNum === 1 ? videos : [...prevVideos, ...videos]
+          );
+        } else {
+          setAiVideoItems([]);
+        }
+      } catch (error) {
+        console.error("Error fetching AI videos:", error);
+        toast.error("Failed to fetch AI videos.");
+      }
+      setLoading(false);
+    };
+
+    const handleSearchChange = (e) => {
+      setSearchQuery(e.target.value);
+    };
+
+    const handleSearchKeyDown = (e) => {
+      if (e.key === "Enter") {
+        setPage(1);
+        setAiVideoItems([]);
+        fetchVideos(1, searchQuery || "technology");
+      }
+    };
+
+    const handleScroll = (e) => {
+      if (loading) return;
+      const nearBottom =
+        e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 10;
+      if (nearBottom) {
+        setPage((prevPage) => {
+          const nextPage = prevPage + 1;
+          fetchVideos(nextPage, searchQuery || "technology");
+          return nextPage;
+        });
+      }
+    };
+
+    const handleMediaClick = (item) => {
+      store.activePage?.addElement({
+        type: "video",
+        src: item.url,
+        width: 800,
+        height: 450,
+        custom: { edit: true, variable: getNextMediaName("video") },
+      });
+      toast.success(`Video added: ${item.name}`);
+      console.log("Updated JSON:", JSON.stringify(store.toJSON(), null, 2));
+    };
+
+    const renderTabContent = () => {
+      if (activeTab === "video") {
+        return <VideosPanel store={store} />;
+      } else if (activeTab === "audio") {
+        return <p>No dynamic audio integration yet.</p>;
+      } else if (activeTab === "ai") {
+        return (
+          <>
+            <div style={{ display: "flex", alignItems: "center", border: "1px solid #ccc", borderRadius: "20px", padding: "6px", marginLeft: "-10px", backgroundColor: "#fff", marginBottom: "10px" }}>
+              <IoSearchSharp size={20} color="#333" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onKeyDown={handleSearchKeyDown}
+                style={{
+                  flex: 1,
+                  padding: "2px",
+                  border: "none",
+                  outline: "none",
+                  fontSize: "14px",
+                }}
+              />
+            </div>
+            <div style={aiVideoGridStyles.container} onScroll={handleScroll}>
+              {aiVideoItems.length === 0 ? (
+                <p>{loading ? "Loading AI videos..." : "No results found."}</p>
+              ) : (
+                aiVideoItems.map((item) => (
+                  <div
+                    key={item.name}
+                    style={aiVideoGridStyles.mediaItem}
+                    onClick={() => handleMediaClick(item)}
+                  >
+                    <video src={item.url} autoPlay loop muted style={aiVideoGridStyles.video} />
+                  </div>
+                ))
+              )}
+              {loading && <p style={{ textAlign: "center" }}>Loading more videos...</p>}
+            </div>
+          </>
+        );
+      } else if (activeTab === "photos") {
+        return <PhotosPanel store={store} />;
+      }
+      return null;
+    };
+
+    return (
+      <div style={{ padding: "10px", color: isDarkMode ? "#fff" : "#000", height: "100%" }}>
+        <style>{subTabStyles}</style>
+        <div className="polotno-sub-tabs">
+          <div
+            className={`polotno-sub-tab ${activeTab === "photos" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("photos")}
+          >
+            Photos
+          </div>
+          <div
+            className={`polotno-sub-tab ${activeTab === "audio" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("audio")}
+          >
+            Audio
+          </div>
+          <div
+            className={`polotno-sub-tab ${activeTab === "ai" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("ai")}
+          >
+            AI Picked
+          </div>
+          <div
+            className={`polotno-sub-tab ${activeTab === "video" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("video")}
+          >
+            Video
+          </div>
+        </div>
+        {renderTabContent()}
+      </div>
+    );
+  }),
+};
+const subTabStyles = `
+.polotno-sub-tabs {
+  display: flex;
+  margin-bottom: 8px;
+}
+.polotno-sub-tab {
+  font-size: 14px;
+  margin-right: 16px;
+  padding-bottom: 4px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.polotno-sub-tab:hover {
+  color: #106ba3;
+}
+.polotno-sub-tab.is-active {
+  border-color: #106ba3;
+}
+`;
+
+const gridStyles = {
+  gridContainer: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+  },
+  mediaItem: (isDark) => ({
+    border: isDark ? "1px solid #5c7080" : "1px solid #ccc",
+    borderRadius: "4px",
+    padding: "8px",
+    cursor: "pointer",
+    textAlign: "center",
+    backgroundColor: isDark ? "#394b59" : "#f9f9f9",
+    color: isDark ? "#fff" : "#000",
+    transition: "background-color 0.2s",
+  }),
+  itemName: {
+    margin: 0,
+    fontWeight: "bold",
+    fontSize: "14px",
+  },
+  itemType: {
+    margin: 0,
+    fontSize: "12px",
+  },
+};
+
+const EmptyVideosSection = {
+  name: "videos",
+  Tab: () => null,
+  Panel: () => null,
+};
+
+//------------------------------------------------------------
+// CustomSection (templates from backend)
+//------------------------------------------------------------
 const CustomSection = {
   name: "custom",
   Tab: (props) => (
@@ -551,52 +989,29 @@ const CustomSection = {
       if (loading) return;
       setLoading(true);
       try {
-        const response = await axios.get(`${baseUrl}/v2/template?page=${pageNum}&size=10`, {
+        const resp = await axios.get(`${baseUrl}/v2/template?page=${pageNum}&size=10`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
-        const resTemplates = response.data.data.content || [];
-        const totalPages = response.data.data.totalPages;
-        setTemplates((prev) => (pageNum === 0 ? resTemplates : [...prev, ...resTemplates]));
+        const content = resp.data.data.content || [];
+        const totalPages = resp.data.data.totalPages;
+        setTemplates((prev) => (pageNum === 0 ? content : [...prev, ...content]));
         setHasMore(pageNum + 1 < totalPages);
       } catch (error) {
-        console.error("Failed to fetch templates:", error);
+        console.error(error);
         setHasMore(false);
       } finally {
         setLoading(false);
       }
     };
 
-    const applyTemplate = async (template) => {
-      setIsApplying(true);
-      try {
-        if (!template.templateJson) {
-          toast.error("Template JSON is not available.");
-          return;
-        }
-        const parsedJson = JSON.parse(template.templateJson);
-        store.loadJSON(parsedJson);
-        if (typeof setCurrentTemplateId === "function") {
-          setCurrentTemplateId(template.templateId);
-        }
-        toast.success("Template applied successfully!");
-      } catch (err) {
-        console.error("Error applying template:", err);
-        toast.error("Failed to apply template. Please try again.");
-      } finally {
-        setIsApplying(false);
-      }
-    };
-
     useEffect(() => {
-      if (templates.length === 0) {
+      if (!templates.length) {
         fetchTemplates(0);
       }
     }, []);
 
     useEffect(() => {
-      if (page > 0) {
-        fetchTemplates(page);
-      }
+      if (page > 0) fetchTemplates(page);
     }, [page]);
 
     useEffect(() => {
@@ -607,19 +1022,31 @@ const CustomSection = {
       }
     }, [reloadTrigger]);
 
-    useEffect(() => {
-      const container = document.querySelector(".template-container");
-      if (container) {
-        container.addEventListener("scroll", handleScroll);
-        return () => container.removeEventListener("scroll", handleScroll);
-      }
-    }, [hasMore, loading]);
-
     const handleScroll = (e) => {
       const container = e.target;
-      const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 1;
-      if (isBottom && hasMore && !loading) {
-        setPage((prev) => prev + 1);
+      const nearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 1;
+      if (nearBottom && hasMore && !loading) {
+        setPage((p) => p + 1);
+      }
+    };
+
+    const applyTemplate = async (tmpl) => {
+      setIsApplying(true);
+      try {
+        if (!tmpl.templateJson) {
+          toast.error("No template JSON available!");
+          return;
+        }
+        const parsed = JSON.parse(tmpl.templateJson);
+        store.loadJSON(parsed);
+        if (setCurrentTemplateId) setCurrentTemplateId(tmpl.templateId);
+        toast.success("Template applied!");
+      } catch (err) {
+        console.error(err);
+        toast.error("Error applying template");
+      } finally {
+        setIsApplying(false);
       }
     };
 
@@ -638,12 +1065,11 @@ const CustomSection = {
         await axios.delete(`${baseUrl}/v2/template/${selectedTemplateId}`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
-        setTemplates((prev) => prev.filter((p) => p.templateId !== selectedTemplateId));
+        setTemplates((p) => p.filter((t) => t.templateId !== selectedTemplateId));
         setIsModalOpen(false);
         toast.success("Deleted successfully.");
       } catch (error) {
-        console.error("Error deleting template:", error);
-        toast.error("Failed to delete the template. Please try again.");
+        toast.error("Failed to delete template.");
       }
     };
 
@@ -655,25 +1081,26 @@ const CustomSection = {
           <div
             style={{
               position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.3)",
+              inset: 0,
+              background: "rgba(0,0,0,0.3)",
               zIndex: 9999,
               display: "flex",
-              justifyContent: "center",
               alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Spinner />
           </div>
         )}
-        <div className="overflow-auto hide-scrollbar template-container" style={{ padding: "10px", maxHeight: "90vh", position: "relative" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
-            {templates.map((template) => (
+        <div
+          className="template-container"
+          style={{ padding: "10px", maxHeight: "90vh", overflowY: "auto" }}
+          onScroll={handleScroll}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "10px" }}>
+            {templates.map((tmpl) => (
               <div
-                key={template.templateId}
+                key={tmpl.templateId}
                 style={{
                   position: "relative",
                   borderRadius: "5px",
@@ -682,15 +1109,15 @@ const CustomSection = {
                 }}
               >
                 <img
-                  src={template.url}
-                  alt={template.name}
+                  src={tmpl.url}
+                  alt={tmpl.name}
                   style={{ width: "100%", height: "auto" }}
-                  onClick={() => applyTemplate(template)}
+                  onClick={() => applyTemplate(tmpl)}
                 />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openDeleteModal(template.templateId);
+                    openDeleteModal(tmpl.templateId);
                   }}
                   style={{
                     position: "absolute",
@@ -703,7 +1130,7 @@ const CustomSection = {
                     cursor: "pointer",
                   }}
                 >
-                  <FaTrash style={{ color: "white" }} />
+                  <FaTrash style={{ color: "#fff" }} />
                 </button>
               </div>
             ))}
@@ -727,18 +1154,18 @@ const CustomSection = {
   }),
 };
 
-// ----------------------------------------------
-// TEMPLATE TYPE MODAL (for Save/Update)
-// ----------------------------------------------
+//------------------------------------------------------------
+// TemplateTypeModal (Save/Update JSON)
+//------------------------------------------------------------
 const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
   const [selectedType, setSelectedType] = useState(existingTag || "");
   const [customType, setCustomType] = useState("");
-  const [activeStatus, setActiveStatus] = useState(true); // Default to true
+  const [activeStatus, setActiveStatus] = useState(true);
 
   useEffect(() => {
     setSelectedType(existingTag || "");
-    setCustomType(""); // Reset custom input when modal reopens
-    setActiveStatus(true); // Reset active status when modal opens
+    setCustomType("");
+    setActiveStatus(true);
   }, [existingTag, isOpen]);
 
   if (!isOpen) return null;
@@ -767,16 +1194,16 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
           textAlign: "center",
         }}
       >
-        <h3 className="text-bold"style={{fontWeight:"bold"}}>Select Template Type</h3>
-        <p style={{ fontSize: "14px", color: "#555",marginBottom:"6px" }}>Choose the type for this template.</p>
-
-        {/* Dropdown Selection */}
+        <h3 className="text-bold" style={{ fontWeight: "bold" }}>Select Template Type</h3>
+        <p style={{ fontSize: "14px", color: "#555", marginBottom: "6px" }}>
+          Choose the type for this template.
+        </p>
         <select
           value={selectedType}
           onChange={(e) => {
             setSelectedType(e.target.value);
             if (e.target.value !== "Other") {
-              setCustomType(""); // Reset custom input when another option is selected
+              setCustomType("");
             }
           }}
           style={{
@@ -793,8 +1220,6 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
           <option value="B2B Consultant">B2B Consultant</option>
           <option value="Other">Other</option>
         </select>
-
-        {/* Show input field if "Other" is selected */}
         {selectedType === "Other" && (
           <input
             type="text"
@@ -809,8 +1234,6 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
             }}
           />
         )}
-
-        {/* Active Template Toggle */}
         <div
           style={{
             display: "flex",
@@ -822,8 +1245,9 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
             background: "#f8f8f8",
           }}
         >
-          <span style={{ fontSize: "14px", color: "#555", flex: 1, display:"flex", alignItems:"start" }}>Active Template</span>
-
+          <span style={{ fontSize: "14px", color: "#555", flex: 1, display: "flex", alignItems: "start" }}>
+            Active Template
+          </span>
           <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
             <input
               type="checkbox"
@@ -858,18 +1282,23 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
             </span>
           </label>
         </div>
-
-
-        {/* Buttons */}
         <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
           <button
             onClick={onClose}
-            style={{ background: "#ccc", border: "none", padding: "8px 16px", borderRadius: "4px", cursor: "pointer" }}
+            style={{
+              background: "#ccc",
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
           >
             Cancel
           </button>
           <button
-            onClick={() => onConfirm({ templateType: selectedType === "Other" ? customType : selectedType, activeStatus })}
+            onClick={() =>
+              onConfirm({ templateType: selectedType === "Other" ? customType : selectedType, activeStatus })
+            }
             style={{
               background: "#4CAF50",
               color: "white",
@@ -889,10 +1318,141 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag }) => {
   );
 };
 
+//------------------------------------------------------------
+// MP4PreviewModal
+//------------------------------------------------------------
+const MP4PreviewModal = ({ visible, mp4Url, onClose, onSaveMP4 }) => {
+  if (!visible) return null;
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.8)",
+        zIndex: 20000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: "8px",
+          width: "80%",
+          maxWidth: "800px",
+          height: "80%",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+        }}
+      >
+        <h2 style={{ margin: "8px" }}>MP4 Preview</h2>
+        {mp4Url ? (
+          <video
+            src={mp4Url}
+            controls
+            style={{ flex: 1, background: "#000", border: "1px solid #ccc" }}
+          />
+        ) : (
+          <p>No video to preview.</p>
+        )}
+        <div style={{ margin: "10px" }}>
+          <button
+            style={{ background: "#4caf50", color: "#fff", marginRight: "8px", padding: "4px 8px" }}
+            onClick={onSaveMP4}
+            disabled={!mp4Url}
+          >
+            Save as MP4
+          </button>
+          <button
+            style={{ background: "#f44336", color: "#fff", padding: "4px 8px" }}
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
 
-// ----------------------------------------------
-// 7) POLOTNOADMIN MAIN COMPONENT
-// ----------------------------------------------
+//------------------------------------------------------------
+// MyPagesTimeline
+//------------------------------------------------------------
+export const MyPagesTimeline = observer(({ store, onPreviewCurrentPage, onPreviewAllPages }) => {
+  const audioTrack = store.audios[0];
+  const totalScenes = store.pages.length;
+  const currentScene =
+    store.activePage && totalScenes > 0
+      ? store.pages.findIndex((p) => p.id === store.activePage.id) + 1
+      : 0;
+
+  const ItemComponent = (props) => (
+    <div style={{ position: "relative", marginBottom: "6px" }}>
+      <props.Component {...props} />
+      {audioTrack && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(255,255,255,0.7)",
+            fontSize: "10px",
+            color: "red",
+            textAlign: "center",
+          }}
+        >
+          Audio: {audioTrack.name || "untitled"}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={{ padding: "8px" }}>
+      <style>
+        {`
+          .my-preview-button {
+            background-color: #f5f8fa;
+            border: 1px solid #bfccd6;
+            border-radius: 3px;
+            color: #394b59;
+            padding: 4px 8px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.2s;
+          }
+          .my-preview-button:hover {
+            background-color: #e1e8ed;
+          }
+        `}
+      </style>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
+        <div style={{ marginLeft: "30px", display: "flex", alignItems: "center" }}>
+          <button className="ml-20 my-preview-button" onClick={onPreviewCurrentPage}>
+            Preview Current Scene
+          </button>
+          <button className="my-preview-button" onClick={onPreviewAllPages}>
+            Preview All Scenes
+          </button>
+          <span style={{ marginLeft: "8px", fontSize: "12px", color: "#999" }}>
+            Scene {currentScene} / {totalScenes}
+          </span>
+        </div>
+      </div>
+      <PagesTimeline store={store} itemComponent={ItemComponent} />
+    </div>
+  );
+});
+
+//------------------------------------------------------------
+// PolotnoAdmin (MAIN)
+//------------------------------------------------------------
 const PolotnoAdmin = () => {
   const { state } = useLocation();
   const templateData = state?.templateData;
@@ -901,70 +1461,87 @@ const PolotnoAdmin = () => {
   const [currentTemplateId, setCurrentTemplateId] = useState(null);
   const [reloadTrigger, setReloadTrigger] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  // Modal for Save/Update
+
+  // TemplateTypeModal
   const [modalOpen, setModalOpen] = useState(false);
-  // actionType: "save" or "update"
   const [actionType, setActionType] = useState(null);
-  // existingTag (a string) from loaded template (if any)
   const [existingTag, setExistingTag] = useState(null);
 
+  // MP4 preview
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [mp4Url, setMp4Url] = useState(null);
+
+  // Local preview
+  const [localPreviewOpen, setLocalPreviewOpen] = useState(false);
+  const [localPreviewCurrent, setLocalPreviewCurrent] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) setIsDarkMode(savedTheme === "dark");
+
+    if (templateData) {
+      store.loadJSON(templateData);
+      if (templateData.templateId) setCurrentTemplateId(templateData.templateId);
+      if (templateData.tag) setExistingTag(templateData.tag);
+    } else {
+      if (!store.pages.length) {
+        store.addPage();
+      }
+    }
+  }, [templateData]);
+
   const toggleTheme = () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    localStorage.setItem("theme", newTheme ? "dark" : "light");
+    const newVal = !isDarkMode;
+    setIsDarkMode(newVal);
+    localStorage.setItem("theme", newVal ? "dark" : "light");
   };
 
-  // Open modal for the action ("save" or "update")
   const handleOpenModal = (action) => {
     setActionType(action);
     setModalOpen(true);
   };
 
-  // SAVE AS JSON using the selected type as tag
-  const saveAsJSON = async (isUpdate = false, selectedType, activeStatus) => {
+  const handleConfirmModal = (selectedType) => {
+    setModalOpen(false);
+    const isUpdate = actionType === "update";
+    saveAsJSON(isUpdate, selectedType);
+  };
+
+  // Final JSON fix: ensure that every video (and optionally audio) has a custom field
+  function ensureMediaCustom(json) {
+    // Create a deep clone of the JSON (using JSON.parse/stringify)
+    const newJson = JSON.parse(JSON.stringify(json));
+    
+    // Update video elements with custom object if not set
+    newJson.pages.forEach((page) => {
+      page.children.forEach((child) => {
+        if (child.type === "video" && (!child.custom || !child.custom.variable)) {
+          child.custom = { edit: true, variable: getNextMediaName("video") };
+        }
+      });
+    });
+  
+    // Update audio tracks with custom object if not set
+    newJson.audios.forEach((audio) => {
+      if (!audio.custom || !audio.custom.variable) {
+        audio.custom = { edit: true, variable: getNextMediaName("audio") };
+      }
+    });
+    return newJson;
+  }
+  
+
+  const saveAsJSON = async (isUpdate, selectedType) => {
     setIsSaving(true);
     try {
       const dataURL = await store.toDataURL({ pixelRatio: 1, mimeType: "image/png" });
-      const compressedBlob = await (async () => {
-        const img = new Image();
-        img.src = dataURL;
-        return new Promise((resolve, reject) => {
-          img.onload = () => {
-            const canvas = document.createElement("canvas");
-            let { width, height } = img;
-            const maxWidth = 1000, maxHeight = 1000, quality = 0.2;
-            if (width > maxWidth || height > maxHeight) {
-              if (width > height) {
-                height = (maxHeight / width) * height;
-                width = maxWidth;
-              } else {
-                width = (maxWidth / height) * width;
-                height = maxHeight;
-              }
-            }
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, width, height);
-            canvas.toBlob(
-              (blob) => {
-                if (blob) resolve(blob);
-                else reject(new Error("Image compression failed."));
-              },
-              "image/png",
-              quality
-            );
-          };
-          img.onerror = (err) => reject(err);
-        });
-      })();
+      const compressed = await compressImage(dataURL);
 
-      // 1) Upload PNG
-      const uploadData = new FormData();
-      uploadData.append("file", compressedBlob, "compressed-thumbnail.png");
-      const uploadResponse = await axios.post(
+      const formData = new FormData();
+      formData.append("file", compressed, "thumbnail.png");
+      const upResp = await axios.post(
         `${baseUrl}/sparkiq/image/upload?customerId=123`,
-        uploadData,
+        formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -972,105 +1549,116 @@ const PolotnoAdmin = () => {
           },
         }
       );
-      const thumbnailURL = uploadResponse.data.data.url;
+      const thumbUrl = upResp.data.data.url;
 
-      // 2) Build JSON and payload
-      const json = store.toJSON();
+      // Gather store JSON and fix media custom fields
+      let json = store.toJSON();
+      json = ensureMediaCustom(json);
+
+      let voiceoverEnabled = false;
+      let videoDuration = "00:00";
+      if (store.audios.length > 0) {
+        voiceoverEnabled = true;
+        const durMs = store.audios[0].duration || 0;
+        if (durMs) {
+          videoDuration = msToTimeString(durMs);
+        }
+      }
+
+      let finalMediaType = "image";
+      const hasVideoPlaceholder = json.pages?.some((page) =>
+        page.children?.some((child) => child?.custom?.video1)
+      );
+      if (hasVideoPlaceholder) {
+        finalMediaType = "video";
+      }
+
       const payload = {
         templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
-        url: thumbnailURL,
+        url: thumbUrl,
         templateOrientation: json.width > json.height ? "landscape" : "portrait",
-        priority: json.priority || 0,
+        priority: 0,
         templateSize: `${json.width}x${json.height}`,
         postType: json.postType || "standard",
         customTemplate: true,
-        mediaType: "image",
-        videoDuration: json.videoDuration || "00:00",
-        voiceoverEnabled: json.voiceoverEnabled || false,
+        mediaType: videoDuration === "00:00" ? "image" : "video",
+        videoDuration,
+        voiceoverEnabled,
         templateJson: JSON.stringify(json),
-        tag: selectedType.templateType, // Tag is a string (e.g., "B2C")
+        tag: selectedType.templateType,
         activeStatus: selectedType.activeStatus,
       };
-      console.log("Payload:", payload);
 
-      // 3) POST to API
-      const apiResponse = await axios.post(`${baseUrl}/v2/template`, payload, {
+      const resp = await axios({
+        url: `${baseUrl}/v2/template`,
+        method: isUpdate ? "post" : "post",
+        data: payload,
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
       if (!isUpdate) {
-        setCurrentTemplateId(apiResponse.data?.data.templateId);
+        setCurrentTemplateId(resp.data?.data.templateId);
       }
-      toast.success(isUpdate ? "Template updated successfully!" : "Template saved successfully!");
-      if (isUpdate) {
-        setReloadTrigger((prev) => prev + 1);
-      }
+      toast.success(isUpdate ? "Template updated!" : "Template saved!");
+      if (isUpdate) setReloadTrigger((p) => p + 1);
     } catch (error) {
-      console.error("Error saving template:", error);
-      toast.error("An error occurred while saving the template.");
+      console.error(error);
+      toast.error("Error saving template.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // When modal confirms, call saveAsJSON with proper flag
-  const handleConfirmModal = (selectedType, activeStatus) => {
-    setModalOpen(false);
-    const isUpdate = actionType === "update";
-    saveAsJSON(isUpdate, selectedType, activeStatus);
-  };
-
-  // LOAD FROM JSON
-  const loadFromJSON = async () => {
-    try {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "application/json";
-      input.onchange = async (event) => {
-        const file = event.target.files[0];
-        if (file) {
-          const content = await file.text();
-          const json = JSON.parse(content);
-          store.loadJSON(json, false);
-          alert("Template loaded successfully!");
+  const compressImage = async (dataURL) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = dataURL;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        const maxWidth = 1000;
+        const maxHeight = 1000;
+        const quality = 0.2;
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = (maxHeight / width) * height;
+            width = maxWidth;
+          } else {
+            width = (maxWidth / height) * width;
+            height = maxHeight;
+          }
         }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("Image compression failed."));
+          },
+          "image/png",
+          quality
+        );
       };
-      input.click();
-    } catch (error) {
-      console.error("Error loading template:", error);
-      alert("An error occurred while loading the template.");
-    }
+      img.onerror = (err) => reject(err);
+    });
   };
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) setIsDarkMode(savedTheme === "dark");
-    if (templateData) {
-      store.loadJSON(templateData);
-      if (templateData.templateId) setCurrentTemplateId(templateData.templateId);
-      if (templateData.tag) setExistingTag(templateData.tag);
-    } else {
-      if (store.pages.length === 0) store.addPage();
-    }
-  }, [templateData]);
-
-  const customSectionWithProps = {
-    ...CustomSection,
-    Panel: (panelProps) => (
-      <CustomSection.Panel {...panelProps} setCurrentTemplateId={setCurrentTemplateId} reloadTrigger={reloadTrigger} />
-    ),
+  const loadFromJSON = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        store.loadJSON(json, false);
+        toast.success("Loaded template from JSON!");
+      }
+    };
+    input.click();
   };
-
-  const sections = [
-    customSectionWithProps,
-    TemplatesSection,
-    TextSection,
-    PhotosSection,
-    ElementsSection,
-    UploadSectionWithAPI,
-    BackgroundSection,
-    LayersSection,
-    SizeSection,
-  ];
 
   const handleAddNew = () => {
     store.loadJSON({ pages: [] });
@@ -1079,162 +1667,259 @@ const PolotnoAdmin = () => {
     toast.success("New template created!");
   };
 
+  const handleLocalPreviewCurrent = () => {
+    setLocalPreviewCurrent(true);
+    setLocalPreviewOpen(true);
+  };
+  const handleLocalPreviewAll = () => {
+    setLocalPreviewCurrent(false);
+    setLocalPreviewOpen(true);
+  };
+
+  const handleSaveMP4 = async () => {
+    if (!mp4Url) return;
+    try {
+      const resp = await fetch(mp4Url);
+      const mp4Blob = await resp.blob();
+      const fData = new FormData();
+      fData.append("file", mp4Blob, "rendered-video.mp4");
+      fData.append("customerId", "123");
+      const upResp = await axios.post(`${baseUrl}/sparkiq/image/upload`, fData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+      toast.success("MP4 saved to your server!");
+      console.log("Saved MP4 URL:", upResp.data.data.url);
+    } catch (error) {
+      toast.error("Error saving MP4 to server.");
+    }
+  };
+
+  const handleSaveAsVideo = async () => {
+    setIsSaving(true);
+    try {
+      const designJson = store.toDataURL();
+      const renderRes = await fetch(`https://api.polotno.com/api/renders?KEY=${POLNOTO_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Prefer: "wait",
+        },
+        body: JSON.stringify({
+          design: store.toJSON(),
+          format: "jpeg",
+          pixelRatio: 1,
+          ignoreBackground: false,
+          skipFontError: true,
+          skipImageError: true,
+          textOverflow: "change-font-size",
+        }),
+      });
+      const renderJob = await renderRes.json();
+      if (renderJob.status !== "done" || !renderJob.output) {
+        toast.error("Error generating MP4!");
+        setIsSaving(false);
+        return;
+      }
+      const mp4UrlFromCloud = renderJob.output;
+      const dataURL = await store.toDataURL({ pixelRatio: 1, mimeType: "image/png" });
+      const thumbBlob = await compressImage(dataURL);
+      const thumbForm = new FormData();
+      thumbForm.append("file", thumbBlob, "thumb.png");
+      const thumbUp = await axios.post(`${baseUrl}/sparkiq/image/upload?customerId=123`, thumbForm, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+      const thumbnailURL = thumbUp.data.data.url;
+
+      let voiceoverEnabled = false;
+      let videoDuration = "00:00";
+      if (store.audios.length > 0) {
+        voiceoverEnabled = true;
+        const durMs = store.audios[0].duration || 0;
+        videoDuration = msToTimeString(durMs);
+      }
+
+      const finalJson = ensureMediaCustom(store.toJSON());
+      const payload = {
+        templateId: null,
+        url: thumbnailURL,
+        templateOrientation: finalJson.width > finalJson.height ? "landscape" : "portrait",
+        priority: finalJson.priority || 0,
+        templateSize: `${finalJson.width}x${finalJson.height}`,
+        postType: finalJson.postType || "standard",
+        customTemplate: true,
+        mediaType: "video",
+        videoDuration,
+        voiceoverEnabled,
+        templateJson: JSON.stringify(finalJson),
+        tag: "Video Template",
+        activeStatus: true,
+      };
+
+      await axios.post(`${baseUrl}/v2/template`, payload, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
+      toast.success("Video template saved successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error saving video template.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const sections = [
+    {
+      ...CustomSection,
+      Panel: (panelProps) => (
+        <CustomSection.Panel
+          {...panelProps}
+          setCurrentTemplateId={setCurrentTemplateId}
+          reloadTrigger={reloadTrigger}
+        />
+      ),
+    },
+    TemplatesSection,
+    TextSection,
+    PagesSection,
+    ElementsSection,
+    UploadSectionWithApi,
+    MediaSection,
+    BackgroundSection,
+    LayersSection,
+    SizeSection,
+    EmptyVideosSection,
+  ];
+
   return (
     <div
       className={isDarkMode ? "bp5-dark" : ""}
-      style={{ height: "100vh", backgroundColor: isDarkMode ? "#000000" : "#f4f4f4", position: "relative" }}
+      style={{ height: "100vh", background: isDarkMode ? "#000" : "#f4f4f4" }}
     >
       {isSaving && (
         <div
           style={{
             position: "absolute",
             inset: 0,
-            backgroundColor: "rgba(0,0,0,0.3)",
+            background: "rgba(0,0,0,0.3)",
             zIndex: 9999,
             display: "flex",
-            justifyContent: "center",
             alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <Spinner />
         </div>
       )}
-      {/* Modal for Save/Update */}
+
+      <LocalPreviewModal
+        open={localPreviewOpen}
+        onClose={() => setLocalPreviewOpen(false)}
+        onlyCurrentPage={localPreviewCurrent}
+      />
+
+      <MP4PreviewModal
+        visible={previewModalVisible}
+        mp4Url={mp4Url}
+        onClose={() => setPreviewModalVisible(false)}
+        onSaveMP4={handleSaveMP4}
+      />
+
       <TemplateTypeModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onConfirm={handleConfirmModal}
         existingTag={existingTag}
       />
-      <div
-        style={{
-          padding: "6px",
-          textAlign: "center",
-          color: isDarkMode ? "white" : "black",
-          position: "relative",
-        }}
-      >
+
+      <div style={{ padding: "6px", textAlign: "center", position: "relative" }}>
         <button
           onClick={toggleTheme}
           style={{
-            backgroundColor: isDarkMode ? "#555" : "#e0e0e0",
-            color: isDarkMode ? "white" : "black",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
+            marginRight: "6px",
+            backgroundColor: "#BFBFBF35",
+            color: isDarkMode ? "#fff" : "#000",
+            padding: "4px 12px",
           }}
         >
-          Switch to {isDarkMode ? "Light" : "Dark"} Mode
+          {isDarkMode ? "Light Mode" : "Dark Mode"}
         </button>
         <button
           onClick={() => handleOpenModal("save")}
-          style={{
-            backgroundColor: "#FFD700",
-            color: "white",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
-          }}
+          style={{ backgroundColor: "#FFD700", color: "#000", marginRight: "6px", padding: "4px 12px" }}
         >
           Save as New
         </button>
         <button
           onClick={() => handleOpenModal("update")}
-          style={{
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
-          }}
+          style={{ backgroundColor: "#4CAF50", color: "#fff", marginRight: "6px", padding: "4px 12px" }}
         >
           Update Template
         </button>
         <button
           onClick={loadFromJSON}
-          style={{
-            backgroundColor: "#007BFF",
-            color: "white",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
-          }}
+          style={{ backgroundColor: "#007BFF", color: "#fff", marginRight: "6px", padding: "4px 12px" }}
         >
-          Load Template from JSON
+          Load JSON
         </button>
         <button
           onClick={handleAddNew}
-          style={{
-            backgroundColor: "#007BFF",
-            color: "white",
-            border: "none",
-            padding: "4px 16px",
-            cursor: "pointer",
-            borderRadius: "5px",
-            marginRight: "10px",
-          }}
+          style={{ backgroundColor: "#007BFF", color: "#fff", marginRight: "6px", padding: "4px 12px" }}
         >
-          Add New
+          New Blank
         </button>
         <button
-          className="close"
-          onClick={() => window.history.back()}
+          onClick={() => handleOpenModal("save")}
+          style={{ backgroundColor: "#FFD700", color: "#000", marginRight: "6px", padding: "4px 12px" }}
+        >
+          Save as Video
+        </button>
+        <button
           style={{
             position: "absolute",
-            top: "-2px",
-            right: "1px",
-            backgroundColor: "#f44336",
-            color: "white",
+            right: "10px",
+            top: "6px",
+            background: "#f44336",
+            color: "#fff",
             border: "none",
-            padding: "6px",
+            padding: "4px 8px",
             cursor: "pointer",
-            fontSize: "20px",
-            lineHeight: "1",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "30px",
-            height: "40px",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-            transition: "background-color 0.3s, transform 0.2s",
           }}
-          onMouseEnter={(e) => (e.target.style.backgroundColor = "#d32f2f")}
-          onMouseLeave={(e) => (e.target.style.backgroundColor = "#f44336")}
-          onMouseDown={(e) => (e.target.style.transform = "scale(0.9)")}
-          onMouseUp={(e) => (e.target.style.transform = "scale(1)")}
+          onClick={() => window.history.back()}
         >
           X
         </button>
       </div>
-      <UploadedFilesProvider>
-        <PolotnoContainer style={{ width: "100vw", height: "93vh" }}>
-          <SidePanelWrap>
-            <SidePanel store={store} sections={sections} />
-          </SidePanelWrap>
-          <WorkspaceWrap>
-            <Toolbar store={store} />
-            <Workspace
-              store={store}
-              components={{
-                TextFill: MyTextFillWithLabel,
-                ImageFilters: MyImageWithLabel,
-                FigureFill: MyFigureWithLabel,
-                LineSettings: MyLineWithLabel,
-                SvgFlip: MySvgWithLabel,
-              }}
-            />
-            <ZoomButtons store={store} />
-          </WorkspaceWrap>
-        </PolotnoContainer>
-      </UploadedFilesProvider>
+
+      <PolotnoContainer style={{ width: "100%", height: "calc(100vh - 52px)" }}>
+        <SidePanelWrap>
+          <SidePanel store={store} sections={sections} />
+        </SidePanelWrap>
+        <WorkspaceWrap>
+          <Toolbar store={store} />
+          <Workspace
+            store={store}
+            components={{
+              TextFill: MyTextFillWithLabel,
+              ImageFilters: MyImageWithLabel,
+              FigureFill: MySvgWithLabel,
+              LineSettings: MyLineWithLabel,
+              SvgFlip: MySvgWithLabel,
+            }}
+          />
+          <ZoomButtons store={store} />
+          <MyPagesTimeline
+            store={store}
+            onPreviewCurrentPage={handleLocalPreviewCurrent}
+            onPreviewAllPages={handleLocalPreviewAll}
+          />
+        </WorkspaceWrap>
+      </PolotnoContainer>
     </div>
   );
 };

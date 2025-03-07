@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Header from './admin-header'; // Adjust import path if needed
 import axios from 'axios';
 import { jwtToken } from '../../components/utils/jwtToken';
+import { baseUrl } from '../../components/utils/Constant';
 
-// If you have a baseUrl constant, you can import it. Otherwise, set it here:
-const baseUrl = 'http://dev.api.sparkiq.ai';
 
 /** Utility to format the startDate array (e.g. [2025, 2, 3, 9, 55, 59, 978339000]) into a readable string */
 function formatStartDate(startDateArray) {
