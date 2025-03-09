@@ -34,6 +34,7 @@ import {
 } from "polotno/side-panel";
 import { unstable_setAnimationsEnabled } from "polotno/config";
 import "./PolotnoEditor.css";
+import { MdOutlinePermMedia } from "react-icons/md";
 
 // Polotno Cloud key
 const POLNOTO_API_KEY = "H5HjfuZWdlg9X4gOUB27";
@@ -737,13 +738,14 @@ const MediaSection = {
   name: "media",
   Tab: (props) => (
     <SectionTab name="Media" {...props}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <img
-          className="w-5"
-          src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gU3ZnIFZlY3RvciBJY29ucyA6IGh0dHA6Ly93d3cub25saW5ld2ViZm9udHMuY29tL2ljb24gLS0+DQo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPg0KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMjU2IDI1NiIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjU2IDI1NiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8bWV0YWRhdGE+IFN2ZyBWZWN0b3IgSWNvbnMgOiBodHRwOi8vd3d3Lm9ubGluZXdlYmZvbnRzLmNvbS9pY29uIDwvbWV0YWRhdGE+DQo8Zz48Zz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMTA0LDkxLjFsNTksMzYuOWwtNTksMzYuOVY5MS4xeiIvPjxwYXRoIGZpbGw9IiMwMDAwMDAiIGQ9Ik0yMDEuOCwzOS41SDU0LjNIMTB2MTc3aDQ0LjNoMTQ3LjVIMjQ2di0xNzdIMjAxLjh6IE0yNC44LDU0LjNoMTQuOHYyOS41SDI0LjhWNTQuM3ogTTI0LjgsMTEzLjNoMTQuOHYyOS41SDI0LjhWMTEzLjN6IE0yNC44LDIwMS44di0yOS41aDE0Ljh2MjkuNUgyNC44eiBNNTQuMywyMDEuOFY1NC4zaDE0Ny41djE0Ny41SDU0LjN6IE0yMzEuMywyMDEuOGgtMTQuOHYtMjkuNWgxNC44VjIwMS44eiBNMjMxLjMsMTQyLjhoLTE0Ljh2LTI5LjVoMTQuOFYxNDIuOHogTTIzMS4zLDgzLjhoLTE0LjhWNTQuM2gxNC44VjgzLjh6Ii8+PC9nPjwvZz4NCjwvc3ZnPg==" 
-          width="32" 
-          height="32" 
-        />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '16px'
+        }}
+      ><MdOutlinePermMedia />
       </div>
     </SectionTab>
   ),
@@ -1511,7 +1513,7 @@ const PolotnoAdmin = () => {
   function ensureMediaCustom(json) {
     // Create a deep clone of the JSON (using JSON.parse/stringify)
     const newJson = JSON.parse(JSON.stringify(json));
-    
+
     // Update video elements with custom object if not set
     newJson.pages.forEach((page) => {
       page.children.forEach((child) => {
@@ -1520,7 +1522,7 @@ const PolotnoAdmin = () => {
         }
       });
     });
-  
+
     // Update audio tracks with custom object if not set
     newJson.audios.forEach((audio) => {
       if (!audio.custom || !audio.custom.variable) {
@@ -1529,7 +1531,7 @@ const PolotnoAdmin = () => {
     });
     return newJson;
   }
-  
+
 
   const saveAsJSON = async (isUpdate, selectedType) => {
     setIsSaving(true);

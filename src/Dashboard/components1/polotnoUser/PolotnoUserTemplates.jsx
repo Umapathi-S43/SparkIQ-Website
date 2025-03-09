@@ -4,25 +4,29 @@ import React, { useState, useEffect, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createStore } from "polotno/model/store";
+import { unstable_setAnimationsEnabled } from "polotno/config";
+import { IoSearchSharp } from "react-icons/io5";
 import {
   PolotnoContainer,
   SidePanelWrap,
   WorkspaceWrap,
 } from "polotno";
+
 import { Toolbar } from "polotno/toolbar/toolbar";
 import { ZoomButtons } from "polotno/toolbar/zoom-buttons";
 import { SidePanel, SectionTab } from "polotno/side-panel";
 import { Workspace } from "polotno/canvas/workspace";
 import { observer } from "mobx-react-lite";
-
+import { CgIfDesign } from "react-icons/cg";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-import { baseUrl } from "../../components/utils/Constant";
-import { jwtToken } from "../../components/utils/jwtToken";
+import { PagesTimeline } from "polotno/pages-timeline";
+import { baseUrl } from "../../../components/utils/Constant";
+import { jwtToken } from "../../../components/utils/jwtToken";
 
 // Icons
-import { FaCloudUploadAlt, FaTrash } from "react-icons/fa";
+import { FaCloudUploadAlt, FaPhotoVideo, FaTrash } from "react-icons/fa";
 import { SiAffinitydesigner } from "react-icons/si";
 
 // Polotno built-in sections
@@ -35,8 +39,11 @@ import {
   LayersSection,
   TemplatesSection,
 } from "polotno/side-panel";
-import { QrSection } from "./QrSection"; // If you have a QR section
-import "./PolotnoEditor.css";
+import { QrSection } from "../QrSection"; // If you have a QR section
+import "./../PolotnoEditor.css";
+import UploadPanel from "./UploadPanel";
+import { VideosPanel } from "polotno/side-panel/videos-panel"; // Official VideosPanel
+import { PhotosPanel } from "polotno/side-panel/photos-panel"; // Official PhotosPanel
 
 // ----------------------------------------------
 // SPINNER COMPONENT
@@ -55,9 +62,88 @@ const Spinner = () => {
 // ----------------------------------------------
 // 1) CREATE POLOTNO STORE
 // ----------------------------------------------
-const store = createStore({
-  key: "H5HjfuZWdlg9X4gOUB27",
+
+// Polotno Cloud key
+const POLNOTO_API_KEY = "H5HjfuZWdlg9X4gOUB27";
+
+// Helper to get the next unique media name
+function getNextMediaName(type) {
+  let count = 0;
+  if (type === "video") {
+    store.pages.forEach((page) => {
+      page.children.forEach((child) => {
+        if (
+          child.type === "video" &&
+          child.custom &&
+          typeof child.custom.variable === "string" &&
+          child.custom.variable.startsWith("video")
+        ) {
+          const num = parseInt(child.custom.variable.replace("video", ""), 10);
+          if (!isNaN(num) && num > count) {
+            count = num;
+          }
+        }
+      });
+    });
+    return "video" + (count + 1);
+  } else if (type === "audio") {
+    store.audios.forEach((audio) => {
+      if (
+        audio.custom &&
+        typeof audio.custom.variable === "string" &&
+        audio.custom.variable.startsWith("audio")
+      ) {
+        const num = parseInt(audio.custom.variable.replace("audio", ""), 10);
+        if (!isNaN(num) && num > count) {
+          count = num;
+        }
+      }
+    });
+    return "audio" + (count + 1);
+  }
+  return type;
+}
+
+
+// Main store for editing
+const store = createStore({ key: POLNOTO_API_KEY });
+
+// Add a change listener to update video elements when they are added
+store.on("change", (e) => {
+  // For video elements added via addElement
+  if (e.action === "addElement") {
+    const el = store.findOne({ id: e.data.id });
+    if (el?.type === "video" && (!el.custom || !el.custom.variable)) {
+      const name = getNextMediaName("video");
+      el.set({ custom: { edit: true, variable: name } });
+    }
+  }
+  // For audio tracks added via store.addAudio
+  if (e.action === "addAudio") {
+    // e.data.id should refer to the audio id
+    const audio = store.audios.find((a) => a.id === e.data.id);
+    if (audio && (!audio.custom || !audio.custom.variable)) {
+      const name = getNextMediaName("audio");
+      audio.set({ custom: { edit: true, variable: name } });
+    }
+  }
 });
+
+unstable_setAnimationsEnabled(true);
+
+// A second store for local previews
+const previewStore = createStore({ key: POLNOTO_API_KEY });
+unstable_setAnimationsEnabled(true);
+
+//------------------------------------------------------------
+// Simple ms -> mm:ss
+//------------------------------------------------------------
+function msToTimeString(ms = 0) {
+  const totalSec = Math.floor(ms / 1000);
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+  const ss = String(totalSec % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
 
 // ----------------------------------------------
 // 2) CONTEXT FOR UPLOADED FILES
@@ -83,121 +169,195 @@ const useUploadedFiles = () => useContext(UploadedFilesContext);
 // ----------------------------------------------
 // 3) UPLOAD SECTION
 // ----------------------------------------------
-const UploadSectionWithAPI = {
-  name: "upload-api",
-  Tab: (props) => (
-    <SectionTab name="Upload" {...props}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "20px",
-        }}
-      >
-        <FaCloudUploadAlt />
-      </div>
-    </SectionTab>
-  ),
-  Panel: observer(({ store }) => {
-    const { uploadedFiles, addUploadedFile } = useUploadedFiles();
-    const [isUploading, setIsUploading] = useState(false);
+// const UploadSectionWithAPI = {
+//   name: "upload-api",
+//   Tab: (props) => (
+//     <SectionTab name="Upload" {...props}>
+//       <div
+//         style={{
+//           display: "flex",
+//           alignItems: "center",
+//           justifyContent: "center",
+//           fontSize: "20px",
+//         }}
+//       >
+//         <FaCloudUploadAlt />
+//       </div>
+//     </SectionTab>
+//   ),
+//   Panel: observer(({ store }) => {
+//     const { uploadedFiles, addUploadedFile } = useUploadedFiles();
+//     const [isUploading, setIsUploading] = useState(false);
 
-    const handleFileUpload = async (file) => {
-      if (!file) return;
-      setIsUploading(true);
-      const uploadData = new FormData();
-      uploadData.append("file", file);
-      uploadData.append("customerId", "123");
+//     const handleFileUpload = async (file) => {
+//       if (!file) return;
+//       setIsUploading(true);
+//       const uploadData = new FormData();
+//       uploadData.append("file", file);
+//       uploadData.append("customerId", "123");
 
-      try {
-        const response = await axios.post(
-          `${baseUrl}/sparkiq/image/upload`,
-          uploadData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
-        const imageUrl = response.data.data.url;
-        addUploadedFile(imageUrl);
-        toast.success("File upload successful");
-      } catch (error) {
-        console.error(error);
-        toast.error("File upload failed. Please try again.");
-      } finally {
-        setIsUploading(false);
-      }
-    };
+//       try {
+//         const response = await axios.post(
+//           `${baseUrl}/sparkiq/image/upload`,
+//           uploadData,
+//           {
+//             headers: {
+//               "Content-Type": "multipart/form-data",
+//               Authorization: `Bearer ${jwtToken}`,
+//             },
+//           }
+//         );
+//         const imageUrl = response.data.data.url;
+//         addUploadedFile(imageUrl);
+//         toast.success("File upload successful");
+//       } catch (error) {
+//         console.error(error);
+//         toast.error("File upload failed. Please try again.");
+//       } finally {
+//         setIsUploading(false);
+//       }
+//     };
 
-    return (
-      <div style={{ padding: "10px", height: "100%" }}>
-        <h3 style={{ marginBottom: "10px" }}>Uploaded Files</h3>
-        <label
-          htmlFor="fileUpload"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "8px",
-            backgroundColor: "#333",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          <FaCloudUploadAlt style={{ marginRight: "8px" }} />
-          Upload Image
-        </label>
-        <input
-          id="fileUpload"
-          type="file"
-          onChange={(e) => handleFileUpload(e.target.files[0])}
-          style={{ display: "none" }}
-        />
-        {isUploading && (
-          <div style={{ textAlign: "center", marginTop: 10 }}>
-            <Spinner />
-          </div>
-        )}
+//     return (
+//       <div style={{ padding: "10px", height: "100%" }}>
+//         <h3 style={{ marginBottom: "10px" }}>Uploaded Files</h3>
+//         <label
+//           htmlFor="fileUpload"
+//           style={{
+//             display: "flex",
+//             alignItems: "center",
+//             justifyContent: "center",
+//             padding: "8px",
+//             backgroundColor: "#333",
+//             color: "#fff",
+//             border: "none",
+//             borderRadius: "5px",
+//             cursor: "pointer",
+//           }}
+//         >
+//           <FaCloudUploadAlt style={{ marginRight: "8px" }} />
+//           Upload Image
+//         </label>
+//         <input
+//           id="fileUpload"
+//           type="file"
+//           onChange={(e) => handleFileUpload(e.target.files[0])}
+//           style={{ display: "none" }}
+//         />
+//         {isUploading && (
+//           <div style={{ textAlign: "center", marginTop: 10 }}>
+//             <Spinner />
+//           </div>
+//         )}
+//         <div
+//           style={{
+//             display: "grid",
+//             gridTemplateColumns: "repeat(3, 1fr)",
+//             gap: "10px",
+//             overflowY: "auto",
+//             maxHeight: "60vh",
+//             marginTop: 20,
+//           }}
+//         >
+//           {uploadedFiles.map((file, index) => (
+//             <div
+//               key={index}
+//               style={{
+//                 border: "1px solid #ccc",
+//                 borderRadius: "5px",
+//                 overflow: "hidden",
+//                 cursor: "pointer",
+//               }}
+//               onClick={() => {
+//                 store.activePage?.addElement({ type: "image", src: file });
+//               }}
+//             >
+//               <img
+//                 src={file}
+//                 alt={`Uploaded ${index}`}
+//                 style={{ width: "100%", height: "auto" }}
+//               />
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+//     );
+//   }),
+// };
+
+
+
+
+//------------------------------------------------------------
+// MyPagesTimeline
+//------------------------------------------------------------
+export const MyPagesTimeline = observer(({ store, onPreviewCurrentPage, onPreviewAllPages }) => {
+  const audioTrack = store.audios[0];
+  const totalScenes = store.pages.length;
+  const currentScene =
+    store.activePage && totalScenes > 0
+      ? store.pages.findIndex((p) => p.id === store.activePage.id) + 1
+      : 0;
+
+  const ItemComponent = (props) => (
+    <div style={{ position: "relative", marginBottom: "6px" }}>
+      <props.Component {...props} />
+      {audioTrack && (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "10px",
-            overflowY: "auto",
-            maxHeight: "60vh",
-            marginTop: 20,
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(255,255,255,0.7)",
+            fontSize: "10px",
+            color: "red",
+            textAlign: "center",
           }}
         >
-          {uploadedFiles.map((file, index) => (
-            <div
-              key={index}
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: "5px",
-                overflow: "hidden",
-                cursor: "pointer",
-              }}
-              onClick={() => {
-                store.activePage?.addElement({ type: "image", src: file });
-              }}
-            >
-              <img
-                src={file}
-                alt={`Uploaded ${index}`}
-                style={{ width: "100%", height: "auto" }}
-              />
-            </div>
-          ))}
+          Audio: {audioTrack.name || "untitled"}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={{ padding: "8px" }}>
+      <style>
+        {`
+          .my-preview-button {
+            background-color: #f5f8fa;
+            border: 1px solid #bfccd6;
+            border-radius: 3px;
+            color: #394b59;
+            padding: 4px 8px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.2s;
+          }
+          .my-preview-button:hover {
+            background-color: #e1e8ed;
+          }
+        `}
+      </style>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
+        <div style={{ marginLeft: "30px", display: "flex", alignItems: "center" }}>
+          <button className="ml-20 my-preview-button" onClick={onPreviewCurrentPage}>
+            Preview Current Scene
+          </button>
+          <button className="my-preview-button" onClick={onPreviewAllPages}>
+            Preview All Scenes
+          </button>
+          <span style={{ marginLeft: "8px", fontSize: "12px", color: "#999" }}>
+            Scene {currentScene} / {totalScenes}
+          </span>
         </div>
       </div>
-    );
-  }),
-};
+      <PagesTimeline store={store} itemComponent={ItemComponent} />
+    </div>
+  );
+});
+
 
 // ----------------------------------------------
 // 4) DELETE CONFIRMATION MODAL
@@ -340,15 +500,11 @@ const FieldsSection = {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "14px",
+          fontSize: "24px",
         }}
       >
         {/* Example icon (any image or icon) */}
-        <img
-          src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gU3ZnIFZlY3RvciBJY29ucyA6IGh0dHA6Ly93d3cub25saW5ld2ViZm9udHMuY29tL2ljb24gLS0+DQo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPg0KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMjU2IDI1NiIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjU2IDI1NiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8bWV0YWRhdGE+IFN2ZyBWZWN0b3IgSWNvbnMgOiBodHRwOi8vd3d3Lm9ubGluZXdlYmZvbnRzLmNvbS9pY29uIDwvbWV0YWRhdGE+DQo8Zz48Zz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMTEzLjIsMzcuN0gxOC43Yy00LjgsMC04LjctMy45LTguNy04LjdjMC00LjgsMy45LTguNyw4LjctOC43aDk0LjVjNC44LDAsOC43LDMuOSw4LjcsOC43QzEyMS45LDMzLjgsMTE4LDM3LjcsMTEzLjIsMzcuN3oiLz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMTEzLjIsNzQuOEgxOC43Yy00LjgsMC04LjctMy45LTguNy04LjdzMy45LTguNyw4LjctOC43aDk0LjVjNC44LDAsOC43LDMuOSw4LjcsOC43QzEyMS45LDcwLjksMTE4LDc0LjgsMTEzLjIsNzQuOHoiLz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMTEzLjIsMTExLjlIMTguN2MtNC44LDAtOC43LTMuOS04LjctOC43YzAtNC44LDMuOS04LjcsOC43LTguN2g5NC41YzQuOCwwLDguNywzLjksOC43LDguN0MxMjEuOSwxMDgsMTE4LDExMS45LDExMy4yLDExMS45eiIvPjxwYXRoIGZpbGw9IiMwMDAwMDAiIGQ9Ik0yMzcuMywxNjEuOGgtOTQuNWMtNC44LDAtOC43LTMuOS04LjctOC43YzAtNC44LDMuOS04LjcsOC43LTguN2g5NC41YzQuOCwwLDguNywzLjksOC43LDguN0MyNDYsMTU3LjksMjQyLjEsMTYxLjgsMjM3LjMsMTYxLjh6Ii8+PHBhdGggZmlsbD0iIzAwMDAwMDAiIGQ9Ik0yMzcuMywxOTguOWgtOTQuNWMtNC44LDAtOC43LTMuOS04LjctOC43YzAtNC44LDMuOS04LjcsOC43LTguN2g5NC41YzQuOCwwLDguNywzLjksOC43LDguN0MyNDYsMTk1LDI0Mi4xLDE5OC45LDIzNy4zLDE5OC45eiIvPjxwYXRoIGZpbGw9IiMwMDAwMDAiIGQ9Ik0yMzcuMywyMzZoLTk0LjVjLTQuOCwwLTguNy0zLjktOC43LTguN3MzLjktOC43LDguNy04LjdoOTQuNWM0LjgsMCw4LjcsMy45LDguNyw4LjddMjQyLjEsMjM2LDIzNy4zLDIzNnoiLz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMjI3LDEyMS45Yy00LjgsMC04LjctMy45LTguNy04LjdWMTguN2MwLTQuOCwzLjktOC43LDguNy04LjdzOC43LDMuOSw4LjcsOC43djk0LjVDMjM1LjYsMTE4LDIzMS43LDIxMS45LDIyNywxMjEuOXoiLz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMTg5LjksMTIxLjljLTQuOCwwLTguNy0zLjktOC43LTguN1YxOC43YzAtNC44LDMuOS04LjcsOC43LTguN2M0LjgsMCw4LjcsMy45LDguNyw4LjdzLTMuOSw4LjctOC43LDguN1YxMTguNUMxOTguNiwxMTgsMTk0LjcsMTIxLjksMTg5LjksMTIxLjl6Ii8+PHBhdGggZmlsbD0iIzAwMDAwMDAiIGQ9Ik0xNTIuOCwxMjEuOWMtNC44LDAtOC43LTMuOS04LjctOC43VjE4LjdjMC00LjgsMy45LTguNyw4LjctOC43YzQuOCwwLDguNywzLjksOC43LDguN3Y5NC41QzE2MS41LDExOCwxNTcuNiwxMjEuOSwxNTIuOCwxMjEuOXoiLz48cGF0aCBmaWxsPSIjMDAwMDAwIiBkPSJNMTAyLjksMjQ2Yy00LjgsMC04LjctMy45LTguNy04LjZ2LTk0LjVjMC00LjgsMy45LTguNyw4LjctOC43czguNywzLjksOC43LDguN3Y5NC41QzExMS42LDI0Mi4xLDExNy43LDI0NiwxMDIuOSwyNDZ6Ii8+PHBhdGggZmlsbD0iIzAwMDAwMDAiIGQ9Ik03NS44LDI0NmMtNC44LDAtOC43LTMuOS04LjctOC43di05NC41YzAtNC44LDMuOS04LjcsOC43LTguN3M4LjcsMy45LDguNyw4LjdsMCw5NC41Qzg0LjUsMjQyLjEsODAuNiwyNDYsNzUuOCwyNDZ6Ii8+PHBhdGggZmlsbD0iIzAwMDAwMDAiIGQ9Ik0yOC43LDI0NmMtNC44LDAtOC43LTMuOS04LjctOC43di05NC41YzAtNC44LDMuOS04LjcsOC43LTguN3M4LjcsMy45LDguNyw4LjdsMCw5NC41QzM3LjQsMjQyLjEsMzMuNSwyNDYsMjguNywyNDZ6Ii8+PC9nPjwvZz4NCjwvc3ZnPg=="
-          width="16"
-          height="16"
-        />
+        <CgIfDesign />
       </div>
     </SectionTab>
   ),
@@ -442,6 +598,239 @@ const FieldsSection = {
       </div>
     );
   }),
+};
+
+
+//------------------------------------------------------------
+// MEDIA SECTION COMPONENT
+//------------------------------------------------------------
+const theme = localStorage.getItem("theme");
+const isDarkMode = theme === "dark";
+const MediaSection = {
+  name: "media",
+  Tab: (props) => (
+    <SectionTab name="Media" {...props}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '16px'
+        }}
+      ><FaPhotoVideo />
+      </div>
+    </SectionTab>
+  ),
+  Panel: observer(({ store }) => {
+    const [activeTab, setActiveTab] = useState("photos");
+    const [aiVideoItems, setAiVideoItems] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+      fetchVideos(1, "technology");
+    }, []);
+
+    const fetchVideos = async (pageNum, query) => {
+      if (loading) return;
+      setLoading(true);
+      try {
+        const API_KEY = "49135722-3c7eead3cf8935610431f2bc2";
+        const encodedQuery = encodeURIComponent(query);
+        const response = await fetch(
+          `https://pixabay.com/api/videos/?key=${API_KEY}&q=${encodedQuery}&video_type=film&order=popular&per_page=20&page=${pageNum}`
+        );
+        const data = await response.json();
+        if (data?.hits?.length > 0) {
+          const videos = data.hits
+            .filter((video) => video.videos?.large?.url)
+            .map((video) => ({
+              name: `Video ${video.id}`,
+              url: video.videos.large.url,
+              thumbnail: video.videos.large.thumbnail,
+              type: "video",
+            }));
+          setAiVideoItems((prevVideos) =>
+            pageNum === 1 ? videos : [...prevVideos, ...videos]
+          );
+        } else {
+          setAiVideoItems([]);
+        }
+      } catch (error) {
+        console.error("Error fetching AI videos:", error);
+        toast.error("Failed to fetch AI videos.");
+      }
+      setLoading(false);
+    };
+
+    const handleSearchChange = (e) => {
+      setSearchQuery(e.target.value);
+    };
+
+    const handleSearchKeyDown = (e) => {
+      if (e.key === "Enter") {
+        setPage(1);
+        setAiVideoItems([]);
+        fetchVideos(1, searchQuery || "technology");
+      }
+    };
+
+    const handleScroll = (e) => {
+      if (loading) return;
+      const nearBottom =
+        e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 10;
+      if (nearBottom) {
+        setPage((prevPage) => {
+          const nextPage = prevPage + 1;
+          fetchVideos(nextPage, searchQuery || "technology");
+          return nextPage;
+        });
+      }
+    };
+
+    const handleMediaClick = (item) => {
+      store.activePage?.addElement({
+        type: "video",
+        src: item.url,
+        width: 800,
+        height: 450,
+        custom: { edit: true, variable: getNextMediaName("video") },
+      });
+      toast.success(`Video added: ${item.name}`);
+      console.log("Updated JSON:", JSON.stringify(store.toJSON(), null, 2));
+    };
+
+    const renderTabContent = () => {
+      if (activeTab === "video") {
+        return <VideosPanel store={store} />;
+      } else if (activeTab === "audio") {
+        return <p>No dynamic audio integration yet.</p>;
+      } else if (activeTab === "ai") {
+        return (
+          <>
+            <div style={{ display: "flex", alignItems: "center", border: "1px solid #ccc", borderRadius: "20px", padding: "6px", marginLeft: "-10px", backgroundColor: "#fff", marginBottom: "10px" }}>
+              <IoSearchSharp size={20} color="#333" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onKeyDown={handleSearchKeyDown}
+                style={{
+                  flex: 1,
+                  padding: "2px",
+                  border: "none",
+                  outline: "none",
+                  fontSize: "14px",
+                }}
+              />
+            </div>
+            <div style={aiVideoGridStyles.container} onScroll={handleScroll}>
+              {aiVideoItems.length === 0 ? (
+                <p>{loading ? "Loading AI videos..." : "No results found."}</p>
+              ) : (
+                aiVideoItems.map((item) => (
+                  <div
+                    key={item.name}
+                    style={aiVideoGridStyles.mediaItem}
+                    onClick={() => handleMediaClick(item)}
+                  >
+                    <video src={item.url} autoPlay loop muted style={aiVideoGridStyles.video} />
+                  </div>
+                ))
+              )}
+              {loading && <p style={{ textAlign: "center" }}>Loading more videos...</p>}
+            </div>
+          </>
+        );
+      } else if (activeTab === "photos") {
+        return <PhotosPanel store={store} />;
+      }
+      return null;
+    };
+
+    return (
+      <div style={{ padding: "10px", color: isDarkMode ? "#fff" : "#000", height: "100%" }}>
+        <style>{subTabStyles}</style>
+        <div className="polotno-sub-tabs">
+          <div
+            className={`polotno-sub-tab ${activeTab === "photos" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("photos")}
+          >
+            Photos
+          </div>
+          <div
+            className={`polotno-sub-tab ${activeTab === "audio" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("audio")}
+          >
+            Audio
+          </div>
+          <div
+            className={`polotno-sub-tab ${activeTab === "ai" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("ai")}
+          >
+            AI Picked
+          </div>
+          <div
+            className={`polotno-sub-tab ${activeTab === "video" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("video")}
+          >
+            Video
+          </div>
+        </div>
+        {renderTabContent()}
+      </div>
+    );
+  }),
+};
+const subTabStyles = `
+.polotno-sub-tabs {
+  display: flex;
+  margin-bottom: 8px;
+}
+.polotno-sub-tab {
+  font-size: 14px;
+  margin-right: 16px;
+  padding-bottom: 4px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.polotno-sub-tab:hover {
+  color: #106ba3;
+}
+.polotno-sub-tab.is-active {
+  border-color: #106ba3;
+}
+`;
+
+const aiVideoGridStyles = {
+  container: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+    justifyItems: "center",
+    alignItems: "center",
+    maxHeight: "600px",
+    overflowY: "auto",
+  },
+  mediaItem: {
+    width: "100%",
+    height: "250px",
+    cursor: "pointer",
+  },
+  video: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    borderRadius: "6px",
+  },
+};
+const EmptyVideosSection = {
+  name: "videos",
+  Tab: () => null,
+  Panel: () => null,
 };
 
 // ----------------------------------------------
@@ -677,7 +1066,7 @@ const CustomSection = {
 // ----------------------------------------------
 // TEMPLATE TYPE MODAL (for Save/Update)
 // ----------------------------------------------
-const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag,existingBrandId }) => {
+const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag, existingBrandId }) => {
   const [selectedType, setSelectedType] = useState(existingTag || "");
   const [customType, setCustomType] = useState("");
   const [activeStatus, setActiveStatus] = useState(true); // Default to true
@@ -710,9 +1099,9 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag,existingBra
     setSelectedType(existingTag || "");
     setCustomType("");
     setActiveStatus(true);
-     // If we have an existingBrandId, set that in the dropdown
-     setSelectedBrandId(existingBrandId || "");
-    }, [existingTag, existingBrandId, isOpen]);
+    // If we have an existingBrandId, set that in the dropdown
+    setSelectedBrandId(existingBrandId || "");
+  }, [existingTag, existingBrandId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -937,6 +1326,195 @@ const TemplateTypeModal = ({ isOpen, onClose, onConfirm, existingTag,existingBra
   );
 };
 
+//------------------------------------------------------------
+// LocalPreviewModal
+//------------------------------------------------------------
+const LocalPreviewModal = observer(({ open, onClose, onlyCurrentPage }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+
+    // Clear old content
+    previewStore.loadJSON({ pages: [] });
+
+    const mainJson = JSON.parse(JSON.stringify(store.toJSON()));
+    let pagesToLoad = mainJson.pages || [];
+    if (onlyCurrentPage && store.activePage) {
+      pagesToLoad = pagesToLoad.filter((p) => p.id === store.activePage.id);
+    }
+
+    // Partial JSON
+    const partialJson = { ...mainJson, pages: pagesToLoad };
+    previewStore.loadJSON(partialJson);
+
+    // Auto-play
+    previewStore.play({ repeat: true });
+
+    // Also load the full JSON
+    previewStore.loadJSON(mainJson);
+    previewStore.play({ repeat: true });
+    setIsPlaying(true);
+
+    return () => {
+      previewStore.stop();
+      setIsPlaying(false);
+      setProgress(0);
+    };
+  }, [open, onlyCurrentPage]);
+
+  useEffect(() => {
+    let interval;
+    const DURATION = 5000; // 5 seconds
+    let startTime = 0;
+
+    if (isPlaying) {
+      startTime = Date.now();
+      interval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const fraction = elapsed / DURATION;
+        if (fraction >= 1) {
+          previewStore.stop();
+          setIsPlaying(false);
+          setProgress(0);
+          clearInterval(interval);
+        } else {
+          setProgress(fraction * 100);
+        }
+      }, 100);
+    } else {
+      setProgress(0);
+    }
+
+    return () => interval && clearInterval(interval);
+  }, [isPlaying]);
+
+  if (!open) return null;
+
+  const handleBackgroundClick = () => {
+    previewStore.clear();
+    previewStore.stop();
+    setIsPlaying(false);
+    onClose();
+  };
+
+  const handleTogglePlay = () => {
+    if (isPlaying) {
+      previewStore.stop();
+    } else {
+      previewStore.play({ repeat: true });
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 9999,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+      onClick={handleBackgroundClick}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          width: "800px",
+          height: "500px",
+          borderRadius: "8px",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 10,
+        }}
+      >
+        <button
+          style={{
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            zIndex: 999999,
+            background: "#000",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            fontSize: "14px",
+            padding: "6px 10px",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            previewStore.clear();
+            setIsPlaying(false);
+            previewStore.stop();
+            setIsPlaying(false);
+            onClose();
+          }}
+        >
+          Close
+        </button>
+        <div style={{ flex: 1, position: "relative" }}>
+          <PolotnoContainer style={{ width: "100%", height: "100%" }}>
+            <SidePanelWrap style={{ display: "none" }} />
+            <WorkspaceWrap>
+              <Workspace
+                store={previewStore}
+                components={{ PageControls: () => null }}
+              />
+            </WorkspaceWrap>
+          </PolotnoContainer>
+        </div>
+        <div
+          style={{
+            height: "40px",
+            background: "#f1f1f1",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 10px",
+          }}
+        >
+          <button
+            style={{
+              background: "transparent",
+              border: "none",
+              fontSize: "20px",
+              cursor: "pointer",
+              marginRight: "10px",
+            }}
+            onClick={handleTogglePlay}
+          >
+            {isPlaying ? "⏸" : "▶"}
+          </button>
+          <div
+            style={{
+              flex: 1,
+              height: "5px",
+              background: "#ddd",
+              borderRadius: "3px",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: "100%",
+                background: "#4CAF50",
+                transition: "width 0.1s ease-in-out",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+});
+
 // ----------------------------------------------
 // 7) POLOTNOUSER MAIN COMPONENT
 // ----------------------------------------------
@@ -957,6 +1535,11 @@ const PolotnoUser = () => {
   // For loading existing template from the server:
   const [isTemplateLoading, setIsTemplateLoading] = useState(false);
 
+
+  // Local preview
+  const [localPreviewOpen, setLocalPreviewOpen] = useState(false);
+  const [localPreviewCurrent, setLocalPreviewCurrent] = useState(false);
+
   // Modal for Save/Update
   const [modalOpen, setModalOpen] = useState(false);
   // actionType: "save" or "update"
@@ -975,6 +1558,29 @@ const PolotnoUser = () => {
     setActionType(action);
     setModalOpen(true);
   };
+  function ensureMediaCustom(json) {
+    // Create a deep clone of the JSON (using JSON.parse/stringify)
+    const newJson = JSON.parse(JSON.stringify(json));
+
+    // Update video elements with custom object if not set
+    newJson.pages.forEach((page) => {
+      page.children.forEach((child) => {
+        if (child.type === "video" && (!child.custom || !child.custom.variable)) {
+          child.custom = { edit: true, variable: getNextMediaName("video") };
+        }
+      });
+    });
+
+    // Update audio tracks with custom object if not set
+    newJson.audios.forEach((audio) => {
+      if (!audio.custom || !audio.custom.variable) {
+        audio.custom = { edit: true, variable: getNextMediaName("audio") };
+      }
+    });
+    return newJson;
+  }
+
+
 
   // SAVE AS JSON using the selected type as tag (and brand ID)
   const saveAsJSON = async (isUpdate = false, selectedData) => {
@@ -1038,9 +1644,28 @@ const PolotnoUser = () => {
         }
       );
       const thumbnailURL = uploadResponse.data.data.url;
+      let json = store.toJSON();
+      json = ensureMediaCustom(json);
+
+      let voiceoverEnabled = false;
+      let videoDuration = "00:00";
+      if (store.audios.length > 0) {
+        voiceoverEnabled = true;
+        const durMs = store.audios[0].duration || 0;
+        if (durMs) {
+          videoDuration = msToTimeString(durMs);
+        }
+      }
+
+      let finalMediaType = "image";
+      const hasVideoPlaceholder = json.pages?.some((page) =>
+        page.children?.some((child) => child?.custom?.video1)
+      );
+      if (hasVideoPlaceholder) {
+        finalMediaType = "video";
+      }
 
       // 4) Build JSON and payload
-      const json = store.toJSON();
       const payload = {
         templateId: isUpdate && currentTemplateId ? currentTemplateId : undefined,
         url: thumbnailURL,
@@ -1049,9 +1674,9 @@ const PolotnoUser = () => {
         templateSize: `${json.width}x${json.height}`,
         postType: json.postType || "standard",
         customTemplate: true,
-        mediaType: "image",
-        videoDuration: json.videoDuration || "00:00",
-        voiceoverEnabled: json.voiceoverEnabled || false,
+        mediaType: videoDuration === "00:00" ? "image" : "video",
+        videoDuration,
+        voiceoverEnabled,
         templateJson: JSON.stringify(json),
         version: json.version || 1,
         tag: templateType, // e.g., "B2C"
@@ -1143,7 +1768,7 @@ const PolotnoUser = () => {
 
   const handleClose = () => {
     store.clear();
-    navigate("/user/brand-templates");
+    window.history.back(); // Correct way to go back
   };
 
   const handleAddNew = () => {
@@ -1172,14 +1797,24 @@ const PolotnoUser = () => {
     //customSectionWithProps,
     TemplatesSection,
     TextSection,
-    PhotosSection,
     ElementsSection,
-    UploadSectionWithAPI,
+    EmptyVideosSection,
+    MediaSection,
+    UploadPanel,
     BackgroundSection,
     QrSection, // If you have a QrSection
     LayersSection,
     SizeSection,
   ];
+  const handleLocalPreviewCurrent = () => {
+    setLocalPreviewCurrent(true);
+    setLocalPreviewOpen(true);
+  };
+  const handleLocalPreviewAll = () => {
+    setLocalPreviewCurrent(false);
+    setLocalPreviewOpen(true);
+  };
+
 
   return (
     <DesignPropertiesProvider>
@@ -1223,6 +1858,12 @@ const PolotnoUser = () => {
             <Spinner />
           </div>
         )}
+
+        <LocalPreviewModal
+          open={localPreviewOpen}
+          onClose={() => setLocalPreviewOpen(false)}
+          onlyCurrentPage={localPreviewCurrent}
+        />
 
         {/* Save/Update Modal */}
         <TemplateTypeModal
@@ -1333,7 +1974,7 @@ const PolotnoUser = () => {
         </div>
 
         <UploadedFilesProvider>
-          <PolotnoContainer style={{ width: "100vw", height: "93vh" }}>
+          <PolotnoContainer style={{ width: "100%", height: "calc(100vh - 52px)" }}>
             <SidePanelWrap>
               <SidePanel store={store} sections={sections} />
             </SidePanelWrap>
@@ -1341,6 +1982,11 @@ const PolotnoUser = () => {
               <Toolbar store={store} />
               <Workspace store={store} />
               <ZoomButtons store={store} />
+              <MyPagesTimeline
+                store={store}
+                onPreviewCurrentPage={handleLocalPreviewCurrent}
+                onPreviewAllPages={handleLocalPreviewAll}
+              />
             </WorkspaceWrap>
           </PolotnoContainer>
         </UploadedFilesProvider>
@@ -1348,5 +1994,4 @@ const PolotnoUser = () => {
     </DesignPropertiesProvider>
   );
 };
-
 export default PolotnoUser;

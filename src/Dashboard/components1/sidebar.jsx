@@ -11,6 +11,7 @@ import profileIcon from "../../assets/dashboard_img/user.svg";
 import signoutIcon from "../../assets/dashboard_img/signout.svg";
 import savedproducts from "../../assets/dashboard_img/savedProducts.svg";
 import template from "../../assets/dashboard_img/template.svg";
+import polyglot from "../../assets/dashboard_img/polyglot.svg";
 import upgradeIcon from "../../assets/dashboard_img/upgradeIcon.svg";
 
 
@@ -24,7 +25,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: "Brands", icon: brandsIcon, path: "/brandspage" },
     { name: "Products", icon: productsIcon, path: "/productspage" },
     { name: "Generate Creatives", icon: campaignsIcon, path: "/Campaigns" },
-    { name: "Brand Templates", icon: template, path: "/user/brand-templates" },    
+    { name: "Brand Templates", icon: template, path: "/user/brand-templates" }, 
+    {name:"Polyglot Templates", icon:polyglot, path:"/user/polyglot-templates"},   
    // {name:"Generate DAP Creatives", icon:campaignsIcon,path:"/DAPCreatives"},
     { name: "Saved Creatives", icon: savedproducts, path: "/savedproductspage" },
     //{ name: "Campaigns", icon: campaignsIcon, path: "/Ecampaigns" },

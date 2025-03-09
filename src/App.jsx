@@ -46,9 +46,12 @@ import UpgradePlansPage from './Dashboard/pages1/upgradePlanPage';
 import ResetPassword from './components/Dashboard/ResetPassword';
 import Landing from './pages/Landing';
 import UserInfo from './Dashboard/Admin-Dashboard/UserInfo';
-import PolotnoUser from './Dashboard/components1/PolotnoUser';
+import PolotnoUser from './Dashboard/components1/polotnoUser/PolotnoUserTemplates';
 import BrandTemplates from './Dashboard/components1/brandTemplates';
 import BrandTemplatesPage from './Dashboard/pages1/brandTemplatesPage';
+import MultiLanguageTemplates from './Dashboard/components1/multiLanguageTemplates/multiLanguageTemplates';
+import PolyglotTemplates from './Dashboard/components1/multiLanguageTemplates/polyglotTemplatesPage';
+import MultiLanguageCreativesPage from './Dashboard/components1/multiLanguageTemplates/multiLanguageCreativesPage';
 
 function App() {
   return (
@@ -188,6 +191,8 @@ function App() {
           <Route path="/editor" element={<PolotnoEditor />} />
           <Route path="/user/template-creation" element={<PolotnoUser />} />
           <Route path="/user/brand-templates" element={<BrandTemplatesPage />} />
+          <Route path="/user/polyglot-templates" element={<PolyglotTemplates />} /> 
+          <Route path='/user/polyglot-creatives' element={<MultiLanguageCreativesPage/>}/>
         </Routes>
       </div>
     </Router>
