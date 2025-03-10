@@ -124,21 +124,35 @@ const UploadSection = observer(({ store, isDarkMode = false }) => {
             if (!response.data || !response.data.data || !response.data.data.url) {
                 throw new Error("Invalid response from server.");
             }
+
             const fileUrl = response.data.data.url;
 
-            setUploadedMedia((prev) => ({
-                ...prev,
-                videos: [
-                    ...prev.videos,
-                    {
-                        id: `video-${prev.videos.length}`,
-                        url: fileUrl,
-                        video_files: [{ quality: "hd", link: fileUrl }],
-                        width: 800,
-                        height: 650,
-                    },
-                ],
-            }));
+
+            // If it's a video, use the custom object structure
+            if (type === "videos") {
+                setUploadedMedia((prev) => ({
+                    ...prev,
+                    videos: [
+                        ...prev.videos,
+                        {
+                            id: `video-${prev.videos.length}`,
+                            url: fileUrl,
+                            video_files: [{ quality: "hd", link: fileUrl }],
+                            width: 800,
+                            height: 450,
+                        },
+                    ],
+                }));
+            }
+            // Otherwise, just push the file URL to the existing array
+            else {
+                setUploadedMedia((prev) => ({
+                    ...prev,
+                    [type]: [...(prev[type] || []), fileUrl],
+                }));
+            }
+
+
             toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully.`);
         } catch (error) {
             console.error("Upload error:", error);
@@ -147,7 +161,19 @@ const UploadSection = observer(({ store, isDarkMode = false }) => {
             setIsUploading(false);
         }
     };
+    useEffect(() => {
+        console.log("Updated uploadedMedia:", uploadedMedia);
+    }, [uploadedMedia]);
 
+    useEffect(() => {
+        console.log("Formatted video data for VideosGrid:", uploadedMedia.videos.map((url, index) => ({
+            id: `video-${index}`,
+            url: url,
+            video_files: [{ quality: "hd", link: url }],
+            width: 800,
+            height: 850,
+        })));
+    }, [uploadedMedia.videos]);
 
 
     // ----------------------------------------------
@@ -194,8 +220,7 @@ const UploadSection = observer(({ store, isDarkMode = false }) => {
                         gridTemplateColumns: "repeat(2, 1fr)",
                         gap: "10px",
                         overflowY: "auto",
-                        height: "auto",
-                        rounded: "20px",
+                        maxHeight: "100vh",
                         marginTop: 20,
                     }}
                 >
@@ -225,7 +250,7 @@ const UploadSection = observer(({ store, isDarkMode = false }) => {
                                     targetElement: null,
                                     attrs: {
                                         width: 800,
-                                        height: 800
+                                        height: 850,
                                     },
                                 });
                                 toast.success("Video added to workspace.");
