@@ -24,7 +24,7 @@ import { PagesTimeline } from "polotno/pages-timeline";
 
 import { VideosPanel } from "polotno/side-panel/videos-panel"; // Official VideosPanel
 import { PhotosPanel } from "polotno/side-panel/photos-panel"; // Official PhotosPanel
-import UploadPanel from "./polotnoUser/UploadPanel";
+import UploadPanelEditor from "./UploadPanelEditor";
 import { baseUrl } from "../../components/utils/Constant";
 import { jwtToken } from "../../components/utils/jwtToken";
 import {
@@ -864,7 +864,7 @@ const sections = [
   ElementsSection,
   EmptyVideosSection,
   MediaSection,
-  UploadSectionWithAPI,
+  UploadPanelEditor,
   QrSection,
   BackgroundSection,
   SizeSection,
