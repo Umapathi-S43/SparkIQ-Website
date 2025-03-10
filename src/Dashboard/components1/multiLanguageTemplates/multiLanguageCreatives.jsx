@@ -6,7 +6,10 @@ import axios from "axios";
 // Polotno (local rendering)
 import { createStore } from "polotno/model/store";
 import { Workspace } from "polotno/canvas/workspace";
-import { unstable_setAnimationsEnabled, unstable_setTextOverflow } from "polotno/config";
+import {
+  unstable_setAnimationsEnabled,
+  unstable_setTextOverflow,
+} from "polotno/config";
 
 import Loader from "../../../components/advert/CreativesLoader";
 import { baseUrl } from "../../../components/utils/Constant";
@@ -14,7 +17,7 @@ import { jwtToken } from "../../../components/utils/jwtToken";
 
 import "../../../components/advert/Creatives.css";
 
-// Polotno API key (if required by your plan):
+// Polotno API key (if your plan requires it)
 const POLNOTO_API_KEY = "H5HjfuZWdlg9X4gOUB27";
 
 // Enable Polotno animations
@@ -38,39 +41,39 @@ export default function MultiLanguageCreatives() {
   const templateData = location.state?.templateData || {};
   console.log("[MultiLanguageCreatives] Received templateData:", templateData);
 
-  // A single Polotno store in a ref
+  // Polotno store in a ref
   const storeRef = useRef(createStore({ key: POLNOTO_API_KEY }));
 
-  // States
+  // State
   const [loading, setLoading] = useState(false);
-  const [finalResults, setFinalResults] = useState([]); // e.g. [ { language, creatives: [ { imageUrl,...}, ... ] }, ... ]
+  const [finalResults, setFinalResults] = useState([]); // e.g. [ { language, creatives: [ { imageUrl, ... }, ... ] }, ... ]
   const [renderingComplete, setRenderingComplete] = useState(false);
 
-  // Example placeholders if we want to do translations (English base):
-  const sampleBaseContent = {
-    title: "Super Sale",
-    description: "Get the best deals on electronics.",
-    cta: "Shop Now",
-    feature1: "Fast Delivery",
-    feature2: "100% Genuine Products",
-    feature3: "Secure Payments",
-    feature4: "Easy Returns",
-    mrp: "100 rupees",
-    discount: "20% discount",
-  };
+  // A list of known/required placeholders:
+  const REQUIRED_KEYS = [
+    "title",
+    "description",
+    "cta",
+    "feature1",
+    "feature2",
+    "feature3",
+    "feature4",
+    "mrp",
+    "discount",
+  ];
 
-  // On mount or changes to templateData => try generating
+  // On mount
   useEffect(() => {
     if (templateData.templateJson) {
       startCreativeGeneration();
     } else {
-      console.log("No templateJson found in templateData; skipping generation.");
+      console.log("No templateJson found; skipping generation.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateData]);
 
   // ------------------------------------------------------------
-  // 0) Extract placeholders from templateJson
+  // 0) Extract placeholders from templateJson => "English" source
   // ------------------------------------------------------------
   /**
    * Go through each page -> child in Polotno’s JSON,
@@ -97,7 +100,7 @@ export default function MultiLanguageCreatives() {
           ) {
             // e.g. elem.custom.variable = "{title}"
             const varName = elem.custom.variable.replace(/[{}]/g, "");
-            placeholders[varName] = elem.text || ""; // store original text
+            placeholders[varName] = elem.text || "";
           }
         });
       });
@@ -116,12 +119,21 @@ export default function MultiLanguageCreatives() {
       setRenderingComplete(false);
       console.log("[MultiLanguageCreatives] Starting generation...");
 
-      // Optionally: we can see which placeholders the template has initially
-      // just to show how to parse them from the JSON:
-      const foundPlaceholders = extractPlaceholdersFromTemplateJson(templateData.templateJson);
-      console.log("Template's original placeholders =>", foundPlaceholders);
+      // Extract "base content" from template JSON => English text
+      const baseEnglishContent = extractPlaceholdersFromTemplateJson(
+        templateData.templateJson
+      );
+      console.log("Extracted placeholders =>", baseEnglishContent);
 
-      // 1) fetch brand-languages => array of codes
+      // 🔹 Ensure that all REQUIRED_KEYS exist, otherwise set "string"
+      REQUIRED_KEYS.forEach((key) => {
+        if (!baseEnglishContent.hasOwnProperty(key)) {
+          baseEnglishContent[key] = "string"; // fallback if missing
+        }
+      });
+      console.log("Final baseEnglishContent =>", baseEnglishContent);
+
+      // 1) fetch brand-languages => codes
       const codes = await fetchBrandLanguageCodes(templateData?.brandId);
       if (!codes.length) {
         toast.error("No brand languages found. Aborting generation.");
@@ -131,11 +143,13 @@ export default function MultiLanguageCreatives() {
       }
       console.log("Fetched brand language codes:", codes);
 
-      // 2) call /v2/languages/translate
+      // 2) call /v2/languages/translate => using extracted placeholders
       const translatePayload = {
-        content: sampleBaseContent, // your base placeholders
+        content: baseEnglishContent,
         languages: codes,
       };
+      console.log("translatePayload =>", translatePayload);
+
       const translations = await translateLanguages(translatePayload);
       if (!translations) {
         toast.error("No translations returned. Aborting.");
@@ -156,14 +170,17 @@ export default function MultiLanguageCreatives() {
       }
 
       for (const [langCode, textMap] of Object.entries(translations)) {
-        console.log(`Generating creative for language='${langCode}' with placeholders =>`, textMap);
+        console.log(`Generating creative for language='${langCode}':`, textMap);
 
-        // apply placeholders to polotno JSON
+        // apply placeholders
         const updatedJson = applyTemplate(rawTemplateJson, textMap);
         if (!updatedJson) continue;
 
         // local render => S3 => create
-        const renderedCreative = await localPolotnoRender(updatedJson, templateData);
+        const renderedCreative = await localPolotnoRender(
+          updatedJson,
+          templateData
+        );
         if (renderedCreative) {
           multiLangResults.push({
             language: langCode,
@@ -188,7 +205,7 @@ export default function MultiLanguageCreatives() {
   // ------------------------------------------------------------
   async function fetchBrandLanguageCodes(brandId) {
     if (!brandId) {
-      console.log("No brandId provided, returning empty array.");
+      console.log("No brandId provided. Returning [].");
       return [];
     }
     try {
@@ -197,7 +214,7 @@ export default function MultiLanguageCreatives() {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
       const dataArr = resp.data?.data || [];
-      // each => { id: "...", languages: { code: "te" } }
+      // each => { languages: { code: "te" } }
       return dataArr.map((item) => item.languages?.code).filter(Boolean);
     } catch (err) {
       console.error("fetchBrandLanguageCodes error:", err);
@@ -214,7 +231,7 @@ export default function MultiLanguageCreatives() {
       const resp = await axios.post(url, payload, {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
-      return resp.data?.data; // => e.g. { te: {...}, hi: {...} }
+      return resp.data?.data; // e.g. { te: {...}, hi: {...} }
     } catch (err) {
       console.error("translateLanguages error:", err);
       return null;
@@ -278,16 +295,14 @@ export default function MultiLanguageCreatives() {
 
       store.loadJSON(finalJson);
 
-      // short wait for Polotno to finish
+      // short wait
       await new Promise((r) => setTimeout(r, 300));
 
       // local screenshot => toDataURL
-      console.log("Calling store.toDataURL for local screenshot...");
       const dataURL = await store.toDataURL({
         pixelRatio: 1,
         mimeType: "image/png",
       });
-      console.log("Got dataURL length =>", dataURL.length);
 
       const imageBlob = await (await fetch(dataURL)).blob();
       const s3Url = await uploadImageToS3(imageBlob);
@@ -296,7 +311,11 @@ export default function MultiLanguageCreatives() {
         return null;
       }
 
-      const created = await createTemplateOnServer(s3Url, finalJson, originalTemplateData);
+      const created = await createTemplateOnServer(
+        s3Url,
+        finalJson,
+        originalTemplateData
+      );
       store.clear();
 
       if (!created) return null;
@@ -359,7 +378,6 @@ export default function MultiLanguageCreatives() {
         isFavourite: false,
         productId: "sip-3be59ad9-c",
       };
-      console.log("[createTemplateOnServer] payload =>", payload);
 
       const resp = await axios.post(`${baseUrl}/v2/user/templates`, payload, {
         headers: { Authorization: `Bearer ${jwtToken}` },
@@ -384,11 +402,10 @@ export default function MultiLanguageCreatives() {
       return;
     }
     try {
-      console.log("[handleDownload] generating local download from Polotno store...");
       const store = storeRef.current;
       store.loadJSON(JSON.parse(creative.templateJson));
 
-      await new Promise((r) => setTimeout(r, 300)); // wait for polotno
+      await new Promise((r) => setTimeout(r, 300)); // wait
 
       const dataURL = await store.toDataURL({
         mimeType: "image/png",
@@ -408,7 +425,7 @@ export default function MultiLanguageCreatives() {
 
       toast.success("Image downloaded successfully!");
     } catch (error) {
-      console.error("Error generating and downloading image:", error);
+      console.error("Error generating + downloading image:", error);
       toast.error("Failed to download image.");
     }
   }
@@ -428,7 +445,6 @@ export default function MultiLanguageCreatives() {
 
   return (
     <div className="flex-grow lg:mr-8 lg:ml-0 ml-2 mx-auto">
-      {/* Steps */}
       <div className="max-w-6xl w-full mx-auto flex flex-col gap-6 border border-[#FCFCFC] rounded-3xl mb-4">
         {/* HEADER */}
         <div className="flex justify-between items-center rounded-t-3xl bg-[rgba(252,252,252,0.40)] p-3 lg:p-4 pb-0 relative">
@@ -532,6 +548,8 @@ export default function MultiLanguageCreatives() {
 
 /*
 Summary:
-1) We added `extractPlaceholdersFromTemplateJson(templateJson)` to parse original text placeholders.
-2) "applyTemplate(...)" still replaces them in the Polotno JSON for each language's translation.
+- We no longer have a hard-coded sampleBaseContent.
+- Instead, we extract placeholders from the templateJson itself (the "English" text).
+- We pass that object to /v2/languages/translate.
+- Then, for each language, we apply placeholders back into the polotno JSON.
 */
