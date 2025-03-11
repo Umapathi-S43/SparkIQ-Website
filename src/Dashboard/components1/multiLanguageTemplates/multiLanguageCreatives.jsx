@@ -213,7 +213,7 @@ export default function MultiLanguageCreatives() {
           baseEnglishContent[key] = "string";
         }
       });
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // delay for effect
+      await new Promise((resolve) => setTimeout(resolve, 3000)); // delay for effect
       markStepCompleted(0);
 
       // Step 2: Fetch brand languages
@@ -225,7 +225,7 @@ export default function MultiLanguageCreatives() {
         setRenderingComplete(true);
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // delay for effect
+      await new Promise((resolve) => setTimeout(resolve, 3000)); // delay for effect
       markStepCompleted(1);
 
       // Step 3: Translate placeholders
@@ -365,12 +365,46 @@ export default function MultiLanguageCreatives() {
       unstable_setTextOverflow("resize");
       unstable_setTextOverflow("change-font-size");
       store.loadJSON(finalJson);
-      await new Promise((r) => setTimeout(r, 300));
-      const dataURL = await store.toDataURL({
-        pixelRatio: 1,
-        mimeType: "image/png",
-      });
-      const imageBlob = await (await fetch(dataURL)).blob();
+
+      // await new Promise((r) => setTimeout(r, 300));
+      // const dataURL = await store.toDataURL({
+      //   pixelRatio: 1,
+      //   mimeType: "image/png",
+      // });
+      
+      const designJson = store.toJSON();
+      // polotno cloud
+      const renderRequest = await fetch(
+        `https://api.polotno.com/api/renders?KEY=${POLNOTO_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Prefer: "wait",
+          },
+          body: JSON.stringify({
+            design: designJson,
+            format: "jpeg",
+            pixelRatio: 1,
+            ignoreBackground: false,
+            skipFontError: true,
+            skipImageError: true
+          }),
+        }
+      );
+      const renderJob = await renderRequest.json();
+      if (renderJob.status !== "done" || !renderJob.output) {
+        toast.error("Error generating image!");
+        return null;
+      }
+
+      const imageResponse = await fetch(renderJob.output);
+      if (!imageResponse.ok) {
+        toast.error("Failed to retrieve the rendered image.");
+        return null;
+      }
+      const imageBlob = await imageResponse.blob();
+
       const s3Url = await uploadImageToS3(imageBlob);
       if (!s3Url) {
         store.clear();
