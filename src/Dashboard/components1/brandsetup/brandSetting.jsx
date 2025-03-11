@@ -5,7 +5,7 @@ import axios from "axios";
 
 // For cropping
 import Cropper from "react-easy-crop";
-
+import { photoroomKey } from "../../../components/utils/Constant";
 import {
   FaTrash,
   FaRegLightbulb,
@@ -1309,31 +1309,58 @@ function MultiLogoUpload({ brandData, setBrandData }) {
    - Zoom: 0.1..3
    - Padding & margin inside the cropper
 ---------------------------------------------------- */
+// Inline removeBackground function
+async function removeBackground(imageFile) {
+  const url = "https://sdk.photoroom.com/v1/segment";
+  // Replace with your own API key
+  const apiKey = photoroomKey;
+  const formData = new FormData();
+  formData.append("image_file", imageFile);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "X-Api-Key": apiKey,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    console.error(await response.json());
+    throw new Error("Network response was not ok");
+  }
+
+  const imageBlob = await response.blob();
+  return imageBlob;
+}
+
 function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-
-  const aspect = 1; // 1:1
+  // Local state to hold the current image URL (updated after bg removal)
+  const [currentUrl, setCurrentUrl] = useState(originalUrl);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
+  const aspect = 1; // 1:1 aspect ratio
 
   const onCropComplete = useCallback((_, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
   const handleSaveCrop = async () => {
-    if (!croppedAreaPixels || !originalUrl) {
+    if (!croppedAreaPixels || !currentUrl) {
       toast.error("No cropping data available!");
       return;
     }
     try {
       // 1) Get a blob from the cropped area
-      const croppedBlob = await getCroppedImg(originalUrl, croppedAreaPixels, rotation);
+      const croppedBlob = await getCroppedImg(currentUrl, croppedAreaPixels, rotation);
       if (!croppedBlob) {
         toast.error("Failed to crop image. Try again.");
         return;
       }
-      // 2) Upload cropped blob => final "logoUrl"
+      // 2) Create a file from the blob and upload it
       const croppedFile = new File(
         [croppedBlob],
         `cropped_${file?.name || "logo"}.png`,
@@ -1341,12 +1368,12 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
           type: "image/png",
         }
       );
-      const finalUrl = await uploadImage(croppedFile, () => {}); // no spinner here
+      const finalUrl = await uploadImage(croppedFile, () => {});
       if (!finalUrl) {
         toast.error("Failed to upload cropped image.");
         return;
       }
-      // 3) Pass finalUrl + coordinates
+      // 3) Pass finalUrl and crop details to the parent callback
       onSave(finalUrl, {
         x: Math.round(croppedAreaPixels.x),
         y: Math.round(croppedAreaPixels.y),
@@ -1360,9 +1387,52 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
     }
   };
 
-  // Rotate 90 deg increments
+  // Rotate 90° increments
   const handleRotate90 = () => {
     setRotation((prev) => (prev + 90) % 360);
+  };
+
+  // Remove background handler
+  const handleRemoveBg = async () => {
+    setIsRemovingBg(true);
+    try {
+      // Fetch the image blob from the current URL
+      const response = await fetch(currentUrl);
+      const blob = await response.blob();
+      // Create a File from the blob (the API expects a File)
+      const imageFile = new File([blob], "image.png", { type: blob.type });
+      
+      // Call the inline removeBackground function
+      const newBgBlob = await removeBackground(imageFile);
+      
+      // Create a new FormData instance for the S3 upload
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", newBgBlob, "image.png");
+  
+      // Upload the processed image to your S3 endpoint
+      const upResp = await axios.post(
+        `${baseUrl}/sparkiq/image/upload?customerId=123`,
+        uploadFormData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
+      );
+  
+      // Extract the new image URL from the upload response
+      // (Assuming the URL is in upResp.data.data.url)
+      const newImageUrl = upResp.data.data.url;
+      console.log("New image URL:", newImageUrl);
+      // Update the current image URL so the Cropper uses the new image
+      setCurrentUrl(newImageUrl);
+    } catch (error) {
+      console.error("Error removing background: ", error);
+      toast.error("Error removing background.");
+    } finally {
+      setIsRemovingBg(false);
+    }
   };
 
   return (
@@ -1381,7 +1451,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
           Adjust the image, rotate if needed, and zoom in/out.
         </p>
 
-        {/* Crop container with some margin/padding */}
+        {/* Crop container */}
         <div
           className="relative bg-black"
           style={{
@@ -1392,7 +1462,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
           }}
         >
           <Cropper
-            image={originalUrl}
+            image={currentUrl}
             crop={crop}
             zoom={zoom}
             rotation={rotation}
@@ -1410,9 +1480,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
                 height: "100%",
                 position: "relative",
               },
-              mediaStyle: {
-                // Optional custom styling for the image
-              },
+              mediaStyle: {},
             }}
           />
         </div>
@@ -1449,7 +1517,21 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
             <span className="text-sm w-12 text-right">{rotation}°</span>
           </div>
 
-          {/* Rotate 90 button */}
+          {/* Remove Background Button */}
+          <button
+            className="flex items-center gap-2 self-end px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+            onClick={handleRemoveBg}
+            disabled={isRemovingBg}
+          >
+            {isRemovingBg ? "Removing..." : (
+              <>
+                <FaSyncAlt />
+                Remove background
+              </>
+            )}
+          </button>
+
+          {/* Rotate 90° Button */}
           <button
             className="flex items-center gap-2 self-end px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded"
             onClick={handleRotate90}
@@ -1478,6 +1560,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
     </div>
   );
 }
+
 
 function BrandColors({ brandData, setBrandData }) {
   const [loadingColors, setLoadingColors] = useState(false);

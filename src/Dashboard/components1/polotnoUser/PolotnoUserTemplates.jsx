@@ -24,6 +24,7 @@ import toast from "react-hot-toast";
 import { PagesTimeline } from "polotno/pages-timeline";
 import { baseUrl } from "../../../components/utils/Constant";
 import { jwtToken } from "../../../components/utils/jwtToken";
+import { photoroomKey } from "../../../components/utils/Constant";
 
 // Icons
 import { FaCloudUploadAlt, FaPhotoVideo, FaTrash } from "react-icons/fa";
@@ -1515,6 +1516,100 @@ const LocalPreviewModal = observer(({ open, onClose, onlyCurrentPage }) => {
   );
 });
 
+//------------Remove Background for Images----------
+// Inline removeBackground function
+async function removeBackground(imageFile) {
+  const url = "https://sdk.photoroom.com/v1/segment";
+  // Replace with your own API key
+  const apiKey = photoroomKey;
+  const formData = new FormData();
+  formData.append("image_file", imageFile);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "X-Api-Key": apiKey
+    },
+    body: formData
+  });
+
+  if (!response.ok) {
+    console.error(await response.json());
+    throw new Error("Network response was not ok");
+  }
+
+  const imageBlob = await response.blob();
+  return imageBlob;
+}
+const MyImageWithLabel = observer(({ store, element }) => {
+  if (!element) return null;
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
+
+  const handleRemoveBg = async () => {
+    setIsRemovingBg(true);
+    try {
+      // Assume the image URL is stored in element.src
+      const imageUrl = element.src;
+      // Fetch the image blob from the URL
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      // Create a File from the blob (the API expects a File)
+      const imageFile = new File([blob], "image.png", { type: blob.type });
+      
+      // Call the inline removeBackground function
+      const newBgBlob = await removeBackground(imageFile);
+      
+      // Create a new FormData instance for the S3 upload
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", newBgBlob, "image.png");
+  
+      // Upload the processed image to your S3 endpoint
+      const upResp = await axios.post(
+        `${baseUrl}/sparkiq/image/upload?customerId=123`,
+        uploadFormData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
+      );
+  
+      // Replace the image URL with the one from the upload response
+      // (Assuming the response contains the URL in upResp.data.url)
+      const newImageUrl = upResp.data.data.url;
+      console.log(newImageUrl);
+      element.set({ src: newImageUrl });
+    } catch (error) {
+      console.error("Error removing background: ", error);
+    } finally {
+      setIsRemovingBg(false);
+    }
+  };
+  
+  return (
+    <div style={{ margin: "8px 0" }}>
+      <button
+        style={{
+          backgroundColor: "transparent",
+          color: "#000",
+          border: "none",
+          padding: "4px 8px",
+          cursor: "pointer",
+          marginLeft: "8px"
+        }}
+        onClick={handleRemoveBg}
+        disabled={isRemovingBg}
+      >
+        {isRemovingBg ? "Removing..." : "Remove Background"}
+      </button>
+    </div>
+  );
+});
+
+
+
+
 // ----------------------------------------------
 // 7) POLOTNOUSER MAIN COMPONENT
 // ----------------------------------------------
@@ -1980,7 +2075,9 @@ const PolotnoUser = () => {
             </SidePanelWrap>
             <WorkspaceWrap>
               <Toolbar store={store} />
-              <Workspace store={store} />
+              <Workspace store={store}
+               components={{
+                 ImageFilters: MyImageWithLabel}} />
               <ZoomButtons store={store} />
               <MyPagesTimeline
                 store={store}
