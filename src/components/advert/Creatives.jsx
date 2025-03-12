@@ -135,7 +135,8 @@ export default function Creatives({
       const productImageURL = generatedData?.productImageURL || "";
       const websiteUrl = brandFetched?.data?.data?.websiteUrl || "";
       const colorPalettes = brandFetched?.data?.colorPalettes || [];
-
+      const fonts = brandFetched?.data?.fonts||[];
+console.log("fonts:",fonts);
       // placeholders from generate content
       const placeholderList =
         generatedData.generateContentResponses?.generateImageContentResponses || [];
@@ -183,7 +184,7 @@ export default function Creatives({
           if (!polotnoData) continue;
 
           // Deep clone + apply placeholders/colors
-          const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
+          const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData,fonts);
           if (!updatedTemplateJson) continue;
 
           const renderedCreative = await polotnoCloudRender(
@@ -241,8 +242,10 @@ export default function Creatives({
           const polotnoData = brandTemplateJsons[brandTplIndex];
           if (!polotnoData) continue; // skip if missing
 
+          console.log("color paletex form brand templates",paletteData);
+          console.log("fonts from bran template",fonts);
           // Deep clone + apply placeholders + palette
-          const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData);
+          const updatedTemplateJson = applyTemplate(polotnoData, placeholders, paletteData,fonts);
           if (!updatedTemplateJson) continue;
 
           // final cloud render
@@ -433,16 +436,15 @@ export default function Creatives({
     }
   }
 
-  // 4) placeholders & color palettes
-  function applyTemplate(templateJson, placeholders, paletteData) {
+  function applyTemplate(templateJson, placeholders, paletteData, fonts) { 
     try {
-      // Important: deep clone the polotno JSON so we don't mutate a read-only object
+      // Deep clone the polotno JSON to avoid mutating a read-only object
       let parsedJson =
         typeof templateJson === "string"
           ? JSON.parse(templateJson)
           : JSON.parse(JSON.stringify(templateJson));
-
-      // 4a) apply placeholders
+  
+      // 4a) Apply placeholders
       parsedJson.pages.forEach((page) => {
         page.children.forEach((element) => {
           if (element.custom?.variable) {
@@ -460,11 +462,14 @@ export default function Creatives({
           }
         });
       });
-
-      // 4b) apply color palette
-      if (paletteData && Array.isArray(paletteData.colors) && paletteData.colors.length >= 3) {
+  
+      // 4b) Apply color palette
+      if (
+        paletteData &&
+        Array.isArray(paletteData.colors) &&
+        paletteData.colors.length >= 3
+      ) {
         const [bgColor, textColor, svgColor] = paletteData.colors;
-
         parsedJson.pages.forEach((page) => {
           page.background = bgColor;
           page.children.forEach((element) => {
@@ -477,14 +482,72 @@ export default function Creatives({
           });
         });
       }
-
+  
+      // 4c) Apply fonts to text elements based on matching variable type
+      if (fonts && Array.isArray(fonts) && fonts.length > 0) {
+        parsedJson.pages.forEach((page) => {
+          page.children.forEach((element) => {
+            if (
+              element.type &&
+              element.type.toLowerCase() === "text" &&
+              element.custom?.variable
+            ) {
+              // Extract variable type without curly braces (e.g., "title" from "{title}")
+              const variableType = element.custom.variable.replace(/[{}]/g, "");
+              // Find a matching font whose type (without curly braces) equals the variable type
+              const matchingFont = fonts.find(
+                (font) => font.type.replace(/[{}]/g, "") === variableType
+              );
+              if (matchingFont) {
+                console.log("Fonts are applying");
+                element.fontFamily = matchingFont.name;
+                element.fontStyle = matchingFont.fontStyle;
+                element.fontWeight = matchingFont.fontWeight;
+                // Optionally, you can set fontSize if required:
+                // element.fontSize = matchingFont.fontSize;
+  
+                // If it's a custom font, load it using the FontFace API
+                if (
+                  matchingFont.name === "Custom Font" &&
+                  matchingFont.fontStyleURL
+                ) {
+                  const fontFace = new FontFace(
+                    matchingFont.name,
+                    `url(${matchingFont.fontStyleURL})`,
+                    {
+                      style: matchingFont.fontStyle,
+                      weight: matchingFont.fontWeight,
+                    }
+                  );
+                  fontFace
+                    .load()
+                    .then((loadedFont) => {
+                      document.fonts.add(loadedFont);
+                      console.log("Custom font loaded:", matchingFont.name);
+                    })
+                    .catch((err) => {
+                      console.error(
+                        "Failed to load custom font:",
+                        matchingFont.name,
+                        err
+                      );
+                    });
+                }
+              }
+            }
+          });
+        });
+      }
+  
       return parsedJson;
     } catch (err) {
       console.error("applyTemplate error:", err);
-      toast.error("Failed to apply placeholders or color palette.");
+      toast.error("Failed to apply placeholders, color palette, or fonts.");
       return null;
     }
   }
+  
+
 
   // => fetch brand details
   const fetchBrandDetails = async () => {

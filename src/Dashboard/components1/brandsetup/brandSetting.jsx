@@ -450,7 +450,7 @@ function parseFontsToState(apiFonts) {
     const isCustom = f.type === "CUSTOM";
     return {
       id: f.id || "",
-      role: f.name || "Title",
+      role: f.type || "Title",
       fontFamily: isCustom ? "Custom Font" : f.name,
       size: parseInt(f.fontSize, 10) || 16,
       bold: f.fontWeight === "bold",
@@ -458,10 +458,12 @@ function parseFontsToState(apiFonts) {
       underline: false,
       isCustom,
       customFile: null,
+      fontUrl: f.fontStyleURL || "", // NEW: persist the uploaded URL
       isEditing: false,
     };
   });
 }
+
 
 /* ----------------------------------------------------
    Build final JSON payload
@@ -539,7 +541,7 @@ function buildFinalBrandPayload(brandData) {
     name: f.fontFamily || "Arial",
     type:f.role || "Title",
     fontStyle: f.italic ? "italic" : "normal",
-    fontStyleURL: f.customFile ? "https://myserver.com/" + f.customFile.name : "",
+    fontStyleURL: f.customFile ||"",
     fontWeight: f.bold ? "bold" : "normal",
     fontSize: String(f.size),
     brandId: id || "",
@@ -2070,11 +2072,40 @@ function PaletteSubColor({
    BRAND FONTS => referencing brandData.fonts
 ---------------------------------------------------- */
 function BrandFonts({ brandData, setBrandData }) {
+  const [roleOptions, setRoleOptions] = useState([]);
+
+  useEffect(() => {
+    async function fetchRoleOptions() {
+      try {
+        const response = await axios.get(`${baseUrl}/v2/design/labels`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
+        let opts = response.data?.data || [];
+        // Filter only those role options whose type is "text"
+        opts = opts.filter((opt) => opt.type === "text");
+        setRoleOptions(opts);
+      } catch (error) {
+        console.error("Error fetching role options", error);
+      }
+    }
+    fetchRoleOptions();
+  }, []);
+
   const handleAddNewFont = () => {
+    // Pick a default role option – if available, use the first option; otherwise, fallback
+    const defaultRoleOption =
+      roleOptions.length > 0
+        ? roleOptions[0]
+        : { name: "Title", value: "{title}" };
     const newFont = {
       id: Date.now().toString(),
-      role: "Title",
-      fontFamily: "Arial",
+      // Save role value (for payload "name") and also store display name separately
+      role: defaultRoleOption.value, // e.g. "{title}"
+      displayRole: defaultRoleOption.name, // e.g. "Title"
+      fontFamily: "Arial", // This will map to payload "type"
       size: 16,
       bold: false,
       italic: false,
@@ -2108,20 +2139,26 @@ function BrandFonts({ brandData, setBrandData }) {
         </button>
 
         {brandData.fonts.map((fontObj) => (
-          <FontRowPen key={fontObj.id} fontObj={fontObj} setBrandData={setBrandData} />
+          <FontRowPen
+            key={fontObj.id}
+            fontObj={fontObj}
+            setBrandData={setBrandData}
+            roleOptions={roleOptions}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-/* ----------------------------------------------------
-   Single row for a specific font style
----------------------------------------------------- */
-function FontRowPen({ fontObj, setBrandData }) {
+// ====================================================
+// FontRowPen Component
+// ====================================================
+function FontRowPen({ fontObj, setBrandData, roleOptions }) {
   const {
     id,
-    role,
+    role, // Mapped role value (e.g. "{title}")
+    displayRole, // Display string (e.g. "Title")
     fontFamily,
     size,
     bold,
@@ -2132,8 +2169,15 @@ function FontRowPen({ fontObj, setBrandData }) {
     isEditing,
   } = fontObj;
 
-  const ROLE_OPTIONS = ["Heading", "Subheading", "Body", "Caption", "CTA", "Quote", "Title"];
-  const FONT_OPTIONS = ["Arial", "Helvetica", "Roboto", "Open Sans", "Times New Roman", "Montserrat", "Lato"];
+  const FONT_OPTIONS = [
+    "Arial",
+    "Helvetica",
+    "Roboto",
+    "Open Sans",
+    "Times New Roman",
+    "Montserrat",
+    "Lato",
+  ];
 
   const previewStyle = {
     fontFamily,
@@ -2143,21 +2187,32 @@ function FontRowPen({ fontObj, setBrandData }) {
     textDecoration: underline ? "underline" : "none",
   };
 
+  const updateFontState = (fields) => {
+    setBrandData((prev) => ({
+      ...prev,
+      fonts: prev.fonts.map((f) => (f.id === id ? { ...f, ...fields } : f)),
+    }));
+  };
+
   const handleOpenEditor = () => {
     updateFontState({ isEditing: true });
   };
+
   const handleConfirm = () => {
     updateFontState({ isEditing: false });
   };
+
   const handleCancel = () => {
     updateFontState({ isEditing: false });
   };
+
   const handleRemove = () => {
     setBrandData((prev) => ({
       ...prev,
       fonts: prev.fonts.filter((f) => f.id !== id),
     }));
   };
+
   const onFontFamilyChange = (val) => {
     if (val === "CUSTOM_FONT") {
       updateFontState({ isCustom: true, fontFamily: "Custom Font" });
@@ -2165,36 +2220,68 @@ function FontRowPen({ fontObj, setBrandData }) {
       updateFontState({ isCustom: false, fontFamily: val });
     }
   };
-  const onFontFileUpload = (e) => {
+
+  const onFontFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+  
     toast.success(`Selected custom font file: ${file.name}`);
+    // Immediately update state with the selected file (optional)
     updateFontState({ customFile: file });
+  
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+  
+    try {
+      const response = await axios.post(
+        `${baseUrl}/sparkiq/image/upload?customerId=123`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
+      );
+  
+      // Extract the URL from the response
+      const uploadedUrl = response.data?.data?.url;
+      if (uploadedUrl) {
+        toast.success(`Font file uploaded successfully!`);
+        // Update state so that fontUrl now holds the new URL
+        updateFontState({ fontUrl: uploadedUrl });
+        updateFontState({customFile:uploadedUrl});
+      } else {
+        toast.error("Font file upload did not return a URL.");
+      }
+    } catch (error) {
+      console.error("Error uploading font file:", error);
+      toast.error("Error uploading font file.");
+    }
   };
+
+  
+
   const onSizeChange = (newVal) => {
     updateFontState({ size: newVal });
   };
+
   const onToggleBold = () => {
     updateFontState({ bold: !bold });
   };
+
   const onToggleItalic = () => {
     updateFontState({ italic: !italic });
   };
+
   const onToggleUnderline = () => {
     updateFontState({ underline: !underline });
   };
 
-  function updateFontState(fields) {
-    setBrandData((prev) => ({
-      ...prev,
-      fonts: prev.fonts.map((f) => (f.id === id ? { ...f, ...fields } : f)),
-    }));
-  }
-
   if (!isEditing) {
     return (
       <div className="flex items-center justify-between bg-white p-2 mb-2 rounded shadow">
-        <span className="font-semibold">{role || "Title"}</span>
+        <span className="font-semibold">{displayRole || "Title"}</span>
         <div className="flex gap-3">
           <button className="text-gray-700 hover:text-black" onClick={handleOpenEditor}>
             <FaPen />
@@ -2207,11 +2294,11 @@ function FontRowPen({ fontObj, setBrandData }) {
     );
   }
 
-  // If editing => expanded
+  // Editing view
   return (
     <div className="bg-white p-3 mb-2 rounded shadow flex flex-col gap-2 border-2 border-[#1138AC]">
       <div className="flex items-center gap-2">
-        {/* Font Family */}
+        {/* Font Family Selection */}
         <select
           className="border p-1 rounded"
           style={{ minWidth: "120px" }}
@@ -2226,21 +2313,27 @@ function FontRowPen({ fontObj, setBrandData }) {
           <option value="CUSTOM_FONT">Custom Font…</option>
         </select>
 
-        {/* Role */}
+        {/* Role Dropdown */}
         <select
           className="border p-1 rounded"
           style={{ minWidth: "100px" }}
           value={role}
-          onChange={(e) => updateFontState({ role: e.target.value })}
+          onChange={(e) => {
+            // Find the selected role option by matching its value
+            const selected = roleOptions.find((r) => r.value === e.target.value);
+            if (selected) {
+              updateFontState({ role: selected.value, displayRole: selected.name });
+            }
+          }}
         >
-          {ROLE_OPTIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
+          {roleOptions.map((option) => (
+            <option key={option.id} value={option.value}>
+              {option.name}
             </option>
           ))}
         </select>
 
-        {/* Size */}
+        {/* Font Size */}
         <input
           type="number"
           min={8}
@@ -2250,7 +2343,7 @@ function FontRowPen({ fontObj, setBrandData }) {
           onChange={(e) => onSizeChange(parseInt(e.target.value, 10))}
         />
 
-        {/* B / I / U */}
+        {/* Bold / Italic / Underline Buttons */}
         <button
           onClick={onToggleBold}
           className={`border p-1 rounded ${bold ? "bg-gray-300" : "bg-white"}`}
@@ -2289,7 +2382,7 @@ function FontRowPen({ fontObj, setBrandData }) {
         </div>
       </div>
 
-      {/* If “Custom Font,” show file input + preview */}
+      {/* Custom Font File Upload */}
       {isCustom && (
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <label className="text-sm font-medium">Upload Font:</label>
@@ -2305,10 +2398,28 @@ function FontRowPen({ fontObj, setBrandData }) {
         </div>
       )}
 
-      {/* Preview area */}
+      {/* Preview Area */}
       <div className="border rounded p-2 bg-white" style={{ ...previewStyle, minHeight: "40px" }}>
-        This is an example {role} preview
+        This is an example {displayRole || "Title"} preview
       </div>
     </div>
   );
 }
+
+// ====================================================
+// Helper: Map font object to payload
+// ====================================================
+function getFontPayload(fontObj) {
+  return {
+    id: fontObj.id,
+    name: fontObj.role, // Using role value (e.g., "{title}")
+    type: fontObj.fontFamily, // Font family/type
+    fontStyle: fontObj.italic ? "italic" : "normal",
+    // Use the URL returned from upload if available
+    fontStyleURL: fontObj.fontUrl ? fontObj.fontUrl : "",
+    fontWeight: fontObj.bold ? "bold" : "normal",
+    fontSize: fontObj.size.toString(),
+    brandId: null,
+  };
+}
+
