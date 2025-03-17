@@ -1,6 +1,7 @@
 // App.tsx
 
 import React from 'react';
+import '@blueprintjs/core/lib/css/blueprint.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import PrivacyPolicy from './pages/Privacy-Policy';

@@ -1357,7 +1357,28 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
     }
     try {
       // 1) Get a blob from the cropped area
-      const croppedBlob = await getCroppedImg(currentUrl, croppedAreaPixels, rotation);
+       // -- (A) Download the existing image via your own backend route --
+    // 1) Extract filename from the S3 URL
+    //    e.g. "https://sparkiq-image-upload.s3.amazonaws.com/f5b6ae5b.png" -> "f5b6ae5b.png"
+    const fileName = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
+
+    // 2) Request that file from your Node/Express route
+    //    GET {baseUrl}/sparkiq/image/download/{fileName}
+    const { data: imageBlob } = await axios.get(
+      `${baseUrl}/sparkiq/image/download/${fileName}`,
+      {
+        responseType: "blob",
+        headers: {
+          Authorization: `Bearer ${jwtToken}`, // if protected
+        },
+      }
+    );
+
+    // 3) Create a local object URL for safe usage in canvas
+    const localObjectUrl = URL.createObjectURL(imageBlob);
+
+
+      const croppedBlob = await getCroppedImg(localObjectUrl, croppedAreaPixels, rotation);
       if (!croppedBlob) {
         toast.error("Failed to crop image. Try again.");
         return;
@@ -1398,20 +1419,36 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
   const handleRemoveBg = async () => {
     setIsRemovingBg(true);
     try {
-      // Fetch the image blob from the current URL
-      const response = await fetch(currentUrl);
-      const blob = await response.blob();
-      // Create a File from the blob (the API expects a File)
-      const imageFile = new File([blob], "image.png", { type: blob.type });
-      
-      // Call the inline removeBackground function
+      /**
+       * 1) Extract filename from the S3 URL.
+       *    E.g. "https://sparkiq-image-upload.s3.amazonaws.com/abc.png" -> "abc.png"
+       */
+      const fileName = originalUrl.substring(originalUrl.lastIndexOf("/") + 1);
+
+      // 2) Request that file via your Node/Express route
+      //    GET {baseUrl}/sparkiq/image/download/{fileName}
+      const { data: imageBlob } = await axios.get(
+        `${baseUrl}/sparkiq/image/download/${fileName}`,
+        {
+          responseType: "blob", // We need the raw image bits
+          headers: {
+            Authorization: `Bearer ${jwtToken}`, // if your endpoint is protected
+          },
+        }
+      );
+
+      // 3) Convert the blob to a File (PhotoRoom expects a File object)
+      const imageFile = new File([imageBlob], fileName, {
+        type: imageBlob.type,
+      });
+
+      // 4) Remove the background using PhotoRoom
       const newBgBlob = await removeBackground(imageFile);
-      
-      // Create a new FormData instance for the S3 upload
+
+      // 5) Upload the processed image to your S3 endpoint
       const uploadFormData = new FormData();
       uploadFormData.append("file", newBgBlob, "image.png");
-  
-      // Upload the processed image to your S3 endpoint
+
       const upResp = await axios.post(
         `${baseUrl}/sparkiq/image/upload?customerId=123`,
         uploadFormData,
@@ -1422,12 +1459,12 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
           },
         }
       );
-  
-      // Extract the new image URL from the upload response
-      // (Assuming the URL is in upResp.data.data.url)
+
+      // 6) Extract new URL from the server response
       const newImageUrl = upResp.data.data.url;
       console.log("New image URL:", newImageUrl);
-      // Update the current image URL so the Cropper uses the new image
+
+      // 7) Update Cropper with new image that has no background
       setCurrentUrl(newImageUrl);
     } catch (error) {
       console.error("Error removing background: ", error);
@@ -1436,6 +1473,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
       setIsRemovingBg(false);
     }
   };
+
 
   return (
     <div
