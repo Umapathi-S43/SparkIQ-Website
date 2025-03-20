@@ -133,7 +133,8 @@ export default function Creatives({
       // brand details
       const brandLogoURL = generatedData?.brandLogoURL || "";
       const productImageURL = generatedData?.productImageURL || "";
-      const websiteUrl = brandFetched?.data?.data?.websiteUrl || "";
+      const websiteUrl = brandFetched?.data.websiteUrl || "";
+      console.log("websiteUrl:",websiteUrl);
       const colorPalettes = brandFetched?.data?.colorPalettes || [];
       const fonts = brandFetched?.data?.fonts||[];
 console.log("fonts:",fonts);

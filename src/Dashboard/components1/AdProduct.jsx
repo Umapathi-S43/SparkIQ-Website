@@ -37,10 +37,17 @@ const discountOptions = ["Price", "Percentage"];
 
 const AdProduct = () => {
   const industryOptions = [
-    "E-com",
+    
     "Automotive",
-    "Marketing",
     "B2B Consultant",
+    "E-com",
+    "Education",
+    "Fashion",
+    "Marketing",
+    "Real Estate",
+    "Retail",
+    "Technology",
+    "Travel",
     "Other",
   ];
 

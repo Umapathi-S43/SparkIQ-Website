@@ -3,6 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 
+import { MdOutlineLightMode } from "react-icons/md";
+import { CiDark } from "react-icons/ci";
+import { TbBackground } from "react-icons/tb";
+
 // For cropping
 import Cropper from "react-easy-crop";
 import { photoroomKey } from "../../../components/utils/Constant";
@@ -1344,59 +1348,64 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
   // Local state to hold the current image URL (updated after bg removal)
   const [currentUrl, setCurrentUrl] = useState(originalUrl);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
+
+  // Local dark/light mode
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const toggleTheme = () => setIsDarkMode((prev) => !prev);
+
+  // Aspect ratio for the cropper
   const aspect = 1; // 1:1 aspect ratio
 
   const onCropComplete = useCallback((_, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
+  // -------------------------------------------------
+  // Save cropped image and upload
+  // -------------------------------------------------
   const handleSaveCrop = async () => {
     if (!croppedAreaPixels || !currentUrl) {
       toast.error("No cropping data available!");
       return;
     }
     try {
-      // 1) Get a blob from the cropped area
-       // -- (A) Download the existing image via your own backend route --
-    // 1) Extract filename from the S3 URL
-    //    e.g. "https://sparkiq-image-upload.s3.amazonaws.com/f5b6ae5b.png" -> "f5b6ae5b.png"
-    const fileName = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
+      // 1) Extract filename from the currentUrl
+      const fileName = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
 
-    // 2) Request that file from your Node/Express route
-    //    GET {baseUrl}/sparkiq/image/download/{fileName}
-    const { data: imageBlob } = await axios.get(
-      `${baseUrl}/sparkiq/image/download/${fileName}`,
-      {
-        responseType: "blob",
-        headers: {
-          Authorization: `Bearer ${jwtToken}`, // if protected
-        },
-      }
-    );
+      // 2) Request that file from your Node/Express route
+      const { data: imageBlob } = await axios.get(
+        `${baseUrl}/sparkiq/image/download/${fileName}`,
+        {
+          responseType: "blob",
+          headers: {
+            Authorization: `Bearer ${jwtToken}`, // if protected
+          },
+        }
+      );
 
-    // 3) Create a local object URL for safe usage in canvas
-    const localObjectUrl = URL.createObjectURL(imageBlob);
+      // 3) Create a local object URL for safe usage in canvas
+      const localObjectUrl = URL.createObjectURL(imageBlob);
 
-
+      // 4) Crop the image using your getCroppedImg utility
       const croppedBlob = await getCroppedImg(localObjectUrl, croppedAreaPixels, rotation);
       if (!croppedBlob) {
         toast.error("Failed to crop image. Try again.");
         return;
       }
-      // 2) Create a file from the blob and upload it
+
+      // 5) Create a file from the blob and upload it
       const croppedFile = new File(
         [croppedBlob],
         `cropped_${file?.name || "logo"}.png`,
-        {
-          type: "image/png",
-        }
+        { type: "image/png" }
       );
       const finalUrl = await uploadImage(croppedFile, () => {});
       if (!finalUrl) {
         toast.error("Failed to upload cropped image.");
         return;
       }
-      // 3) Pass finalUrl and crop details to the parent callback
+
+      // 6) Pass finalUrl and crop details to the parent callback
       onSave(finalUrl, {
         x: Math.round(croppedAreaPixels.x),
         y: Math.round(croppedAreaPixels.y),
@@ -1410,29 +1419,32 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
     }
   };
 
+  // -------------------------------------------------
   // Rotate 90° increments
+  // -------------------------------------------------
   const handleRotate90 = () => {
     setRotation((prev) => (prev + 90) % 360);
   };
 
-  // Remove background handler
+  // -------------------------------------------------
+  // Remove background
+  // -------------------------------------------------
   const handleRemoveBg = async () => {
     setIsRemovingBg(true);
     try {
       /**
        * 1) Extract filename from the S3 URL.
-       *    E.g. "https://sparkiq-image-upload.s3.amazonaws.com/abc.png" -> "abc.png"
+       *    E.g. "https://your-s3-bucket.s3.amazonaws.com/abc.png" -> "abc.png"
        */
       const fileName = originalUrl.substring(originalUrl.lastIndexOf("/") + 1);
 
       // 2) Request that file via your Node/Express route
-      //    GET {baseUrl}/sparkiq/image/download/{fileName}
       const { data: imageBlob } = await axios.get(
         `${baseUrl}/sparkiq/image/download/${fileName}`,
         {
-          responseType: "blob", // We need the raw image bits
+          responseType: "blob",
           headers: {
-            Authorization: `Bearer ${jwtToken}`, // if your endpoint is protected
+            Authorization: `Bearer ${jwtToken}`, // if protected
           },
         }
       );
@@ -1442,10 +1454,10 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
         type: imageBlob.type,
       });
 
-      // 4) Remove the background using PhotoRoom
+      // 4) Remove the background using your removeBackground method
       const newBgBlob = await removeBackground(imageFile);
 
-      // 5) Upload the processed image to your S3 endpoint
+      // 5) Upload the processed image to S3
       const uploadFormData = new FormData();
       uploadFormData.append("file", newBgBlob, "image.png");
 
@@ -1474,16 +1486,30 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
     }
   };
 
-
+  // =================================================
+  // Main Render
+  // =================================================
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
+        // Switch background/text based on dark mode
         className="bg-white rounded-md p-4 max-w-lg w-full relative"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* THEME TOGGLE (top-right) */}
+        <div className="absolute top-2 right-2">
+          <button className="p-2" onClick={toggleTheme}>
+            {isDarkMode ? (
+              <MdOutlineLightMode size={18} />
+            ) : (
+              <CiDark size={18} />
+            )}
+          </button>
+        </div>
+
         <h3 className="text-lg font-bold mb-2">
           {isRecrop ? "Re-Crop Logo" : "Crop Logo"} (1:1)
         </h3>
@@ -1491,7 +1517,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
           Adjust the image, rotate if needed, and zoom in/out.
         </p>
 
-        {/* Crop container */}
+        {/* Crop container (always black in background) */}
         <div
           className="relative bg-black"
           style={{
@@ -1519,6 +1545,7 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
                 width: "100%",
                 height: "100%",
                 position: "relative",
+                background:isDarkMode ? "#000" : "#fff",
               },
               mediaStyle: {},
             }}
@@ -1563,9 +1590,11 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
             onClick={handleRemoveBg}
             disabled={isRemovingBg}
           >
-            {isRemovingBg ? "Removing..." : (
+            {isRemovingBg ? (
+              "Removing..."
+            ) : (
               <>
-                <FaSyncAlt />
+                <TbBackground />
                 Remove background
               </>
             )}
@@ -1600,7 +1629,6 @@ function LogoCropperModal({ file, originalUrl, isRecrop, onClose, onSave }) {
     </div>
   );
 }
-
 
 function BrandColors({ brandData, setBrandData }) {
   const [loadingColors, setLoadingColors] = useState(false);

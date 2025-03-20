@@ -24,7 +24,18 @@ const currencies = [
 ];
 
 const discountOptions = ["Price", "Percentage"];
-const industryOptions = ["E-com", "Automotive", "Marketing", "B2B Consultant", "Other"];
+const industryOptions = [ "Automotive",
+    "B2B Consultant",
+    "E-com",
+    "Education",
+    "Fashion",
+    "Marketing",
+    "Real Estate",
+    "Retail",
+    "Technology",
+    "Travel",
+    "Other"
+];
 
 export default function ProductDetails({
     handleBack,
