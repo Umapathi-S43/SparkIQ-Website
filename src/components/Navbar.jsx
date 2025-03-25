@@ -20,7 +20,7 @@ const Navbar = () => {
     { name: "How Spark IQ Works", path: "about" },
     { name: "Features", path: "features" },
     { name: "FAQ", path: "faq" },
-    // { name: "Pricing", path: "pricing" },
+    { name: "Pricing", path: "pricing" },
     //{ name: "Contact", path: "contact" },
   ];
 

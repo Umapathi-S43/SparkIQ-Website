@@ -113,52 +113,58 @@ export const aboutCards = [
 ];
 
 // PRICING DATA
-export const proFeatures = [
-	{
-		id: 1,
-		content: "Advanced Analytics",
-	},
-	{
-		id: 2,
-		content: "Custom Reporting",
-	},
-	{
-		id: 3,
-		content: "Goal Tracking",
-	},
-	{
-		id: 4,
-		content: "Priority Email Support",
-	},
-	{
-		id: 5,
-		content: "Data Security",
-	},
-];
+// Updated PRICING DATA
 
+// Starter Plan Features
 export const starterFeatures = [
+	{ id: 1, content: "1 Brand" },
+	{ id: 2, content: "1,000 SKUs" },
+	{ id: 3, content: "Product-Level Videos" },
+	{ id: 4, content: "Design Support ❌" },
+  ];
+  
+  // Growth Plan Features
+  export const proFeatures = [
+	{ id: 1, content: "Advanced Analytics" },
+	{ id: 2, content: "Product-Level Videos" },
+	{ id: 3, content: "Custom Reporting" },
+	{ id: 4, content: "Goal Tracking" },
+	{ id: 5, content: "Priority Email Support" },
+	{ id: 6, content: "Data Security" },
+  ];
+  
+  // Scale Plan Features
+  export const premiumFeatures = [
+	{ id: 1, content: "24/7 Priority Support" },
+	{ id: 2, content: "Product-Level Videos" },
+	{ id: 3, content: "Dedicated Account Manager" },
+	{ id: 4, content: "Advanced Customizations" },
+	{ id: 5, content: "API Access" },
+	{ id: 6, content: "Custom Reporting Tools" },
+  ];
+  
+  // Pricing Plans Data
+  export const pricingPlans = [
 	{
-		id: 1,
-		content: "Effortless Client Management",
+	  plan: "Starter",
+	  price: "$299",
+	  description: "Effortless management for small-scale businesses.",
+	  features: starterFeatures,
 	},
 	{
-		id: 2,
-		content: "Personalised Meal Planning",
+	  plan: "Growth",
+	  price: "$499",
+	  description: "Ideal for growing businesses with more brands.",
+	  features: proFeatures,
 	},
 	{
-		id: 3,
-		content: "Mobile App Access",
+	  plan: "Scale",
+	  price: "$799",
+	  description: "Best for large-scale businesses with many brands and SKUs.",
+	  features: premiumFeatures,
 	},
-	{
-		id: 4,
-		content: "Calendar Integration",
-	},
-	{
-		id: 5,
-		content: "Email Support",
-	},
-];
-
+  ];
+  
 export const faqs = [
 	{
 		question:

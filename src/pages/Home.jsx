@@ -17,7 +17,7 @@ const Home = () => {
 				<InfoSection />
 				{/* <AboutSection /> */}
 				<Features />
-				{/* <Pricing /> */}
+				<Pricing />
 				<Community/>
 				<Faqs />
 			</div>

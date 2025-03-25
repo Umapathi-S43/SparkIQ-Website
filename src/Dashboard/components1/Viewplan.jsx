@@ -4,13 +4,10 @@ import congratsBg from '../../assets/dashboard_img/congrats_bg.svg'; // Adjust t
 import aiImg from '../../assets/dashboard_img/ai_img.svg'; // Adjust the path as needed
 import comingSoonImage from '/work-in-progress.png'; // Provide the correct path for the "Coming Soon" image
 
-
 const PlanCard = ({ planType, price, billingCycle, features, isProPlan }) => {
   return (
     <div
-      className={`border border-[#FCFCFC] bg-[rgba(252,252,252,0.25)] w-full lg:w-1/2 relative flex flex-col ${
-        isProPlan ? 'pro-plan' : ''
-      }`}
+      className={`border border-[#FCFCFC] bg-[rgba(252,252,252,0.25)] w-full lg:w-1/3 relative flex flex-col ${isProPlan ? 'pro-plan' : ''}`}
       style={{
         borderTop: isProPlan ? '3px solid #4ADE80' : '3px solid #FDBA74',
         borderLeft: isProPlan ? 'none' : '',
@@ -32,14 +29,16 @@ const PlanCard = ({ planType, price, billingCycle, features, isProPlan }) => {
       <div className="p-6 relative flex-grow z-10">
         <div className="flex items-center justify-center">
           <img src={aiImg} alt="AI Icon" className="w-24 h-24 flex justify-center" />
-          <h4 className="text-center text-[#082A66] text-2xl font-bold ">{isProPlan ? 'Pro' : ''}</h4>
+          <h4 className="text-center text-[#082A66] text-2xl font-bold">{planType}</h4>
         </div>
         <p className="text-center mt-4 text-lg">{`$${price} / ${billingCycle}`}</p>
         <div className="flex justify-center">
-          <button className="text-white px-8 py-2 mt-4 rounded-lg" style={{ background: 'linear-gradient(72.16deg, #00A0F5 2.97%, #5CC6FF 97.52%)' }}>Try Spark +</button>
+          <button className="text-white px-8 py-2 mt-4 rounded-lg" style={{ background: 'linear-gradient(72.16deg, #00A0F5 2.97%, #5CC6FF 97.52%)' }}>
+            Try Spark +
+          </button>
         </div>
       </div>
-      <div className="p-6 flex-grow justify-start mt-12">
+      <div className="p-6 flex-grow justify-start mt-20">
         <h5 className="text-left font-bold mb-4">Top features</h5>
         <ul className="list-disc list-inside space-y-2">
           {features.map((feature, index) => (
@@ -74,67 +73,33 @@ const Viewplan = () => {
     setIsMonthly(plan === 'monthly');
   };
 
-  const standardFeatures = [
-    'Facebook and Google ads Integration',
-    'Multi location targeting',
-    'Interest targeting',
-    'Ad copies with tone',
-    'Simple reporting',
+  const starterFeatures = [
+    'Target 1 Brand for rapid growth',
+    'Manage up to 1,000 SKUs effortlessly',
+    'Engage your customers with product-level videos',
+    'Access basic support for your business growth',
   ];
-
-  const proFeatures = [
-    'Unlimited Workspaces',
-    'Share Reports with Clients',
-    'Manage unlimited facebook & google ad accounts',
-    'PDF Exports',
-    'Detailed reporting',
-    'Priority support',
-    'Competitor Insights',
+  
+  const growthFeatures = [
+    'Manage up to 3 brands with ease',
+    'Scale with up to 5,000 SKUs',
+    'Seamlessly integrate product-level videos to boost engagement',
+    'Get advanced reporting and analytics to track performance',
+    'Priority support for fast resolutions',
   ];
+  
+  const scaleFeatures = [
+    'Scale with up to 5 brands under one account',
+    'Handle up to 10,000 SKUs across brands',
+    'Advanced video features to integrate into your strategy',
+    'Get in-depth performance reports for each product and brand',
+    'Custom design support to create perfect visuals',
+    'Receive 24/7 dedicated premium support for seamless operations',
+  ];
+  
 
   return (
-<div className='flex justify-center items-center'>
-  <div className="coming-soon rounded-xl border border-[#FCFCFC] bg-[#FCFCFC] bg-opacity-25 p-14 w-full lg:w-4/5 lg:-ml-16 lg:mr-24 gap-4 flex flex-col items-center text-center">
-    <div className='w-full flex justify-center'>
-      <video
-        autoPlay
-        muted
-        loop
-        className='rounded-lg w-full' // Set video width to 100%
-        style={{ height: '50vh' }}
-      >
-         <source src='/v-nobg.webm' type="video/webm" />
-         Your browser does not support the video tag.
-      </video>
-    </div>
-    <div className='w-full'>
-      <div className='block w-full'>
-        <span
-          className='font-semibold text-xl block w-full'
-          style={{
-            fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
-            padding: '0 10px', // Adjust padding for consistent alignment
-          }}
-        >
-          We are currently working on enhancing the features of this page.
-        </span>
-        <span
-          className='mt-2 block w-full'
-        >
-          The details on pricing and subscription will be available shortly. Stay tuned, as we’ll be rolling out these updates in no time.
-        </span>
-      </div>
-    </div>
-  </div>
-</div>  
-);
-};
-
-export default Viewplan;
-
-    {/*
     <div className="max-w-6xl w-full mx-auto flex flex-col border border-[#FCFCFC] rounded-3xl">
-      
       <div className="flex justify-between items-center rounded-t-3xl relative bg-[rgba(252,252,252,0.40)] h-28 p-6 w-full">
         <span className="flex items-center gap-2 lg:gap-4">
           <img src="icon1.svg" alt="icon1" className="w-14 h-14" />
@@ -143,51 +108,52 @@ export default Viewplan;
             <p className="text-[#374151] lg:text-sm text-xs">Pricing that doesn’t burn a hole in your marketing pocket</p>
           </span>
         </span>
-        <img
-          src={brandImage}
-          alt="Brand Banner"
-          className="absolute bottom-0 right-24 w-44 hidden lg:block"
-        />
       </div>
-      
+
       <div className="border border-[#FCFCFC] m-4 p-4 rounded-xl hide-scrollbar" style={{ overflow: 'auto', maxHeight: '55vh' }}>
         <div className="flex justify-center mb-8">
           <div className="flex gap-2 border border-[#FCFCFC] p-3 rounded-3xl">
             <button
               onClick={() => handlePlanChange('monthly')}
-              className={`px-3 py-2 rounded-full text-xs font-bold ${
-                isMonthly ? 'bg-white' : 'text-[#082A66]'
-              } border border-transparent hover:border-[#FCFCFC]`}
+              className={`px-3 py-2 rounded-full text-xs font-bold ${isMonthly ? 'bg-white' : 'text-[#082A66]'}`}
             >
               Billed Monthly
             </button>
             <button
               onClick={() => handlePlanChange('yearly')}
-              className={`px-3 py-2 rounded-full text-xs font-bold ${
-                !isMonthly ? 'bg-white' : 'text-[#082A66]'
-              } border border-transparent hover:border-[#FCFCFC]`}
+              className={`px-3 py-2 rounded-full text-xs font-bold ${!isMonthly ? 'bg-white' : 'text-[#082A66]'}`}
             >
               Billed Yearly
             </button>
           </div>
         </div>
+
         <div className="flex flex-col lg:flex-row m-12 mb-8">
-          <PlanCard 
-            planType="Standard" 
-            price={isMonthly ? '12' : '120'} 
-            billingCycle={isMonthly ? 'month' : 'year'} 
-            features={standardFeatures}
+          <PlanCard
+            planType="Starter"
+            price={isMonthly ? '299' : '120'}
+            billingCycle={isMonthly ? 'month' : 'year'}
+            features={starterFeatures}
             isProPlan={false}
           />
-          <PlanCard 
-            planType="Pro" 
-            price={isMonthly ? '30' : '300'} 
-            billingCycle={isMonthly ? 'month' : 'year'} 
-            features={proFeatures}
+          <PlanCard
+            planType="Growth"
+            price={isMonthly ? '499' : '300'}
+            billingCycle={isMonthly ? 'month' : 'year'}
+            features={growthFeatures}
+            isProPlan={false}
+          />
+          <PlanCard
+            planType="Scale"
+            price={isMonthly ? '799' : '500'}
+            billingCycle={isMonthly ? 'month' : 'year'}
+            features={scaleFeatures}
             isProPlan={true}
           />
         </div>
       </div>
     </div>
-      */}
-     
+  );
+};
+
+export default Viewplan;
