@@ -131,21 +131,21 @@ const Viewplan = () => {
         <div className="flex flex-col lg:flex-row m-12 mb-8">
           <PlanCard
             planType="Starter"
-            price={isMonthly ? '299' : '120'}
+            price={isMonthly ? '299' : '3549'}
             billingCycle={isMonthly ? 'month' : 'year'}
             features={starterFeatures}
             isProPlan={false}
           />
           <PlanCard
             planType="Growth"
-            price={isMonthly ? '499' : '300'}
+            price={isMonthly ? '499' : '5949'}
             billingCycle={isMonthly ? 'month' : 'year'}
             features={growthFeatures}
             isProPlan={false}
           />
           <PlanCard
             planType="Scale"
-            price={isMonthly ? '799' : '500'}
+            price={isMonthly ? '799' : '9549'}
             billingCycle={isMonthly ? 'month' : 'year'}
             features={scaleFeatures}
             isProPlan={true}
